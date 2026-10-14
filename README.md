@@ -1,4 +1,4 @@
-# PhotoPilot · 光屿
+# PhotoPilot
 
 一个把旧 iPad / Android 平板变成数字相框的应用：导入本机、文件或 NAS（WebDAV/SMB）里的照片与视频，按相框精选内容，配上时钟、日期与天气，常亮播放。
 
