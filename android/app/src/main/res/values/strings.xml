@@ -146,6 +146,10 @@
     <string name="source.nas.protocol_webdav_https">WebDAV (HTTPS)</string>
     <string name="source.nas.protocol_webdav_http">WebDAV (HTTP)</string>
     <string name="source.nas.protocol_smb">SMB</string>
+    <string name="source.nas.protocol_webdav">WebDAV</string>
+    <string name="source.nas.transport">Connection</string>
+    <string name="source.nas.transport_https">HTTPS (encrypted)</string>
+    <string name="source.nas.transport_http">HTTP (local network only)</string>
     <string name="source.nas.host">Host</string>
     <string name="source.nas.port">Port</string>
     <string name="source.nas.share">Share</string>
@@ -216,6 +220,7 @@
     <string name="import.live_photo_still">Live Photos will be saved as still images</string>
     <string name="import.skipped_deleted">Skipped photos you deleted earlier</string>
     <string name="import.done">Import complete</string>
+    <string name="import.no_new_items">All %1$d items are already in the library — nothing new to import</string>
     <string name="library.title">Library</string>
     <string name="library.choose_title">Choose what to display</string>
     <string name="library.tab_folders">Folders</string>
@@ -558,6 +563,8 @@
     <string name="playback.align_right">Right</string>
     <string name="playback.brightness_restore_help">Original brightness is restored when playback ends or the app enters the background. System brightness is not permanently changed.</string>
     <string name="library.selection_unsaved">Display selection has not been saved</string>
+    <string name="frames.set_cover">Set as cover</string>
+    <string name="frames.cover_set">Cover updated</string>
     <string name="order.excluded_order_preserved">This photo was excluded. The relative order of the remaining photos is unchanged.</string>
     <string name="settings.storage_threshold_help">Reserve at least 1 GB or 5% of total capacity, whichever is larger. Imports pause below this limit; photos are not deleted automatically.</string>
     <string name="settings.storage_threshold_risk">Reducing reserved space may cause later imports to fail. Apply only after confirmation; existing photos will not be deleted.</string>

@@ -54,6 +54,11 @@ class FrameManager(
         db.frameDao().update(frame.copy(orderMode = mode, updatedAt = nowMillis()))
     }
 
+    suspend fun setCover(frameId: String, assetId: String) = withContext(Dispatchers.IO) {
+        val frame = db.frameDao().getById(frameId) ?: return@withContext
+        db.frameDao().update(frame.copy(coverAssetId = assetId, updatedAt = nowMillis()))
+    }
+
     suspend fun duplicateFrame(frameId: String): FrameEntity? = withContext(Dispatchers.IO) {
         db.withTransaction {
             val source = db.frameDao().getById(frameId) ?: return@withTransaction null

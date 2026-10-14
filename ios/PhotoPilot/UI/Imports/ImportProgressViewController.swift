@@ -63,6 +63,7 @@ final class ImportProgressViewController: UIViewController {
 
         statusLabel.text = L10n.string("import.preparing_unknown_total")
         sizeLabel.text = L10n.string("import.size_calculating")
+        sizeLabel.isHidden = true
         spaceBanner.text = L10n.string("import.waiting_space")
         videoSkippedBanner.text = L10n.string("import.video_skipped")
         partialBanner.text = L10n.string("import.partial_failed")
@@ -192,10 +193,14 @@ final class ImportProgressViewController: UIViewController {
         if !enumerationDone {
             statusLabel.text = L10n.string(total > 0 ? "import.enumerating" : "import.preparing_unknown_total")
         } else if job.state == ImportJobState.completed.rawValue {
-            statusLabel.text = L10n.string("import.done")
+            statusLabel.text = imported == 0 && total > 0
+                ? String(format: L10n.string("import.no_new_items"), total)
+                : L10n.string("import.done")
         } else {
             statusLabel.text = L10n.string("import.enumerating")
         }
+
+        sizeLabel.isHidden = job.state != ImportJobState.running.rawValue
 
         if job.totalKnown == nil, !enumerationDone {
             progressView.isHidden = true

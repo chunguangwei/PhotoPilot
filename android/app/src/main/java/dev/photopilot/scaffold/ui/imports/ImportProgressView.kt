@@ -185,14 +185,14 @@ class ImportProgressView(context: Context) : ScrollView(context) {
         skippedNotice.visibility = if (showSkippedNotice) View.VISIBLE else View.GONE
         skippedNotice.text = res.getString(R.string.import_video_skipped)
 
-        renderState(snapshot.state)
+        renderState(snapshot)
     }
 
-    private fun renderState(state: ImportJobState) {
+    private fun renderState(snapshot: ImportProgressRepository.Snapshot) {
         val res = resources
         val space12 = res.getDimensionPixelSize(R.dimen.pp_space_12)
         buttonColumn.removeAllViews()
-        when (state) {
+        when (snapshot.state) {
             ImportJobState.RUNNING -> {
                 messageLine.visibility = View.GONE
                 addButton(secondaryButton(context, R.string.import_pause), 0) { onPauseClick?.invoke() }
@@ -224,7 +224,13 @@ class ImportProgressView(context: Context) : ScrollView(context) {
                 addButton(secondaryButton(context, R.string.common_done), space12) { onCloseClick?.invoke() }
             }
             ImportJobState.COMPLETED -> {
-                showMessage(R.string.import_done)
+                val total = snapshot.totalKnown
+                if (ImportCounts.imported(snapshot.counts) == 0 && total != null && total > 0L) {
+                    messageLine.visibility = View.VISIBLE
+                    messageLine.text = res.getString(R.string.import_no_new_items, total.toInt())
+                } else {
+                    showMessage(R.string.import_done)
+                }
                 addButton(primaryButton(context, R.string.frames_choose_content), 0) {
                     onChooseContentClick?.invoke()
                 }

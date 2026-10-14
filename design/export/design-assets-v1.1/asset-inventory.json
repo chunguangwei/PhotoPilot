@@ -2,7 +2,7 @@
   "version": "1.1",
   "scope": "本地设计资产完整性与来源摘要；不代表原生渲染、交互或人工签字。",
   "sources": {
-    "contracts/strings/strings.json": "f5adde8184b2231beb7749d9e5f7bd417ffeac8a8e86c5f844ad10acf8def95f",
+    "contracts/strings/strings.json": "2a88b33cd2db0e0735e8025eb8ed0466039a19d448d24afce26675f710496e14",
     "design/assets/LICENSES.md": "5679c18fd22b7ed1706d858f6073bd1d8cf10a6af6955845ade93b291d74f392",
     "design/assets/asset-inventory-v1.1.json": "2c4c94835e09b96f54b37ca51da372d8301d6484cebca842f8bb5d327901b56b",
     "design/assets/proxies/black.png": "ec20ccf764ec315e2c0f94732ee809e53593b09db58da05517ac4cd62a1d1ac5",

@@ -4,6 +4,8 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
     private let environment: AppEnvironment
 
     private let schemeSegmented = UISegmentedControl()
+    private let transportSegmented = UISegmentedControl()
+    private var transportRow: UIView?
     private let shareField = UITextField()
     private var shareRow: UIView?
     private let hostField = UITextField()
@@ -51,18 +53,13 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         view.addSubview(topBar)
 
         schemeSegmented.insertSegment(
-            withTitle: L10n.string("source.nas.protocol_webdav_https"),
+            withTitle: L10n.string("source.nas.protocol_webdav"),
             at: 0,
             animated: false
         )
         schemeSegmented.insertSegment(
-            withTitle: L10n.string("source.nas.protocol_webdav_http"),
-            at: 1,
-            animated: false
-        )
-        schemeSegmented.insertSegment(
             withTitle: L10n.string("source.nas.protocol_smb"),
-            at: 2,
+            at: 1,
             animated: false
         )
         schemeSegmented.selectedSegmentIndex = 0
@@ -70,6 +67,23 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         schemeSegmented.heightAnchor.constraint(
             greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
         ).isActive = true
+
+        transportSegmented.insertSegment(
+            withTitle: L10n.string("source.nas.transport_https"),
+            at: 0,
+            animated: false
+        )
+        transportSegmented.insertSegment(
+            withTitle: L10n.string("source.nas.transport_http"),
+            at: 1,
+            animated: false
+        )
+        transportSegmented.selectedSegmentIndex = 0
+        transportSegmented.addTarget(self, action: #selector(handleTransportChanged), for: .valueChanged)
+        transportSegmented.heightAnchor.constraint(
+            greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
+        ).isActive = true
+        transportRow = makeRow(labelKey: "source.nas.transport", control: transportSegmented)
 
         configure(field: hostField, labelKey: "source.nas.host", keyboard: .URL)
         configure(field: portField, labelKey: "source.nas.port", keyboard: .numberPad)
@@ -114,6 +128,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
 
         let form = UIStackView(arrangedSubviews: [
             makeRow(labelKey: "source.nas.protocol", control: schemeSegmented),
+            transportRow ?? UIView(),
             makeRow(labelKey: "source.nas.host", control: hostField),
             makeRow(labelKey: "source.nas.port", control: portField),
             makeRow(labelKey: "source.nas.path", control: pathField),
@@ -206,12 +221,12 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
     }
 
     private var isSmbSelected: Bool {
-        schemeSegmented.selectedSegmentIndex == 2
+        schemeSegmented.selectedSegmentIndex == 1
     }
 
     private func buildEndpoint() -> NasEndpoint? {
         guard let hostInput = NasAddress.parseHostInput(hostField.text ?? "") else { return nil }
-        let isHTTPS = schemeSegmented.selectedSegmentIndex == 0
+        let isHTTPS = transportSegmented.selectedSegmentIndex == 0
         let scheme = isSmbSelected ? "smb" : (isHTTPS ? "webdav" : "webdav_http")
         let port = hostInput.port
             ?? Int(portField.text ?? "")
@@ -255,15 +270,18 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
     }
 
     @objc private func handleSchemeChanged() {
-        switch schemeSegmented.selectedSegmentIndex {
-        case 1:
-            portField.text = "80"
-        case 2:
+        if isSmbSelected {
             portField.text = "445"
-        default:
-            portField.text = "443"
+        } else {
+            portField.text = transportSegmented.selectedSegmentIndex == 0 ? "443" : "80"
         }
         shareRow?.isHidden = !isSmbSelected
+        transportRow?.isHidden = isSmbSelected
+        markTestStale()
+    }
+
+    @objc private func handleTransportChanged() {
+        portField.text = transportSegmented.selectedSegmentIndex == 0 ? "443" : "80"
         markTestStale()
     }
 

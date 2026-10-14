@@ -179,6 +179,11 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             self?.updateSummary()
             self?.directoriesTable.reloadData()
         }
+        if frameID != nil {
+            grid.onLongPressAsset = { [weak self] assetID, cell in
+                self?.presentCoverOptions(assetID: assetID, anchor: cell)
+            }
+        }
         addChild(grid)
         grid.view.translatesAutoresizingMaskIntoConstraints = false
         photosContainer.addSubview(grid.view)
@@ -190,6 +195,35 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         ])
         grid.didMove(toParent: self)
         gridChild = grid
+    }
+
+    private func presentCoverOptions(assetID: String, anchor: UIView) {
+        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        alert.popoverPresentationController?.sourceView = anchor
+        alert.popoverPresentationController?.sourceRect = anchor.bounds
+        alert.addAction(UIAlertAction(
+            title: L10n.string("frames.set_cover"),
+            style: .default,
+            handler: { [weak self] _ in
+                self?.applyCover(assetID: assetID)
+            }
+        ))
+        alert.addAction(UIAlertAction(title: L10n.string("common.cancel"), style: .cancel))
+        present(alert, animated: true)
+    }
+
+    private func applyCover(assetID: String) {
+        guard let frameID else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            guard (try? await environment.frameManager.setCover(frameID: frameID, assetID: assetID)) != nil else {
+                return
+            }
+            UIAccessibility.post(
+                notification: .announcement,
+                argument: L10n.string("frames.cover_set")
+            )
+        }
     }
 
     private func reload() {

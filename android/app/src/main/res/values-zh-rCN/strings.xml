@@ -141,6 +141,10 @@
     <string name="source.nas.protocol_webdav_https">WebDAV（HTTPS）</string>
     <string name="source.nas.protocol_webdav_http">WebDAV（HTTP）</string>
     <string name="source.nas.protocol_smb">SMB</string>
+    <string name="source.nas.protocol_webdav">WebDAV</string>
+    <string name="source.nas.transport">传输方式</string>
+    <string name="source.nas.transport_https">HTTPS（加密）</string>
+    <string name="source.nas.transport_http">HTTP（仅局域网）</string>
     <string name="source.nas.host">主机地址</string>
     <string name="source.nas.port">端口</string>
     <string name="source.nas.share">共享名</string>
@@ -209,6 +213,7 @@
     <string name="import.live_photo_still">Live Photo 将保存为静态照片</string>
     <string name="import.skipped_deleted">已跳过你之前删除的照片</string>
     <string name="import.done">导入完成</string>
+    <string name="import.no_new_items">%1$d 项均已在库中，没有新内容需要导入</string>
     <string name="library.title">照片库</string>
     <string name="library.choose_title">选择展示内容</string>
     <string name="library.tab_folders">目录</string>
@@ -542,6 +547,8 @@
     <string name="playback.align_right">右对齐</string>
     <string name="playback.brightness_restore_help">离开播放或进入后台时恢复原亮度，不永久更改系统亮度。</string>
     <string name="library.selection_unsaved">展示内容尚未保存</string>
+    <string name="frames.set_cover">设为封面</string>
+    <string name="frames.cover_set">已设为封面</string>
     <string name="order.excluded_order_preserved">已排除这张照片，其余照片的相对顺序保持不变。</string>
     <string name="settings.storage_threshold_help">默认保留至少 1 GB 或总容量的 5%，取较大值。低于阈值暂停导入，不自动删除照片。</string>
     <string name="settings.storage_threshold_risk">降低保留空间可能使后续导入失败。确认后才会应用，不删除已有照片。</string>

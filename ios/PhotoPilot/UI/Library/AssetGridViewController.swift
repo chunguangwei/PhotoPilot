@@ -22,6 +22,7 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
     var selectionEnabled = false
     private(set) var selectedAssetIDs: Set<String> = []
     var onSelectionChange: ((Set<String>) -> Void)?
+    var onLongPressAsset: ((String, UICollectionViewCell) -> Void)?
     var emptyTitleKey: String?
     var emptyBodyKey: String?
 
@@ -111,6 +112,10 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         )
         root.addArrangedSubview(grid)
         collectionView = grid
+        grid.addGestureRecognizer(UILongPressGestureRecognizer(
+            target: self,
+            action: #selector(handleLongPress(_:))
+        ))
 
         emptyTitleLabel.text = L10n.string("library.empty_title")
         emptyTitleLabel.font = ThemeFont.heading()
@@ -299,6 +304,18 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return FormatStrings.string("a11y.photo_cell", formatter.string(from: date))
+    }
+
+    @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began,
+              let onLongPressAsset,
+              let grid = collectionView else { return }
+        let point = gesture.location(in: grid)
+        guard let indexPath = grid.indexPathForItem(at: point),
+              indexPath.item < items.count else { return }
+        let item = items[indexPath.item]
+        guard !item.isPending, let cell = grid.cellForItem(at: indexPath) else { return }
+        onLongPressAsset(item.id, cell)
     }
 
     @objc private func handleClose() {

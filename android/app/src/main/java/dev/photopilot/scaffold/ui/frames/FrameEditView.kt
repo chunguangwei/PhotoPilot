@@ -18,6 +18,7 @@ import android.widget.FrameLayout
 import android.widget.GridView
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.PopupMenu
 import android.widget.ScrollView
 import android.widget.TextView
 import dev.photopilot.scaffold.R
@@ -67,6 +68,7 @@ class FrameEditView(
     var onSave: ((State) -> Unit)? = null
     var onManualOrder: (() -> Unit)? = null
     var onConfirmDynamic: ((confirmed: (Boolean) -> Unit) -> Unit)? = null
+    var onSetCover: ((String) -> Unit)? = null
 
     private var model: Model? = null
     private var initialRuleStates: Map<String, RuleUiState> = emptyMap()
@@ -573,6 +575,22 @@ class FrameEditView(
                 }
                 cell.bind(asset, size, selectedAssetIds.contains(asset.id), loader)
                 updateSummary()
+            }
+            val coverCallback = onSetCover
+            if (coverCallback != null) {
+                cell.setOnLongClickListener { anchor ->
+                    PopupMenu(context, anchor).apply {
+                        menu.add(context.getString(R.string.frames_set_cover))
+                        setOnMenuItemClickListener {
+                            coverCallback(asset.id)
+                            true
+                        }
+                        show()
+                    }
+                    true
+                }
+            } else {
+                cell.setOnLongClickListener(null)
             }
             return cell
         }

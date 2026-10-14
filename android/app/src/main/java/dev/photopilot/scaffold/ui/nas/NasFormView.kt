@@ -32,6 +32,7 @@ class NasFormView(context: Context) : ScrollView(context) {
     var onSave: ((Form) -> Unit)? = null
 
     private var protocol = PROTOCOL_WEBDAV
+    private var transport = TRANSPORT_HTTPS
     private val hostInput: EditText
     private val portInput: EditText
     private val pathInput: EditText
@@ -47,10 +48,20 @@ class NasFormView(context: Context) : ScrollView(context) {
     private var testPassed = false
 
     private var protocolButtons: List<TextView> = emptyList()
+    private var transportButtons: List<TextView> = emptyList()
+    private var transportSection: LinearLayout? = null
 
     private fun paintProtocol() {
-        protocolButtons.forEach { button ->
-            val selected = protocol == (button.tag as String)
+        paintOptions(protocolButtons) { tag -> (tag == PROTOCOL_SMB) == (protocol == PROTOCOL_SMB) }
+    }
+
+    private fun paintTransport() {
+        paintOptions(transportButtons) { tag -> tag == transport }
+    }
+
+    private fun paintOptions(buttons: List<TextView>, isSelected: (String) -> Boolean) {
+        buttons.forEach { button ->
+            val selected = isSelected(button.tag as String)
             button.isSelected = selected
             button.setTextColor(
                 context.getColor(if (selected) R.color.pp_accent_action else R.color.pp_text_primary),
@@ -67,10 +78,13 @@ class NasFormView(context: Context) : ScrollView(context) {
 
     fun prefill(protocol: String, host: String, port: Int?, path: String) {
         this.protocol = protocol
+        transport = if (protocol == PROTOCOL_WEBDAV_HTTP) TRANSPORT_HTTP else TRANSPORT_HTTPS
         hostInput.setText(host)
         portInput.setText(port?.toString() ?: "")
         pathInput.setText(path)
+        transportSection?.visibility = if (protocol == PROTOCOL_SMB) View.GONE else View.VISIBLE
         paintProtocol()
+        paintTransport()
     }
 
     init {
@@ -109,32 +123,22 @@ class NasFormView(context: Context) : ScrollView(context) {
         val protocolRow = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
         val buttons = mutableListOf<TextView>()
         listOf(
-            res.getString(R.string.source_nas_protocol_webdav_https) to PROTOCOL_WEBDAV,
-            res.getString(R.string.source_nas_protocol_webdav_http) to PROTOCOL_WEBDAV_HTTP,
+            res.getString(R.string.source_nas_protocol_webdav) to PROTOCOL_WEBDAV,
             res.getString(R.string.source_nas_protocol_smb) to PROTOCOL_SMB,
         )
             .forEachIndexed { index, (label, value) ->
-            val button = TextView(context).apply {
-                text = label
-                contentDescription = label
-                tag = value
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
-                gravity = Gravity.CENTER
-                minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-                isClickable = true
-                isFocusable = true
-                setOnClickListener {
-                    protocol = value
-                    portInput.setText(
-                        when (protocol) {
-                            PROTOCOL_SMB -> "445"
-                            PROTOCOL_WEBDAV_HTTP -> "80"
-                            else -> "443"
-                        },
-                    )
-                    markDirty()
-                    paintProtocol()
+            val button = optionButton(label, value) {
+                if (value == PROTOCOL_SMB) {
+                    protocol = PROTOCOL_SMB
+                    portInput.setText("445")
+                    transportSection?.visibility = View.GONE
+                } else {
+                    protocol = if (transport == TRANSPORT_HTTP) PROTOCOL_WEBDAV_HTTP else PROTOCOL_WEBDAV
+                    portInput.setText(if (transport == TRANSPORT_HTTP) "80" else "443")
+                    transportSection?.visibility = View.VISIBLE
                 }
+                markDirty()
+                paintProtocol()
             }
             buttons += button
             protocolRow.addView(
@@ -147,6 +151,42 @@ class NasFormView(context: Context) : ScrollView(context) {
         protocolButtons = buttons
         column.addView(protocolRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         paintProtocol()
+
+        val transportSectionView = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+        transportSection = transportSectionView
+        addLabel(transportSectionView, R.string.source_nas_transport)
+        val transportRow = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+        val transportButtonList = mutableListOf<TextView>()
+        listOf(
+            res.getString(R.string.source_nas_transport_https) to TRANSPORT_HTTPS,
+            res.getString(R.string.source_nas_transport_http) to TRANSPORT_HTTP,
+        )
+            .forEachIndexed { index, (label, value) ->
+            val button = optionButton(label, value) {
+                transport = value
+                protocol = if (value == TRANSPORT_HTTP) PROTOCOL_WEBDAV_HTTP else PROTOCOL_WEBDAV
+                portInput.setText(if (value == TRANSPORT_HTTP) "80" else "443")
+                markDirty()
+                paintTransport()
+            }
+            transportButtonList += button
+            transportRow.addView(
+                button,
+                LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
+                    if (index > 0) marginStart = res.getDimensionPixelSize(R.dimen.pp_space_8)
+                },
+            )
+        }
+        transportButtons = transportButtonList
+        transportSectionView.addView(
+            transportRow,
+            LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
+        )
+        column.addView(
+            transportSectionView,
+            LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
+        )
+        paintTransport()
 
         addLabel(column, R.string.source_nas_host)
         hostInput = addInput(column, number = false)
@@ -294,6 +334,19 @@ class NasFormView(context: Context) : ScrollView(context) {
         saveButton.alpha = DISABLED_ALPHA
     }
 
+    private fun optionButton(label: String, value: String, onSelect: () -> Unit): TextView =
+        TextView(context).apply {
+            text = label
+            contentDescription = label
+            tag = value
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.pp_text_body))
+            gravity = Gravity.CENTER
+            minimumHeight = resources.getDimensionPixelSize(R.dimen.pp_touch_target)
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { onSelect() }
+        }
+
     private fun addLabel(parent: LinearLayout, textRes: Int) {
         val res = resources
         val label = TextView(context).apply {
@@ -338,5 +391,7 @@ class NasFormView(context: Context) : ScrollView(context) {
         const val PROTOCOL_WEBDAV = "webdav"
         const val PROTOCOL_WEBDAV_HTTP = "webdav_http"
         const val PROTOCOL_SMB = "smb"
+        const val TRANSPORT_HTTPS = "https"
+        const val TRANSPORT_HTTP = "http"
     }
 }

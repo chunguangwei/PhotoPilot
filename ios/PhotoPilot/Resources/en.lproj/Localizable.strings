@@ -124,6 +124,10 @@
 "source.nas.protocol_webdav_https" = "WebDAV (HTTPS)";
 "source.nas.protocol_webdav_http" = "WebDAV (HTTP)";
 "source.nas.protocol_smb" = "SMB";
+"source.nas.protocol_webdav" = "WebDAV";
+"source.nas.transport" = "Connection";
+"source.nas.transport_https" = "HTTPS (encrypted)";
+"source.nas.transport_http" = "HTTP (local network only)";
 "source.nas.host" = "Host";
 "source.nas.port" = "Port";
 "source.nas.share" = "Share";
@@ -187,6 +191,7 @@
 "import.live_photo_still" = "Live Photos will be saved as still images";
 "import.skipped_deleted" = "Skipped photos you deleted earlier";
 "import.done" = "Import complete";
+"import.no_new_items" = "All %1$d items are already in the library — nothing new to import";
 "library.title" = "Library";
 "library.choose_title" = "Choose what to display";
 "library.tab_folders" = "Folders";
@@ -479,6 +484,8 @@
 "playback.align_right" = "Right";
 "playback.brightness_restore_help" = "Original brightness is restored when playback ends or the app enters the background. System brightness is not permanently changed.";
 "library.selection_unsaved" = "Display selection has not been saved";
+"frames.set_cover" = "Set as cover";
+"frames.cover_set" = "Cover updated";
 "order.excluded_order_preserved" = "This photo was excluded. The relative order of the remaining photos is unchanged.";
 "settings.storage_threshold_help" = "Reserve at least 1 GB or 5% of total capacity, whichever is larger. Imports pause below this limit; photos are not deleted automatically.";
 "settings.storage_threshold_risk" = "Reducing reserved space may cause later imports to fail. Apply only after confirmation; existing photos will not be deleted.";

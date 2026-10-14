@@ -1522,6 +1522,16 @@ class MainActivity : Activity() {
         view.onSave = { state -> saveFrameEdit(view, frame, state) }
         view.onManualOrder = { frame?.let { target -> openManualOrder(view, target) } }
         view.onConfirmDynamic = { completion -> confirmDynamicRule(completion) }
+        view.onSetCover = frame?.let { target ->
+            { assetId ->
+                scope.launch {
+                    withContext(Dispatchers.IO) {
+                        env.frameManager.setCover(target.id, assetId)
+                    }
+                    Toast.makeText(this@MainActivity, R.string.frames_cover_set, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
         frameEditView = view
         pushOverlayTracked(view, mapOf("type" to "frameEdit", "frameId" to (frame?.id ?: "")))
         scope.launch {

@@ -326,6 +326,23 @@ actor FrameManager {
         }
     }
 
+    func setCover(frameID: String, assetID: String) async throws {
+        let context = makeContext()
+        let now = nowMillis()
+        try await context.perform {
+            let frame = try Self.fetchFrame(context: context, frameID: frameID)
+            let request = NSFetchRequest<NSManagedObject>(entityName: "Asset")
+            request.predicate = NSPredicate(format: "id == %@", assetID)
+            request.fetchLimit = 1
+            guard let asset = try context.fetch(request).first else {
+                throw PersistenceError.dbConstraintViolation
+            }
+            frame.setValue(asset, forKey: "coverAsset")
+            frame.setValue(now, forKey: "updated_at")
+            try context.save()
+        }
+    }
+
     func framePlaybackBundle(frameID: String) async throws -> FramePlaybackBundle {
         let context = makeContext()
         return try await context.perform {

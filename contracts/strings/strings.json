@@ -992,6 +992,34 @@
       "en": "SMB"
     },
     {
+      "key": "source.nas.protocol_webdav",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "WebDAV",
+      "en": "WebDAV"
+    },
+    {
+      "key": "source.nas.transport",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "传输方式",
+      "en": "Connection"
+    },
+    {
+      "key": "source.nas.transport_https",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "HTTPS（加密）",
+      "en": "HTTPS (encrypted)"
+    },
+    {
+      "key": "source.nas.transport_http",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "HTTP（仅局域网）",
+      "en": "HTTP (local network only)"
+    },
+    {
       "key": "source.nas.host",
       "section": "4.4 NAS",
       "platform": "all",
@@ -1474,6 +1502,16 @@
       "platform": "all",
       "zh": "导入完成",
       "en": "Import complete"
+    },
+    {
+      "key": "import.no_new_items",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "{total} 项均已在库中，没有新内容需要导入",
+      "en": "All {total} items are already in the library — nothing new to import",
+      "placeholders": {
+        "total": "int"
+      }
     },
     {
       "key": "library.title",
@@ -3846,6 +3884,20 @@
       "platform": "all",
       "zh": "展示内容尚未保存",
       "en": "Display selection has not been saved"
+    },
+    {
+      "key": "frames.set_cover",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "设为封面",
+      "en": "Set as cover"
+    },
+    {
+      "key": "frames.cover_set",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "已设为封面",
+      "en": "Cover updated"
     },
     {
       "key": "order.excluded_order_preserved",
