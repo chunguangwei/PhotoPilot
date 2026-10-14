@@ -212,9 +212,6 @@ class FramesView(
             isEnabled = model.playable > 0
             alpha = if (isEnabled) 1f else DISABLED_ALPHA
         }
-        val edit = actionButton(R.string.common_edit, false).apply {
-            setOnClickListener { onOpen?.invoke(model.frame) }
-        }
         val target = res.getDimensionPixelSize(R.dimen.pp_touch_target)
         val more = ImageButton(context).apply {
             setImageResource(android.R.drawable.ic_menu_more)
@@ -230,7 +227,7 @@ class FramesView(
             orientation = if (largeText) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        listOf(play, edit, more).forEachIndexed { index, action ->
+        listOf(play, more).forEachIndexed { index, action ->
             actions.addView(action, LinearLayout.LayoutParams(
                 if (largeText) LayoutParams.MATCH_PARENT else if (action === more) target else 0,
                 if (action === more) target else LayoutParams.WRAP_CONTENT,
@@ -282,12 +279,14 @@ class FramesView(
 
     private fun showCardMenu(anchor: View, frame: FrameEntity) {
         val menu = android.widget.PopupMenu(context, anchor)
-        menu.menu.add(0, MENU_RENAME, 0, resources.getString(R.string.common_rename))
-        menu.menu.add(0, MENU_DUPLICATE, 1, resources.getString(R.string.frames_duplicate))
-        menu.menu.add(0, MENU_SETTINGS, 2, resources.getString(R.string.frames_playback_settings))
-        menu.menu.add(0, MENU_DELETE, 3, resources.getString(R.string.frames_delete))
+        menu.menu.add(0, MENU_EDIT, 0, resources.getString(R.string.common_edit))
+        menu.menu.add(0, MENU_RENAME, 1, resources.getString(R.string.common_rename))
+        menu.menu.add(0, MENU_DUPLICATE, 2, resources.getString(R.string.frames_duplicate))
+        menu.menu.add(0, MENU_SETTINGS, 3, resources.getString(R.string.frames_playback_settings))
+        menu.menu.add(0, MENU_DELETE, 4, resources.getString(R.string.frames_delete))
         menu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
+                MENU_EDIT -> onOpen?.invoke(frame)
                 MENU_RENAME -> onRename?.invoke(frame)
                 MENU_DUPLICATE -> onDuplicate?.invoke(frame)
                 MENU_SETTINGS -> onPlaybackSettings?.invoke(frame)
@@ -354,6 +353,7 @@ class FramesView(
     }
 
     private companion object {
+        const val MENU_EDIT = 0
         const val MENU_RENAME = 1
         const val MENU_DUPLICATE = 2
         const val MENU_DELETE = 3

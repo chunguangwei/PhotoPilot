@@ -294,17 +294,13 @@ final class FramesListViewController: UIViewController {
         playButton.isEnabled = card.playableCount > 0
         playButton.addTarget(self, action: #selector(handlePlayCard(_:)), for: .touchUpInside)
 
-        let editButton = ActionButton(titleKey: "common.edit", style: .secondary)
-        editButton.tag = index
-        editButton.addTarget(self, action: #selector(handleEditCard(_:)), for: .touchUpInside)
-
         let actionsButton = UIButton(type: .system)
         actionsButton.setImage(UIImage(systemName: "ellipsis"), for: .normal)
         actionsButton.tintColor = ThemeColor.accentAction
         actionsButton.accessibilityLabel = L10n.string("player.more")
         actionsButton.tag = index
         actionsButton.addTarget(self, action: #selector(handleCardActions(_:)), for: .touchUpInside)
-        let buttons: [UIControl] = [playButton, editButton, actionsButton]
+        let buttons: [UIControl] = [playButton, actionsButton]
         for button in buttons {
             NSLayoutConstraint.activate([
                 button.widthAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget),
@@ -312,12 +308,11 @@ final class FramesListViewController: UIViewController {
             ])
         }
 
-        let actions = UIStackView(arrangedSubviews: [playButton, editButton, actionsButton])
+        let actions = UIStackView(arrangedSubviews: [playButton, actionsButton])
         let largeText = traitCollection.preferredContentSizeCategory.isAccessibilityCategory
         actions.axis = largeText ? .vertical : .horizontal
         actions.spacing = ThemeMetrics.space8
         if !largeText {
-            playButton.widthAnchor.constraint(equalTo: editButton.widthAnchor).isActive = true
             actionsButton.widthAnchor.constraint(equalToConstant: ThemeMetrics.touchTarget).isActive = true
         }
         let details = UIStackView(arrangedSubviews: [textStack, actions])
@@ -351,11 +346,6 @@ final class FramesListViewController: UIViewController {
         openEditor(frameID: cards[sender.tag].id)
     }
 
-    @objc private func handleEditCard(_ sender: UIControl) {
-        guard sender.tag < cards.count else { return }
-        openEditor(frameID: cards[sender.tag].id)
-    }
-
     @objc private func handlePlayCard(_ sender: UIControl) {
         guard sender.tag < cards.count else { return }
         let player = PlayerViewController(
@@ -370,6 +360,11 @@ final class FramesListViewController: UIViewController {
         guard sender.tag < cards.count else { return }
         let card = cards[sender.tag]
         let sheet = UIAlertController(title: card.name, message: nil, preferredStyle: .actionSheet)
+        sheet.addAction(UIAlertAction(
+            title: L10n.string("common.edit"),
+            style: .default,
+            handler: { [weak self] _ in self?.openEditor(frameID: card.id) }
+        ))
         sheet.addAction(UIAlertAction(
             title: L10n.string("common.rename"),
             style: .default,
