@@ -25,10 +25,15 @@ final class LaunchBrandingView: UIView {
 
     func updatePresentation(_ state: LaunchPresentationState, now: TimeInterval, animate: Bool) {
         let presenting = state.isPresenting(now: now)
+        let remaining = state.remaining(now: now)
         skipButton.isHidden = !presenting
         progressView.isHidden = !presenting
         presentationLabel.isHidden = !presenting
-        progressView.update(progress: state.progress(now: now), remaining: state.remaining(now: now), animate: animate)
+        presentationLabel.text = String(
+            format: L10n.string("format.seconds_short"),
+            Int(max(remaining, 0).rounded(.up))
+        )
+        progressView.update(progress: state.progress(now: now), remaining: remaining, animate: animate)
         if presenting && animate && !UIAccessibility.isReduceMotionEnabled {
             let elapsed = now - (state.startedAt ?? now)
             mark.reveal(elapsed: elapsed)

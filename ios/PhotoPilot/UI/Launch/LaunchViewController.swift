@@ -163,7 +163,7 @@ final class LaunchViewController: UIViewController {
             let remaining = state.remaining(now: currentTime)
             if remaining > 0 {
                 brandingTask = Task { [weak self] in
-                    try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
+                    try? await Task.sleep(nanoseconds: UInt64(min(remaining, 1) * 1_000_000_000))
                     guard !Task.isCancelled else { return }
                     self?.refreshPresentation()
                 }

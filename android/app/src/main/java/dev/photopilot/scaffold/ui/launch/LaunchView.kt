@@ -283,9 +283,13 @@ class LaunchView(
         when (snapshot.phase) {
             LaunchPresentationState.Phase.BRAND -> {
                 if (!active || reduceMotion || motionElapsedMillis() >= LaunchMotionTimeline.DURATION_MILLIS) finishMotion()
+                durationLabel.text = resources.getString(
+                    R.string.format_seconds_short,
+                    ((snapshot.remainingMillis + 999L) / 1000L).toInt(),
+                )
                 progress.visibility = if (reduceMotion) INVISIBLE else VISIBLE
                 progress.progress = (snapshot.progress * progress.max).toInt()
-                if (active) timer.postDelayed(tick, if (reduceMotion) snapshot.remainingMillis else minOf(50L, snapshot.remainingMillis))
+                if (active) timer.postDelayed(tick, if (reduceMotion) minOf(1_000L, snapshot.remainingMillis) else minOf(50L, snapshot.remainingMillis))
             }
             LaunchPresentationState.Phase.WAITING -> {
                 finishMotion()
