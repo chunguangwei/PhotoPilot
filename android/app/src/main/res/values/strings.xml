@@ -391,6 +391,10 @@
     <string name="music.track_festive">Festive cheer</string>
     <string name="music.track_classical">Classical</string>
     <string name="music.track_nature">Sounds of nature</string>
+    <string name="music.track_christmas">Merry Christmas</string>
+    <string name="music.track_spring_festival">Spring Festival</string>
+    <string name="music.track_qixi">Qixi Festival</string>
+    <string name="music.track_valentine">Valentine’s Day</string>
     <string name="weather.title">Weather</string>
     <string name="weather.choose_city">Choose a city</string>
     <string name="weather.search_city">Search for a city</string>

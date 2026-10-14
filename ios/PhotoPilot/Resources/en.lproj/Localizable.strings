@@ -342,6 +342,10 @@
 "music.track_festive" = "Festive cheer";
 "music.track_classical" = "Classical";
 "music.track_nature" = "Sounds of nature";
+"music.track_christmas" = "Merry Christmas";
+"music.track_spring_festival" = "Spring Festival";
+"music.track_qixi" = "Qixi Festival";
+"music.track_valentine" = "Valentine’s Day";
 "weather.title" = "Weather";
 "weather.choose_city" = "Choose a city";
 "weather.search_city" = "Search for a city";

@@ -2667,6 +2667,38 @@
       "note": "内置曲目：自然氛围"
     },
     {
+      "key": "music.track_christmas",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "圣诞快乐",
+      "en": "Merry Christmas",
+      "note": "内置曲目：We Wish You a Merry Christmas（公有领域颂歌）"
+    },
+    {
+      "key": "music.track_spring_festival",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "新春贺岁",
+      "en": "Spring Festival",
+      "note": "内置曲目：新年好（Clementine 曲调，公有领域）"
+    },
+    {
+      "key": "music.track_qixi",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "七夕相会",
+      "en": "Qixi Festival",
+      "note": "内置曲目：茉莉花（公有领域民歌）"
+    },
+    {
+      "key": "music.track_valentine",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "浪漫情人",
+      "en": "Valentine’s Day",
+      "note": "内置曲目：绿袖子（公有领域民谣）"
+    },
+    {
       "key": "weather.title",
       "section": "8. 天气与位置（S14）",
       "platform": "all",

@@ -20,13 +20,17 @@ enum MusicCatalog {
     static let tracks: [Track] = [
         Track(id: "birthday_01", titleKey: "music.track_birthday"),
         Track(id: "wedding_01", titleKey: "music.track_wedding"),
+        Track(id: "spring_festival_01", titleKey: "music.track_spring_festival"),
+        Track(id: "christmas_01", titleKey: "music.track_christmas"),
+        Track(id: "qixi_01", titleKey: "music.track_qixi"),
+        Track(id: "valentine_01", titleKey: "music.track_valentine"),
+        Track(id: "festive_01", titleKey: "music.track_festive"),
+        Track(id: "classical_01", titleKey: "music.track_classical"),
         Track(id: "travel_01", titleKey: "music.track_travel"),
         Track(id: "coffee_01", titleKey: "music.track_coffee"),
         Track(id: "lounge_01", titleKey: "music.track_lounge"),
         Track(id: "morning_01", titleKey: "music.track_morning"),
         Track(id: "night_01", titleKey: "music.track_night"),
-        Track(id: "festive_01", titleKey: "music.track_festive"),
-        Track(id: "classical_01", titleKey: "music.track_classical"),
         Track(id: "nature_01", titleKey: "music.track_nature"),
     ]
 

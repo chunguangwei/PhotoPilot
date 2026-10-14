@@ -297,6 +297,26 @@ ODE_TO_JOY = [(64, 1), (64, 1), (65, 1), (67, 1), (67, 1), (65, 1), (64, 1), (62
               (64, 1), (64, 1), (65, 1), (67, 1), (67, 1), (65, 1), (64, 1), (62, 1),
               (60, 1), (60, 1), (62, 1), (64, 1), (62, 1.5), (60, .5), (60, 2)]
 
+WE_WISH_YOU = [(62, 1), (67, .75), (67, .25), (69, .5), (67, .5), (66, 1),
+               (64, 1.5), (64, .5), (64, 1), (69, .75), (69, .25), (71, .5), (69, .5), (67, 1),
+               (66, 1.5), (62, .5), (62, 1), (71, .75), (71, .25), (72, .5), (71, .5), (69, 1),
+               (67, 1.5), (64, .5), (62, .5), (64, .5), (69, 1.5), (66, .5), (67, 1), (67, 2)]
+
+XINNIANHAO = [(60, 1), (60, 1), (60, 1), (67, 1), (64, 1), (64, 1), (64, 1), (72, 1),
+              (60, 1), (64, 1), (67, 1), (67, 1), (64, 1), (62, 1), (60, 2)]
+
+MOLIHUA = [(64, 1), (64, 1), (67, 1), (69, 1), (72, 1), (72, 1), (67, .5), (69, .5), (67, 1),
+           (67, 2), (64, 1), (67, 1), (69, 1), (69, 1), (67, 2),
+           (64, 1), (64, 1), (67, 1), (69, 1), (72, 1), (72, 1), (67, .5), (69, .5), (67, 1),
+           (67, 2), (64, 1), (62, 1), (60, 1), (62, 1), (60, 2)]
+
+GREENSLEEVES = [(69, 1), (72, 1), (74, 1), (76, 1), (77, .5), (76, .5), (74, 1),
+                (71, 1), (67, .5), (69, .5), (71, 1), (72, 1), (69, 1), (69, .5), (68, .5),
+                (69, .5), (71, .5), (68, 1), (64, 1),
+                (69, 1), (72, 1), (74, 1), (76, 1), (77, .5), (76, .5), (74, 1),
+                (71, 1), (67, .5), (69, .5), (71, 1), (69, 1), (71, 1), (72, 1),
+                (71, .5), (69, .5), (68, 1), (69, 1)]
+
 TRACKS = [
     {"id": "birthday_01", "seed": 101, "tonic": 60, "scale": "major", "bpm": 100, "beats_per_bar": 3,
      "progression": [(0, "maj"), (7, "maj"), (7, "maj"), (0, "maj"), (0, "maj"), (7, "maj"), (5, "maj"), (7, "maj"), (0, "maj"), (0, "maj")],
@@ -306,6 +326,22 @@ TRACKS = [
      "progression": [(0, "maj"), (7, "maj"), (9, "min"), (4, "min"), (5, "maj"), (0, "maj"), (5, "maj"), (7, "maj")],
      "melody": PACHELBEL_CANON, "melody_repeats": 2,
      "melody_timbre": "piano", "layers": ["bass", "pad"]},
+    {"id": "spring_festival_01", "seed": 112, "tonic": 60, "scale": "major", "bpm": 120,
+     "progression": [(0, "maj"), (7, "maj"), (5, "maj"), (0, "maj")],
+     "melody": XINNIANHAO, "melody_repeats": 4,
+     "melody_timbre": "music_box", "layers": ["bass", "harmony"], "bass_fifth": True},
+    {"id": "christmas_01", "seed": 113, "tonic": 67, "scale": "major", "bpm": 112, "beats_per_bar": 3,
+     "progression": [(0, "maj"), (5, "maj"), (7, "maj"), (7, "maj"), (0, "maj"), (5, "maj"), (7, "maj"), (0, "maj")],
+     "melody": WE_WISH_YOU, "melody_repeats": 2,
+     "melody_timbre": "bell", "layers": ["bass", "harmony"]},
+    {"id": "qixi_01", "seed": 114, "tonic": 60, "scale": "penta_major", "bpm": 76,
+     "progression": [(9, "min"), (0, "maj"), (4, "min"), (9, "min"), (9, "min"), (0, "maj"), (7, "maj"), (0, "maj")],
+     "melody": MOLIHUA, "melody_repeats": 2,
+     "melody_timbre": "pluck", "layers": ["bass", "pad"]},
+    {"id": "valentine_01", "seed": 115, "tonic": 57, "scale": "natural_minor", "bpm": 88, "beats_per_bar": 3,
+     "progression": [(0, "min"), (7, "min"), (10, "maj"), (0, "min"), (7, "maj"), (0, "min"), (7, "min"), (10, "maj"), (0, "min"), (7, "maj")],
+     "melody": GREENSLEEVES, "melody_repeats": 2,
+     "melody_timbre": "pluck", "layers": ["bass", "pad"]},
     {"id": "travel_01", "seed": 303, "tonic": 67, "scale": "penta_major", "bpm": 112,
      "progression": [(0, "maj"), (9, "min"), (5, "maj"), (7, "maj")], "rhythm": "flowing",
      "melody_timbre": "pluck", "layers": ["bass", "harmony"], "bass_fifth": True, "prog_repeats": 4},

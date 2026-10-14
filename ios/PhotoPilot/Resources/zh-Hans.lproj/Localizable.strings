@@ -342,6 +342,10 @@
 "music.track_festive" = "节日欢庆";
 "music.track_classical" = "古典雅致";
 "music.track_nature" = "自然之声";
+"music.track_christmas" = "圣诞快乐";
+"music.track_spring_festival" = "新春贺岁";
+"music.track_qixi" = "七夕相会";
+"music.track_valentine" = "浪漫情人";
 "weather.title" = "天气";
 "weather.choose_city" = "选择城市";
 "weather.search_city" = "搜索城市";

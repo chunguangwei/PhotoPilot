@@ -379,6 +379,10 @@
     <string name="music.track_festive">节日欢庆</string>
     <string name="music.track_classical">古典雅致</string>
     <string name="music.track_nature">自然之声</string>
+    <string name="music.track_christmas">圣诞快乐</string>
+    <string name="music.track_spring_festival">新春贺岁</string>
+    <string name="music.track_qixi">七夕相会</string>
+    <string name="music.track_valentine">浪漫情人</string>
     <string name="weather.title">天气</string>
     <string name="weather.choose_city">选择城市</string>
     <string name="weather.search_city">搜索城市</string>

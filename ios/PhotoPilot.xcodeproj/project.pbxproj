@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		035CD7AE61B2E125494AED04 /* HolidayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 567C76BC93C03AA78A3E22BB /* HolidayStore.swift */; };
+		039F97720B239880BAA4932A /* music_qixi_01.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 434F1AEC8C5F4188DE456A0C /* music_qixi_01.m4a */; };
 		053A067E738D5D94F779B1AE /* HolidayEditViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 418E09C7211B1F7D126A5B41 /* HolidayEditViewController.swift */; };
 		07AD4164A93FA21E6AE61A39 /* MusicPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054316461340EEAFEACC6ABE /* MusicPlayer.swift */; };
 		08408DE75D00A8643EA17C9D /* fixture-enumeration.json in Resources */ = {isa = PBXBuildFile; fileRef = 8E944188EA4CC2D70ACA9384 /* fixture-enumeration.json */; };
@@ -87,6 +88,7 @@
 		88F2922F4B7D20C9B9D37439 /* PlaybackTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BC6BDA8FCE1F3CBEFBE4331 /* PlaybackTiming.swift */; };
 		8B8C2BF2ADEEF9D3193209CF /* PhotoPilotRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12E59AE709E01E1F8FAAFCE /* PhotoPilotRenderTests.swift */; };
 		8C5D2CD061E343510E64DF42 /* playback-queue.json in Resources */ = {isa = PBXBuildFile; fileRef = 18D98ECC3FB3B3C8AE0091CB /* playback-queue.json */; };
+		8CF16C3E9D3087F6B79AAABF /* music_valentine_01.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 3DDDC30931767F40F07DC64A /* music_valentine_01.m4a */; };
 		8E91AE928B0C2B9EE432E504 /* SelectionSavePlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED95F2E699BEE340307DD4B4 /* SelectionSavePlanner.swift */; };
 		8FD7652D9B58EFEF9B9F5B2B /* SourcesListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01C40DE3E335C772BE580A13 /* SourcesListViewController.swift */; };
 		909AF9E1D117F3E321D3BCDC /* DataValidators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2510DEFF6F8C4107664326D0 /* DataValidators.swift */; };
@@ -95,6 +97,7 @@
 		9528905B0E785912D6C4F216 /* SchemaModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1769D4EC3C1184FEA839365F /* SchemaModel.swift */; };
 		997781ED9033DAAC3FE19BBD /* AMSMB2 in Frameworks */ = {isa = PBXBuildFile; productRef = AF4037499DEEAC3C9AB18045 /* AMSMB2 */; };
 		9A3156E620FEF949D1C8946C /* holiday-windows.json in Resources */ = {isa = PBXBuildFile; fileRef = 11C033F0418DCA07AD53D9FB /* holiday-windows.json */; };
+		9BF6C73917D51CFC6F316425 /* music_christmas_01.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 78A0FB0E64A6D5840E258E0A /* music_christmas_01.m4a */; };
 		9C8019B694AEBBC7F9C3ED01 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = C58436A3CAC8E0B17F20E43B /* Localizable.strings */; };
 		9DD54FF968B789D930520EA1 /* EdgeSwipeBack.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B0B909F9A31C2E1F1F2CF2 /* EdgeSwipeBack.swift */; };
 		A2D25FD10EAD6D72F18B6392 /* ImportRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EC6DFAD3F83DD9187FD3F8D /* ImportRunner.swift */; };
@@ -124,6 +127,7 @@
 		D12D06C16E831AF9FCA13C03 /* NasFolderPickerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E4DE98FC13A5D0D99B88098 /* NasFolderPickerViewController.swift */; };
 		D215C2DACD070338240C7CA3 /* ImageRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60F83F3753BB75CBCFA33286 /* ImageRenderer.swift */; };
 		D4525519795E69B7F1486124 /* PhotoPilotUIReviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF381646DD3A8056F76730B7 /* PhotoPilotUIReviewTests.swift */; };
+		D6E6134E392783E46F9F8FBD /* music_spring_festival_01.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 2FDE475AB42725C936CF2E41 /* music_spring_festival_01.m4a */; };
 		D70650E8270D44D5CA3AACFA /* NasAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E2E32194324DC64052FFB7 /* NasAddress.swift */; };
 		DDF69584FE515AEA9C762235 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = B84C53DABE6D0535B335026D /* AppEnvironment.swift */; };
 		DE547019035A6D34A33517C3 /* NasCertTrustViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FA1ACE15205C3AC603205F /* NasCertTrustViewController.swift */; };
@@ -207,6 +211,7 @@
 		2CEA2C69091396CBFA4A3C56 /* SectionPlaceholderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionPlaceholderViewController.swift; sourceTree = "<group>"; };
 		2E469D3C3679785717D10C61 /* TofuPinStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TofuPinStore.swift; sourceTree = "<group>"; };
 		2F1811A46E64D88389D419CC /* FrameRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameRepository.swift; sourceTree = "<group>"; };
+		2FDE475AB42725C936CF2E41 /* music_spring_festival_01.m4a */ = {isa = PBXFileReference; path = music_spring_festival_01.m4a; sourceTree = "<group>"; };
 		3175407F4677C15A3B6124F4 /* HolidayTimingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayTimingTests.swift; sourceTree = "<group>"; };
 		34CEA2230C48145F1E319274 /* nas-enum-cursor.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "nas-enum-cursor.json"; sourceTree = "<group>"; };
 		3792A589DEAAA2B972FD2C2C /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
@@ -214,8 +219,10 @@
 		393164C655CA6FDD00E4AC47 /* MusicCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicCatalog.swift; sourceTree = "<group>"; };
 		3AA951EBE659EA34EE60B470 /* PlayerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerViewController.swift; sourceTree = "<group>"; };
 		3CF5A5128E2C226E0C408E8F /* PhotoPilotDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPilotDataTests.swift; sourceTree = "<group>"; };
+		3DDDC30931767F40F07DC64A /* music_valentine_01.m4a */ = {isa = PBXFileReference; path = music_valentine_01.m4a; sourceTree = "<group>"; };
 		3E4EF4E45DBC711D9C9989AE /* BottomNavBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomNavBar.swift; sourceTree = "<group>"; };
 		418E09C7211B1F7D126A5B41 /* HolidayEditViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayEditViewController.swift; sourceTree = "<group>"; };
+		434F1AEC8C5F4188DE456A0C /* music_qixi_01.m4a */ = {isa = PBXFileReference; path = music_qixi_01.m4a; sourceTree = "<group>"; };
 		436C76CBC53CC735BC30F280 /* SidebarNavBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarNavBar.swift; sourceTree = "<group>"; };
 		48E174BEC5822E251C57A1A4 /* ImportProgressViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportProgressViewController.swift; sourceTree = "<group>"; };
 		4A709EA94ADA86A555D80075 /* PlaybackSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackSettingsViewController.swift; sourceTree = "<group>"; };
@@ -242,6 +249,7 @@
 		71A143CB2CB56F2020C5A4DC /* LocalFilesFixtureAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalFilesFixtureAdapter.swift; sourceTree = "<group>"; };
 		74FB2ADB8DB8119C2FA8D301 /* FrameManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameManager.swift; sourceTree = "<group>"; };
 		77AE48D0A842540CA5ABF39A /* FramesListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FramesListViewController.swift; sourceTree = "<group>"; };
+		78A0FB0E64A6D5840E258E0A /* music_christmas_01.m4a */ = {isa = PBXFileReference; path = music_christmas_01.m4a; sourceTree = "<group>"; };
 		7AD4A6B49DE9C7626ACC708B /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		7B9F0BA1ADABD2C3786236BA /* NasLanNoticeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NasLanNoticeViewController.swift; sourceTree = "<group>"; };
 		7F98344FAA7FA3465FD7A765 /* PhotoPilotSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPilotSelectionTests.swift; sourceTree = "<group>"; };
@@ -712,6 +720,7 @@
 			isa = PBXGroup;
 			children = (
 				6AC1D614F0016B593DFE92AA /* music_birthday_01.m4a */,
+				78A0FB0E64A6D5840E258E0A /* music_christmas_01.m4a */,
 				B4883759DBCB3088CCB76331 /* music_classical_01.m4a */,
 				37C269BF943E3BADF5DB570C /* music_coffee_01.m4a */,
 				10EA0C1906C1E2775175F262 /* music_festive_01.m4a */,
@@ -719,7 +728,10 @@
 				F5E4AA3905D6BBD9D5E1D008 /* music_morning_01.m4a */,
 				27DCD7DA92884374DCE7B5A9 /* music_nature_01.m4a */,
 				163585C5CD9B826A5B23E5FF /* music_night_01.m4a */,
+				434F1AEC8C5F4188DE456A0C /* music_qixi_01.m4a */,
+				2FDE475AB42725C936CF2E41 /* music_spring_festival_01.m4a */,
 				2024FD8E74926DD58B9FC2B7 /* music_travel_01.m4a */,
+				3DDDC30931767F40F07DC64A /* music_valentine_01.m4a */,
 				FF463ABAC05A313115D5D0AE /* music_wedding_01.m4a */,
 			);
 			path = Music;
@@ -1023,6 +1035,7 @@
 				9C8019B694AEBBC7F9C3ED01 /* Localizable.strings in Resources */,
 				A323F93B9228C1561CA7EB15 /* Localizable.stringsdict in Resources */,
 				1ABCB757460D645743E1702C /* music_birthday_01.m4a in Resources */,
+				9BF6C73917D51CFC6F316425 /* music_christmas_01.m4a in Resources */,
 				3DF827FC922A90554A85E4E7 /* music_classical_01.m4a in Resources */,
 				6AE24FFB1F701F6A4B662156 /* music_coffee_01.m4a in Resources */,
 				32AD8AF8FF140752BE8D4672 /* music_festive_01.m4a in Resources */,
@@ -1030,7 +1043,10 @@
 				3C5BB387CFB22EF69AE2C5C2 /* music_morning_01.m4a in Resources */,
 				7473B287C78EE6F6B9199398 /* music_nature_01.m4a in Resources */,
 				272A518E6AE67DCC32FFD113 /* music_night_01.m4a in Resources */,
+				039F97720B239880BAA4932A /* music_qixi_01.m4a in Resources */,
+				D6E6134E392783E46F9F8FBD /* music_spring_festival_01.m4a in Resources */,
 				AF53CB02CC28BB074B3E4AB8 /* music_travel_01.m4a in Resources */,
+				8CF16C3E9D3087F6B79AAABF /* music_valentine_01.m4a in Resources */,
 				B3841E0AB7F0E6D746C40E9E /* music_wedding_01.m4a in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1231,7 +1247,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1244,7 +1260,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1332,7 +1348,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1351,7 +1367,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
