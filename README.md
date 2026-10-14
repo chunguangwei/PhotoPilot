@@ -10,6 +10,7 @@ Turn a spare iPad or Android tablet into a digital photo frame: import from the 
 - NAS 来源：WebDAV（HTTPS/HTTP 私网）与 SMB，凭证安全存储（Keychain / Keystore）、TLS TOFU 证书信任、增量同步与墓碑删除保护
 - 天气叠字（Open-Meteo，CC-BY 4.0 署名）、时钟与休息时段、节日专属播放
 - 视频（mp4/mov，默认静音）与 RAW（系统解码）播放
+- 背景音乐：14 首内置循环曲（8 首公有领域节日旋律自有合成编曲 + 6 首氛围原创）或本地音频文件，随播放/暂停/休息联动
 - 照片只在本机处理；不上传、不记录照片名与路径
 - Android 内置 GitHub 更新检查（断点续传 + 前台保活下载）
 
