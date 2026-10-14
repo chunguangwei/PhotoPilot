@@ -57,11 +57,11 @@ def adsr_env(n, attack, decay, sustain_level=0.0, release=0.08):
     return env
 
 
-def render_tone(freq, dur, timbre, velocity=1.0):
+def render_tone(freq, dur, timbre, velocity=1.0, rng=None):
     t = TIMBRES[timbre]
     n = int(dur * SR)
     if timbre == "pluck":
-        return karplus_strong(freq, n, velocity)
+        return karplus_strong(freq, n, velocity, rng if rng is not None else np.random.default_rng(0))
     x = np.zeros(n)
     tt = np.arange(n) / SR
     for mult, gain in t["harmonics"]:
@@ -72,9 +72,9 @@ def render_tone(freq, dur, timbre, velocity=1.0):
     return (x * env * velocity).astype(np.float64)
 
 
-def karplus_strong(freq, n, velocity):
+def karplus_strong(freq, n, velocity, rng):
     period = max(2, int(SR / freq))
-    buf = np.random.uniform(-1, 1, period)
+    buf = rng.uniform(-1, 1, period)
     out = np.zeros(n)
     idx = 0
     prev = 0.0
@@ -174,7 +174,11 @@ def gen_track(cfg):
     beat_s = 60.0 / bpm
     bar_s = beat_s * beats_per_bar
     prog = cfg["progression"]
-    bars = len(prog) * cfg.get("prog_repeats", 4)
+    melody = cfg.get("melody")
+    if melody is not None:
+        bars = len(prog) * cfg.get("melody_repeats", 2)
+    else:
+        bars = len(prog) * cfg.get("prog_repeats", 4)
     tonic = cfg["tonic"]
     scale_pcs = SCALES[cfg["scale"]]
     tail_s = 3.0
@@ -182,40 +186,51 @@ def gen_track(cfg):
     mix = np.zeros((2, int(total_s * SR)))
     layers = cfg["layers"]
     melody_timbre = cfg.get("melody_timbre", "piano")
-    rhythm_set = RHYTHMS[cfg["rhythm"]]
-    prev_note = None
-    motif_len = len(prog)
-    melody_plan = []
-    for bar in range(bars):
-        root, ctype = prog[bar % len(prog)]
-        chord_pcs = sorted({(tonic + root + iv) % 12 for iv in CHORD_TYPES[ctype]})
-        if bar < motif_len or bar % motif_len == 0 or cfg["rhythm"] == "arp":
-            pattern = rhythm_set[rng.integers(len(rhythm_set))]
-            notes = []
-            for beat, dur_beats in pattern:
-                if rng.random() < cfg.get("rest_prob", 0.12) and beat > 0:
-                    notes.append(None)
+    if melody is not None:
+        cycle_beats = len(prog) * beats_per_bar
+        for rep in range(cfg.get("melody_repeats", 2)):
+            beat_pos = rep * cycle_beats + cfg.get("melody_offset", 0.0)
+            for note, dur_beats in melody:
+                if note is not None:
+                    vel = 0.45 + 0.2 * rng.random()
+                    sig = render_tone(midi_to_freq(note), max(0.3, dur_beats * beat_s * 1.5), melody_timbre, vel, rng)
+                    place(mix, sig, beat_pos * beat_s, pan=cfg.get("melody_pan", 0.1))
+                beat_pos += dur_beats
+    else:
+        rhythm_set = RHYTHMS[cfg["rhythm"]]
+        prev_note = None
+        motif_len = len(prog)
+        melody_plan = []
+        for bar in range(bars):
+            root, ctype = prog[bar % len(prog)]
+            chord_pcs = sorted({(tonic + root + iv) % 12 for iv in CHORD_TYPES[ctype]})
+            if bar < motif_len or bar % motif_len == 0 or cfg["rhythm"] == "arp":
+                pattern = rhythm_set[rng.integers(len(rhythm_set))]
+                notes = []
+                for beat, dur_beats in pattern:
+                    if rng.random() < cfg.get("rest_prob", 0.12) and beat > 0:
+                        notes.append(None)
+                        continue
+                    note = pick_melody_note(rng, chord_pcs, scale_pcs, prev_note)
+                    prev_note = note
+                    notes.append((beat, dur_beats, note))
+                if bar < motif_len:
+                    melody_plan = notes
+            else:
+                notes = melody_plan
+                prev_note = notes[-1][2] if notes and notes[-1] else prev_note
+            for item in notes:
+                if item is None:
                     continue
-                note = pick_melody_note(rng, chord_pcs, scale_pcs, prev_note)
-                prev_note = note
-                notes.append((beat, dur_beats, note))
-            if bar < motif_len:
-                melody_plan = notes
-        else:
-            notes = melody_plan
-            prev_note = notes[-1][2] if notes and notes[-1] else prev_note
-        for item in notes:
-            if item is None:
-                continue
-            beat, dur_beats, note = item
-            start = bar * bar_s + beat * beat_s
-            vel = 0.5 + 0.25 * rng.random()
-            if cfg["rhythm"] == "arp":
-                seq = chord_pcs + [chord_pcs[0] + 12]
-                note = 60 + seq[int((beat * 2)) % len(seq)] % 12 + (12 if int(beat * 2) >= len(chord_pcs) else 0)
-                vel = 0.32
-            sig = render_tone(midi_to_freq(note), max(0.25, dur_beats * beat_s * 1.6), melody_timbre, vel)
-            place(mix, sig, start, pan=cfg.get("melody_pan", 0.12))
+                beat, dur_beats, note = item
+                start = bar * bar_s + beat * beat_s
+                vel = 0.5 + 0.25 * rng.random()
+                if cfg["rhythm"] == "arp":
+                    seq = chord_pcs + [chord_pcs[0] + 12]
+                    note = 60 + seq[int((beat * 2)) % len(seq)] % 12 + (12 if int(beat * 2) >= len(chord_pcs) else 0)
+                    vel = 0.32
+                sig = render_tone(midi_to_freq(note), max(0.25, dur_beats * beat_s * 1.6), melody_timbre, vel, rng)
+                place(mix, sig, start, pan=cfg.get("melody_pan", 0.12))
     for bar in range(bars):
         root, ctype = prog[bar % len(prog)]
         root_midi = tonic + root
@@ -233,7 +248,7 @@ def gen_track(cfg):
                 m = root_midi + iv
                 sig = render_saw_pad(midi_to_freq(m), bar_s * 1.05, velocity=0.16)
                 place(mix, sig, start, pan=-0.35 + 0.35 * ((iv * 7) % 3))
-        if "harmony" in layers and cfg["rhythm"] != "arp":
+        if "harmony" in layers and cfg.get("rhythm") != "arp":
             for j, iv in enumerate(CHORD_TYPES[ctype]):
                 m = root_midi + iv
                 sig = render_tone(midi_to_freq(m), bar_s * 0.95, "epiano", 0.14)
@@ -261,13 +276,36 @@ def write_wav(path, mix):
         w.writeframes(interleaved.tobytes())
 
 
+HAPPY_BIRTHDAY = [(67, .75), (67, .25), (69, 1), (67, 1), (72, 1), (71, 2), (67, .75), (67, .25),
+                  (69, 1), (67, 1), (74, 1), (72, 2), (67, .75), (67, .25), (79, 1), (76, 1),
+                  (72, 1), (71, 1), (69, 2), (77, .75), (77, .25), (76, 1), (72, 1), (74, 1),
+                  (72, 2), (72, 3)]
+
+PACHELBEL_CANON = [(78, 2), (76, 2), (74, 2), (73, 2), (71, 2), (69, 2), (71, 2), (73, 2),
+                   (74, 2), (73, 2), (71, 2), (69, 2), (67, 2), (66, 2), (67, 2), (64, 2)]
+
+JINGLE_BELLS = [(64, 1), (64, 1), (64, 2), (64, 1), (64, 1), (64, 2), (64, 1), (67, 1),
+                (60, 1.5), (62, .5), (64, 4), (65, 1), (65, 1), (65, 1.5), (65, .5),
+                (65, 1), (64, 1), (64, 1), (64, .5), (64, .5), (64, 1), (62, 1), (62, 1),
+                (64, 1), (62, 2), (67, 2), (64, 1), (64, 1), (64, 2), (64, 1), (64, 1),
+                (64, 2), (64, 1), (67, 1), (60, 1.5), (62, .5), (64, 4), (65, 1), (65, 1),
+                (65, 1.5), (65, .5), (65, 1), (64, 1), (64, 1), (64, .5), (64, .5),
+                (67, 1), (67, 1), (65, 1), (62, 1), (60, 4)]
+
+ODE_TO_JOY = [(64, 1), (64, 1), (65, 1), (67, 1), (67, 1), (65, 1), (64, 1), (62, 1),
+              (60, 1), (60, 1), (62, 1), (64, 1), (64, 1.5), (62, .5), (62, 2),
+              (64, 1), (64, 1), (65, 1), (67, 1), (67, 1), (65, 1), (64, 1), (62, 1),
+              (60, 1), (60, 1), (62, 1), (64, 1), (62, 1.5), (60, .5), (60, 2)]
+
 TRACKS = [
-    {"id": "birthday_01", "seed": 101, "tonic": 60, "scale": "penta_major", "bpm": 128,
-     "progression": [(0, "maj"), (7, "maj"), (9, "min"), (5, "maj")], "rhythm": "bounce",
-     "melody_timbre": "music_box", "layers": ["bass", "harmony"], "bass_fifth": True, "prog_repeats": 4},
-    {"id": "wedding_01", "seed": 202, "tonic": 62, "scale": "major", "bpm": 72, "beats_per_bar": 3,
-     "progression": [(0, "maj"), (9, "min"), (5, "maj"), (7, "maj")], "rhythm": "waltz",
-     "melody_timbre": "piano", "layers": ["bass", "harmony"], "prog_repeats": 5},
+    {"id": "birthday_01", "seed": 101, "tonic": 60, "scale": "major", "bpm": 100, "beats_per_bar": 3,
+     "progression": [(0, "maj"), (7, "maj"), (7, "maj"), (0, "maj"), (0, "maj"), (7, "maj"), (5, "maj"), (7, "maj"), (0, "maj"), (0, "maj")],
+     "melody": HAPPY_BIRTHDAY, "melody_repeats": 2,
+     "melody_timbre": "music_box", "layers": ["bass", "harmony"]},
+    {"id": "wedding_01", "seed": 202, "tonic": 62, "scale": "major", "bpm": 72,
+     "progression": [(0, "maj"), (7, "maj"), (9, "min"), (4, "min"), (5, "maj"), (0, "maj"), (5, "maj"), (7, "maj")],
+     "melody": PACHELBEL_CANON, "melody_repeats": 2,
+     "melody_timbre": "piano", "layers": ["bass", "pad"]},
     {"id": "travel_01", "seed": 303, "tonic": 67, "scale": "penta_major", "bpm": 112,
      "progression": [(0, "maj"), (9, "min"), (5, "maj"), (7, "maj")], "rhythm": "flowing",
      "melody_timbre": "pluck", "layers": ["bass", "harmony"], "bass_fifth": True, "prog_repeats": 4},
@@ -283,12 +321,15 @@ TRACKS = [
     {"id": "night_01", "seed": 707, "tonic": 58, "scale": "major", "bpm": 60,
      "progression": [(0, "maj"), (9, "min"), (8, "maj"), (7, "sus2")], "rhythm": "sparse",
      "melody_timbre": "music_box", "layers": ["bass", "pad"], "prog_repeats": 4, "rest_prob": 0.35},
-    {"id": "festive_01", "seed": 808, "tonic": 62, "scale": "penta_major", "bpm": 126,
-     "progression": [(0, "maj"), (7, "maj"), (9, "min"), (5, "maj")], "rhythm": "bounce",
-     "melody_timbre": "bell", "layers": ["bass", "harmony"], "bass_fifth": True, "prog_repeats": 4},
-    {"id": "classical_01", "seed": 909, "tonic": 67, "scale": "major", "bpm": 66,
-     "progression": [(0, "maj"), (9, "min"), (5, "maj"), (7, "sus2")], "rhythm": "sparse",
-     "melody_timbre": "piano", "layers": ["bass", "pad"], "prog_repeats": 5, "rest_prob": 0.25},
+    {"id": "festive_01", "seed": 808, "tonic": 60, "scale": "major", "bpm": 130,
+     "progression": [(0, "maj"), (0, "maj"), (5, "maj"), (0, "maj"), (5, "maj"), (0, "maj"), (7, "maj"), (7, "maj"),
+                     (0, "maj"), (0, "maj"), (5, "maj"), (0, "maj"), (5, "maj"), (0, "maj"), (7, "maj"), (0, "maj")],
+     "melody": JINGLE_BELLS, "melody_repeats": 1,
+     "melody_timbre": "bell", "layers": ["bass", "harmony"], "bass_fifth": True},
+    {"id": "classical_01", "seed": 909, "tonic": 60, "scale": "major", "bpm": 96,
+     "progression": [(0, "maj"), (7, "maj"), (0, "maj"), (7, "maj"), (0, "maj"), (7, "maj"), (0, "maj"), (0, "maj")],
+     "melody": ODE_TO_JOY, "melody_repeats": 2,
+     "melody_timbre": "piano", "layers": ["bass", "pad"]},
     {"id": "nature_01", "seed": 111, "tonic": 64, "scale": "penta_minor", "bpm": 70,
      "progression": [(0, "minadd9"), (8, "add9"), (3, "add9"), (10, "add9")], "rhythm": "sparse",
      "melody_timbre": "pluck", "layers": ["pad"], "prog_repeats": 5, "rest_prob": 0.4},
