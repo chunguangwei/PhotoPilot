@@ -17,6 +17,7 @@ struct PlayerSettings: Sendable {
     var restStartMinute = 0
     var restEndMinute = 0
     var brightness: Double?
+    var music = MusicSelection()
 
     static func parse(json: String) -> PlayerSettings {
         var settings = PlayerSettings()
@@ -64,6 +65,16 @@ struct PlayerSettings: Sendable {
         if let solid = object["solidColor"] as? String,
            ["black", "warm_white"].contains(solid) {
             settings.solidColor = solid
+        }
+        if let music = object["music"] as? [String: Any] {
+            settings.music.enabled = music["enabled"] as? Bool ?? false
+            if let source = music["source"] as? String,
+               [MusicCatalog.sourceBuiltin, MusicCatalog.sourceLocal].contains(source) {
+                settings.music.source = source
+            }
+            settings.music.trackId = music["trackId"] as? String
+            settings.music.localPath = music["localPath"] as? String
+            settings.music.localTitle = music["localTitle"] as? String
         }
         return settings
     }
@@ -228,6 +239,9 @@ final class PlayerViewController: UIViewController {
     private var videoLayer: AVPlayerLayer?
     private var videoEndObserver: NSObjectProtocol?
     private var videoTruncateTask: Task<Void, Never>?
+    private let musicPlayer = MusicPlayer()
+    private var musicPausedForRest = false
+    private var musicPlayingBeforeBackground = false
     private let weatherLabel = UILabel()
     private let weatherNoteLabel = UILabel()
     private var controlsPresented = false
@@ -381,6 +395,7 @@ final class PlayerViewController: UIViewController {
         applyBrightness()
         guard controllerState == PlaybackController.idle else {
             checkRevocation()
+            reloadMusicSettings()
             dispatch(PlaybackEvent(type: "selection_changed"))
             return
         }
@@ -402,6 +417,7 @@ final class PlayerViewController: UIViewController {
                 return
             }
             dispatch(PlaybackEvent(type: "start"))
+            startMusicIfNeeded()
         }
     }
 
@@ -419,6 +435,7 @@ final class PlayerViewController: UIViewController {
             state: controllerState,
             event: PlaybackEvent(type: "takeover_by_other_window")
         )
+        musicPlayer.stop()
         clearTextures()
         dismiss(animated: false)
     }
@@ -428,6 +445,17 @@ final class PlayerViewController: UIViewController {
         let enteredTransition = outcome.state == PlaybackController.transitioning
             && controllerState != PlaybackController.transitioning
         controllerState = outcome.state
+        if controllerState == PlaybackController.resting {
+            if musicPlayer.isPlaying {
+                musicPausedForRest = true
+                musicPlayer.pause()
+            }
+        } else if musicPausedForRest {
+            musicPausedForRest = false
+            if controllerState != PlaybackController.paused {
+                musicPlayer.resume()
+            }
+        }
         for effect in outcome.effects {
             perform(effect: effect)
         }
@@ -1026,6 +1054,7 @@ final class PlayerViewController: UIViewController {
             preHolidayFrameID = previousFrameID
             frameID = rule.frameID
             settings = PlayerSettings.parse(json: bundle.settingsJSON)
+            restartMusicForFrameSwitch()
             randomSeed = bundle.randomSeed
             selectionVersion = bundle.selectionVersion
             pendingSnapshot = nil
@@ -1066,6 +1095,7 @@ final class PlayerViewController: UIViewController {
             }
             frameID = previousFrameID
             settings = PlayerSettings.parse(json: bundle.settingsJSON)
+            restartMusicForFrameSwitch()
             randomSeed = bundle.randomSeed
             selectionVersion = bundle.selectionVersion
             pendingSnapshot = nil
@@ -1140,6 +1170,45 @@ final class PlayerViewController: UIViewController {
         clockLabel.isHidden = !settings.clockEnabled
         dateLabel.isHidden = !settings.dateEnabled
         updateClockPosition()
+    }
+
+    private func startMusicIfNeeded() {
+        guard settings.music.enabled, MusicCatalog.url(for: settings.music) != nil else {
+            musicPlayer.stop()
+            return
+        }
+        musicPlayer.start(selection: settings.music)
+    }
+
+    private func reloadMusicSettings() {
+        Task { [weak self] in
+            guard let self,
+                  let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: frameID)
+            else { return }
+            let updated = PlayerSettings.parse(json: bundle.settingsJSON)
+            guard updated.music != settings.music else {
+                if controllerState == PlaybackController.holding
+                    || controllerState == PlaybackController.transitioning {
+                    musicPlayer.resume()
+                }
+                return
+            }
+            settings.music = updated.music
+            switch controllerState {
+            case PlaybackController.paused, PlaybackController.resting:
+                musicPlayer.stop()
+            default:
+                startMusicIfNeeded()
+            }
+        }
+    }
+
+    private func restartMusicForFrameSwitch() {
+        let wasPlaying = musicPlayer.isPlaying
+        musicPlayer.stop()
+        if wasPlaying {
+            startMusicIfNeeded()
+        }
     }
 
     private func startWeatherTask() {
@@ -1541,9 +1610,11 @@ final class PlayerViewController: UIViewController {
             dispatch(PlaybackEvent(type: "user_resume"))
             scheduleHoldTimer()
             videoPlayer?.play()
+            musicPlayer.resume()
         } else {
             dispatch(PlaybackEvent(type: "user_pause"))
             videoPlayer?.pause()
+            musicPlayer.pause()
         }
         showControls()
     }
@@ -1595,6 +1666,7 @@ final class PlayerViewController: UIViewController {
     }
 
     private func openPlaybackSettings() {
+        musicPlayer.pause()
         let settings = PlaybackSettingsViewController(environment: environment, frameID: frameID)
         settings.modalPresentationStyle = .fullScreen
         present(settings, animated: true)
@@ -1609,6 +1681,7 @@ final class PlayerViewController: UIViewController {
         holidayNoticeTask?.cancel()
         weatherTask?.cancel()
         controlsHideTask?.cancel()
+        musicPlayer.stop()
         clearTextures()
         restoreBrightness()
         UIApplication.shared.isIdleTimerDisabled = false
@@ -1616,6 +1689,8 @@ final class PlayerViewController: UIViewController {
     }
 
     @objc private func handleBackground() {
+        musicPlayingBeforeBackground = musicPlayer.isPlaying
+        musicPlayer.stop()
         dispatch(PlaybackEvent(type: "app_background"))
         restoreBrightness()
     }
@@ -1623,6 +1698,10 @@ final class PlayerViewController: UIViewController {
     @objc private func handleForeground() {
         applyBrightness()
         checkRevocation()
+        if musicPlayingBeforeBackground {
+            musicPlayingBeforeBackground = false
+            startMusicIfNeeded()
+        }
         Task { [weak self] in
             guard let self else { return }
             let current = (try? await environment.frameManager.framePlaybackBundle(frameID: frameID))

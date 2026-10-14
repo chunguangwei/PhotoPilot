@@ -896,7 +896,14 @@ final class LicensesViewController: UIViewController {
         dependencyLabel.textColor = ThemeColor.textPrimary
         dependencyLabel.numberOfLines = 0
 
-        let content = UIStackView(arrangedSubviews: [noticeLabel, dependencyLabel])
+        let musicLabel = UILabel()
+        musicLabel.text = L10n.string("licenses.music_note")
+        musicLabel.font = ThemeFont.meta()
+        musicLabel.adjustsFontForContentSizeCategory = true
+        musicLabel.textColor = ThemeColor.textSecondary
+        musicLabel.numberOfLines = 0
+
+        let content = UIStackView(arrangedSubviews: [noticeLabel, dependencyLabel, musicLabel])
         content.axis = .vertical
         content.alignment = .leading
         content.spacing = ThemeMetrics.space16

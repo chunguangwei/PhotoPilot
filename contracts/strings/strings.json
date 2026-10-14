@@ -2515,6 +2515,158 @@
       "en": "New settings start with the next photo."
     },
     {
+      "key": "playback.music_title",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "背景音乐",
+      "en": "Background music",
+      "note": "播放设置内背景音乐区块标题"
+    },
+    {
+      "key": "playback.music_help",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "播放时循环播放所选音乐，可点按试听。",
+      "en": "Loops during playback. Tap a track to preview.",
+      "note": "背景音乐区块帮助文案"
+    },
+    {
+      "key": "playback.music_off",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "关闭",
+      "en": "Off",
+      "note": "背景音乐关闭选项"
+    },
+    {
+      "key": "playback.music_picker_title",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "选择音乐",
+      "en": "Choose music",
+      "note": "音乐选择页标题"
+    },
+    {
+      "key": "playback.music_builtin_section",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "内置音乐",
+      "en": "Built-in music",
+      "note": "音乐选择页内置分组标题"
+    },
+    {
+      "key": "playback.music_local_section",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "我的音乐",
+      "en": "My music",
+      "note": "音乐选择页本地分组标题"
+    },
+    {
+      "key": "playback.music_choose_local",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "从本地选择…",
+      "en": "Choose from files…",
+      "note": "从本地文件选择音频入口"
+    },
+    {
+      "key": "playback.music_local_error",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "无法导入该音频文件。",
+      "en": "Unable to import this audio file.",
+      "note": "本地音频导入失败提示"
+    },
+    {
+      "key": "playback.music_missing",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "所选的本地音乐已不可用。",
+      "en": "The selected local music is unavailable.",
+      "note": "本地音乐文件被删除后提示"
+    },
+    {
+      "key": "music.track_birthday",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "生日祝福",
+      "en": "Birthday wishes",
+      "note": "内置曲目：轻快八音盒"
+    },
+    {
+      "key": "music.track_wedding",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "结婚纪念",
+      "en": "Wedding anniversary",
+      "note": "内置曲目：浪漫圆舞曲"
+    },
+    {
+      "key": "music.track_travel",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "旅行时光",
+      "en": "Travel moments",
+      "note": "内置曲目：明亮拨弦"
+    },
+    {
+      "key": "music.track_coffee",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "咖啡时间",
+      "en": "Coffee time",
+      "note": "内置曲目：慵懒爵士"
+    },
+    {
+      "key": "music.track_lounge",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "酒店大堂",
+      "en": "Hotel lounge",
+      "note": "内置曲目：舒缓沙发音乐"
+    },
+    {
+      "key": "music.track_morning",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "清晨阳光",
+      "en": "Morning light",
+      "note": "内置曲目：清新琶音"
+    },
+    {
+      "key": "music.track_night",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "晚安夜曲",
+      "en": "Good night",
+      "note": "内置曲目：安静摇篮曲"
+    },
+    {
+      "key": "music.track_festive",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "节日欢庆",
+      "en": "Festive cheer",
+      "note": "内置曲目：欢快节奏钟声"
+    },
+    {
+      "key": "music.track_classical",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "古典雅致",
+      "en": "Classical",
+      "note": "内置曲目：古典慢板"
+    },
+    {
+      "key": "music.track_nature",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "自然之声",
+      "en": "Sounds of nature",
+      "note": "内置曲目：自然氛围"
+    },
+    {
       "key": "weather.title",
       "section": "8. 天气与位置（S14）",
       "platform": "all",
@@ -3121,6 +3273,14 @@
       "zh": "本应用及其源代码仅供非商业用途。如需商业使用，请联系 chunguangwee@gmail.com。",
       "en": "This app and its source code are licensed for non-commercial use only. For commercial use, contact chunguangwee@gmail.com.",
       "note": "非商业许可声明；关于页与开源许可页展示"
+    },
+    {
+      "key": "licenses.music_note",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "内置音乐为本应用原创合成的曲目，随应用一同授权。",
+      "en": "Built-in tracks are original compositions synthesized for this app and licensed together with it.",
+      "note": "开源许可页内置音乐说明"
     },
     {
       "key": "settings.privacy_policy",
@@ -4047,7 +4207,9 @@
       "platform": "all",
       "zh": "与已启用规则「{name}」的时间重叠，仍要保存吗？",
       "en": "This overlaps with the enabled rule \"{name}\". Save anyway?",
-      "placeholders": {"name": "string"}
+      "placeholders": {
+        "name": "string"
+      }
     },
     {
       "key": "holiday.conflict_confirm",
@@ -4062,7 +4224,9 @@
       "platform": "all",
       "zh": "进入「{name}」，已切换到节日相框",
       "en": "\"{name}\" started — switched to its holiday frame",
-      "placeholders": {"name": "string"}
+      "placeholders": {
+        "name": "string"
+      }
     },
     {
       "key": "holiday.notice_missing",
@@ -4070,7 +4234,9 @@
       "platform": "all",
       "zh": "节日规则「{name}」的相框缺失或没有可播照片，已回落",
       "en": "Frame for \"{name}\" is missing or empty; fell back",
-      "placeholders": {"name": "string"}
+      "placeholders": {
+        "name": "string"
+      }
     },
     {
       "key": "holiday.notice_returned",

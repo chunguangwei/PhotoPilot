@@ -21,6 +21,7 @@ import dev.photopilot.scaffold.data.db.AssetEntity
 import dev.photopilot.scaffold.data.db.FrameEntity
 import dev.photopilot.scaffold.data.db.FrameOrderMode
 import dev.photopilot.scaffold.data.logic.FramePlaybackSettings
+import dev.photopilot.scaffold.data.logic.MusicCatalog
 import dev.photopilot.scaffold.data.logic.PlaybackSettingsEdit
 import dev.photopilot.scaffold.data.logic.PlaybackTiming
 import dev.photopilot.scaffold.data.render.BitmapRenderer
@@ -58,7 +59,13 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private var restEndMinute: Int? = null
     private var qualityIndex = 0
     private var solidIndex = 0
+    private var musicEnabled = false
+    private var musicSource = FramePlaybackSettings.MUSIC_SOURCE_BUILTIN
+    private var musicTrackId: String? = null
+    private var musicLocalPath: String? = null
+    private var musicLocalTitle: String? = null
     var onManagePhotos: (() -> Unit)? = null
+    var onPickMusic: (() -> Unit)? = null
 
     private lateinit var holdCustomInput: EditText
     private lateinit var holdError: TextView
@@ -73,6 +80,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private lateinit var restEndButton: TextView
     private lateinit var restError: TextView
     private lateinit var solidRow: LinearLayout
+    private lateinit var musicButton: TextView
     private lateinit var previewFrame: FrameLayout
     private lateinit var previewBackground: ImageView
     private lateinit var previewImage: ImageView
@@ -192,6 +200,11 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             FramePlaybackSettings.SOLID_WARM_WHITE -> 2
             else -> 0
         }
+        musicEnabled = s.musicEnabled
+        musicSource = s.musicSource
+        musicTrackId = s.musicTrackId
+        musicLocalPath = s.musicLocalPath
+        musicLocalTitle = s.musicLocalTitle
         if (reduceMotion) {
             transitionIndex = 0
             reduceMotionNote.visibility = View.VISIBLE
@@ -294,7 +307,28 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             2 -> FramePlaybackSettings.SOLID_WARM_WHITE
             else -> null
         },
+        musicEnabled = musicEnabled,
+        musicSource = musicSource,
+        musicTrackId = musicTrackId,
+        musicLocalPath = musicLocalPath,
+        musicLocalTitle = musicLocalTitle,
     )
+    fun musicSelection(): MusicCatalog.Selection = MusicCatalog.Selection(
+        enabled = musicEnabled,
+        source = musicSource,
+        trackId = musicTrackId,
+        localPath = musicLocalPath,
+        localTitle = musicLocalTitle,
+    )
+
+    fun updateMusic(selection: MusicCatalog.Selection) {
+        musicEnabled = selection.enabled
+        musicSource = selection.source
+        musicTrackId = selection.trackId
+        musicLocalPath = selection.localPath
+        musicLocalTitle = selection.localTitle
+        refreshMusicState()
+    }
 
 
     private fun currentHoldSeconds(): Int {
@@ -576,6 +610,18 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
         )
 
+        addLabel(column, R.string.playback_music_title, R.dimen.pp_space_24)
+        addHelp(column, R.string.playback_music_help)
+        musicButton = secondaryButton(context, R.string.playback_music_title).apply {
+            setOnClickListener { onPickMusic?.invoke() }
+        }
+        column.addView(
+            musicButton,
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = resources.getDimensionPixelSize(R.dimen.pp_space_8)
+            },
+        )
+
     }
 
     private fun refreshAll() {
@@ -586,7 +632,12 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         solidRow.visibility = if (fitIndex == 1) View.VISIBLE else View.GONE
         refreshTransitionState()
         refreshRestState()
+        refreshMusicState()
         renderPreview()
+    }
+
+    private fun refreshMusicState() {
+        musicButton.text = MusicCatalog.displayName(context, musicSelection())
     }
 
     private fun refreshTransitionState() {

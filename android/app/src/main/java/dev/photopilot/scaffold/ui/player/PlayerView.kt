@@ -26,6 +26,7 @@ import dev.photopilot.scaffold.data.db.AssetEntity
 import dev.photopilot.scaffold.data.db.FrameEntity
 import dev.photopilot.scaffold.data.logic.ClockFormat
 import dev.photopilot.scaffold.data.logic.FramePlaybackSettings
+import dev.photopilot.scaffold.data.logic.MusicCatalog
 import dev.photopilot.scaffold.data.logic.PlaybackController
 import dev.photopilot.scaffold.data.logic.PlaybackTiming
 import dev.photopilot.scaffold.data.logic.VideoProbe
@@ -75,6 +76,9 @@ class PlayerView(
     private var brightnessApplied = false
     private var originalBrightness: Float? = null
     private var controlsTouchActive = false
+    private val musicPlayer = MusicPlayer(context)
+    private var musicStarted: MusicCatalog.Selection? = null
+    private var musicWasPlayingInBackground = false
 
     private val hideControlsRunnable = Runnable {
         if (controlsBar.hasFocus() || hasAccessibilityFocus(controlsBar) || controlsTouchActive) {
@@ -258,6 +262,38 @@ class PlayerView(
             state == PlaybackController.TRANSITIONING
         if (!interactive) {
             controlsBar.visibility = View.GONE
+        }
+        syncMusic(state)
+    }
+
+    private fun syncMusic(state: String) {
+        val selection = MusicCatalog.selectionOf(settings)
+        if (musicStarted != selection || (musicStarted != null && !musicPlayer.isLoaded())) {
+            musicPlayer.stop()
+            musicStarted = null
+            if (selection.enabled) {
+                musicPlayer.start(selection)
+                musicStarted = selection
+            }
+        }
+        if (musicStarted == null) return
+        when (state) {
+            PlaybackController.PAUSED, PlaybackController.RESTING -> musicPlayer.pause()
+            PlaybackController.HOLDING, PlaybackController.TRANSITIONING -> musicPlayer.resume()
+            else -> Unit
+        }
+    }
+
+    fun onAppBackground() {
+        musicWasPlayingInBackground = musicPlayer.isPlaying()
+        musicPlayer.stop()
+        musicStarted = null
+    }
+
+    fun onAppForeground() {
+        if (musicWasPlayingInBackground) {
+            musicWasPlayingInBackground = false
+            engine?.currentState()?.let { syncMusic(it) }
         }
     }
 
@@ -457,6 +493,8 @@ class PlayerView(
     }
 
     override fun onDetachedFromWindow() {
+        musicPlayer.release()
+        musicStarted = null
         restoreBrightness()
         removeCallbacks(clockTickRunnable)
         removeCallbacks(hideControlsRunnable)
@@ -561,6 +599,7 @@ class PlayerView(
         dateLine.visibility = if (settings.dateEnabled) View.VISIBLE else View.GONE
         applyClockPosition()
         updateClock()
+        engine?.currentState()?.let { syncMusic(it) }
     }
 
     private fun applyClockPosition() {

@@ -121,4 +121,10 @@ final class ActionButton: UIControl {
         accessibilityLabel = titleLabel.text
         invalidateIntrinsicContentSize()
     }
+
+    func setTitle(_ title: String) {
+        titleLabel.text = title
+        accessibilityLabel = title
+        invalidateIntrinsicContentSize()
+    }
 }

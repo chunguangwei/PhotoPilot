@@ -80,6 +80,17 @@ class LicensesView(context: Context) : LinearLayout(context) {
             row.addView(licenseView, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
             column.addView(row, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         }
+        val musicNote = TextView(context).apply {
+            text = res.getString(R.string.licenses_music_note)
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_meta))
+            setTextColor(context.getColor(R.color.pp_text_secondary))
+        }
+        column.addView(
+            musicNote,
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = res.getDimensionPixelSize(R.dimen.pp_space_16)
+            },
+        )
         scroll.addView(
             column,
             FrameLayout.LayoutParams(

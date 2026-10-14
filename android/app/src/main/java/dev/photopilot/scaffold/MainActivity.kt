@@ -59,6 +59,7 @@ import dev.photopilot.scaffold.data.logic.LibraryCriteria
 import dev.photopilot.scaffold.data.logic.LibraryQueryBuilder
 import dev.photopilot.scaffold.data.logic.LibrarySort
 import dev.photopilot.scaffold.data.logic.LibraryVersionLogic
+import dev.photopilot.scaffold.data.logic.MusicCatalog
 import dev.photopilot.scaffold.data.logic.NasAddress
 import dev.photopilot.scaffold.data.logic.NasPath
 import dev.photopilot.scaffold.data.logic.NasScope
@@ -103,6 +104,7 @@ import dev.photopilot.scaffold.ui.nas.NasLanNoticeView
 import dev.photopilot.scaffold.ui.permissions.PhotoPermissionGate
 import dev.photopilot.scaffold.ui.permissions.PhotoPermissionOverlayView
 import dev.photopilot.scaffold.ui.player.PlaybackSettingsView
+import dev.photopilot.scaffold.ui.player.MusicPickerView
 import dev.photopilot.scaffold.ui.player.PlayerEngine
 import dev.photopilot.scaffold.ui.player.PlayerView
 import dev.photopilot.scaffold.ui.settings.LicensesView
@@ -311,6 +313,7 @@ class MainActivity : Activity() {
         val engine = playerEngine
         if (engine != null) {
             engine.onForeground()
+            playerView?.onAppForeground()
             if (PhotoPermissionGate.status(this) == PhotoPermissionGate.Status.DENIED) {
                 engine.onPermissionRevoked()
             }
@@ -327,6 +330,7 @@ class MainActivity : Activity() {
 
     override fun onPause() {
         pollHandler.removeCallbacks(pollRunnable)
+        playerView?.onAppBackground()
         playerEngine?.onBackground()
         super.onPause()
     }
@@ -1936,6 +1940,7 @@ class MainActivity : Activity() {
                 val popped = popOverlayTracked() ?: break
                 if (popped === playbackSettingsView) playbackSettingsView = null
                 if (popped === holidaySettingsView) holidaySettingsView = null
+                if (popped === musicPickerView) musicPickerView = null
                 if (popped === permissionOverlay) permissionOverlay = null
             }
             root.removeOverlay(player)
@@ -1970,6 +1975,7 @@ class MainActivity : Activity() {
         view.onBack = { hasChanges -> handleSettingsBack(view, hasChanges) }
         view.onSave = { draft, orderMode -> savePlaybackSettings(view, frame, draft, orderMode) }
         view.onManagePhotos = { openFrameEditor(frame) }
+        view.onPickMusic = { openMusicPicker(view) }
         pushOverlayTracked(view, mapOf("type" to "playbackSettings", "frameId" to frame.id))
         view.bind(frame)
         scope.launch {
@@ -2014,6 +2020,65 @@ class MainActivity : Activity() {
         popOverlayTracked()
     }
 
+    private fun openMusicPicker(settingsView: PlaybackSettingsView) {
+        val view = MusicPickerView(this)
+        musicPickerView = view
+        view.onBack = {
+            musicPickerView = null
+            popOverlayTracked()
+        }
+        view.onSelect = { selection -> settingsView.updateMusic(selection) }
+        view.onChooseLocal = { launchMusicPicker() }
+        view.bind(settingsView.musicSelection())
+        root.pushOverlay(view)
+    }
+
+    private fun launchMusicPicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "audio/*"
+        }
+        startActivityForResult(intent, REQUEST_PICK_MUSIC)
+    }
+
+    private fun importLocalMusic(uri: Uri) {
+        val picker = musicPickerView ?: return
+        scope.launch {
+            val staged = withContext(Dispatchers.IO) {
+                runCatching {
+                    val displayName = runCatching {
+                        val cursor = contentResolver.query(
+                            uri,
+                            arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+                            null,
+                            null,
+                            null,
+                        )
+                        cursor?.use {
+                            if (it.moveToFirst()) it.getString(0) else null
+                        }
+                    }.getOrNull()
+                    val extension = displayName?.substringAfterLast('.', "")?.lowercase()
+                        ?.takeIf { it.isNotEmpty() } ?: "m4a"
+                    val dir = MusicCatalog.musicDir(this@MainActivity)
+                    dir.mkdirs()
+                    val fileName = "${java.util.UUID.randomUUID()}.$extension"
+                    val target = File(dir, fileName)
+                    contentResolver.openInputStream(uri)?.use { input ->
+                        target.outputStream().use { out -> input.copyTo(out) }
+                    } ?: throw java.io.FileNotFoundException("unreadable uri")
+                    fileName to displayName
+                }.getOrNull()
+            }
+            if (musicPickerView !== picker) return@launch
+            if (staged == null) {
+                Toast.makeText(this@MainActivity, R.string.playback_music_local_error, Toast.LENGTH_SHORT).show()
+            } else {
+                picker.setLocalTrack(staged.first, staged.second)
+            }
+        }
+    }
+
     private fun savePlaybackSettings(
         view: PlaybackSettingsView,
         frame: FrameEntity,
@@ -2050,6 +2115,7 @@ class MainActivity : Activity() {
 
     private var weatherSearchView: WeatherCitySearchView? = null
     private var pendingLocationAction: (() -> Unit)? = null
+    private var musicPickerView: MusicPickerView? = null
 
     private fun openWeatherSearch(onSelected: (WeatherLogic.StoredPlace, String) -> Unit) {
         val env = environment ?: return
@@ -2654,6 +2720,12 @@ class MainActivity : Activity() {
     @Deprecated("framework-only result API")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_PICK_MUSIC) {
+            if (resultCode == RESULT_OK) {
+                data?.data?.let { importLocalMusic(it) }
+            }
+            return
+        }
         if (requestCode != REQUEST_PICK_FILES || resultCode != RESULT_OK) return
         val uris = mutableListOf<Uri>()
         data?.clipData?.let { clip ->
@@ -2958,6 +3030,7 @@ class MainActivity : Activity() {
             }
             if (popped === photoDetailView) photoDetailView = null
             if (popped === holidaySettingsView) holidaySettingsView = null
+            if (popped === musicPickerView) musicPickerView = null
             if (popped === playerView) {
                 playerEngine?.stop(clearSnapshot = false)
                 playerEngine = null
@@ -2983,6 +3056,7 @@ class MainActivity : Activity() {
         const val REQUEST_PHOTOS = 41
         const val REQUEST_PICK_FILES = 42
         const val REQUEST_LOCATION = 43
+        const val REQUEST_PICK_MUSIC = 44
         const val POLL_INTERVAL_MS = 1_000L
         const val UPDATE_POLL_INTERVAL_MS = 500L
         const val RETRY_DRIVE_INTERVAL_MS = 15_000L

@@ -18,6 +18,11 @@ object PlaybackSettingsEdit {
         val brightness: Double?,
         val qualityLevel: String,
         val solidColor: String? = null,
+        val musicEnabled: Boolean = false,
+        val musicSource: String = FramePlaybackSettings.MUSIC_SOURCE_BUILTIN,
+        val musicTrackId: String? = null,
+        val musicLocalPath: String? = null,
+        val musicLocalTitle: String? = null,
     )
 
     enum class Error {
@@ -75,6 +80,13 @@ object PlaybackSettingsEdit {
         root["brightness"] = draft.brightness
         root["qualityLevel"] = draft.qualityLevel
         root["solidColor"] = draft.solidColor
+        val music = (root["music"] as? Map<String, Any?>)?.toMutableMap() ?: mutableMapOf()
+        music["enabled"] = draft.musicEnabled
+        music["source"] = draft.musicSource
+        music["trackId"] = draft.musicTrackId
+        music["localPath"] = draft.musicLocalPath
+        music["localTitle"] = draft.musicLocalTitle
+        root["music"] = music
         return JsonMini.toJson(root)
     }
 }

@@ -427,6 +427,13 @@ actor FrameManager {
             "rest": ["enabled": false, "startMinute": NSNull(), "endMinute": NSNull()],
             "brightness": NSNull(),
             "qualityLevel": "auto",
+            "music": [
+                "enabled": false,
+                "source": "builtin",
+                "trackId": NSNull(),
+                "localPath": NSNull(),
+                "localTitle": NSNull(),
+            ],
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: settings, options: [.sortedKeys]) else {
             return "{}"

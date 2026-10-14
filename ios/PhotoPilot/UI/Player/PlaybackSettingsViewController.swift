@@ -87,6 +87,8 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     private var restStartRow = UIView()
     private var restEndRow = UIView()
     private let qualitySegmented = UISegmentedControl()
+    private var musicSelection = MusicSelection()
+    private let musicButton = UIButton(type: .system)
     private let formStack = UIStackView()
 
     init(environment: AppEnvironment, frameID: String) {
@@ -397,6 +399,16 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         )
         formStack.addArrangedSubview(qualitySegmented)
 
+        formStack.addArrangedSubview(makeSectionLabel(key: "playback.music_title"))
+        formStack.addArrangedSubview(makeHelpLabel(key: "playback.music_help"))
+        musicButton.contentHorizontalAlignment = .fill
+        musicButton.heightAnchor.constraint(
+            greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
+        ).isActive = true
+        musicButton.addTarget(self, action: #selector(handleMusic), for: .touchUpInside)
+        applyMusicSelection()
+        formStack.addArrangedSubview(musicButton)
+
     }
 
 
@@ -439,6 +451,8 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
             restEndPicker.date = Self.date(fromMinute: parsed.restEndMinute)
             qualitySegmented.selectedSegmentIndex = Self.qualityWireValues
                 .firstIndex(of: parsed.qualityLevel) ?? 0
+            musicSelection = parsed.music
+            applyMusicSelection()
 
             dirty = false
             refreshDependentUI()
@@ -709,6 +723,40 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         present(editor, animated: true)
     }
 
+    private func applyMusicSelection() {
+        var configuration = UIButton.Configuration.plain()
+        configuration.title = MusicCatalog.displayName(for: musicSelection)
+        configuration.image = UIImage(systemName: "chevron.right")
+        configuration.imagePlacement = .trailing
+        configuration.imagePadding = ThemeMetrics.space12
+        configuration.contentInsets = NSDirectionalEdgeInsets(
+            top: ThemeMetrics.space12, leading: ThemeMetrics.space16,
+            bottom: ThemeMetrics.space12, trailing: ThemeMetrics.space16
+        )
+        configuration.titleAlignment = .leading
+        configuration.baseForegroundColor = ThemeColor.textPrimary
+        configuration.background.backgroundColor = ThemeColor.panel
+        configuration.background.cornerRadius = ThemeMetrics.radiusGroup
+        configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer {
+            var attributes = $0
+            attributes.font = ThemeFont.body()
+            return attributes
+        }
+        musicButton.configuration = configuration
+        musicButton.accessibilityLabel = L10n.string("playback.music_title")
+    }
+
+    @objc private func handleMusic() {
+        let picker = MusicPickerViewController(selection: musicSelection) { [weak self] updated in
+            guard let self else { return }
+            musicSelection = updated
+            applyMusicSelection()
+            dirty = true
+        }
+        picker.modalPresentationStyle = .fullScreen
+        present(picker, animated: true)
+    }
+
     @objc private func handleOrderChanged() {
         dirty = true
         refreshDependentUI()
@@ -780,6 +828,13 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         }
         settings["qualityLevel"] = Self.qualityWireValues[safe: qualitySegmented.selectedSegmentIndex]
             ?? "auto"
+        settings["music"] = [
+            "enabled": musicSelection.enabled,
+            "source": musicSelection.source,
+            "trackId": musicSelection.trackId ?? NSNull(),
+            "localPath": musicSelection.localPath ?? NSNull(),
+            "localTitle": musicSelection.localTitle ?? NSNull(),
+        ]
 
         guard let data = try? JSONSerialization.data(withJSONObject: settings, options: [.sortedKeys]) else {
             return

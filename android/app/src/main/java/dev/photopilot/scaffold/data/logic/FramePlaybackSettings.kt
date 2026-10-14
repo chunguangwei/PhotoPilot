@@ -16,6 +16,11 @@ data class FramePlaybackSettings(
     val clockPosition: String = POSITION_BOTTOM_LEADING,
     val qualityLevel: String = QUALITY_AUTO,
     val solidColor: String? = null,
+    val musicEnabled: Boolean = false,
+    val musicSource: String = MUSIC_SOURCE_BUILTIN,
+    val musicTrackId: String? = null,
+    val musicLocalPath: String? = null,
+    val musicLocalTitle: String? = null,
 ) {
 
     fun restActiveAt(minuteOfDay: Int, overrideActive: Boolean): Boolean {
@@ -42,11 +47,15 @@ data class FramePlaybackSettings(
         const val SOLID_BLACK = "black"
         const val SOLID_WARM_WHITE = "warm_white"
 
+        const val MUSIC_SOURCE_BUILTIN = "builtin"
+        const val MUSIC_SOURCE_LOCAL = "local"
+
         fun parse(json: String?): FramePlaybackSettings {
             val root = JsonMini.parseObject(json)
             val clock = root["clock"] as? Map<*, *>
             val date = root["date"] as? Map<*, *>
             val rest = root["rest"] as? Map<*, *>
+            val music = root["music"] as? Map<*, *>
             return FramePlaybackSettings(
                 holdSeconds = (root["holdSeconds"] as? Double)?.toInt() ?: 10,
                 transition = root["transition"] as? String ?: PlaybackTiming.TRANSITION_CROSSFADE,
@@ -63,6 +72,11 @@ data class FramePlaybackSettings(
                 brightness = (root["brightness"] as? Double)?.toFloat(),
                 qualityLevel = root["qualityLevel"] as? String ?: QUALITY_AUTO,
                 solidColor = root["solidColor"] as? String,
+                musicEnabled = music?.get("enabled") as? Boolean ?: false,
+                musicSource = music?.get("source") as? String ?: MUSIC_SOURCE_BUILTIN,
+                musicTrackId = music?.get("trackId") as? String,
+                musicLocalPath = music?.get("localPath") as? String,
+                musicLocalTitle = music?.get("localTitle") as? String,
             )
         }
     }

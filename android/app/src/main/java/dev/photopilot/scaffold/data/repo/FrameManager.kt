@@ -135,6 +135,8 @@ class FrameManager(
                 "\"weather\":{\"enabled\":false,\"placeId\":null,\"units\":null}," +
                 "\"keepAwakeWhenPaused\":true," +
                 "\"rest\":{\"enabled\":false,\"startMinute\":null,\"endMinute\":null}," +
+                "\"music\":{\"enabled\":false,\"source\":\"builtin\"," +
+                "\"trackId\":null,\"localPath\":null,\"localTitle\":null}," +
                 "\"brightness\":null,\"qualityLevel\":\"auto\"}"
     }
 }
