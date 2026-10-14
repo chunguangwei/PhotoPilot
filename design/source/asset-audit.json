@@ -1,0 +1,109 @@
+{
+  "checkedArtboards": 1825,
+  "errors": [],
+  "contrast": [
+    {
+      "theme": "light",
+      "foreground": "text.primary",
+      "background": "surface.canvas",
+      "ratio": 14.072,
+      "normalText4_5": true
+    },
+    {
+      "theme": "light",
+      "foreground": "text.primary",
+      "background": "surface.panel",
+      "ratio": 15.217,
+      "normalText4_5": true
+    },
+    {
+      "theme": "light",
+      "foreground": "text.secondary",
+      "background": "surface.canvas",
+      "ratio": 5.139,
+      "normalText4_5": true
+    },
+    {
+      "theme": "light",
+      "foreground": "text.secondary",
+      "background": "surface.panel",
+      "ratio": 5.557,
+      "normalText4_5": true
+    },
+    {
+      "theme": "light",
+      "foreground": "accent.action",
+      "background": "surface.panel",
+      "ratio": 6.886,
+      "normalText4_5": true
+    },
+    {
+      "theme": "light",
+      "foreground": "status.error",
+      "background": "surface.panel",
+      "ratio": 6.158,
+      "normalText4_5": true
+    },
+    {
+      "theme": "dark",
+      "foreground": "text.primary",
+      "background": "surface.canvas",
+      "ratio": 15.558,
+      "normalText4_5": true
+    },
+    {
+      "theme": "dark",
+      "foreground": "text.primary",
+      "background": "surface.panel",
+      "ratio": 13.256,
+      "normalText4_5": true
+    },
+    {
+      "theme": "dark",
+      "foreground": "text.secondary",
+      "background": "surface.canvas",
+      "ratio": 9.146,
+      "normalText4_5": true
+    },
+    {
+      "theme": "dark",
+      "foreground": "text.secondary",
+      "background": "surface.panel",
+      "ratio": 7.793,
+      "normalText4_5": true
+    },
+    {
+      "theme": "dark",
+      "foreground": "accent.action",
+      "background": "surface.panel",
+      "ratio": 8.959,
+      "normalText4_5": true
+    },
+    {
+      "theme": "dark",
+      "foreground": "status.error",
+      "background": "surface.panel",
+      "ratio": 7.762,
+      "normalText4_5": true
+    }
+  ],
+  "actualExportFileCounts": {
+    ".svg": 2045,
+    ".png": 2057,
+    ".json": 1,
+    ".jpg": 11
+  },
+  "exportBytes": 150474337,
+  "contractSha256Matches": true,
+  "nativeAcceptanceRequired": [
+    "All screen images are design renders, not running native apps",
+    "Android PNG uses local font approximation, not native sans-serif metrics",
+    "OS maximal accessibility size, VoiceOver/TalkBack order and touch targets require native acceptance",
+    "OS permission sheets, safe-area insets, keyboard avoidance, native material and navigation gestures require real-device tests",
+    "NAS/SMB, TOFU and private cleartext are designs only; no M0 success asserted",
+    "Google policy/OAuth/retention and weather provider gates remain unpassed",
+    "No visual sign-off by user or live-device acceptance",
+    "Synthesized landscapes are design samples, not product test fixtures"
+  ],
+  "validationBoundary": "Machine checks cover static geometry, references, exact dimensions and source binding; manual visual sampling is separate. No screen reader, OS text scaling, keyboard or live renderer tested."
+}

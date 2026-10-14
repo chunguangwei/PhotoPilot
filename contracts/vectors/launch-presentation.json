@@ -1,0 +1,25 @@
+{
+  "meta": {"version": 1, "source": "01 §0.3 / 02 §7.2 / 04 §13", "approved_at": "2026-10-14"},
+  "duration_ms": 6000,
+  "clock": "monotonic_process_local",
+  "rules": {
+    "skip_cancels_initialization": false,
+    "failure_ends_branding_immediately": true,
+    "retry_replays_branding": false,
+    "recreation_restarts_deadline": false,
+    "background_restarts_deadline": false,
+    "persist_across_processes": false
+  },
+  "cases": [
+    {"id": "LAUNCH-01", "elapsed_ms": 0, "skipped": false, "ready": false, "failed": false, "active": true, "expected": "brand"},
+    {"id": "LAUNCH-02", "elapsed_ms": 5999, "skipped": false, "ready": true, "failed": false, "active": true, "expected": "brand"},
+    {"id": "LAUNCH-03", "elapsed_ms": 6000, "skipped": false, "ready": true, "failed": false, "active": true, "expected": "route"},
+    {"id": "LAUNCH-04", "elapsed_ms": 6000, "skipped": false, "ready": false, "failed": false, "active": true, "expected": "loading"},
+    {"id": "LAUNCH-05", "elapsed_ms": 0, "skipped": true, "ready": false, "failed": false, "active": true, "expected": "loading"},
+    {"id": "LAUNCH-06", "elapsed_ms": 20, "skipped": true, "ready": true, "failed": false, "active": true, "expected": "route"},
+    {"id": "LAUNCH-07", "elapsed_ms": 20, "skipped": false, "ready": false, "failed": true, "active": true, "expected": "failure"},
+    {"id": "LAUNCH-08", "elapsed_ms": 20, "skipped": true, "ready": false, "failed": true, "active": true, "expected": "failure"},
+    {"id": "LAUNCH-09", "elapsed_ms": 7000, "skipped": false, "ready": true, "failed": false, "active": false, "expected": "defer_route"},
+    {"id": "LAUNCH-10", "elapsed_ms": 7000, "skipped": false, "ready": true, "failed": false, "active": true, "expected": "route"}
+  ]
+}

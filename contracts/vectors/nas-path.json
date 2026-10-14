@@ -1,0 +1,155 @@
+{
+ "meta": {
+  "truth": "04-工程规格书 §14 路径穿越防护 + PRD §5.4 目录输入：NAS 共享内相对路径规范化（2026-10-07 冻结：反斜杠归一为斜杠、合并连续斜杠、解析 . 与 ..、逃逸根目录拒绝、去尾斜杠、空即根、大小写保留、控制字符拒绝、长度上限 1024）",
+  "note": "双端测试必须消费本文件。输出 path 为空字符串表示根目录。ok=false 表示拒绝输入。"
+ },
+ "cases": [
+  {
+   "id": "PTH-01",
+   "input": "photos/2024",
+   "expected": {
+    "ok": true,
+    "path": "photos/2024"
+   },
+   "desc": "常规相对路径原样"
+  },
+  {
+   "id": "PTH-02",
+   "input": "Photos\\2024\\raw",
+   "expected": {
+    "ok": true,
+    "path": "Photos/2024/raw"
+   },
+   "desc": "SMB 反斜杠归一"
+  },
+  {
+   "id": "PTH-03",
+   "input": "/photos//2024/",
+   "expected": {
+    "ok": true,
+    "path": "photos/2024"
+   },
+   "desc": "前导/连续/结尾斜杠归一"
+  },
+  {
+   "id": "PTH-04",
+   "input": "",
+   "expected": {
+    "ok": true,
+    "path": ""
+   },
+   "desc": "空=根"
+  },
+  {
+   "id": "PTH-05",
+   "input": "/",
+   "expected": {
+    "ok": true,
+    "path": ""
+   },
+   "desc": "斜杠=根"
+  },
+  {
+   "id": "PTH-06",
+   "input": "photos/./2024",
+   "expected": {
+    "ok": true,
+    "path": "photos/2024"
+   },
+   "desc": "单点解析"
+  },
+  {
+   "id": "PTH-07",
+   "input": "photos/../2024",
+   "expected": {
+    "ok": true,
+    "path": "2024"
+   },
+   "desc": "双点不越根可解析"
+  },
+  {
+   "id": "PTH-08",
+   "input": "../etc/passwd",
+   "expected": {
+    "ok": false
+   },
+   "desc": "逃逸根拒绝"
+  },
+  {
+   "id": "PTH-09",
+   "input": "a/../../b",
+   "expected": {
+    "ok": false
+   },
+   "desc": "中途逃逸根拒绝"
+  },
+  {
+   "id": "PTH-10",
+   "input": "photos/..",
+   "expected": {
+    "ok": true,
+    "path": ""
+   },
+   "desc": "解析回根合法"
+  },
+  {
+   "id": "PTH-11",
+   "input": "My Photos/原图 2024",
+   "expected": {
+    "ok": true,
+    "path": "My Photos/原图 2024"
+   },
+   "desc": "空格/Unicode/大小写保留"
+  },
+  {
+   "id": "PTH-12",
+   "input": "a\u0000b",
+   "expected": {
+    "ok": false
+   },
+   "desc": "NUL 拒绝"
+  },
+  {
+   "id": "PTH-13",
+   "input": "a\nb",
+   "expected": {
+    "ok": false
+   },
+   "desc": "控制字符拒绝"
+  },
+  {
+   "id": "PTH-14",
+   "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expected": {
+    "ok": true,
+    "path": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   },
+   "desc": "长度上限含边界"
+  },
+  {
+   "id": "PTH-15",
+   "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expected": {
+    "ok": false
+   },
+   "desc": "超长拒绝"
+  },
+  {
+   "id": "PTH-16",
+   "input": "././photos",
+   "expected": {
+    "ok": true,
+    "path": "photos"
+   },
+   "desc": "前导单点序列"
+  },
+  {
+   "id": "PTH-17",
+   "input": "..",
+   "expected": {
+    "ok": false
+   },
+   "desc": "裸双点逃逸"
+  }
+ ]
+}

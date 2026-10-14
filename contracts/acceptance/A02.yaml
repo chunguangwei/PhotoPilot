@@ -1,0 +1,23 @@
+# 验收契约 A02 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "e4cff38099bad39ab3525c0c2d2f22e2be1bdf43d442da9a21d3cac4fa7bcd70"
+  id: A02
+  title: "选片范围限定播放"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "导入 1000 张，只选 20 张"
+  pass_conditions:
+    - "相框仅播被选集合"
+    - "NAS 新增不默认公开"
+telemetry:
+  role: required
+  events:
+    - name: import.job_finished
+    - name: frame.selection_committed
+    - name: playback.photo_enter
+    - name: playback.photo_exit
+  metrics:
+    - PM10

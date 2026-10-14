@@ -1,0 +1,303 @@
+{
+  "version": "1.1",
+  "contractModified": true,
+  "entries": [
+    {
+      "key": "design.duration_unit",
+      "zh": "停留时间单位",
+      "en": "Duration unit",
+      "reason": "Custom seconds/minutes input requires explicit unit choice",
+      "status": "promoted-to-contract",
+      "contractKey": "playback.hold_unit",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.unit_seconds",
+      "zh": "秒",
+      "en": "Seconds",
+      "reason": "Custom duration unit label",
+      "status": "promoted-to-contract",
+      "contractKey": "playback.unit_seconds",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.unit_minutes",
+      "zh": "分钟",
+      "en": "Minutes",
+      "reason": "Custom duration unit label",
+      "status": "promoted-to-contract",
+      "contractKey": "playback.unit_minutes",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.transition_range",
+      "zh": "0.2–3.0 秒，步进 0.1 秒",
+      "en": "0.2–3.0 seconds, in 0.1-second steps",
+      "reason": "Transition input range and decimal step must be visible",
+      "status": "promoted-to-contract",
+      "contractKey": "playback.transition_range",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.sample_lake",
+      "zh": "清晨湖畔",
+      "en": "Morning by the lake",
+      "reason": "Synthetic frame and folder sample name; not user data",
+      "status": "design-illustration-only"
+    },
+    {
+      "key": "design.sample_mountain",
+      "zh": "山野之间",
+      "en": "Among the mountains",
+      "reason": "Second synthetic frame and folder sample name",
+      "status": "design-illustration-only"
+    },
+    {
+      "key": "design.value",
+      "zh": "{value}",
+      "en": "{value}",
+      "reason": "Design-only numeric, host, masked credential and date samples; never production copy",
+      "status": "design-illustration-only"
+    },
+    {
+      "key": "design.seconds_decimal",
+      "zh": "{value} 秒",
+      "en": "{value}s",
+      "reason": "Contract format.seconds_short declares int and cannot represent 0.8; design-only decimal format",
+      "status": "promoted-to-contract",
+      "contractKey": "format.seconds_decimal",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.local_network_android",
+      "zh": "Android 不使用 iPad 的局域网授权弹窗。继续后仅尝试访问你填写的 NAS，不扫描其他设备。",
+      "en": "Android does not use the iPad local-network permission dialog. Continue to access only the NAS you entered, without scanning other devices.",
+      "reason": "S06a platform capability distinction missing in contract",
+      "status": "pending-review",
+      "blocks": "M2+ 来源/安全/隐私/休息页实现前须审阅入库"
+    },
+    {
+      "key": "design.cert_expired",
+      "zh": "证书已过期，连接已拒绝。请更新服务器证书后重试。",
+      "en": "The certificate expired. Connection refused. Update the server certificate before retrying.",
+      "reason": "Required expired certificate state has no contract key",
+      "status": "pending-review",
+      "blocks": "M2+ 来源/安全/隐私/休息页实现前须审阅入库"
+    },
+    {
+      "key": "design.cert_scope",
+      "zh": "默认拒绝连接。确认后仅在本机固定此主机、端口与协议的证书指纹；可在设置中撤销。",
+      "en": "Connections are refused by default. Confirmation pins this certificate to this host, port and protocol on this device only. Revoke it in Settings.",
+      "reason": "Explicit per-host TOFU scope required in S06b",
+      "status": "pending-review",
+      "blocks": "M2+ 来源/安全/隐私/休息页实现前须审阅入库"
+    },
+    {
+      "key": "design.cert_verified",
+      "zh": "我已通过可信渠道核对这台主机的证书指纹",
+      "en": "I checked this host’s fingerprint through a trusted channel",
+      "reason": "Unchecked acknowledgement controls the exceptional trust action",
+      "status": "pending-review",
+      "blocks": "M2+ 来源/安全/隐私/休息页实现前须审阅入库"
+    },
+    {
+      "key": "design.cleartext_ack",
+      "zh": "我理解明文风险，仅为这台主机申请例外",
+      "en": "I understand the plaintext risk and request an exception for this host only",
+      "reason": "Per-host plaintext opt-in rather than an implied global exception",
+      "status": "pending-review",
+      "blocks": "M2+ 来源/安全/隐私/休息页实现前须审阅入库"
+    },
+    {
+      "key": "design.selection_unsaved",
+      "zh": "展示内容尚未保存",
+      "en": "Display selection has not been saved",
+      "reason": "S10 unsaved selection must not imply playback configuration save",
+      "status": "promoted-to-contract",
+      "contractKey": "library.selection_unsaved",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.order_preserved",
+      "zh": "已排除这张照片，其余照片的相对顺序保持不变。",
+      "en": "This photo was excluded. The relative order of the remaining photos is unchanged.",
+      "reason": "S10a exclusion state requires a distinct explanation",
+      "status": "promoted-to-contract",
+      "contractKey": "order.excluded_order_preserved",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.files_android",
+      "zh": "从系统文件选择器导入已保存在设备上的图片。",
+      "en": "Import images saved on this device using the system file picker.",
+      "reason": "Existing Files body implies Apple iCloud Drive; Android needs accurate SAF copy",
+      "status": "promoted-to-contract",
+      "contractKey": "source.local_files.body.android",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.brightness_restore",
+      "zh": "离开播放或进入后台时恢复原亮度，不永久更改系统亮度。",
+      "en": "Original brightness is restored when playback ends or the app enters the background. System brightness is not permanently changed.",
+      "reason": "Brightness lifecycle help absent in contract",
+      "status": "promoted-to-contract",
+      "contractKey": "playback.brightness_restore_help",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.quality",
+      "zh": "画面质量",
+      "en": "Rendering quality",
+      "reason": "04 settings_json qualityLevel needs a real control",
+      "status": "promoted-to-contract",
+      "contractKey": "playback.quality",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.quality_auto",
+      "zh": "自动",
+      "en": "Automatic",
+      "reason": "Quality selection and current defaults",
+      "status": "promoted-to-contract",
+      "contractKey": "playback.quality_auto",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.quality_balanced",
+      "zh": "均衡",
+      "en": "Balanced",
+      "reason": "03 quality tier selector",
+      "status": "promoted-to-contract",
+      "contractKey": "playback.quality_balanced",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.quality_low",
+      "zh": "低功耗",
+      "en": "Low power",
+      "reason": "03 quality tier selector",
+      "status": "promoted-to-contract",
+      "contractKey": "playback.quality_low",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.alignment",
+      "zh": "文字对齐",
+      "en": "Text alignment",
+      "reason": "01 four-corner plus left/right overlay alignment",
+      "status": "promoted-to-contract",
+      "contractKey": "playback.overlay_alignment",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.align_left",
+      "zh": "左对齐",
+      "en": "Left",
+      "reason": "Overlay alignment option absent",
+      "status": "promoted-to-contract",
+      "contractKey": "playback.align_left",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.align_right",
+      "zh": "右对齐",
+      "en": "Right",
+      "reason": "Overlay alignment option absent",
+      "status": "promoted-to-contract",
+      "contractKey": "playback.align_right",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.auto_play_help",
+      "zh": "完成首次播放后生效；锁屏或重启不会保证自动启动。",
+      "en": "Takes effect after the first successful slideshow. It does not guarantee launch after locking or restarting the device.",
+      "reason": "Auto-play enabled default needs first-use boundary",
+      "status": "pending-review",
+      "blocks": "M2+ 来源/安全/隐私/休息页实现前须审阅入库"
+    },
+    {
+      "key": "design.storage_threshold_help",
+      "zh": "默认保留至少 1 GB 或总容量的 5%，取较大值。低于阈值暂停导入，不自动删除照片。",
+      "en": "Reserve at least 1 GB or 5% of total capacity, whichever is larger. Imports pause below this limit; photos are not deleted automatically.",
+      "reason": "Storage threshold control requires exact default and consequence",
+      "status": "promoted-to-contract",
+      "contractKey": "settings.storage_threshold_help",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.import_originals",
+      "zh": "保留导入原文件，按需生成展示副本",
+      "en": "Keep imported originals and generate display copies as needed",
+      "reason": "01 storage import policy must be visible",
+      "status": "promoted-to-contract",
+      "contractKey": "settings.import_originals",
+      "promotedOn": "2026-10-04"
+    },
+    {
+      "key": "design.backup_photos",
+      "zh": "照片系统云备份",
+      "en": "System cloud backup of photos",
+      "reason": "Privacy backup exclusion needs visible design setting",
+      "status": "pending-review",
+      "blocks": "M2+ 来源/安全/隐私/休息页实现前须审阅入库"
+    },
+    {
+      "key": "design.backup_help",
+      "zh": "照片与凭证不进入系统云备份；仅非敏感设置可按版本备份。",
+      "en": "Photos and credentials are excluded from system cloud backup. Only versioned, non-sensitive settings may be backed up.",
+      "reason": "PRD backup boundary absent in string contract",
+      "status": "pending-review",
+      "blocks": "M2+ 来源/安全/隐私/休息页实现前须审阅入库"
+    },
+    {
+      "key": "design.keep_copies_help",
+      "zh": "保留的完整本地副本继续可播，相框不受影响；只停止同步并清除连接凭证。",
+      "en": "Complete local copies remain playable and frames are unaffected. Only syncing and saved connection credentials are removed.",
+      "reason": "R01 explicit retain-copy consequence",
+      "status": "pending-review",
+      "blocks": "M2+ 来源/安全/隐私/休息页实现前须审阅入库"
+    },
+    {
+      "key": "design.remove_copies_help",
+      "zh": "删除此来源的本机副本与衍生文件，并从引用相框撤下。独立合法来源的副本保留，源端文件不变。",
+      "en": "Delete this source’s local copies and derived files, and remove their frame references. Independently sourced copies remain; source files are unchanged.",
+      "reason": "R01 source-scoped deletion versus other origins",
+      "status": "pending-review",
+      "blocks": "M2+ 来源/安全/隐私/休息页实现前须审阅入库"
+    },
+    {
+      "key": "design.rest_midnight",
+      "zh": "今晚 22:00 至明早 07:00 暂停展示。",
+      "en": "The slideshow rests from 22:00 tonight until 07:00 tomorrow.",
+      "reason": "S17 cross-midnight example",
+      "status": "pending-review",
+      "blocks": "M2+ 来源/安全/隐私/休息页实现前须审阅入库"
+    },
+    {
+      "key": "design.rest_resumed",
+      "zh": "已从休息恢复，将继续上次的照片。",
+      "en": "Rest has ended. Continue with the previous photo.",
+      "reason": "S17 resumed state",
+      "status": "pending-review",
+      "blocks": "M2+ 来源/安全/隐私/休息页实现前须审阅入库"
+    },
+    {
+      "key": "design.weather_sample",
+      "zh": "示例城市 · 晴",
+      "en": "Sample city · Sunny",
+      "reason": "No live weather service; synthetic conditional preview",
+      "status": "design-illustration-only"
+    },
+    {
+      "key": "design.threshold_risk",
+      "zh": "降低保留空间可能使后续导入失败。确认后才会应用，不删除已有照片。",
+      "en": "Reducing reserved space may cause later imports to fail. Apply only after confirmation; existing photos will not be deleted.",
+      "reason": "Threshold adjustment requires risk confirmation",
+      "status": "promoted-to-contract",
+      "contractKey": "settings.storage_threshold_risk",
+      "promotedOn": "2026-10-04"
+    }
+  ],
+  "promotedCount": 19,
+  "note": "19 项 M1 相关文案已并入 contracts/strings/strings.json（449→468；2026-10-09 现状：真源已增至 488 条）；design-illustration-only 为示意素材专用，不进产品契约；pending-review 项在对应 M2+ 页面实现前须审阅入库，不得硬编码。2026-10-09 逐条核对：本 12 项草稿均未入库（design.* 键不在真源；草稿原文双端源码零命中，无硬编码违例）；对应页面已出货但消费语义部分重叠的另定稿契约键（cert.*/cleartext.*/permission.local_network.*/sources.disconnect_*/player.resting_*/settings.*），覆盖缺口=cert_expired 专用拒绝文案（现回落 error.src_unavailable.body）、cert_verified/cleartext_ack 勾选确认语、rest_midnight/rest_resumed/auto_play_help/backup_*/keep·remove_copies_help 长说明（backup 层未实现）。草稿去留与缺口补词待设计评审裁决，明细见 16 §8.4-2。"
+}

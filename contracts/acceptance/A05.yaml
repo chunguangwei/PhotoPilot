@@ -1,0 +1,22 @@
+# 验收契约 A05 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "5679362b045887a86f1c4e96cfcfd6933dfb56bac4ce654e6e178429c9993dc3"
+  id: A05
+  title: "停留与转场时长"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "两个时间参数"
+  pass_conditions:
+    - "10 秒完整停留＋0.8 秒转场"
+    - "暂停与恢复无跳秒"
+telemetry:
+  role: required
+  events:
+    - name: playback.photo_enter
+    - name: playback.photo_exit
+    - name: render.transition_completed
+  metrics:
+    - PM12

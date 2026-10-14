@@ -1,0 +1,3491 @@
+{
+  "date": "2026-10-04",
+  "status": "passed",
+  "file_counts": {
+    ".png": 316,
+    ".svg": 368,
+    ".xml": 63,
+    ".json": 5,
+    ".pdf": 60
+  },
+  "files_checked": 812,
+  "components": {
+    "boards": 224,
+    "state_cells": 1504,
+    "width_overflow_issues": 0,
+    "nonlabel_state_distinctness_checks": 592,
+    "checks": [
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-zh-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-zh-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-zh-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-zh-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-en-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-en-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-en-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-en-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-ios-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-zh-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-zh-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-zh-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-zh-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-en-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-en-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-en-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-en-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/nav-navitem-android-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-ios-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-primary-android-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-ios-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/button-secondary-android-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-ios-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-segmented-android-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-ios-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-slider-android-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-ios-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/input-switch-android-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-zh-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-zh-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-zh-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-zh-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-en-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-en-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-en-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-en-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-ios-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-zh-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-zh-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-zh-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-zh-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-en-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-en-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-en-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-en-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/media-photocell-android-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-ios-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/bar-selectionconfirm-android-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-ios-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-sourcerow-android-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-ios-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-ios-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-ios-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-ios-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-ios-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-ios-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-ios-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-ios-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-android-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-android-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-android-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-android-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-android-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-android-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-android-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/list-taskrow-android-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-ios-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-ios-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-ios-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-ios-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-ios-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-ios-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-ios-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-ios-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-android-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-android-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-android-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-android-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-android-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-android-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-android-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/state-empty-android-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-ios-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/modal-dangerconfirm-android-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-ios-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-zh-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-light--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-light--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-light--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-light--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-light--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-light--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-light--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-light--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-dark--regular.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-dark--regular.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-dark--regular.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-dark--regular.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-dark--large-type.png",
+        "state": "focused",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-dark--large-type.png",
+        "state": "selected",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-dark--large-type.png",
+        "state": "disabled",
+        "visually_distinct_from_normal": true
+      },
+      {
+        "board": "design/export/design-assets-v1.1/components/player-glassbar-android-en-dark--large-type.png",
+        "state": "pressed",
+        "visually_distinct_from_normal": true
+      }
+    ]
+  },
+  "pdf_validation": {
+    "engine": "Installed PyMuPDF / MuPDF",
+    "count": 60,
+    "all_path_only": true,
+    "files": [
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_back_20.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_back_24.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_back_32.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_brand_20.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_brand_24.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_brand_32.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_check_20.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_check_24.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_check_32.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_close_20.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_close_24.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_close_32.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_download_20.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_download_24.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_download_32.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_empty_20.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_empty_24.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_empty_32.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_lock_20.pdf",
+        "pages": 1,
+        "vector_paths": 2,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_lock_24.pdf",
+        "pages": 1,
+        "vector_paths": 2,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_lock_32.pdf",
+        "pages": 1,
+        "vector_paths": 2,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_nav_frames_20.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_nav_frames_24.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_nav_frames_32.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_nav_library_20.pdf",
+        "pages": 1,
+        "vector_paths": 2,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_nav_library_24.pdf",
+        "pages": 1,
+        "vector_paths": 2,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_nav_library_32.pdf",
+        "pages": 1,
+        "vector_paths": 2,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_nav_settings_20.pdf",
+        "pages": 1,
+        "vector_paths": 4,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_nav_settings_24.pdf",
+        "pages": 1,
+        "vector_paths": 4,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_nav_settings_32.pdf",
+        "pages": 1,
+        "vector_paths": 4,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_nav_sources_20.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_nav_sources_24.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_nav_sources_32.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_20.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_24.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_32.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_more_20.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_more_24.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_more_32.pdf",
+        "pages": 1,
+        "vector_paths": 3,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_next_20.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_next_24.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_next_32.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_pause_20.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_pause_24.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_pause_32.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_previous_20.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_previous_24.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_play_previous_32.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_plus_20.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_plus_24.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_plus_32.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_retry_20.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_retry_24.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_retry_32.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_search_20.pdf",
+        "pages": 1,
+        "vector_paths": 2,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_search_24.pdf",
+        "pages": 1,
+        "vector_paths": 2,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_search_32.pdf",
+        "pages": 1,
+        "vector_paths": 2,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_warning_20.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_warning_24.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      },
+      {
+        "path": "design/export/design-assets-v1.1/icons/ios/ic_warning_32.pdf",
+        "pages": 1,
+        "vector_paths": 1,
+        "images": 0,
+        "fonts": 0,
+        "mupdf_rendered": true
+      }
+    ]
+  },
+  "launch": {
+    "exact_zero_diff_pairs": 8,
+    "language_equivalence_checks": 4
+  },
+  "contrast": {
+    "boards": 40,
+    "regions": 160,
+    "minimum": 11.0496,
+    "maximum": 15.2263,
+    "all_these_synthetic_regions_meet_4_5": true,
+    "not_native_or_all_photos": true
+  },
+  "brand_masters_unchanged": true,
+  "python_sources_parsed_no_comments": 5,
+  "failures": [],
+  "limits": [
+    "Local design candidate, not native UI validation or M0 evidence.",
+    "Large type is 1.6x design stress, not the OS maximum.",
+    "PNG uses locally rendered macOS font fallback; Android system-font and native accessibility verification pending.",
+    "No fonts are embedded or distributed; store wordmark license pending.",
+    "No client build, native resource inflation, platform font render or real-device verification performed for this design-only task.",
+    "XML well-formedness and path parsing are not Android aapt/native rendering acceptance.",
+    "SVG/PNG are generated from the same primitives; independent full SVG renderer equivalence is not claimed."
+  ]
+}

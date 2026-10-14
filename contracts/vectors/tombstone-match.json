@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "truth": "04-工程规格书.md §9.3 墓碑三级匹配（R04 裁决，2026-10-04）：tier1 content_hash > tier2 (fingerprint, remote_id) > tier3 (fingerprint, byte_size, head64k_hash)；命中即抑制导入并记 SKIPPED_BY_TOMBSTONE",
+    "note": "双端测试必须消费本文件。fingerprint 规范化：endpoint_key 非空取 endpoint_key，否则 type:source_id。expected_tier 0 = 无匹配。probe 缺字段时对应 tier 不得命中（NULL 不参与匹配）。"
+  },
+  "tombstones": [
+    {
+      "id": "T1",
+      "content_hash": "aaaa",
+      "source_fingerprint": "local_files:src1",
+      "remote_id": "a/1.jpg",
+      "byte_size": 1000,
+      "head64k_hash": "hh11"
+    },
+    {
+      "id": "T2",
+      "content_hash": null,
+      "source_fingerprint": "local_files:src1",
+      "remote_id": "b/2.jpg",
+      "byte_size": 2000,
+      "head64k_hash": "hh22"
+    },
+    {
+      "id": "T3",
+      "content_hash": null,
+      "source_fingerprint": "nas:nas1",
+      "remote_id": null,
+      "byte_size": 3000,
+      "head64k_hash": "hh33"
+    }
+  ],
+  "cases": [
+    {
+      "id": "TOM-01",
+      "probe": {"content_hash": "aaaa", "source_fingerprint": "other:src9", "remote_id": "x.jpg", "byte_size": 5, "head64k_hash": "zz"},
+      "expected_tier": 1,
+      "expected_tombstone": "T1",
+      "desc": "content_hash 命中即 tier1，跨来源也匹配（删除是内容级意图）"
+    },
+    {
+      "id": "TOM-02",
+      "probe": {"content_hash": "cccc", "source_fingerprint": "local_files:src1", "remote_id": "a/1.jpg", "byte_size": 1000, "head64k_hash": "hh11"},
+      "expected_tier": 2,
+      "expected_tombstone": "T1",
+      "desc": "hash 不同但 (指纹, remote_id) 命中 → tier2（改名检测前身份）"
+    },
+    {
+      "id": "TOM-03",
+      "probe": {"content_hash": null, "source_fingerprint": "local_files:src1", "remote_id": "renamed.jpg", "byte_size": 1000, "head64k_hash": "hh11"},
+      "expected_tier": 3,
+      "expected_tombstone": "T1",
+      "desc": "改名后 (指纹, 字节数, 前64KiB) 命中 → tier3"
+    },
+    {
+      "id": "TOM-04",
+      "probe": {"content_hash": "aaaa", "source_fingerprint": "local_files:src1", "remote_id": "a/1.jpg", "byte_size": 1000, "head64k_hash": "hh11"},
+      "expected_tier": 1,
+      "expected_tombstone": "T1",
+      "desc": "多级同时命中取最高（tier1 优先）"
+    },
+    {
+      "id": "TOM-05",
+      "probe": {"content_hash": null, "source_fingerprint": "nas:nas1", "remote_id": null, "byte_size": 3000, "head64k_hash": "hh33"},
+      "expected_tier": 3,
+      "expected_tombstone": "T3",
+      "desc": "无 hash 无 remote_id 的墓碑走 tier3"
+    },
+    {
+      "id": "TOM-06",
+      "probe": {"content_hash": null, "source_fingerprint": "local_files:src1", "remote_id": "b/2.jpg", "byte_size": 9999, "head64k_hash": "ww"},
+      "expected_tier": 2,
+      "expected_tombstone": "T2",
+      "desc": "tier2 不因 byte_size 不一致而降级（tier2 不比较字节数）"
+    },
+    {
+      "id": "TOM-07",
+      "probe": {"content_hash": null, "source_fingerprint": "local_files:src1", "remote_id": "unknown.jpg", "byte_size": 1000, "head64k_hash": "xx"},
+      "expected_tier": 0,
+      "expected_tombstone": null,
+      "desc": "head64k 不同 → tier3 不命中；remote_id 不同 → tier2 不命中"
+    },
+    {
+      "id": "TOM-08",
+      "probe": {"content_hash": null, "source_fingerprint": "other:src9", "remote_id": "a/1.jpg", "byte_size": 1000, "head64k_hash": "hh11"},
+      "expected_tier": 0,
+      "expected_tombstone": null,
+      "desc": "指纹不同：tier2/tier3 均不命中（指纹是来源身份）"
+    },
+    {
+      "id": "TOM-09",
+      "probe": {"content_hash": null, "source_fingerprint": "local_files:src1", "remote_id": null, "byte_size": 1000, "head64k_hash": null},
+      "expected_tier": 0,
+      "expected_tombstone": null,
+      "desc": "probe 缺 head64k_hash → tier3 不得命中（NULL 不参与匹配）"
+    }
+  ]
+}

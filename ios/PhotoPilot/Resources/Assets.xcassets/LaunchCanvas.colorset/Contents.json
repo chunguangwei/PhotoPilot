@@ -1,0 +1,14 @@
+{
+  "colors": [
+    {
+      "idiom": "universal",
+      "color": {"color-space": "srgb", "components": {"red": "0.956863", "green": "0.945098", "blue": "0.921569", "alpha": "1.000000"}}
+    },
+    {
+      "idiom": "universal",
+      "appearances": [{"appearance": "luminosity", "value": "dark"}],
+      "color": {"color-space": "srgb", "components": {"red": "0.090196", "green": "0.101961", "blue": "0.094118", "alpha": "1.000000"}}
+    }
+  ],
+  "info": {"author": "photopilot", "version": 1}
+}

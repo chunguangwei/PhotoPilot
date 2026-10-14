@@ -1,0 +1,121 @@
+{
+ "meta": {
+  "truth": "04-工程规格书 §9.2/§9.5 + PRD §5.4：增量同步 diff（2026-10-07 冻结：revision 由适配器供给为不透明字符串（WebDAV=getetag，SMB=mtime_ms+size 合成），diff 只做字符串相等比较；mirrorDelete 关闭时缺失只标记 source_removed 不删除；开启时缺失进入 §9.2 判定流）",
+  "note": "双端测试必须消费本文件。old/new 为 remote_id→revision 映射。expected 每项动作：added/changed/unchanged；缺失项：mirror off→mark_source_removed，mirror on→deletion_candidate。"
+ },
+ "cases": [
+  {
+   "id": "DIF-01",
+   "old": {},
+   "new": {
+    "a.jpg": "r1"
+   },
+   "mirror_delete": false,
+   "expected": {
+    "a.jpg": "added"
+   },
+   "desc": "新增"
+  },
+  {
+   "id": "DIF-02",
+   "old": {
+    "a.jpg": "r1"
+   },
+   "new": {
+    "a.jpg": "r2"
+   },
+   "mirror_delete": false,
+   "expected": {
+    "a.jpg": "changed"
+   },
+   "desc": "revision 变化"
+  },
+  {
+   "id": "DIF-03",
+   "old": {
+    "a.jpg": "r1"
+   },
+   "new": {
+    "a.jpg": "r1"
+   },
+   "mirror_delete": false,
+   "expected": {
+    "a.jpg": "unchanged"
+   },
+   "desc": "未变"
+  },
+  {
+   "id": "DIF-04",
+   "old": {
+    "a.jpg": "r1"
+   },
+   "new": {},
+   "mirror_delete": false,
+   "expected": {
+    "a.jpg": "mark_source_removed"
+   },
+   "desc": "镜像关闭：缺失只标记"
+  },
+  {
+   "id": "DIF-05",
+   "old": {
+    "a.jpg": "r1"
+   },
+   "new": {},
+   "mirror_delete": true,
+   "expected": {
+    "a.jpg": "deletion_candidate"
+   },
+   "desc": "镜像开启：缺失进删除判定"
+  },
+  {
+   "id": "DIF-06",
+   "old": {
+    "a.jpg": "r1",
+    "b.jpg": "r2",
+    "c.jpg": "r3"
+   },
+   "new": {
+    "a.jpg": "r1",
+    "b.jpg": "r9",
+    "d.jpg": "r4"
+   },
+   "mirror_delete": false,
+   "expected": {
+    "a.jpg": "unchanged",
+    "b.jpg": "changed",
+    "c.jpg": "mark_source_removed",
+    "d.jpg": "added"
+   },
+   "desc": "混合批"
+  },
+  {
+   "id": "DIF-07",
+   "old": {
+    "a.jpg": null
+   },
+   "new": {
+    "a.jpg": null
+   },
+   "mirror_delete": false,
+   "expected": {
+    "a.jpg": "unchanged"
+   },
+   "desc": "双侧 NULL revision 视为未变（NULL 不参与变化判定，防误下）"
+  },
+  {
+   "id": "DIF-08",
+   "old": {
+    "a.jpg": null
+   },
+   "new": {
+    "a.jpg": "r1"
+   },
+   "mirror_delete": false,
+   "expected": {
+    "a.jpg": "changed"
+   },
+   "desc": "NULL→有值=变化"
+  }
+ ]
+}

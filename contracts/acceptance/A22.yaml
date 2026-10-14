@@ -1,0 +1,20 @@
+# 验收契约 A22 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "b4b99923cd11ed740af33f454a606157729be21ee4bac4c527ba184c12cf43de"
+  id: A22
+  title: "无障碍核心任务"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "无障碍"
+  pass_conditions:
+    - "仅用 VoiceOver/TalkBack 可完成选片、设置和退出播放"
+telemetry:
+  role: manual
+  events:
+    - name: a11y.state_changed
+      params:
+        - 仅环境
+  metrics: []

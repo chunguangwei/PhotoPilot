@@ -1,0 +1,170 @@
+{
+  "version": "1.1",
+  "date": "2026-10-04",
+  "scope": "S00 and S01-t0 are design frames only; not native LaunchScreen, Android splash resources or app implementation.",
+  "language_rule": "S00 and S01-t0 contain no text and must match across zh/en.",
+  "dark_rule": "Dark design candidate uses surface.canvas dark and accent.brand dark; real system launch appearance behavior remains pending.",
+  "timing": [
+    {
+      "ms": [
+        0,
+        180
+      ],
+      "stage": "Stable light, start frame reveal"
+    },
+    {
+      "ms": [
+        80,
+        560
+      ],
+      "stage": "Frame path then horizon reveal"
+    },
+    {
+      "ms": [
+        380,
+        620
+      ],
+      "stage": "PhotoPilot and localized subtitle fade"
+    },
+    {
+      "condition": "ready",
+      "stage": "Route immediately, interrupt branding; suggested crossfade 160–220 ms or direct switch under reduced motion"
+    }
+  ],
+  "reduced_motion": "Static full mark in app, or direct route if ready. No waiting for reveal. S00 remains the matching light-dot frame.",
+  "limits": [
+    "No mandatory 800ms wait. No fake progress. Beyond 2s show actual stage; beyond 8s offer safe diagnostic/retry, never interrupt migration unsafely.",
+    "No native integration, device launch tests or release-policy verification."
+  ],
+  "pairs": [
+    {
+      "platform": "ios",
+      "language": "zh",
+      "appearance": "light",
+      "dimensions": [
+        1024,
+        768
+      ],
+      "s00": "design/export/design-assets-v1.1/launch/ios-wide-zh-light/S00.png",
+      "s01_t0": "design/export/design-assets-v1.1/launch/ios-wide-zh-light/S01-t0.png",
+      "different_pixels": 0,
+      "max_channel_difference": 0,
+      "difference_png": "design/export/design-assets-v1.1/launch/ios-wide-zh-light/pixel-diff.png",
+      "sha256_s00": "6798844fe2e0a3ee437f7c75d44f884a2db1bf15c1e7897866195f7636e8e9ff",
+      "sha256_s01_t0": "6798844fe2e0a3ee437f7c75d44f884a2db1bf15c1e7897866195f7636e8e9ff"
+    },
+    {
+      "platform": "ios",
+      "language": "zh",
+      "appearance": "dark",
+      "dimensions": [
+        1024,
+        768
+      ],
+      "s00": "design/export/design-assets-v1.1/launch/ios-wide-zh-dark/S00.png",
+      "s01_t0": "design/export/design-assets-v1.1/launch/ios-wide-zh-dark/S01-t0.png",
+      "different_pixels": 0,
+      "max_channel_difference": 0,
+      "difference_png": "design/export/design-assets-v1.1/launch/ios-wide-zh-dark/pixel-diff.png",
+      "sha256_s00": "eed6aed119775b8de9b9f42124ec9bcfd8a5fc72db588301751c0005b1a44ea3",
+      "sha256_s01_t0": "eed6aed119775b8de9b9f42124ec9bcfd8a5fc72db588301751c0005b1a44ea3"
+    },
+    {
+      "platform": "ios",
+      "language": "en",
+      "appearance": "light",
+      "dimensions": [
+        1024,
+        768
+      ],
+      "s00": "design/export/design-assets-v1.1/launch/ios-wide-en-light/S00.png",
+      "s01_t0": "design/export/design-assets-v1.1/launch/ios-wide-en-light/S01-t0.png",
+      "different_pixels": 0,
+      "max_channel_difference": 0,
+      "difference_png": "design/export/design-assets-v1.1/launch/ios-wide-en-light/pixel-diff.png",
+      "sha256_s00": "6798844fe2e0a3ee437f7c75d44f884a2db1bf15c1e7897866195f7636e8e9ff",
+      "sha256_s01_t0": "6798844fe2e0a3ee437f7c75d44f884a2db1bf15c1e7897866195f7636e8e9ff"
+    },
+    {
+      "platform": "ios",
+      "language": "en",
+      "appearance": "dark",
+      "dimensions": [
+        1024,
+        768
+      ],
+      "s00": "design/export/design-assets-v1.1/launch/ios-wide-en-dark/S00.png",
+      "s01_t0": "design/export/design-assets-v1.1/launch/ios-wide-en-dark/S01-t0.png",
+      "different_pixels": 0,
+      "max_channel_difference": 0,
+      "difference_png": "design/export/design-assets-v1.1/launch/ios-wide-en-dark/pixel-diff.png",
+      "sha256_s00": "eed6aed119775b8de9b9f42124ec9bcfd8a5fc72db588301751c0005b1a44ea3",
+      "sha256_s01_t0": "eed6aed119775b8de9b9f42124ec9bcfd8a5fc72db588301751c0005b1a44ea3"
+    },
+    {
+      "platform": "android",
+      "language": "zh",
+      "appearance": "light",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "s00": "design/export/design-assets-v1.1/launch/android-wide-zh-light/S00.png",
+      "s01_t0": "design/export/design-assets-v1.1/launch/android-wide-zh-light/S01-t0.png",
+      "different_pixels": 0,
+      "max_channel_difference": 0,
+      "difference_png": "design/export/design-assets-v1.1/launch/android-wide-zh-light/pixel-diff.png",
+      "sha256_s00": "cf4da4b04263a87928b37ca87cfc6ec23915db0ffb7fa0a069e3fedfb3ee9359",
+      "sha256_s01_t0": "cf4da4b04263a87928b37ca87cfc6ec23915db0ffb7fa0a069e3fedfb3ee9359"
+    },
+    {
+      "platform": "android",
+      "language": "zh",
+      "appearance": "dark",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "s00": "design/export/design-assets-v1.1/launch/android-wide-zh-dark/S00.png",
+      "s01_t0": "design/export/design-assets-v1.1/launch/android-wide-zh-dark/S01-t0.png",
+      "different_pixels": 0,
+      "max_channel_difference": 0,
+      "difference_png": "design/export/design-assets-v1.1/launch/android-wide-zh-dark/pixel-diff.png",
+      "sha256_s00": "15744872314ff32e5cedf8aec8396ee7d5ff1fef95bb5eb12ab8a85a7cf3327e",
+      "sha256_s01_t0": "15744872314ff32e5cedf8aec8396ee7d5ff1fef95bb5eb12ab8a85a7cf3327e"
+    },
+    {
+      "platform": "android",
+      "language": "en",
+      "appearance": "light",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "s00": "design/export/design-assets-v1.1/launch/android-wide-en-light/S00.png",
+      "s01_t0": "design/export/design-assets-v1.1/launch/android-wide-en-light/S01-t0.png",
+      "different_pixels": 0,
+      "max_channel_difference": 0,
+      "difference_png": "design/export/design-assets-v1.1/launch/android-wide-en-light/pixel-diff.png",
+      "sha256_s00": "cf4da4b04263a87928b37ca87cfc6ec23915db0ffb7fa0a069e3fedfb3ee9359",
+      "sha256_s01_t0": "cf4da4b04263a87928b37ca87cfc6ec23915db0ffb7fa0a069e3fedfb3ee9359"
+    },
+    {
+      "platform": "android",
+      "language": "en",
+      "appearance": "dark",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "s00": "design/export/design-assets-v1.1/launch/android-wide-en-dark/S00.png",
+      "s01_t0": "design/export/design-assets-v1.1/launch/android-wide-en-dark/S01-t0.png",
+      "different_pixels": 0,
+      "max_channel_difference": 0,
+      "difference_png": "design/export/design-assets-v1.1/launch/android-wide-en-dark/pixel-diff.png",
+      "sha256_s00": "15744872314ff32e5cedf8aec8396ee7d5ff1fef95bb5eb12ab8a85a7cf3327e",
+      "sha256_s01_t0": "15744872314ff32e5cedf8aec8396ee7d5ff1fef95bb5eb12ab8a85a7cf3327e"
+    }
+  ],
+  "all_zero": true
+}

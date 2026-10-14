@@ -1,0 +1,21 @@
+# 验收契约 A08 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "2d394347bc03383551e4b5953b7872900bedb4ba4257cbaf336e72a085976ea5"
+  id: A08
+  title: "重启恢复"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "杀进程 / 重启 App"
+  pass_conditions:
+    - "队列和已提交选择保留"
+    - "未完成导入可恢复"
+telemetry:
+  role: required
+  events:
+    - name: import.job_resumed
+    - name: frame.selection_committed
+    - name: app.ready_routed
+  metrics: []

@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "truth": "04-工程规格书.md §12 渲染管线规格（含 R06 裁决，2026-10-05 冻结）",
+    "note": "双端测试必须消费本文件，禁止各自另写期望值。aspect_fit：scale=min(dw/sw,dh/sh)，输出 (x,y,w,h) 居中，w=sw*scale、h=sh*scale；aspect_fill：scale=max(...)，允许负偏移。数值按本文件用例设计为精确整数；实现用浮点计算后 round-half-up 取整。decode_target：viewport 点 × scale，若 max(w,h) 超过 cap 则等比缩小至 max=cap（floor）。blur_background：等比缩小至长边 ≤256，已小于则不放大（floor，最小 1）。cache_key 格式：assetId:assetVersion:WxH:orientation:fitMode:qualityLevel。edge_color：输入为已完成 1/8 降采样的像素，每像素为 0xAARRGGBB 无符号整数（行主序），取四边 1px 边缘像素（角点只计一次）的 R/G/B 各自均值（round-half-up），输出 #RRGGBB 大写。",
+    "fit_modes": ["fit_blur", "fit_color", "fill_crop"]
+  },
+  "cases": [
+    {"id": "RGE-01", "scenario": "aspect_fit", "src": [2000, 1000], "dst": [1024, 768], "expected": [0, 128, 1024, 512]},
+    {"id": "RGE-02", "scenario": "aspect_fit", "src": [1000, 2000], "dst": [1024, 768], "expected": [320, 0, 384, 768]},
+    {"id": "RGE-03", "scenario": "aspect_fill", "src": [2000, 1000], "dst": [1024, 768], "expected": [-256, 0, 1536, 768]},
+    {"id": "RGE-04", "scenario": "aspect_fill", "src": [1000, 2000], "dst": [1024, 768], "expected": [0, -640, 1024, 2048]},
+    {"id": "RGE-05", "note": "极端横幅保持完整构图", "scenario": "aspect_fit", "src": [8000, 1000], "dst": [1024, 768], "expected": [0, 320, 1024, 128]},
+    {"id": "RGE-06", "scenario": "decode_target", "view": [1024, 768], "scale": 2, "cap": 4096, "expected": [2048, 1536]},
+    {"id": "RGE-07", "scenario": "decode_target", "view": [2048, 1536], "scale": 3, "cap": 4096, "expected": [4096, 3072]},
+    {"id": "RGE-08", "scenario": "decode_target", "view": [1024, 768], "scale": 1, "cap": 4096, "expected": [1024, 768]},
+    {"id": "RGE-09", "scenario": "blur_background", "src": [4000, 3000], "expected": [256, 192]},
+    {"id": "RGE-10", "scenario": "blur_background", "src": [3000, 4000], "expected": [192, 256]},
+    {"id": "RGE-11", "note": "已小于 256 不放大", "scenario": "blur_background", "src": [100, 50], "expected": [100, 50]},
+    {"id": "RGE-12", "scenario": "cache_key", "asset_id": "a1", "asset_version": 12345, "viewport": [1024, 768], "orientation": "landscape", "fit_mode": "fit_blur", "quality_level": "auto", "expected": "a1:12345:1024x768:landscape:fit_blur:auto"},
+    {"id": "RGE-13", "scenario": "cache_key", "asset_id": "b9", "asset_version": 7, "viewport": [2048, 1536], "orientation": "portrait", "fit_mode": "fill_crop", "quality_level": "low", "expected": "b9:7:2048x1536:portrait:fill_crop:low"},
+    {"id": "RGE-14", "note": "4x4 全边缘 12 像素，角点只计一次", "scenario": "edge_color", "width": 4, "height": 4, "pixels": [4279238656, 4279238656, 4279238656, 4279238656, 4281335808, 4278190080, 4278190080, 4282384384, 4281335808, 4278190080, 4278190080, 4282384384, 4280287232, 4280287232, 4280287232, 4280287232], "expected": "#230000"},
+    {"id": "RGE-15", "note": "2x2 全部为边缘", "scenario": "edge_color", "width": 2, "height": 2, "pixels": [4278845440, 4279500800, 4280156160, 4280811520], "expected": "#190000"}
+  ]
+}

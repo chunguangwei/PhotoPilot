@@ -1,0 +1,22 @@
+# 验收契约 A11 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "f3049e6e162ac6d7613e7ff4dc697ece54f456a99fbd4439a728767dbc5380b4"
+  id: A11
+  title: "材质降级与增强"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "低性能 / 减少动态"
+  pass_conditions:
+    - "iPadOS 15–25、Android 10–11 材质降级可用"
+    - "26+ Liquid Glass 按能力启用"
+    - "转场不闪黑，功能不缺失"
+telemetry:
+  role: required
+  events:
+    - name: render.quality_level_changed
+    - name: render.transition_completed
+  metrics:
+    - PM3

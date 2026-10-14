@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <title>PhotoPilot 光屿标志</title>
+  <desc>开口相框、右上方光点与内部岛屿曲线，透明背景。</desc>
+  <path d="M148 60H84Q60 60 60 84V172Q60 196 84 196H172Q196 196 196 172V105" stroke="#202321" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="182" cy="63" r="12" fill="#B89A68"/>
+  <path d="M88 160C109 140 128 145 143 160C155 154 167 154 176 160" stroke="#202321" stroke-width="10" stroke-linecap="round"/>
+</svg>

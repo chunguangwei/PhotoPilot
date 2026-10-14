@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <title>PhotoPilot 光屿应用图标母版</title>
+  <rect width="1024" height="1024" fill="#F4F1EB"/>
+  <g transform="translate(0 -8) scale(4)">
+    <path d="M148 60H84Q60 60 60 84V172Q60 196 84 196H172Q196 196 196 172V105" stroke="#202321" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="182" cy="63" r="12" fill="#B89A68"/>
+    <path d="M88 160C109 140 128 145 143 160C155 154 167 154 176 160" stroke="#202321" stroke-width="10" stroke-linecap="round"/>
+  </g>
+</svg>

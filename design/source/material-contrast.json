@@ -1,0 +1,72 @@
+[
+  {
+    "background": "white",
+    "mode": "tinted",
+    "sampledMinContrast": 13.336,
+    "samples": 140,
+    "scope": "Static Pillow panel pixels only; excludes glyph pixels; no native blur/compositing acceptance"
+  },
+  {
+    "background": "white",
+    "mode": "opaque",
+    "sampledMinContrast": 15.558,
+    "samples": 140,
+    "scope": "Static Pillow panel pixels only; excludes glyph pixels; no native blur/compositing acceptance"
+  },
+  {
+    "background": "black",
+    "mode": "tinted",
+    "sampledMinContrast": 15.825,
+    "samples": 140,
+    "scope": "Static Pillow panel pixels only; excludes glyph pixels; no native blur/compositing acceptance"
+  },
+  {
+    "background": "black",
+    "mode": "opaque",
+    "sampledMinContrast": 15.558,
+    "samples": 140,
+    "scope": "Static Pillow panel pixels only; excludes glyph pixels; no native blur/compositing acceptance"
+  },
+  {
+    "background": "portrait-tones",
+    "mode": "tinted",
+    "sampledMinContrast": 13.853,
+    "samples": 140,
+    "scope": "Static Pillow panel pixels only; excludes glyph pixels; no native blur/compositing acceptance"
+  },
+  {
+    "background": "portrait-tones",
+    "mode": "opaque",
+    "sampledMinContrast": 15.558,
+    "samples": 140,
+    "scope": "Static Pillow panel pixels only; excludes glyph pixels; no native blur/compositing acceptance"
+  },
+  {
+    "background": "leaves",
+    "mode": "tinted",
+    "sampledMinContrast": 14.237,
+    "samples": 140,
+    "scope": "Static Pillow panel pixels only; excludes glyph pixels; no native blur/compositing acceptance"
+  },
+  {
+    "background": "leaves",
+    "mode": "opaque",
+    "sampledMinContrast": 15.558,
+    "samples": 140,
+    "scope": "Static Pillow panel pixels only; excludes glyph pixels; no native blur/compositing acceptance"
+  },
+  {
+    "background": "snow",
+    "mode": "tinted",
+    "sampledMinContrast": 13.371,
+    "samples": 140,
+    "scope": "Static Pillow panel pixels only; excludes glyph pixels; no native blur/compositing acceptance"
+  },
+  {
+    "background": "snow",
+    "mode": "opaque",
+    "sampledMinContrast": 15.558,
+    "samples": 140,
+    "scope": "Static Pillow panel pixels only; excludes glyph pixels; no native blur/compositing acceptance"
+  }
+]

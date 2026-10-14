@@ -1,0 +1,206 @@
+{
+ "meta": {
+  "truth": "04-工程规格书 §9.2 源端删除判定（2026-10-07 冻结澄清：60 秒间隔含边界（>=60000ms）；超过 20% 严格大于，恰好 20% 不暂停；整目录消失视同超阈值；扫描失败/分页不完整/认证变化一律不计数；再次见到即清零）",
+  "note": "双端测试必须消费本文件。模型：每项 source_asset 维护 missing_scan_count 与 first_missing_at_ms。事件序列按序应用。scan: {complete, auth_ok, now_ms, seen:[remote_id]}。judge(now_ms, total_candidates, batch_size) 返回 removed 或 needs_confirmation 或 pending。expected_state: pending=不计删 / removed=判定删除 / needs_confirmation=暂停待用户确认 / cleared=重新见到计数清零。"
+ },
+ "cases": [
+  {
+   "id": "DEL-01",
+   "batch_size": 100,
+   "events": [
+    {
+     "scan": {
+      "complete": true,
+      "auth_ok": true,
+      "now_ms": 1000000,
+      "seen": []
+     }
+    },
+    {
+     "judge": true
+    }
+   ],
+   "expected_state": "pending",
+   "expected_missing_count": 1,
+   "desc": "首扫缺失只计数"
+  },
+  {
+   "id": "DEL-02",
+   "batch_size": 100,
+   "events": [
+    {
+     "scan": {
+      "complete": true,
+      "auth_ok": true,
+      "now_ms": 1000000,
+      "seen": []
+     }
+    },
+    {
+     "scan": {
+      "complete": true,
+      "auth_ok": true,
+      "now_ms": 1030000,
+      "seen": []
+     }
+    },
+    {
+     "judge": true
+    }
+   ],
+   "expected_state": "pending",
+   "expected_missing_count": 2,
+   "desc": "二次扫描间隔 30s<60s 不判删"
+  },
+  {
+   "id": "DEL-03",
+   "batch_size": 100,
+   "events": [
+    {
+     "scan": {
+      "complete": true,
+      "auth_ok": true,
+      "now_ms": 1000000,
+      "seen": []
+     }
+    },
+    {
+     "scan": {
+      "complete": true,
+      "auth_ok": true,
+      "now_ms": 1060000,
+      "seen": []
+     }
+    },
+    {
+     "judge": true
+    }
+   ],
+   "expected_state": "removed",
+   "expected_missing_count": 2,
+   "desc": "间隔恰好 60s 判删（含边界）"
+  },
+  {
+   "id": "DEL-04",
+   "batch_size": 100,
+   "events": [
+    {
+     "scan": {
+      "complete": true,
+      "auth_ok": true,
+      "now_ms": 1000000,
+      "seen": []
+     }
+    },
+    {
+     "scan": {
+      "complete": false,
+      "auth_ok": true,
+      "now_ms": 1100000,
+      "seen": []
+     }
+    },
+    {
+     "scan": {
+      "complete": true,
+      "auth_ok": true,
+      "now_ms": 1200000,
+      "seen": []
+     }
+    },
+    {
+     "judge": true
+    }
+   ],
+   "expected_state": "removed",
+   "expected_missing_count": 2,
+   "desc": "中途失败扫描不计数不重置，首尾两次有效扫描间隔 200s 判删"
+  },
+  {
+   "id": "DEL-05",
+   "batch_size": 100,
+   "events": [
+    {
+     "scan": {
+      "complete": true,
+      "auth_ok": true,
+      "now_ms": 1000000,
+      "seen": []
+     }
+    },
+    {
+     "scan": {
+      "complete": true,
+      "auth_ok": false,
+      "now_ms": 1100000,
+      "seen": []
+     }
+    },
+    {
+     "judge": true
+    }
+   ],
+   "expected_state": "pending",
+   "expected_missing_count": 1,
+   "desc": "认证变化不构成删除"
+  },
+  {
+   "id": "DEL-06",
+   "batch_size": 100,
+   "events": [
+    {
+     "scan": {
+      "complete": true,
+      "auth_ok": true,
+      "now_ms": 1000000,
+      "seen": []
+     }
+    },
+    {
+     "scan": {
+      "complete": true,
+      "auth_ok": true,
+      "now_ms": 1100000,
+      "seen": [
+       "a.jpg"
+      ]
+     }
+    },
+    {
+     "judge": true
+    }
+   ],
+   "expected_state": "cleared",
+   "expected_missing_count": 0,
+   "desc": "再次见到清零"
+  },
+  {
+   "id": "DEL-07",
+   "batch_size": 100,
+   "candidates": 21,
+   "expected_state": "needs_confirmation",
+   "desc": "待删 21/100>20% 暂停确认"
+  },
+  {
+   "id": "DEL-08",
+   "batch_size": 100,
+   "candidates": 20,
+   "expected_state": "removed",
+   "desc": "恰好 20% 不暂停（严格大于）"
+  },
+  {
+   "id": "DEL-09",
+   "batch_size": 50,
+   "candidates": 50,
+   "expected_state": "needs_confirmation",
+   "desc": "整目录消失=100% 暂停确认"
+  },
+  {
+   "id": "DEL-10",
+   "batch_size": 3,
+   "candidates": 1,
+   "expected_state": "needs_confirmation",
+   "desc": "小批 1/3≈33%>20% 同样暂停（比例按批计算，无最小批量豁免）"
+  }
+ ]
+}

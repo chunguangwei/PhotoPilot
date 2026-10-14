@@ -1,0 +1,105 @@
+{
+  "meta": {
+    "truth": "04-工程规格书.md §5.3 播放队列构建与 §5.4 排序与空值规则（含 R09/R10 裁决，2026-10-05 冻结）",
+    "shuffle_algorithm": "SplitMix64(seed)：state=(state+0x9E3779B97F4A7C15) mod 2^64; z=state; z=(z^(z>>30))*0xBF58476D1CE4E5B9; z=(z^(z>>27))*0x94D049BB133111EB; z=z^(z>>31)。Fisher-Yates：i 从 n-1 降至 1，j = next() mod (i+1)，交换 a[i]/a[j]。双端必须逐位实现同一算法，保证同 seed 同序列（U17，A6）。",
+    "note": "双端测试必须消费本文件，禁止各自另写期望值。manual 模式：manual_order 非空者先按 manual_order 升序，manual_order 为 NULL 的动态新增项排后，组内按 (captured_at NULLS LAST, id)（R10）。browse 为浏览排序 (COALESCE(captured_at, imported_at), id)（R09）。bucket 为时间筛选分组：分桶键按 UTC 年月 YYYY-MM（展示层时区映射不在本向量范围），无 captured_at 项归入 no_captured_time，不参与年月分桶。时间戳为 epoch 毫秒。",
+    "order_modes": ["captured_asc", "manual", "random"]
+  },
+  "cases": [
+    {
+      "id": "QUE-01",
+      "note": "播放 captured_asc：captured_at NULLS LAST，同键按 id 升序",
+      "order_mode": "captured_asc",
+      "random_seed": 0,
+      "assets": [
+        {"id": "a1", "captured_at": 100, "imported_at": 50, "manual_order": null, "added_at": 1},
+        {"id": "a2", "captured_at": null, "imported_at": 10, "manual_order": null, "added_at": 2},
+        {"id": "a3", "captured_at": 100, "imported_at": 60, "manual_order": null, "added_at": 3}
+      ],
+      "expected": ["a1", "a3", "a2"]
+    },
+    {
+      "id": "QUE-02",
+      "note": "播放 manual：先按 manual_order，NULL 组按 (captured_at NULLS LAST, id)",
+      "order_mode": "manual",
+      "random_seed": 0,
+      "assets": [
+        {"id": "a1", "captured_at": 10, "imported_at": 10, "manual_order": 2, "added_at": 1},
+        {"id": "a2", "captured_at": 20, "imported_at": 20, "manual_order": 1, "added_at": 2},
+        {"id": "a3", "captured_at": 300, "imported_at": 30, "manual_order": null, "added_at": 3},
+        {"id": "a4", "captured_at": null, "imported_at": 40, "manual_order": null, "added_at": 4}
+      ],
+      "expected": ["a2", "a1", "a3", "a4"]
+    },
+    {
+      "id": "QUE-03",
+      "note": "播放 random：seed=42，SplitMix64+Fisher-Yates 固定序列",
+      "order_mode": "random",
+      "random_seed": 42,
+      "assets": [
+        {"id": "a1", "captured_at": 1, "imported_at": 1, "manual_order": null, "added_at": 1},
+        {"id": "a2", "captured_at": 2, "imported_at": 2, "manual_order": null, "added_at": 2},
+        {"id": "a3", "captured_at": 3, "imported_at": 3, "manual_order": null, "added_at": 3},
+        {"id": "a4", "captured_at": 4, "imported_at": 4, "manual_order": null, "added_at": 4},
+        {"id": "a5", "captured_at": 5, "imported_at": 5, "manual_order": null, "added_at": 5},
+        {"id": "a6", "captured_at": 6, "imported_at": 6, "manual_order": null, "added_at": 6}
+      ],
+      "expected": ["a5", "a4", "a1", "a3", "a6", "a2"]
+    },
+    {
+      "id": "QUE-04",
+      "note": "播放 random：同输入不同 seed=7，序列不同",
+      "order_mode": "random",
+      "random_seed": 7,
+      "assets": [
+        {"id": "a1", "captured_at": 1, "imported_at": 1, "manual_order": null, "added_at": 1},
+        {"id": "a2", "captured_at": 2, "imported_at": 2, "manual_order": null, "added_at": 2},
+        {"id": "a3", "captured_at": 3, "imported_at": 3, "manual_order": null, "added_at": 3},
+        {"id": "a4", "captured_at": 4, "imported_at": 4, "manual_order": null, "added_at": 4},
+        {"id": "a5", "captured_at": 5, "imported_at": 5, "manual_order": null, "added_at": 5},
+        {"id": "a6", "captured_at": 6, "imported_at": 6, "manual_order": null, "added_at": 6}
+      ],
+      "expected": ["a2", "a6", "a1", "a3", "a5", "a4"]
+    },
+    {
+      "id": "QUE-05",
+      "note": "播放 random：4 项 seed=1",
+      "order_mode": "random",
+      "random_seed": 1,
+      "assets": [
+        {"id": "p1", "captured_at": 1, "imported_at": 1, "manual_order": null, "added_at": 1},
+        {"id": "p2", "captured_at": 2, "imported_at": 2, "manual_order": null, "added_at": 2},
+        {"id": "p3", "captured_at": 3, "imported_at": 3, "manual_order": null, "added_at": 3},
+        {"id": "p4", "captured_at": 4, "imported_at": 4, "manual_order": null, "added_at": 4}
+      ],
+      "expected": ["p3", "p1", "p4", "p2"]
+    },
+    {
+      "id": "QUE-06",
+      "note": "浏览排序：COALESCE(captured_at, imported_at)，同键按 id",
+      "scenario": "browse",
+      "assets": [
+        {"id": "a1", "captured_at": null, "imported_at": 200, "manual_order": null, "added_at": 1},
+        {"id": "a2", "captured_at": 100, "imported_at": 999, "manual_order": null, "added_at": 2},
+        {"id": "a3", "captured_at": null, "imported_at": 100, "manual_order": null, "added_at": 3}
+      ],
+      "expected": ["a2", "a3", "a1"]
+    },
+    {
+      "id": "QUE-07",
+      "note": "时间筛选分桶：UTC 年月，无拍摄时间独立分组；桶按键升序",
+      "scenario": "bucket",
+      "assets": [
+        {"id": "a1", "captured_at": 1710504000000, "imported_at": 1, "manual_order": null, "added_at": 1},
+        {"id": "a2", "captured_at": 1704153600000, "imported_at": 2, "manual_order": null, "added_at": 2},
+        {"id": "a3", "captured_at": null, "imported_at": 3, "manual_order": null, "added_at": 3},
+        {"id": "a4", "captured_at": 1704063600000, "imported_at": 4, "manual_order": null, "added_at": 4}
+      ],
+      "expected": {
+        "buckets": {"2023-12": ["a4"], "2024-01": ["a2"], "2024-03": ["a1"]},
+        "bucket_order": ["2023-12", "2024-01", "2024-03"],
+        "no_captured_time": ["a3"]
+      }
+    }
+  ]
+}

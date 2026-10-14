@@ -1,0 +1,26 @@
+# 验收契约 A27 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "170075e2d26e84b8ec3d8f5daa4e23047d4c95ce099a86b1bd0a4d824a19d7ae"
+  id: A27
+  title: "节日专属播放"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "节日专属播放"
+  pass_conditions:
+    - "命中日期与时段自动切换到规则指定相框"
+    - "窗口结束自动回落默认/最后播放相框且不打断当前照片"
+    - "规则相框缺失或为空时回落默认并给出可见提示"
+    - "停用规则不再生效；同日多规则按列表顺序（position 升序）取首条启用项"
+    - "新增/编辑规则与既有启用规则时间区间交叠时保存前提示时间冲突（提示不阻断保存）"
+    - "离线可用；时区按当前系统时区判定"
+telemetry:
+  role: supportive
+  events:
+    - name: playback.session_start
+      params:
+        - 节日规则命中来源标记
+    - name: playback.session_end
+  metrics: []

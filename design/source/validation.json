@@ -1,0 +1,38 @@
+{
+  "version": "1.1",
+  "baseExpected": 276,
+  "baseFirstViewports": 276,
+  "missingBase": [],
+  "missingStates": [],
+  "artboards": 1825,
+  "svgCount": 1825,
+  "pngCount": 1825,
+  "overviewPngCount": 12,
+  "variantCountsIncludingContinuations": {
+    "base": 470,
+    "state": 770,
+    "dark": 168,
+    "reduce-motion": 40,
+    "large-type": 131,
+    "reduce-transparency": 36,
+    "conditional-full": 88,
+    "high-contrast": 72,
+    "foundation": 2,
+    "flow": 8,
+    "material": 40
+  },
+  "stateDefinitions": 96,
+  "issues": [],
+  "limitations": [
+    "All screen images are design renders, not running native apps",
+    "Android PNG uses local font approximation, not native sans-serif metrics",
+    "OS maximal accessibility size, VoiceOver/TalkBack order and touch targets require native acceptance",
+    "OS permission sheets, safe-area insets, keyboard avoidance, native material and navigation gestures require real-device tests",
+    "NAS/SMB, TOFU and private cleartext are designs only; no M0 success asserted",
+    "Google policy/OAuth/retention and weather provider gates remain unpassed",
+    "No visual sign-off by user or live-device acceptance",
+    "Synthesized landscapes are design samples, not product test fixtures"
+  ],
+  "noBusinessAppChanged": true,
+  "acceptance": "Generated design evidence only; not user sign-off or native/M0 validation"
+}

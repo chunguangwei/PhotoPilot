@@ -1,0 +1,25 @@
+# 验收契约 A15 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "429d55faee909fbc284e927a1683f8cccb914b22fe2542e95c8fc4b56494ee2c"
+  id: A15
+  title: "隐私删除当前图"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "隐私删除当前图"
+  pass_conditions:
+    - "立即撤下"
+    - "衍生图与队列同步清除"
+    - "不在其他相框残留"
+telemetry:
+  role: required
+  events:
+    - name: delete.performed
+      params:
+        - trigger=privacy
+    - name: render.transition_completed
+      params:
+        - interrupted_reason=privacy_removal
+  metrics: []

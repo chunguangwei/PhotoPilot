@@ -1,0 +1,22 @@
+# 验收契约 A01 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "aa9e74216b50107c9330579121eee8a789343e4e820afa08b97e2080bcd13637"
+  id: A01
+  title: "首次进入与权限克制"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "首次进入"
+  pass_conditions:
+    - "不强制注册"
+    - "不批量索取无关权限"
+    - "中英流程完整"
+telemetry:
+  role: supportive
+  events:
+    - name: app.ready_routed
+    - name: source.authorize_result
+    - name: settings.locale_changed
+  metrics: []

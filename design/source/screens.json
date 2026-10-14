@@ -1,0 +1,3864 @@
+{
+  "version": "1.1",
+  "pageMappingSource": "02 §6.1; deliberately NOT erroneous 11 §13.1 S07/S17 map",
+  "platforms": {
+    "ipad": [
+      [
+        1024,
+        768
+      ],
+      [
+        768,
+        1024
+      ],
+      [
+        520,
+        900
+      ]
+    ],
+    "android": [
+      [
+        1280,
+        800
+      ],
+      [
+        768,
+        1024
+      ],
+      [
+        520,
+        900
+      ]
+    ]
+  },
+  "locales": [
+    "zh",
+    "en"
+  ],
+  "scope": "Design-only editable SVG with companion PNG; static flows, not an interactive prototype",
+  "basePolicy": "276 base boards include 12 reserved S14 boards showing scoped Settings without any weather entry. Actual S14 lives only in conditional-full. This preserves 23-ID bookkeeping without inventing a hidden-feature entry.",
+  "variants": {
+    "dark": [
+      "S00",
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "S06",
+      "S06a",
+      "S06b",
+      "S06c",
+      "S07",
+      "S08",
+      "S09",
+      "S09a",
+      "S10",
+      "S10a",
+      "S11",
+      "S12",
+      "S13",
+      "S14",
+      "S15",
+      "S16",
+      "S17"
+    ],
+    "large-type": [
+      "S03",
+      "S08",
+      "S09",
+      "S10",
+      "S13",
+      "S15",
+      "S16"
+    ],
+    "high-contrast": [
+      "S09",
+      "S10",
+      "S12",
+      "S13",
+      "S15",
+      "S16"
+    ],
+    "reduce-transparency": [
+      "S03",
+      "S12",
+      "S13"
+    ],
+    "reduce-motion": [
+      "S00",
+      "S01",
+      "S12",
+      "S13"
+    ]
+  },
+  "pages": [
+    {
+      "id": "S00",
+      "title": null,
+      "layout": "launch",
+      "blocks": [],
+      "states": [
+        {
+          "id": "system-static"
+        }
+      ],
+      "nav": null
+    },
+    {
+      "id": "S01",
+      "title": "brand.name",
+      "layout": "ready",
+      "blocks": [
+        {
+          "kind": "text",
+          "key": "brand.positioning",
+          "style": "body",
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "local-ready"
+        },
+        {
+          "id": "migrating",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "launch.migration_running",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "launch.taking_longer",
+              "style": "body",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "failed",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "launch.migration_failed_title",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "launch.migration_failed_body",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.retry",
+              "action": "",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "settings.export_diagnostics",
+              "action": "",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "reduced-motion",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "settings.reduce_motion_note",
+              "style": "body",
+              "params": {}
+            }
+          ]
+        }
+      ],
+      "nav": null
+    },
+    {
+      "id": "S02",
+      "title": "welcome.title",
+      "layout": "welcome",
+      "blocks": [
+        {
+          "kind": "image",
+          "name": "lake",
+          "height": 300,
+          "mode": "fit_blur"
+        },
+        {
+          "kind": "text",
+          "key": "welcome.body",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "welcome.primary_action",
+          "action": "S04",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "welcome.secondary_action",
+          "action": "S12-demo",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "unauthorized"
+        },
+        {
+          "id": "skip-demo",
+          "blocks": [
+            {
+              "kind": "image",
+              "name": "mountain",
+              "height": 320,
+              "mode": "fit_blur"
+            },
+            {
+              "kind": "notice",
+              "key": "common.demo_badge",
+              "tone": "success",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "welcome.demo_notice",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "welcome.demo_exit",
+              "action": "S02",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "welcome.primary_action",
+              "action": "S04",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        }
+      ],
+      "nav": null
+    },
+    {
+      "id": "S03",
+      "title": "frames.title",
+      "layout": "home",
+      "blocks": [
+        {
+          "kind": "image",
+          "name": "lake",
+          "height": 300,
+          "mode": "fit_blur"
+        },
+        {
+          "kind": "text",
+          "key": "design.sample_lake",
+          "style": "heading",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "library.selection_summary",
+          "style": "heading",
+          "params": {
+            "selected": 24,
+            "playable": 20
+          }
+        },
+        {
+          "kind": "button",
+          "key": "frames.play",
+          "action": "S12",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "frames.latest_import",
+          "style": "heading",
+          "params": {}
+        },
+        {
+          "kind": "gallery",
+          "state": "ready",
+          "count": 3
+        },
+        {
+          "kind": "button",
+          "key": "frames.create",
+          "action": "S10",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "common.rename",
+          "action": "",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "frames.duplicate",
+          "action": "",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "frames.delete",
+          "action": "S16-frame",
+          "tone": "danger",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "frames.curate_hint_body",
+          "style": "body",
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "with-frames"
+        },
+        {
+          "id": "empty",
+          "blocks": [
+            {
+              "kind": "logo"
+            },
+            {
+              "kind": "text",
+              "key": "frames.empty_title",
+              "style": "heading",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "frames.empty_body",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "frames.create",
+              "action": "S10",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "source-unavailable",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "error.src_unavailable.body",
+              "tone": "warning",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "playing-elsewhere",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "frames.playing_elsewhere",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "frames.take_over",
+              "action": "S12",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        }
+      ],
+      "nav": "frames"
+    },
+    {
+      "id": "S04",
+      "title": "sources.add",
+      "layout": "sources",
+      "blocks": [
+        {
+          "kind": "text",
+          "key": "sources.import_vs_display",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "source",
+          "key": "source.local_photos.title",
+          "help": "source.local_photos.body",
+          "action": "S05",
+          "icon": "photos"
+        },
+        {
+          "kind": "source",
+          "key": "source.local_files.title",
+          "help": {
+            "ipad": "source.local_files.body",
+            "android": "design.files_android"
+          },
+          "action": "S05-files",
+          "icon": "folder"
+        },
+        {
+          "kind": "source",
+          "key": "source.icloud.title",
+          "help": {
+            "ipad": "source.icloud.body.ios",
+            "android": "source.icloud.body.android"
+          },
+          "action": {
+            "ipad": "S05-icloud",
+            "android": null
+          },
+          "icon": "cloud"
+        },
+        {
+          "kind": "source",
+          "key": "source.nas.title",
+          "help": "source.nas.body",
+          "action": "S06",
+          "icon": "server"
+        }
+      ],
+      "states": [
+        {
+          "id": "platform-capabilities"
+        }
+      ],
+      "nav": "sources",
+      "conditionalAppend": [
+        {
+          "kind": "source",
+          "key": "source.google.title",
+          "help": "source.google.body",
+          "action": "S04-google",
+          "icon": "cloud"
+        }
+      ],
+      "conditionalStates": [
+        {
+          "id": "google-handoff",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "source.google.body",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "source.google.not_full_sync",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "source.google.choose",
+              "action": "official-google-picker",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "settings.language_system_note",
+              "style": "caption",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "google-waiting",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "source.google.waiting_selection",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "source.google.opening_browser",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.cancel",
+              "action": "S04",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "google-returned",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "source.google.batch_name",
+              "style": "heading",
+              "params": {
+                "date": "2026-10-04"
+              }
+            },
+            {
+              "kind": "text",
+              "key": "library.selection_summary",
+              "style": "heading",
+              "params": {
+                "selected": 24,
+                "playable": 20
+              }
+            },
+            {
+              "kind": "text",
+              "key": "sources.import_vs_display",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.continue",
+              "action": "S08",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "google-cancelled",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "source.google.selection_cancelled",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "source.google.reselect",
+              "action": "official-google-picker",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.back",
+              "action": "S04",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "google-expired",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "error.src_session_expired.body",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "source.google.reselect",
+              "action": "official-google-picker",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "google-account-mismatch",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "error.auth_account_mismatch.body",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "source.google.reselect",
+              "action": "official-google-picker",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "google-partial-failed",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "import.partial_failed",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "import.retry_failed_only",
+              "action": "S08",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "frames.choose_content",
+              "action": "S10",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S05",
+      "title": "source.local_photos.title",
+      "layout": "permission",
+      "blocks": [
+        {
+          "kind": "logo"
+        },
+        {
+          "kind": "text",
+          "key": "source.local_photos.body",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "sources.import_vs_display",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "settings.language_system_note",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "welcome.primary_action",
+          "action": "system-picker",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "common.cancel",
+          "action": "S04",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "full-access",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "source.local_photos.body",
+              "tone": "success",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "settings.language_system_note",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "welcome.primary_action",
+              "action": "system-picker",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.cancel",
+              "action": "S04",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "partial-access",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "permission.photos.limited_notice",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "settings.language_system_note",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "welcome.primary_action",
+              "action": "system-picker",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.open_system_settings",
+              "action": "system-settings",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "denied",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "error.auth_denied.body",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "import.cancel_keeps_imported",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.open_system_settings",
+              "action": "system-settings",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "source.local_files.title",
+              "action": "system-files",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "cancelled",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "error.auth_cancelled.body",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "welcome.primary_action",
+              "action": "system-picker",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.back",
+              "action": "S04",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        }
+      ],
+      "nav": "sources",
+      "externalUI": "Application hand-off only. Never draw or counterfeit the system permission dialog. Android Photo Picker availability is runtime-detected; SAF fallback."
+    },
+    {
+      "id": "S06",
+      "title": "source.nas.title",
+      "layout": "form",
+      "blocks": [
+        {
+          "kind": "choice",
+          "key": "source.nas.protocol",
+          "options": [
+            {
+              "key": "design.value",
+              "params": {
+                "value": "WebDAV · HTTPS"
+              }
+            },
+            {
+              "key": "design.value",
+              "params": {
+                "value": "SMB 2 / 3"
+              }
+            }
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "input",
+          "key": "source.nas.host",
+          "value": "nas.example.test",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "input",
+          "key": "source.nas.port",
+          "value": "443",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "input",
+          "key": "source.nas.share",
+          "value": "Gallery",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "input",
+          "key": "source.nas.path",
+          "value": "/photos",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "input",
+          "key": "source.nas.username",
+          "value": "sample-user",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "input",
+          "key": "source.nas.password",
+          "value": "••••••••",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "switch",
+          "key": "source.nas.guest",
+          "on": false,
+          "help": null,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "sources.never_synced",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "source.nas.test_connection",
+          "action": "S06a",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "authentication-failed",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "error.src_auth_failed.body",
+              "tone": "error",
+              "params": {}
+            }
+          ],
+          "fieldErrors": {
+            "source.nas.username": "error.src_auth_failed.body",
+            "source.nas.password": "error.src_auth_failed.body"
+          }
+        },
+        {
+          "id": "tls-failed",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "error.tls_untrusted_cert.body",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "cert.title",
+              "action": "S06b",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "directory-denied",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "error.src_permission_denied.body",
+              "tone": "error",
+              "params": {}
+            }
+          ],
+          "fieldErrors": {
+            "source.nas.path": "error.src_permission_denied.body"
+          }
+        }
+      ],
+      "nav": "sources",
+      "gateNote": "NAS values are fictional inputs, not verified connections. SMB dependency and security properties remain M0-gated."
+    },
+    {
+      "id": "S06a",
+      "title": "permission.local_network.title",
+      "layout": "permission",
+      "blocks": [
+        {
+          "kind": "text",
+          "key": {
+            "ipad": "permission.local_network.body",
+            "android": "design.local_network_android"
+          },
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "permission.local_network.continue",
+          "action": "system-local-network-or-connect",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "common.cancel",
+          "action": "S06",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "first-entry"
+        },
+        {
+          "id": "denied-reentry",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": {
+                "ipad": "permission.local_network.denied_body",
+                "android": "design.local_network_android"
+              },
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": {
+                "ipad": "common.open_system_settings",
+                "android": "source.nas.test_connection"
+              },
+              "action": "platform-recovery",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.back",
+              "action": "S06",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "android-explanation",
+          "platformMeaning": {
+            "ipad": "Android capability note for cross-platform comparison; no iPad dialog is represented",
+            "android": "Normal Android path; no invented runtime permission"
+          },
+          "blocks": [
+            {
+              "kind": "text",
+              "key": {
+                "ipad": "permission.local_network.body",
+                "android": "design.local_network_android"
+              },
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "source.nas.test_connection",
+              "action": "S06",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.back",
+              "action": "S06",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        }
+      ],
+      "nav": "sources"
+    },
+    {
+      "id": "S06b",
+      "title": "cert.title",
+      "layout": "security",
+      "blocks": [
+        {
+          "kind": "notice",
+          "key": "error.tls_untrusted_cert.body",
+          "tone": "error",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "cert.body",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "input",
+          "key": "source.nas.host",
+          "value": "nas.example.test:443 · HTTPS",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "input",
+          "key": "cert.fingerprint",
+          "value": "SHA-256: 8A:72:10:C4:9F:2B:60:E1:47:32:AA:05:18:CC:69:FD:21:03:84:B6:91:50:77:28:4D:E9:62:14:BC:08:56:D0",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "input",
+          "key": "cert.issuer",
+          "value": "Example local CA",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "cert.valid_until",
+          "style": "body",
+          "params": {
+            "date": "2027-10-04"
+          }
+        },
+        {
+          "kind": "text",
+          "key": "design.cert_scope",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "switch",
+          "key": "design.cert_verified",
+          "on": false,
+          "help": null,
+          "disabled": false
+        },
+        {
+          "kind": "button",
+          "key": "common.cancel",
+          "action": "S06",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "cert.trust_once",
+          "action": "host-pin-confirm",
+          "tone": "secondary",
+          "disabled": true,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "self-signed"
+        },
+        {
+          "id": "hostname-mismatch",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "cert.hostname_mismatch",
+              "tone": "error",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "expired",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "design.cert_expired",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "input",
+              "key": "source.nas.host",
+              "value": "nas.example.test:443 · HTTPS",
+              "error": null,
+              "disabled": false
+            },
+            {
+              "kind": "text",
+              "key": "cert.valid_until",
+              "style": "body",
+              "params": {
+                "date": "2025-10-04"
+              }
+            },
+            {
+              "kind": "button",
+              "key": "common.back",
+              "action": "S06",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.retry",
+              "action": "S06",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "fingerprint-changed",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "cert.changed_title",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "cert.changed_body",
+              "style": "body",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "host-confirmed",
+          "checks": {
+            "design.cert_verified": true
+          },
+          "enableButtons": [
+            "cert.trust_once"
+          ]
+        }
+      ],
+      "nav": "sources",
+      "gateNote": "Illustrative TOFU candidate. Default deny; acknowledgement is not a completed connection. Expired certificates cannot be trusted."
+    },
+    {
+      "id": "S06c",
+      "title": "cleartext.title",
+      "layout": "security",
+      "blocks": [
+        {
+          "kind": "notice",
+          "key": "error.tls_cleartext_blocked.body",
+          "tone": "error",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "cleartext.body",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "input",
+          "key": "source.nas.host",
+          "value": "192.168.1.20:80 · HTTP",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "error.source_plaintext_private_only.body",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "switch",
+          "key": "design.cleartext_ack",
+          "on": false,
+          "help": null,
+          "disabled": false
+        },
+        {
+          "kind": "button",
+          "key": "common.cancel",
+          "action": "S06",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "cleartext.allow_private_only",
+          "action": "private-host-opt-in",
+          "tone": "secondary",
+          "disabled": true,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "risk"
+        },
+        {
+          "id": "cancelled",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "error.tls_cleartext_blocked.body",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.back",
+              "action": "S06",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "public-address",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "cleartext.public_blocked",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "input",
+              "key": "source.nas.host",
+              "value": "203.0.113.20:80 · HTTP",
+              "error": null,
+              "disabled": false
+            },
+            {
+              "kind": "button",
+              "key": "common.back",
+              "action": "S06",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "private-opt-in",
+          "checks": {
+            "design.cleartext_ack": true
+          },
+          "enableButtons": [
+            "cleartext.allow_private_only"
+          ]
+        }
+      ],
+      "nav": "sources",
+      "gateNote": "Private-cleartext rule is an UNVERIFIED candidate. M0 ATS/networkSecurityConfig, DNS, redirects and resolved-address checks are required. No request was made."
+    },
+    {
+      "id": "S07",
+      "title": "source.nas.choose_folders",
+      "layout": "directory",
+      "blocks": [
+        {
+          "kind": "text",
+          "key": "source.nas.sync_selected_only",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "folder",
+          "key": "design.sample_lake",
+          "selected": true
+        },
+        {
+          "kind": "folder",
+          "key": "design.sample_mountain",
+          "selected": false
+        },
+        {
+          "kind": "switch",
+          "key": "source.nas.include_subfolders",
+          "on": false,
+          "help": null,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "sources.import_vs_display",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "common.continue",
+          "action": "S08",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "enumerating",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "import.enumerating",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "skeleton"
+            },
+            {
+              "kind": "button",
+              "key": "common.continue",
+              "action": "S08",
+              "tone": "primary",
+              "disabled": true,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "empty",
+          "blocks": [
+            {
+              "kind": "logo"
+            },
+            {
+              "kind": "text",
+              "key": "library.empty_title",
+              "style": "heading",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.back",
+              "action": "S04",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "failed",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "error.src_unavailable.body",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.retry",
+              "action": "",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.back",
+              "action": "S04",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "partial-access",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "error.src_permission_denied.body",
+              "tone": "warning",
+              "params": {}
+            }
+          ],
+          "folderDenied": "design.sample_mountain"
+        }
+      ],
+      "nav": "sources"
+    },
+    {
+      "id": "S08",
+      "title": "import.title",
+      "layout": "import",
+      "blocks": [
+        {
+          "kind": "image",
+          "name": "mountain",
+          "height": 180,
+          "mode": "fit_blur"
+        },
+        {
+          "kind": "text",
+          "key": "import.summary",
+          "style": "heading",
+          "params": {
+            "imported": 124,
+            "total": 300,
+            "playable": 120,
+            "failed": 4
+          }
+        },
+        {
+          "kind": "progress",
+          "value": 0.41333333333333333
+        },
+        {
+          "kind": "text",
+          "key": "import.estimated_size",
+          "style": "body",
+          "params": {
+            "size": "840 MB"
+          }
+        },
+        {
+          "kind": "text",
+          "key": "import.cancel_keeps_imported",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "import.pause",
+          "action": "",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "frames.choose_content",
+          "action": "S10",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "import.cancel_job",
+          "action": "S16-batch",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "waiting-network",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "import.waiting_network",
+              "tone": "warning",
+              "params": {}
+            }
+          ],
+          "replaceButtons": {
+            "import.pause": "import.resume"
+          }
+        },
+        {
+          "id": "waiting-space",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "error.store_low_space.body",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "settings.storage",
+              "action": "S15",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ],
+          "replaceButtons": {
+            "import.pause": "import.resume"
+          }
+        },
+        {
+          "id": "partial-failed",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "import.partial_failed",
+              "tone": "error",
+              "params": {}
+            }
+          ],
+          "replaceButtons": {
+            "import.pause": "import.retry_failed_only"
+          }
+        },
+        {
+          "id": "paused",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "import.pause",
+              "tone": "warning",
+              "params": {}
+            }
+          ],
+          "replaceButtons": {
+            "import.pause": "import.resume"
+          }
+        },
+        {
+          "id": "unknown-total",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "import.preparing_unknown_total",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "skeleton"
+            },
+            {
+              "kind": "text",
+              "key": "import.size_calculating",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "import.pause",
+              "action": "",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "import.cancel_job",
+              "action": "S16-batch",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        }
+      ],
+      "nav": "sources"
+    },
+    {
+      "id": "S09",
+      "title": "library.title",
+      "layout": "library",
+      "blocks": [
+        {
+          "kind": "choice",
+          "key": "library.title",
+          "options": [
+            "library.tab_photos",
+            "library.tab_folders"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "button",
+          "key": "common.search",
+          "action": "S09a",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "common.select",
+          "action": "",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "gallery",
+          "state": "selection",
+          "count": 6
+        },
+        {
+          "kind": "text",
+          "key": "library.selection_note_static",
+          "style": "body",
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "empty",
+          "blocks": [
+            {
+              "kind": "logo"
+            },
+            {
+              "kind": "text",
+              "key": "library.empty_title",
+              "style": "heading",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "library.empty_body",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "sources.add",
+              "action": "S04",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "not-downloaded",
+          "galleryState": "pending"
+        },
+        {
+          "id": "damaged",
+          "galleryState": "damaged"
+        },
+        {
+          "id": "selection"
+        }
+      ],
+      "nav": "library",
+      "fixedActions": [
+        {
+          "kind": "button",
+          "key": "library.add_to_frame",
+          "action": "S10",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "fixedSelectionSummary": true
+    },
+    {
+      "id": "S09a",
+      "title": "common.search",
+      "layout": "search",
+      "blocks": [
+        {
+          "kind": "input",
+          "key": "library.search_placeholder",
+          "value": "lake",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "choice",
+          "key": "library.filter_source",
+          "options": [
+            "source.local_photos.title",
+            "source.nas.title"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "choice",
+          "key": "library.filter_time",
+          "options": [
+            "common.default",
+            "library.filter_no_date",
+            "common.custom"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "input",
+          "key": "library.filter_time",
+          "value": "2026-01-01 – 2026-10-04",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "choice",
+          "key": "library.filter_orientation",
+          "options": [
+            "library.orientation_landscape",
+            "library.orientation_portrait",
+            "library.orientation_square"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "choice",
+          "key": "library.filter_status",
+          "options": [
+            "library.status_ready",
+            "library.status_downloading",
+            "library.status_pending",
+            "library.status_failed",
+            "library.status_excluded"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "switch",
+          "key": "library.filter_in_frame",
+          "on": false,
+          "help": null,
+          "disabled": false
+        },
+        {
+          "kind": "switch",
+          "key": "rule.recursive_toggle",
+          "on": false,
+          "help": null,
+          "disabled": false
+        },
+        {
+          "kind": "choice",
+          "key": "common.sort",
+          "options": [
+            "library.sort_captured_desc",
+            "library.sort_captured_asc",
+            "library.sort_imported_desc",
+            "library.sort_name_asc"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "notice",
+          "key": "library.filter_active",
+          "tone": "success",
+          "params": {}
+        },
+        {
+          "kind": "gallery",
+          "state": "selection",
+          "count": 3
+        },
+        {
+          "kind": "button",
+          "key": "library.select_all_scope",
+          "action": "",
+          "tone": "primary",
+          "disabled": false,
+          "params": {
+            "count": 24
+          }
+        },
+        {
+          "kind": "button",
+          "key": "common.clear_filter",
+          "action": "",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "library.selection_summary",
+          "style": "heading",
+          "params": {
+            "selected": 24,
+            "playable": 20
+          }
+        }
+      ],
+      "states": [
+        {
+          "id": "no-results",
+          "galleryState": "no-results"
+        },
+        {
+          "id": "filters-active"
+        },
+        {
+          "id": "result-scope",
+          "prepend": [
+            {
+              "kind": "text",
+              "key": "library.select_all_scope",
+              "style": "heading",
+              "params": {
+                "count": 24
+              }
+            }
+          ],
+          "galleryState": "all-selected"
+        }
+      ],
+      "nav": "library"
+    },
+    {
+      "id": "S10",
+      "title": "library.choose_title",
+      "layout": "selection",
+      "blocks": [
+        {
+          "kind": "input",
+          "key": "frames.name_placeholder",
+          "value": "My frame",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "choice",
+          "key": "library.choose_title",
+          "options": [
+            "library.folder_snapshot_badge",
+            "library.tab_folders"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "library.selection_note_static",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "gallery",
+          "state": "selection",
+          "count": 4
+        },
+        {
+          "kind": "text",
+          "key": "frames.pending_count",
+          "style": "body",
+          "params": {
+            "count": 4
+          }
+        },
+        {
+          "kind": "switch",
+          "key": "rule.dynamic_toggle",
+          "on": false,
+          "help": "library.selection_note_static",
+          "disabled": false
+        },
+        {
+          "kind": "switch",
+          "key": "rule.recursive_toggle",
+          "on": false,
+          "help": null,
+          "disabled": false
+        },
+        {
+          "kind": "button",
+          "key": "rule.manage_excluded",
+          "action": "S09",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "rule.excluded_count",
+          "style": "body",
+          "params": {
+            "count": 2
+          }
+        },
+        {
+          "kind": "button",
+          "key": "order.manual_title",
+          "action": "S10a",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "unsaved",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "design.selection_unsaved",
+              "tone": "warning",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "zero-playable",
+          "zeroPlayable": true,
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "player.all_pending_title",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "player.empty_action_downloads",
+              "action": "S08",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "frames.play",
+              "action": "S12",
+              "tone": "primary",
+              "disabled": true,
+              "params": {}
+            }
+          ],
+          "galleryState": "pending"
+        },
+        {
+          "id": "selection-changed",
+          "selected": 26,
+          "playable": 22
+        },
+        {
+          "id": "dynamic-confirm",
+          "checks": {
+            "rule.dynamic_toggle": true
+          },
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "rule.dynamic_warning",
+              "tone": "warning",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "discard-confirm",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "playback.unsaved_title",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.back",
+              "action": "S10",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.cancel",
+              "action": "S03",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        }
+      ],
+      "nav": "frames",
+      "fixedActions": [
+        {
+          "kind": "button",
+          "key": "common.save",
+          "action": "S03",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "fixedSelectionSummary": true
+    },
+    {
+      "id": "S10a",
+      "title": "order.manual_title",
+      "layout": "order",
+      "blocks": [
+        {
+          "kind": "text",
+          "key": "order.manual_hint",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "order",
+          "items": [
+            "lake",
+            "mountain",
+            "lake-portrait"
+          ]
+        },
+        {
+          "kind": "button",
+          "key": "common.save",
+          "action": "S10",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "new-appended",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "order.new_appended",
+              "tone": "success",
+              "params": {}
+            }
+          ],
+          "newItem": true
+        },
+        {
+          "id": "excluded-order-preserved",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "design.order_preserved",
+              "tone": "warning",
+              "params": {}
+            }
+          ],
+          "excludeItem": true
+        }
+      ],
+      "nav": "frames"
+    },
+    {
+      "id": "S11",
+      "title": "library.photo_detail",
+      "layout": "detail",
+      "blocks": [
+        {
+          "kind": "image",
+          "name": "lake-portrait",
+          "height": 360,
+          "mode": "fit_blur"
+        },
+        {
+          "kind": "text",
+          "key": "library.detail_source",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "source.local_photos.title",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "library.detail_dimensions",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "format.dimensions",
+          "style": "body",
+          "params": {
+            "width": 720,
+            "height": 1080
+          }
+        },
+        {
+          "kind": "text",
+          "key": "library.detail_file_size",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "format.file_size_mb",
+          "style": "body",
+          "params": {
+            "value": 4
+          }
+        },
+        {
+          "kind": "text",
+          "key": "library.detail_taken_at",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "design.value",
+          "style": "body",
+          "params": {
+            "value": "2026-10-04"
+          }
+        },
+        {
+          "kind": "text",
+          "key": "library.detail_in_frames",
+          "style": "body",
+          "params": {
+            "count": 2
+          }
+        },
+        {
+          "kind": "button",
+          "key": "library.add_to_frame",
+          "action": "S10",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "library.remove_from_frame",
+          "action": "S16-frame-only",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "missing",
+          "replaceImage": true,
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "library.detail_unavailable",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.retry",
+              "action": "",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "permission-changed",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "permission.photos.limited_notice",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "import.cancel_keeps_imported",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.open_system_settings",
+              "action": "system-settings",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "multiple-frames",
+          "prepend": [
+            {
+              "kind": "text",
+              "key": "library.detail_in_frames",
+              "style": "heading",
+              "params": {
+                "count": 2
+              }
+            }
+          ]
+        }
+      ],
+      "nav": "library"
+    },
+    {
+      "id": "S12",
+      "title": null,
+      "layout": "player",
+      "blocks": [],
+      "states": [
+        {
+          "id": "playing",
+          "controls": false
+        },
+        {
+          "id": "paused",
+          "paused": true
+        },
+        {
+          "id": "controls-visible"
+        },
+        {
+          "id": "offline",
+          "playerNotice": "player.offline_notice"
+        },
+        {
+          "id": "single-photo",
+          "playerNotice": "player.single_photo_notice",
+          "single": true
+        },
+        {
+          "id": "more-menu",
+          "more": true
+        },
+        {
+          "id": "revoked",
+          "safeScreen": true,
+          "playerNotice": "player.revoked_fallback"
+        },
+        {
+          "id": "empty",
+          "safeScreen": true,
+          "playerNotice": "player.empty_title"
+        },
+        {
+          "id": "demo",
+          "playerNotice": "welcome.demo_notice"
+        }
+      ],
+      "nav": null
+    },
+    {
+      "id": "S13",
+      "title": "playback.title",
+      "layout": "settings",
+      "blocks": [
+        {
+          "kind": "image",
+          "name": "lake-portrait",
+          "height": 210,
+          "mode": "fit_blur"
+        },
+        {
+          "kind": "text",
+          "key": "playback.preview",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "choice",
+          "key": "playback.hold_duration",
+          "options": [
+            {
+              "key": "format.seconds_short",
+              "params": {
+                "value": 5
+              }
+            },
+            {
+              "key": "format.seconds_short",
+              "params": {
+                "value": 10
+              }
+            },
+            {
+              "key": "format.seconds_short",
+              "params": {
+                "value": 15
+              }
+            },
+            {
+              "key": "format.seconds_short",
+              "params": {
+                "value": 30
+              }
+            },
+            {
+              "key": "format.seconds_short",
+              "params": {
+                "value": 60
+              }
+            },
+            "common.custom"
+          ],
+          "selected": 1,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "playback.hold_duration_help",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "input",
+          "key": "playback.hold_custom_title",
+          "value": "10",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "choice",
+          "key": "design.duration_unit",
+          "options": [
+            "design.unit_seconds",
+            "design.unit_minutes"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "playback.hold_custom_help",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "choice",
+          "key": "playback.transition",
+          "options": [
+            "playback.transition_none",
+            "playback.transition_crossfade",
+            "playback.transition_slide"
+          ],
+          "selected": 1,
+          "disabled": false
+        },
+        {
+          "kind": "slider",
+          "key": "playback.transition_duration",
+          "value": 0.8,
+          "min": 0.2,
+          "max": 3.0,
+          "step": 0.1,
+          "format": "design.seconds_decimal"
+        },
+        {
+          "kind": "text",
+          "key": "playback.transition_duration_help",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "choice",
+          "key": "playback.transition_duration",
+          "options": [
+            {
+              "key": "design.seconds_decimal",
+              "params": {
+                "value": 0.3
+              }
+            },
+            {
+              "key": "design.seconds_decimal",
+              "params": {
+                "value": 0.5
+              }
+            },
+            {
+              "key": "design.seconds_decimal",
+              "params": {
+                "value": 0.8
+              }
+            },
+            {
+              "key": "design.seconds_decimal",
+              "params": {
+                "value": 1.2
+              }
+            }
+          ],
+          "selected": 2,
+          "disabled": false
+        },
+        {
+          "kind": "input",
+          "key": "playback.transition_duration",
+          "value": "0.8",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "design.transition_range",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "choice",
+          "key": "playback.fit_mode",
+          "options": [
+            "playback.fit_blur",
+            "playback.fit_color",
+            "playback.fill_crop"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "playback.solid_auto",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "switch",
+          "key": "playback.clock",
+          "on": true,
+          "help": null,
+          "disabled": false
+        },
+        {
+          "kind": "switch",
+          "key": "playback.date",
+          "on": true,
+          "help": null,
+          "disabled": false
+        },
+        {
+          "kind": "choice",
+          "key": "playback.overlay_position",
+          "options": [
+            "playback.position_bottom_leading",
+            "playback.position_bottom_trailing",
+            "playback.position_top_leading",
+            "playback.position_top_trailing"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "choice",
+          "key": "design.alignment",
+          "options": [
+            "design.align_left",
+            "design.align_right"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "choice",
+          "key": "playback.hour_format",
+          "options": [
+            "settings.appearance_system",
+            "playback.hour_24",
+            "playback.hour_12"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "choice",
+          "key": "playback.order",
+          "options": [
+            "playback.order_captured",
+            "playback.order_random",
+            "playback.order_manual"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "button",
+          "key": "order.manual_title",
+          "action": "S10a",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "slider",
+          "key": "playback.brightness",
+          "value": 0.65,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "format": "design.value"
+        },
+        {
+          "kind": "text",
+          "key": "design.brightness_restore",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "switch",
+          "key": "playback.keep_awake_paused",
+          "on": true,
+          "help": null,
+          "disabled": false
+        },
+        {
+          "kind": "switch",
+          "key": "settings.rest_window",
+          "on": false,
+          "help": "settings.rest_help",
+          "disabled": false
+        },
+        {
+          "kind": "input",
+          "key": "settings.rest_start",
+          "value": "22:00",
+          "error": null,
+          "disabled": true
+        },
+        {
+          "kind": "input",
+          "key": "settings.rest_end",
+          "value": "07:00",
+          "error": null,
+          "disabled": true
+        },
+        {
+          "kind": "text",
+          "key": "settings.background_note",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "choice",
+          "key": "design.quality",
+          "options": [
+            "design.quality_auto",
+            "design.quality_balanced",
+            "design.quality_low"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "playback.saved_next_photo",
+          "style": "caption",
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "no-transition",
+          "transitionOff": true,
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "playback.transition_duration_disabled",
+              "tone": "warning",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "invalid-input",
+          "fieldErrors": {
+            "playback.hold_custom_title": "playback.invalid_number"
+          },
+          "invalid": true,
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "playback.invalid_number",
+              "tone": "error",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "reduced-motion",
+          "transitionOff": true,
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "settings.reduce_motion_note",
+              "tone": "warning",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "fill-crop",
+          "crop": true,
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "playback.fit_crop_warning",
+              "tone": "warning",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "solid-color",
+          "solid": true
+        },
+        {
+          "id": "unsaved",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "playback.unsaved_title",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.back",
+              "action": "S13",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        }
+      ],
+      "nav": "frames",
+      "fixedActions": [
+        {
+          "kind": "button",
+          "key": "common.save",
+          "action": "S12",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "common.cancel",
+          "action": "S03",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "conditionalAppend": [
+        {
+          "kind": "switch",
+          "key": "playback.weather",
+          "on": false,
+          "help": null,
+          "disabled": false
+        },
+        {
+          "kind": "button",
+          "key": "weather.choose_city",
+          "action": "S14",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        }
+      ]
+    },
+    {
+      "id": "S14",
+      "title": "weather.title",
+      "layout": "weather",
+      "blocks": [
+        {
+          "kind": "input",
+          "key": "weather.search_city",
+          "value": "",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "design.weather_sample",
+          "style": "heading",
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "weather.choose_city",
+          "action": "",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "weather.use_current_location",
+          "action": "system-location",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "weather.location_help",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "choice",
+          "key": "weather.units",
+          "options": [
+            "settings.appearance_system",
+            "weather.unit_celsius",
+            "weather.unit_fahrenheit"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "weather.updated_at",
+          "style": "body",
+          "params": {
+            "time": "10:20"
+          }
+        },
+        {
+          "kind": "text",
+          "key": "weather.attribution",
+          "style": "body",
+          "params": {
+            "provider": "[provider pending M0]"
+          }
+        },
+        {
+          "kind": "button",
+          "key": "common.save",
+          "action": "S13",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "no-permission",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "permission.location.denied_body",
+              "tone": "warning",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "offline",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "error.net_offline.body",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "weather.unavailable",
+              "style": "body",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "service-unavailable",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "weather.unavailable",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.retry",
+              "action": "",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "delayed",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "weather.delayed",
+              "tone": "warning",
+              "params": {}
+            }
+          ]
+        }
+      ],
+      "nav": "settings",
+      "conditionalOnly": true,
+      "gateNote": "Conditional-full only: M0 weather provider, privacy, attribution, proxy and quota must pass. No entry in scoped navigation. No live weather data."
+    },
+    {
+      "id": "S15",
+      "title": "settings.title",
+      "layout": "settings",
+      "blocks": [
+        {
+          "kind": "choice",
+          "key": "settings.appearance",
+          "options": [
+            "settings.appearance_system",
+            "settings.appearance_light",
+            "settings.appearance_dark"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "choice",
+          "key": "settings.language",
+          "options": [
+            "settings.language_system",
+            "settings.language_zh",
+            "settings.language_en"
+          ],
+          "selected": 0,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "settings.language_system_note",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "settings.accessibility",
+          "style": "heading",
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "common.open_system_settings",
+          "action": "system-a11y",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "settings.reduce_motion_note",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "settings.reduce_transparency_note",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "settings.storage",
+          "style": "heading",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "settings.storage_photos",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "format.file_size_gb",
+          "style": "body",
+          "params": {
+            "value": 8
+          }
+        },
+        {
+          "kind": "text",
+          "key": "settings.storage_cache",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "format.file_size_mb",
+          "style": "body",
+          "params": {
+            "value": 240
+          }
+        },
+        {
+          "kind": "text",
+          "key": "settings.storage_free",
+          "style": "body",
+          "params": {
+            "size": "28 GB"
+          }
+        },
+        {
+          "kind": "progress",
+          "value": 0.32
+        },
+        {
+          "kind": "button",
+          "key": "delete.clear_cache",
+          "action": "S16-cache",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "delete.clear_cache_body",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "input",
+          "key": "settings.storage_threshold",
+          "value": "max(1 GB, 5%)",
+          "error": null,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "design.storage_threshold_help",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "common.edit",
+          "action": "S15-threshold-risk",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "switch",
+          "key": "design.import_originals",
+          "on": true,
+          "help": null,
+          "disabled": true
+        },
+        {
+          "kind": "text",
+          "key": "settings.network",
+          "style": "heading",
+          "params": {}
+        },
+        {
+          "kind": "switch",
+          "key": "settings.wifi_only",
+          "on": true,
+          "help": null,
+          "disabled": false
+        },
+        {
+          "kind": "button",
+          "key": "import.use_cellular",
+          "action": "S08",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "switch",
+          "key": "source.nas.mirror_delete",
+          "on": false,
+          "help": "source.nas.mirror_delete_body",
+          "disabled": false
+        },
+        {
+          "kind": "button",
+          "key": "cert.trusted_hosts_title",
+          "action": "S15-trust",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "cert.revoke_trust",
+          "action": "S06b",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "cleartext.title",
+          "style": "heading",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "error.tls_cleartext_blocked.body",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "common.details",
+          "action": "S06c",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "settings.background_note",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "switch",
+          "key": "settings.auto_play",
+          "on": true,
+          "help": "design.auto_play_help",
+          "disabled": false
+        },
+        {
+          "kind": "switch",
+          "key": "settings.rest_window",
+          "on": false,
+          "help": "settings.rest_help",
+          "disabled": false
+        },
+        {
+          "kind": "input",
+          "key": "settings.rest_start",
+          "value": "22:00",
+          "error": null,
+          "disabled": true
+        },
+        {
+          "kind": "input",
+          "key": "settings.rest_end",
+          "value": "07:00",
+          "error": null,
+          "disabled": true
+        },
+        {
+          "kind": "text",
+          "key": "settings.privacy",
+          "style": "heading",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "settings.privacy_summary",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "switch",
+          "key": "design.backup_photos",
+          "on": false,
+          "help": null,
+          "disabled": true
+        },
+        {
+          "kind": "text",
+          "key": "design.backup_help",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "switch",
+          "key": "settings.share_statistics",
+          "on": false,
+          "help": null,
+          "disabled": false
+        },
+        {
+          "kind": "text",
+          "key": "settings.diagnostics",
+          "style": "heading",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "settings.diagnostics_help",
+          "style": "caption",
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "settings.export_diagnostics",
+          "action": "",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "delete.restore_deleted",
+          "action": "S09",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "delete.clear_all_title",
+          "action": "S16-all",
+          "tone": "danger",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "settings.about",
+          "style": "heading",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "settings.version",
+          "style": "body",
+          "params": {
+            "version": "1.1 design"
+          }
+        },
+        {
+          "kind": "button",
+          "key": "settings.licenses",
+          "action": "",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "settings.privacy_policy",
+          "action": "",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "settings.terms",
+          "action": "",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "language-zh",
+          "languageSelection": 1
+        },
+        {
+          "id": "language-en",
+          "languageSelection": 2
+        },
+        {
+          "id": "high-contrast",
+          "highContrast": true
+        },
+        {
+          "id": "restricted",
+          "prepend": [
+            {
+              "kind": "notice",
+              "key": "settings.background_note",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "notice",
+              "key": "error.store_low_space.body",
+              "tone": "error",
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "rest-enabled",
+          "checks": {
+            "settings.rest_window": true
+          },
+          "restEnabled": true
+        },
+        {
+          "id": "threshold-risk",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "design.threshold_risk",
+              "tone": "warning",
+              "params": {}
+            },
+            {
+              "kind": "input",
+              "key": "settings.storage_threshold",
+              "value": "1 GB",
+              "error": null,
+              "disabled": false
+            },
+            {
+              "kind": "button",
+              "key": "common.cancel",
+              "action": "S15",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.save",
+              "action": "S15",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "mirror-delete-confirm",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "source.nas.mirror_delete_body",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "source.nas.mirror_delete_confirm",
+              "style": "body",
+              "params": {
+                "count": 24
+              }
+            },
+            {
+              "kind": "button",
+              "key": "common.cancel",
+              "action": "S15",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.continue",
+              "action": "S15",
+              "tone": "danger",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "trusted-hosts",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "cert.trusted_hosts_body",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "input",
+              "key": "source.nas.host",
+              "value": "nas.example.test:443 · HTTPS",
+              "error": null,
+              "disabled": false
+            },
+            {
+              "kind": "input",
+              "key": "cert.fingerprint",
+              "value": "SHA-256 · sample fingerprint",
+              "error": null,
+              "disabled": false
+            },
+            {
+              "kind": "button",
+              "key": "cert.revoke_trust",
+              "action": "S06b",
+              "tone": "danger",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        }
+      ],
+      "nav": "settings",
+      "fixedActions": [
+        {
+          "kind": "button",
+          "key": "common.done",
+          "action": "S03",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "conditionalAppend": [
+        {
+          "kind": "button",
+          "key": "weather.title",
+          "action": "S14",
+          "tone": "secondary",
+          "disabled": false,
+          "params": {}
+        }
+      ]
+    },
+    {
+      "id": "S16",
+      "title": "delete.from_device_action",
+      "layout": "danger",
+      "blocks": [
+        {
+          "kind": "notice",
+          "key": "delete.from_device_title",
+          "tone": "error",
+          "params": {
+            "count": 24
+          }
+        },
+        {
+          "kind": "text",
+          "key": "delete.from_device_body",
+          "style": "body",
+          "params": {
+            "frames": 2
+          }
+        },
+        {
+          "kind": "text",
+          "key": "library.selection_summary",
+          "style": "heading",
+          "params": {
+            "selected": 24,
+            "playable": 20
+          }
+        },
+        {
+          "kind": "button",
+          "key": "common.cancel",
+          "action": "S09",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "delete.from_device_action",
+          "action": "confirm-local-delete",
+          "tone": "danger",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "multiple-frame-references",
+          "title": "delete.from_device_action"
+        },
+        {
+          "id": "clear-credentials",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "sources.disconnect_confirm_title",
+              "style": "heading",
+              "params": {
+                "name": "NAS"
+              }
+            },
+            {
+              "kind": "text",
+              "key": "sources.disconnect_body",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "switch",
+              "key": "sources.disconnect_keep_copies",
+              "on": true,
+              "help": "design.keep_copies_help",
+              "disabled": false
+            },
+            {
+              "kind": "button",
+              "key": "common.cancel",
+              "action": "S04",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "sources.disconnect",
+              "action": "disconnect-keep",
+              "tone": "danger",
+              "disabled": false,
+              "params": {}
+            }
+          ],
+          "title": "sources.disconnect"
+        },
+        {
+          "id": "keep-copies",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "sources.disconnect_confirm_title",
+              "style": "heading",
+              "params": {
+                "name": "NAS"
+              }
+            },
+            {
+              "kind": "text",
+              "key": "sources.disconnect_body",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "switch",
+              "key": "sources.disconnect_keep_copies",
+              "on": true,
+              "help": "design.keep_copies_help",
+              "disabled": false
+            },
+            {
+              "kind": "text",
+              "key": "frames.playable_count",
+              "style": "body",
+              "params": {
+                "count": 20
+              }
+            },
+            {
+              "kind": "button",
+              "key": "common.cancel",
+              "action": "S04",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "sources.disconnect",
+              "action": "disconnect-keep",
+              "tone": "danger",
+              "disabled": false,
+              "params": {}
+            }
+          ],
+          "title": "sources.disconnect"
+        },
+        {
+          "id": "delete-copies",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "sources.disconnect_confirm_title",
+              "style": "heading",
+              "params": {
+                "name": "NAS"
+              }
+            },
+            {
+              "kind": "switch",
+              "key": "sources.disconnect_keep_copies",
+              "on": false,
+              "help": "design.remove_copies_help",
+              "disabled": false
+            },
+            {
+              "kind": "notice",
+              "key": "delete.from_device_body",
+              "tone": "error",
+              "params": {
+                "frames": 2
+              }
+            },
+            {
+              "kind": "button",
+              "key": "common.cancel",
+              "action": "S04",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "sources.disconnect",
+              "action": "disconnect-delete",
+              "tone": "danger",
+              "disabled": false,
+              "params": {}
+            }
+          ],
+          "title": "sources.disconnect"
+        },
+        {
+          "id": "frame-only",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "library.remove_from_frame_note",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.cancel",
+              "action": "S11",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "library.remove_from_frame",
+              "action": "remove-frame",
+              "tone": "danger",
+              "disabled": false,
+              "params": {}
+            }
+          ],
+          "title": "library.remove_from_frame"
+        },
+        {
+          "id": "cache-only",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "delete.clear_cache_body",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.cancel",
+              "action": "S15",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "delete.clear_cache",
+              "action": "clear-cache",
+              "tone": "secondary",
+              "disabled": false,
+              "params": {}
+            }
+          ],
+          "title": "delete.clear_cache"
+        },
+        {
+          "id": "all-data",
+          "blocks": [
+            {
+              "kind": "notice",
+              "key": "delete.clear_all_title",
+              "tone": "error",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "delete.clear_all_body",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.cancel",
+              "action": "S15",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "delete.clear_all_title",
+              "action": "erase-data",
+              "tone": "danger",
+              "disabled": false,
+              "params": {}
+            }
+          ],
+          "title": "delete.clear_all_title"
+        },
+        {
+          "id": "frame",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "frames.delete_confirm_title",
+              "style": "body",
+              "params": {
+                "name": "My frame"
+              }
+            },
+            {
+              "kind": "text",
+              "key": "frames.delete_confirm_body",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "common.cancel",
+              "action": "S03",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "frames.delete",
+              "action": "delete-frame",
+              "tone": "danger",
+              "disabled": false,
+              "params": {}
+            }
+          ],
+          "title": "frames.delete"
+        },
+        {
+          "id": "batch",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "import.cancel_keeps_imported",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "import.cancel_job",
+              "action": "cancel-keep-imports",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "import.cancel_and_delete",
+              "action": "confirm-batch-delete",
+              "tone": "danger",
+              "disabled": false,
+              "params": {}
+            }
+          ],
+          "title": "import.cancel_job"
+        }
+      ],
+      "nav": null
+    },
+    {
+      "id": "S17",
+      "title": "player.resting_title",
+      "layout": "rest",
+      "blocks": [
+        {
+          "kind": "text",
+          "key": "design.rest_midnight",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "text",
+          "key": "settings.background_note",
+          "style": "body",
+          "params": {}
+        },
+        {
+          "kind": "button",
+          "key": "player.resting_resume",
+          "action": "S12",
+          "tone": "primary",
+          "disabled": false,
+          "params": {}
+        }
+      ],
+      "states": [
+        {
+          "id": "cross-midnight"
+        },
+        {
+          "id": "locked",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "error.store_file_locked.body",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "text",
+              "key": "settings.background_note",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "player.resting_resume",
+              "action": "unlock-then-resume",
+              "tone": "primary",
+              "disabled": true,
+              "params": {}
+            }
+          ]
+        },
+        {
+          "id": "wake-resume",
+          "blocks": [
+            {
+              "kind": "text",
+              "key": "design.rest_resumed",
+              "style": "body",
+              "params": {}
+            },
+            {
+              "kind": "button",
+              "key": "player.resting_resume",
+              "action": "S12",
+              "tone": "primary",
+              "disabled": false,
+              "params": {}
+            }
+          ]
+        }
+      ],
+      "nav": null
+    }
+  ],
+  "nativeAcceptance": [
+    "All screen images are design renders, not running native apps",
+    "Android PNG uses local font approximation, not native sans-serif metrics",
+    "OS maximal accessibility size, VoiceOver/TalkBack order and touch targets require native acceptance",
+    "OS permission sheets, safe-area insets, keyboard avoidance, native material and navigation gestures require real-device tests",
+    "NAS/SMB, TOFU and private cleartext are designs only; no M0 success asserted",
+    "Google policy/OAuth/retention and weather provider gates remain unpassed",
+    "No visual sign-off by user or live-device acceptance",
+    "Synthesized landscapes are design samples, not product test fixtures"
+  ]
+}

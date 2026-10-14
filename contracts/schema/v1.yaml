@@ -1,0 +1,584 @@
+# 数据模型契约 v1
+# 真源：04-工程规格书.md §3（类型/NULL/FK/on-delete 按 R12 裁决 2026-10-04 补全版）
+# 本文件为机器可读契约，由 tools/check_contracts.py 校验；改动须同步更新 meta.expected 并复审。
+meta:
+  checksum: "5a5b7f2da56384288c793072460fe5b5b82526f66fa86a8a9c810a75aa03ca56"
+  schema_version: 2
+  source: "04-工程规格书.md §3"
+  rulings: ["R01", "R02", "R04", "R06", "R08", "R10", "R12"]
+  type_notation: ["str", "int", "bool", "blob"]
+  global_rules:
+    - "所有表含 created_at int NOT NULL、updated_at int NOT NULL（04 §3 前言；schema_meta 等未逐表列出的表也适用）"
+    - "未标 NULL 即 NOT NULL（R12 裁决，2026-10-04）"
+    - "所有外键显式注明 on-delete 动作"
+    - "bool 以 0/1 存储"
+  expected:
+    table_count: 17
+    column_count: 160
+tables:
+  - name: source
+    source_ref: "04 §3.1"
+    columns:
+      - name: id
+        type: str
+        pk: true
+      - name: type
+        type: str
+        values: ["local_photos", "local_files", "icloud_photos", "google_picker", "smb", "webdav"]
+      - name: display_name
+        type: str
+        doc: "用户可改，不含凭证"
+      - name: endpoint_key
+        type: str
+        null: true
+        doc: "SMB/WebDAV 的 协议+主机+端口+共享 规范化串，不含用户名密码"
+      - name: credential_ref
+        type: str
+        null: true
+        doc: "安全存储别名，非机密本体"
+      - name: account_key
+        type: str
+        null: true
+        doc: "来源账号绑定（如 Google account sub 的本地哈希）；系统来源为 NULL（R12 裁决）"
+      - name: capability_flags
+        type: int
+        doc: "位掩码，见 04 §6.1（contracts/capability-flags.yaml）"
+      - name: retention_policy
+        type: str
+        values: ["user_managed", "policy_gated"]
+        doc: "Google 默认 policy_gated"
+      - name: status
+        type: str
+        values: ["active", "needs_auth", "unavailable", "disconnected"]
+      - name: epoch
+        type: int
+        default: 1
+        doc: "来源级代号，见 04 §8"
+      - name: last_sync_at
+        type: int
+        null: true
+        doc: "最近一次成功完整扫描"
+      - name: settings_json
+        type: str
+        null: true
+        doc: "递归开关、镜像删除开关等"
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    unique_constraints:
+      - columns: ["type", "endpoint_key"]
+        partial: "endpoint_key IS NOT NULL"
+        doc: "阻止重复添加同一台 NAS"
+  - name: source_asset
+    source_ref: "04 §3.2"
+    columns:
+      - name: id
+        type: str
+        pk: true
+      - name: source_id
+        type: str
+        fk: {table: source, column: id, on_delete: CASCADE}
+      - name: remote_key
+        type: str
+        doc: "NAS 为相对路径；Google 为本次选择项标识；PhotoKit 为本地标识符"
+      - name: stable_id
+        type: str
+        null: true
+        doc: "来源提供的稳定 ID（如可得）"
+      - name: revision
+        type: str
+        doc: "mtime:size 或来源版本串"
+      - name: byte_size
+        type: int
+        null: true
+      - name: remote_taken_at
+        type: int
+        null: true
+      - name: last_seen_at
+        type: int
+        doc: "最近一次扫描见到"
+      - name: missing_scan_count
+        type: int
+        default: 0
+        doc: "连续缺失次数，见 04 §9.2"
+      - name: access_state
+        type: str
+        values: ["accessible", "unauthorized", "missing", "removed"]
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    unique_constraints:
+      - columns: ["source_id", "remote_key"]
+    indexes:
+      - columns: ["source_id", "last_seen_at"]
+      - columns: ["stable_id"]
+  - name: asset
+    source_ref: "04 §3.3"
+    columns:
+      - name: id
+        type: str
+        pk: true
+      - name: content_hash
+        type: str
+        doc: "见 04 §4"
+      - name: byte_size
+        type: int
+      - name: format
+        type: str
+        values: ["jpeg", "png", "heic", "mp4", "mov", "dng", "cr2", "nef", "arw", "raf", "orf", "rw2"]
+      - name: pixel_width
+        type: int
+        doc: "EXIF 校正后的显示宽"
+      - name: pixel_height
+        type: int
+        doc: "EXIF 校正后的显示高"
+      - name: exif_orientation
+        type: int
+        doc: "1–8 原始值，仅作记录"
+      - name: orientation_class
+        type: str
+        values: ["landscape", "portrait", "square"]
+        doc: "由校正后宽高计算"
+      - name: captured_at
+        type: int
+        null: true
+        doc: "无 EXIF 时为 NULL，不用导入时间冒充"
+      - name: media_kind
+        type: str
+        default: image
+        values: ["image", "video"]
+        doc: "视频为 video（P1，2026-10-08 冻结）；既有行默认 image"
+      - name: duration_ms
+        type: int
+        null: true
+        doc: "视频时长毫秒；图片为 NULL"
+      - name: captured_at_source
+        type: str
+        values: ["exif", "container", "unknown"]
+      - name: imported_at
+        type: int
+      - name: original_rel_path
+        type: str
+        doc: "相对 originals/"
+      - name: original_file_name
+        type: str
+        null: true
+        doc: "来源文件名，仅用于搜索与展示"
+      - name: readiness
+        type: str
+        values: ["ready", "pending", "failed", "deleted"]
+      - name: failure_code
+        type: str
+        null: true
+        doc: "见 04 §10（contracts/error-codes.yaml）"
+      - name: privacy_excluded
+        type: bool
+        default: 0
+        doc: "全局隐藏"
+      - name: edge_color
+        type: str
+        null: true
+        doc: "sRGB hex，供 fit_color 补边；采样失败为 NULL，回退 surface.canvas（R06 裁决）"
+      - name: deleted_at
+        type: int
+        null: true
+        doc: "逻辑删除时间，撤销窗口内可恢复"
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    unique_constraints:
+      - columns: ["content_hash"]
+        partial: "readiness != 'deleted'"
+        doc: "部分索引实现"
+    indexes:
+      - columns: ["captured_at", "id"]
+      - columns: ["readiness"]
+      - columns: ["orientation_class"]
+      - columns: ["original_file_name"]
+  - name: asset_origin
+    source_ref: "04 §3.4"
+    columns:
+      - name: asset_id
+        type: str
+        pk: true
+        fk: {table: asset, column: id, on_delete: CASCADE}
+      - name: source_asset_id
+        type: str
+        pk: true
+        fk: {table: source_asset, column: id, on_delete: NO ACTION}
+        doc: "断开来源保留副本时须先把行转 detached 再删 source/source_asset 行（04 §9.4）；禁止隐式级联"
+      - name: imported_at
+        type: int
+      - name: policy_state
+        type: str
+        values: ["allowed", "gated", "revoked"]
+      - name: origin_state
+        type: str
+        default: active
+        values: ["active", "detached"]
+        doc: "detached 不参与来源政策检查（R01 裁决）"
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    primary_key: ["asset_id", "source_asset_id"]
+    doc: "一个 asset 可有多个来源（PRD §4.1 撤权判定依赖此表）"
+  - name: collection
+    source_ref: "04 §3.5"
+    columns:
+      - name: id
+        type: str
+        pk: true
+      - name: parent_id
+        type: str
+        null: true
+        fk: {table: collection, column: id, on_delete: RESTRICT}
+        doc: "删除目录前须先处理子目录或先移走"
+      - name: source_id
+        type: str
+        null: true
+        fk: {table: source, column: id, on_delete: CASCADE}
+        doc: "用户自建目录为 NULL"
+      - name: name
+        type: str
+        doc: "显示名"
+      - name: rel_path
+        type: str
+        null: true
+        doc: "NAS 相对路径，用于递归匹配"
+      - name: type
+        type: str
+        values: ["source_folder", "import_batch", "album_map", "user_folder"]
+      - name: sort_key
+        type: str
+        doc: "稳定排序键"
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    unique_constraints:
+      - columns: ["source_id", "rel_path"]
+    checks:
+      - "插入前校验 parent_id 不指向自身子树（防环，应用层校验）"
+  - name: collection_asset
+    source_ref: "04 §3.5"
+    columns:
+      - name: collection_id
+        type: str
+        fk: {table: collection, column: id, on_delete: CASCADE}
+      - name: asset_id
+        type: str
+        fk: {table: asset, column: id, on_delete: CASCADE}
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    primary_key: ["collection_id", "asset_id"]
+    indexes:
+      - columns: ["asset_id"]
+    doc: "二元组均 NOT NULL。04 §3.5 以 collection_asset(collection_id, asset_id) 表述该二元组，本契约据此显式声明复合主键，保证同一目录内同一 asset 仅一行；无代理键"
+  - name: frame
+    source_ref: "04 §3.6"
+    columns:
+      - name: id
+        type: str
+        pk: true
+        doc: "PK 依 04 §3.6 列首 id 及 playback_snapshot FK→frame.id 推定"
+      - name: name
+        type: str
+      - name: cover_asset_id
+        type: str
+        null: true
+        fk: {table: asset, column: id, on_delete: SET NULL}
+      - name: settings_json
+        type: str
+        doc: "校验后写入，未知字段保留以便前向兼容；结构见 04 §3.6"
+      - name: selection_version
+        type: int
+        default: 0
+      - name: order_mode
+        type: str
+        values: ["captured_asc", "random", "manual"]
+      - name: random_seed
+        type: int
+        default: 0
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+  - name: frame_selection
+    source_ref: "04 §3.6"
+    columns:
+      - name: frame_id
+        type: str
+        fk: {table: frame, column: id, on_delete: CASCADE}
+      - name: asset_id
+        type: str
+        null: true
+        fk: {table: asset, column: id, on_delete: CASCADE}
+      - name: source_asset_id
+        type: str
+        null: true
+        fk: {table: source_asset, column: id, on_delete: CASCADE}
+        doc: "引用提交前身份（待下载占位）（R02 裁决）"
+      - name: mode
+        type: str
+        values: ["include", "exclude"]
+      - name: manual_order
+        type: int
+        null: true
+      - name: added_at
+        type: int
+      - name: ref_key
+        type: str
+        derived: true
+        doc: "派生列：ref_key = COALESCE(asset_id, source_asset_id)，由 CHECK 保证恰一非空故结果唯一且 NOT NULL。平台实现为生成列或插入/更新时同事务写入并禁止外部直接改写；R02 重指向时在同事务内由 source_asset_id 改为 asset_id 并保留 manual_order"
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    primary_key: ["frame_id", "ref_key"]
+    derived_key_columns: ["ref_key"]
+    checks:
+      - "CHECK ((asset_id IS NULL) != (source_asset_id IS NULL))"
+      - "ref_key 为 asset_id 与 source_asset_id 中恰一个非空者（派生列）"
+      - "ref_key = COALESCE(asset_id, source_asset_id)，不得由调用方自定义取值"
+  - name: frame_directory_rule
+    source_ref: "04 §3.6"
+    columns:
+      - name: frame_id
+        type: str
+        fk: {table: frame, column: id, on_delete: CASCADE}
+      - name: collection_id
+        type: str
+        fk: {table: collection, column: id, on_delete: CASCADE}
+      - name: recursive
+        type: bool
+        default: 0
+      - name: include_future
+        type: bool
+        default: 0
+        doc: "为 1 须用户显式确认（PRD §6.2），写入前校验确认标记"
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    primary_key: ["frame_id", "collection_id"]
+  - name: import_job
+    source_ref: "04 §3.7"
+    columns:
+      - name: id
+        type: str
+        pk: true
+      - name: source_id
+        type: str
+        fk: {table: source, column: id, on_delete: CASCADE}
+      - name: scope_json
+        type: str
+      - name: epoch_at_create
+        type: int
+      - name: cursor
+        type: str
+        null: true
+        doc: "持久化断点，见 04 §7.2"
+      - name: total_known
+        type: int
+        null: true
+        doc: "为 NULL 时 UI 不显示百分比（PRD §5.5）"
+      - name: counts_json
+        type: str
+        default: "{}"
+      - name: state
+        type: str
+        values: ["running", "paused", "paused_auto", "completed", "partial_failed", "failed", "canceled"]
+        doc: "派生聚合状态（R11 裁决），由 item 状态与 job 级信号按 04 §7.2 推导算法（2026-10-04 冻结：user_cancel > fatal_error > user_pause > auto_pause > running > 终态规则；全 skipped 无取消信号归 completed）唯一推导后写回；禁止手工置状态；共享向量 contracts/vectors/import-job-aggregate.json"
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+  - name: import_item
+    source_ref: "04 §3.7"
+    columns:
+      - name: id
+        type: str
+        pk: true
+      - name: job_id
+        type: str
+        fk: {table: import_job, column: id, on_delete: CASCADE}
+      - name: source_asset_id
+        type: str
+        fk: {table: source_asset, column: id, on_delete: CASCADE}
+      - name: state
+        type: str
+        values: ["queued", "enumerating", "pending_download", "downloading", "verifying", "committing", "imported", "paused", "waiting_network", "waiting_space", "needs_auth", "failed", "canceled", "skipped"]
+        doc: "04 §7 主链＋分支态；终态 imported/failed/canceled/skipped。取消统一拼作 canceled，与 import_job.state 及 09 口径一致（2026-10-04 拼写归一）"
+      - name: temp_rel_path
+        type: str
+        null: true
+      - name: retry_count
+        type: int
+        default: 0
+      - name: retry_at
+        type: int
+        null: true
+      - name: failure_code
+        type: str
+        null: true
+        doc: "见 04 §10（contracts/error-codes.yaml）"
+      - name: bytes_done
+        type: int
+        default: 0
+      - name: bytes_total
+        type: int
+        null: true
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    indexes:
+      - columns: ["job_id", "state"]
+      - columns: ["retry_at"]
+  - name: local_tombstone
+    source_ref: "04 §3.7"
+    columns:
+      - name: id
+        type: str
+        pk: true
+      - name: content_hash
+        type: str
+        null: true
+      - name: source_fingerprint
+        type: str
+        null: true
+      - name: remote_id
+        type: str
+        null: true
+      - name: byte_size
+        type: int
+        null: true
+      - name: head64k_hash
+        type: str
+        null: true
+      - name: reason
+        type: str
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    doc: "三级内容匹配，优先级递减，见 04 §9.3（R04 裁决）"
+  - name: playback_snapshot
+    source_ref: "04 §3.7"
+    columns:
+      - name: frame_id
+        type: str
+        pk: true
+        fk: {table: frame, column: id, on_delete: CASCADE}
+      - name: asset_id
+        type: str
+        null: true
+        fk: {table: asset, column: id, on_delete: SET NULL}
+      - name: remaining_hold_ms
+        type: int
+      - name: cursor_json
+        type: str
+      - name: seed
+        type: int
+      - name: selection_version
+        type: int
+      - name: saved_at
+        type: int
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    doc: "不存任何可外泄 URL"
+  - name: weather_snapshot
+    source_ref: "04 §3.7"
+    columns:
+      - name: place_id
+        type: str
+        pk: true
+      - name: condition_code
+        type: str
+      - name: temperature_milli
+        type: int
+        doc: "固定公制毫度整数，避免浮点"
+      - name: observed_at
+        type: int
+      - name: fetched_at
+        type: int
+      - name: expires_at
+        type: int
+      - name: attribution
+        type: str
+        null: true
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    doc: "缓存身份为 place_id 单键；单位与语言是展示偏好、不参与身份（R08 裁决）"
+  - name: settings_kv
+    source_ref: "04 §3.7"
+    columns:
+      - name: key
+        type: str
+        pk: true
+      - name: value_json
+        type: str
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    doc: "应用级设置；含 library_version 计数器（R10 裁决，04 §5.4）"
+  - name: schema_meta
+    source_ref: "04 §3.7"
+    columns:
+      - name: key
+        type: str
+        pk: true
+      - name: value
+        type: str
+        doc: "存 schema_version；NOT NULL 依 04 §3 前言未标 NULL 即 NOT NULL 规则"
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+  - name: holiday_schedule
+    source_ref: "04 §3.7"
+    columns:
+      - name: id
+        type: str
+        pk: true
+      - name: frame_id
+        type: str
+        fk: {table: frame, column: id, on_delete: CASCADE}
+      - name: name
+        type: str
+      - name: start_date
+        type: str
+        doc: "本地日历日期 YYYY-MM-DD 含边界；允许跨天跨月；判定按当前系统时区"
+      - name: end_date
+        type: str
+        doc: "含边界；end_date < start_date 非法"
+      - name: start_time
+        type: int
+        null: true
+        doc: "当日分钟 0..1439；与 end_time 同缺=全天窗口；start>end 跨午夜；start==end 无效（口径同休息时段）"
+      - name: end_time
+        type: int
+        null: true
+      - name: position
+        type: int
+        default: 0
+        doc: "列表顺序=优先级；同日命中多条按 position 升序取首条启用项（PRD §7.5）"
+      - name: enabled
+        type: bool
+        default: 1
+      - name: created_at
+        type: int
+      - name: updated_at
+        type: int
+    doc: "节日播放规则（PRD §7.5、验收 A27，2026-10-13 实现授权）；schema_version 2 收录"

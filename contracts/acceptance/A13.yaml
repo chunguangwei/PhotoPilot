@@ -1,0 +1,24 @@
+# 验收契约 A13 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "9e9b4bd5ec13243f3a77ff4f0946094665661c47fb7710205add553493bbdeab"
+  id: A13
+  title: "Google Picker 接入"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "Google Picker"
+  pass_conditions:
+    - "SDK/OAuth 在 iPadOS 15 与 Android 10 最低测试设备上兼容"
+    - "官方授权与选图返回正常"
+    - "无全库同步误导"
+    - "政策门控通过"
+telemetry:
+  role: required
+  events:
+    - name: source.authorize_result
+    - name: import.job_created
+    - name: import.job_finished
+  metrics:
+    - PM8

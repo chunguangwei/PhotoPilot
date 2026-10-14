@@ -1,0 +1,4031 @@
+{
+  "version": "1.0",
+  "source": "11-双语词条表.md §1–§13（2026-10-04 基线，R17 复数裁决）",
+  "locales": [
+    "zh-Hans",
+    "en"
+  ],
+  "pluralContract": {
+    "zh-Hans": [
+      "other"
+    ],
+    "en": [
+      "one",
+      "other"
+    ]
+  },
+  "entries": [
+    {
+      "key": "launch.brand_presentation",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "品牌展示 · 6 秒",
+      "en": "Brand presentation · 6 seconds"
+    },
+    {
+      "key": "a11y.expanded",
+      "section": "11. 无障碍",
+      "platform": "all",
+      "zh": "已展开",
+      "en": "Expanded"
+    },
+    {
+      "key": "a11y.collapsed",
+      "section": "11. 无障碍",
+      "platform": "all",
+      "zh": "已收起",
+      "en": "Collapsed"
+    },
+    {
+      "key": "brand.name",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "PhotoPilot",
+      "en": "PhotoPilot"
+    },
+    {
+      "key": "brand.subtitle",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "光屿",
+      "en": "",
+      "note": "英文环境不显示（11.md §0 中文副标规则）"
+    },
+    {
+      "key": "brand.tagline",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "让回忆，留在眼前。",
+      "en": "Keep your memories in view."
+    },
+    {
+      "key": "brand.positioning",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "安静的家庭相框",
+      "en": "A quiet home for your photos"
+    },
+    {
+      "key": "common.done",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "完成",
+      "en": "Done"
+    },
+    {
+      "key": "common.cancel",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "取消",
+      "en": "Cancel"
+    },
+    {
+      "key": "common.discard",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "放弃",
+      "en": "Discard"
+    },
+    {
+      "key": "common.save",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "保存",
+      "en": "Save"
+    },
+    {
+      "key": "common.retry",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "重试",
+      "en": "Retry"
+    },
+    {
+      "key": "common.delete",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "删除",
+      "en": "Delete"
+    },
+    {
+      "key": "common.remove",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "移除",
+      "en": "Remove"
+    },
+    {
+      "key": "common.close",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "关闭",
+      "en": "Close"
+    },
+    {
+      "key": "common.back",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "返回",
+      "en": "Back"
+    },
+    {
+      "key": "common.next",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "下一步",
+      "en": "Next"
+    },
+    {
+      "key": "common.skip",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "跳过",
+      "en": "Skip"
+    },
+    {
+      "key": "common.continue",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "继续",
+      "en": "Continue"
+    },
+    {
+      "key": "common.select",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "选择",
+      "en": "Select"
+    },
+    {
+      "key": "common.select_all",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "全选",
+      "en": "Select all"
+    },
+    {
+      "key": "common.deselect_all",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "取消全选",
+      "en": "Deselect all"
+    },
+    {
+      "key": "common.edit",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "编辑",
+      "en": "Edit"
+    },
+    {
+      "key": "common.rename",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "重命名",
+      "en": "Rename"
+    },
+    {
+      "key": "common.search",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "搜索",
+      "en": "Search"
+    },
+    {
+      "key": "common.filter",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "筛选",
+      "en": "Filter"
+    },
+    {
+      "key": "common.clear_filter",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "清除筛选",
+      "en": "Clear filters"
+    },
+    {
+      "key": "common.sort",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "排序",
+      "en": "Sort"
+    },
+    {
+      "key": "common.settings",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "设置",
+      "en": "Settings"
+    },
+    {
+      "key": "common.open_system_settings",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "打开系统设置",
+      "en": "Open Settings"
+    },
+    {
+      "key": "common.learn_more",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "了解更多",
+      "en": "Learn more"
+    },
+    {
+      "key": "common.details",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "查看详情",
+      "en": "View details"
+    },
+    {
+      "key": "common.copy_diagnostics",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "复制诊断信息",
+      "en": "Copy diagnostics"
+    },
+    {
+      "key": "common.loading",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "正在载入",
+      "en": "Loading"
+    },
+    {
+      "key": "common.on",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "开",
+      "en": "On"
+    },
+    {
+      "key": "common.off",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "关",
+      "en": "Off"
+    },
+    {
+      "key": "common.default",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "默认",
+      "en": "Default"
+    },
+    {
+      "key": "common.custom",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "自定义",
+      "en": "Custom"
+    },
+    {
+      "key": "common.none",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "无",
+      "en": "None"
+    },
+    {
+      "key": "common.unknown",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "未知",
+      "en": "Unknown"
+    },
+    {
+      "key": "common.demo_badge",
+      "section": "1. 品牌与通用",
+      "platform": "all",
+      "zh": "演示内容",
+      "en": "Sample"
+    },
+    {
+      "key": "launch.preparing_library",
+      "section": "2. 启动与欢迎（S00–S02）",
+      "platform": "all",
+      "zh": "正在整理照片库",
+      "en": "Preparing your library"
+    },
+    {
+      "key": "launch.taking_longer",
+      "section": "2. 启动与欢迎（S00–S02）",
+      "platform": "all",
+      "zh": "仍在整理，请稍候",
+      "en": "Still preparing, please wait"
+    },
+    {
+      "key": "launch.migration_running",
+      "section": "2. 启动与欢迎（S00–S02）",
+      "platform": "all",
+      "zh": "正在升级数据",
+      "en": "Updating your library"
+    },
+    {
+      "key": "launch.migration_failed_title",
+      "section": "2. 启动与欢迎（S00–S02）",
+      "platform": "all",
+      "zh": "数据升级未完成",
+      "en": "Library update didn’t finish"
+    },
+    {
+      "key": "launch.migration_failed_body",
+      "section": "2. 启动与欢迎（S00–S02）",
+      "platform": "all",
+      "zh": "你的照片仍在本机。可以重试，或导出诊断信息。",
+      "en": "Your photos are still on this device. You can retry or export diagnostics."
+    },
+    {
+      "key": "launch.store_recovered_title",
+      "section": "2. 启动与欢迎（S00–S02）",
+      "platform": "all",
+      "zh": "照片库已重建",
+      "en": "Library was rebuilt"
+    },
+    {
+      "key": "launch.store_recovered_body",
+      "section": "2. 启动与欢迎（S00–S02）",
+      "platform": "all",
+      "zh": "原数据库无法读取，已自动备份并新建空库。照片文件未受影响，可重新导入。",
+      "en": "The previous database could not be read. It was backed up and a new empty library was created. Your photo files are untouched; you can import again."
+    },
+    {
+      "key": "welcome.title",
+      "section": "2. 启动与欢迎（S00–S02）",
+      "platform": "all",
+      "zh": "让回忆，留在眼前。",
+      "en": "Keep your memories in view."
+    },
+    {
+      "key": "welcome.body",
+      "section": "2. 启动与欢迎（S00–S02）",
+      "platform": "all",
+      "zh": "把这台平板变成家里的相框。三步：选择照片、挑选展示内容、开始播放。",
+      "en": "Turn this tablet into a picture frame. Three steps: choose photos, pick what to display, start the slideshow."
+    },
+    {
+      "key": "welcome.primary_action",
+      "section": "2. 启动与欢迎（S00–S02）",
+      "platform": "all",
+      "zh": "选择照片",
+      "en": "Choose photos"
+    },
+    {
+      "key": "welcome.secondary_action",
+      "section": "2. 启动与欢迎（S00–S02）",
+      "platform": "all",
+      "zh": "先看看",
+      "en": "Take a look first"
+    },
+    {
+      "key": "welcome.demo_notice",
+      "section": "2. 启动与欢迎（S00–S02）",
+      "platform": "all",
+      "zh": "这是示例照片，不会加入你的照片库。",
+      "en": "These are sample photos. They won’t be added to your library."
+    },
+    {
+      "key": "welcome.demo_exit",
+      "section": "2. 启动与欢迎（S00–S02）",
+      "platform": "all",
+      "zh": "退出示例",
+      "en": "Exit sample"
+    },
+    {
+      "key": "nav.frames",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "相框",
+      "en": "Frames"
+    },
+    {
+      "key": "nav.library",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "照片库",
+      "en": "Library"
+    },
+    {
+      "key": "nav.sources",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "来源",
+      "en": "Sources"
+    },
+    {
+      "key": "nav.settings",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "设置",
+      "en": "Settings"
+    },
+    {
+      "key": "nav.subtitle",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "你的日常画廊",
+      "en": "Your everyday gallery"
+    },
+    {
+      "key": "nav.privacy_footer",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "所有照片，留在本机。",
+      "en": "Private by design."
+    },
+    {
+      "key": "frames.title",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "相框",
+      "en": "Your frames"
+    },
+    {
+      "key": "frames.create",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "创建相框",
+      "en": "Create frame"
+    },
+    {
+      "key": "frames.empty_title",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "还没有相框",
+      "en": "No frames yet"
+    },
+    {
+      "key": "frames.empty_body",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "创建一个相框，选择要展示的照片。",
+      "en": "Create a frame and choose the photos to display."
+    },
+    {
+      "key": "frames.play",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "开始播放",
+      "en": "Start slideshow"
+    },
+    {
+      "key": "frames.resume",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "继续播放",
+      "en": "Resume slideshow"
+    },
+    {
+      "key": "frames.choose_content",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "选择展示内容",
+      "en": "Choose what to display"
+    },
+    {
+      "key": "frames.playback_settings",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "播放设置",
+      "en": "Playback settings"
+    },
+    {
+      "key": "frames.duplicate",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "复制相框",
+      "en": "Duplicate frame"
+    },
+    {
+      "key": "frames.delete",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "删除相框",
+      "en": "Delete frame"
+    },
+    {
+      "key": "frames.delete_confirm_title",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "删除相框“{name}”？",
+      "en": "Delete the frame “{name}”?",
+      "placeholders": {
+        "name": "string"
+      }
+    },
+    {
+      "key": "frames.delete_confirm_body",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "只删除这个相框的展示设置，照片不会被删除。",
+      "en": "This removes the frame’s settings only. Your photos will not be deleted."
+    },
+    {
+      "key": "frames.name_placeholder",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "相框名称",
+      "en": "Frame name"
+    },
+    {
+      "key": "frames.name_default",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "我的相框",
+      "en": "My frame"
+    },
+    {
+      "key": "frames.latest_import",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "最近导入",
+      "en": "Latest import"
+    },
+    {
+      "key": "frames.view_library",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "查看照片库",
+      "en": "View library"
+    },
+    {
+      "key": "frames.curate_hint_title",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "由你决定展示什么",
+      "en": "You choose what appears"
+    },
+    {
+      "key": "frames.curate_hint_body",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "导入后仍可单独选片",
+      "en": "Import first. Curate next."
+    },
+    {
+      "key": "frames.playing_elsewhere",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "播放正在另一个窗口进行",
+      "en": "The slideshow is playing in another window"
+    },
+    {
+      "key": "frames.take_over",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "在此窗口播放",
+      "en": "Play here"
+    },
+    {
+      "key": "frames.selected_count",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "已选 {count} 张",
+      "en": {
+        "one": "{count} photo selected",
+        "other": "{count} photos selected"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "frames.playable_count",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "{count} 张可离线播放",
+      "en": {
+        "one": "{count} photo available offline",
+        "other": "{count} photos available offline"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "frames.pending_count",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "{count} 张正在准备",
+      "en": {
+        "one": "{count} photo preparing",
+        "other": "{count} photos preparing"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "frames.failed_count",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "{count} 张失败",
+      "en": {
+        "one": "{count} photo failed",
+        "other": "{count} photos failed"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "sources.title",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "来源",
+      "en": "Sources"
+    },
+    {
+      "key": "sources.add",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "添加照片来源",
+      "en": "Add a photo source"
+    },
+    {
+      "key": "sources.empty_body",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "添加一个来源，把照片导入到这台设备。",
+      "en": "Add a source to import photos onto this device."
+    },
+    {
+      "key": "sources.import_vs_display",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "导入后，你仍可选择展示哪些照片。",
+      "en": "After importing, choose which photos to display."
+    },
+    {
+      "key": "sources.sync_now",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "立即同步",
+      "en": "Sync now"
+    },
+    {
+      "key": "sources.last_sync",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "上次同步 {time}",
+      "en": "Last synced {time}",
+      "placeholders": {
+        "time": "string"
+      }
+    },
+    {
+      "key": "sources.last_import",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "上次导入 {time}",
+      "en": "Last imported {time}",
+      "placeholders": {
+        "time": "string"
+      }
+    },
+    {
+      "key": "sources.never_synced",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "尚未同步",
+      "en": "Not synced yet"
+    },
+    {
+      "key": "sources.status_active",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "正常",
+      "en": "Connected"
+    },
+    {
+      "key": "sources.status_needs_auth",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "需要重新授权",
+      "en": "Needs authorization"
+    },
+    {
+      "key": "sources.status_unavailable",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "暂时无法连接",
+      "en": "Temporarily unavailable"
+    },
+    {
+      "key": "sources.status_disconnected",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "已断开",
+      "en": "Disconnected"
+    },
+    {
+      "key": "sources.disconnect",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "断开来源",
+      "en": "Disconnect source"
+    },
+    {
+      "key": "sources.disconnect_confirm_title",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "断开“{name}”？",
+      "en": "Disconnect “{name}”?",
+      "placeholders": {
+        "name": "string"
+      }
+    },
+    {
+      "key": "sources.disconnect_keep_copies",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "保留已导入的本地照片",
+      "en": "Keep imported photos on this device"
+    },
+    {
+      "key": "sources.disconnect_body",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "将停止同步并删除保存的连接信息。",
+      "en": "Syncing stops and saved connection details are removed."
+    },
+    {
+      "key": "sources.folders_count",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "{count} 个目录",
+      "en": {
+        "one": "{count} folder",
+        "other": "{count} folders"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "source.local_photos.title",
+      "section": "4.2 本地与苹果端图库",
+      "platform": "all",
+      "zh": "本机照片",
+      "en": "Photos on this device"
+    },
+    {
+      "key": "source.local_photos.body",
+      "section": "4.2 本地与苹果端图库",
+      "platform": "all",
+      "zh": "从系统照片库选择照片，或从文件应用导入图片。",
+      "en": "Choose photos from the photo library, or import images from Files."
+    },
+    {
+      "key": "source.local_files.title",
+      "section": "4.2 本地与苹果端图库",
+      "platform": "all",
+      "zh": "文件",
+      "en": "Files"
+    },
+    {
+      "key": "source.local_files.body",
+      "section": "4.2 本地与苹果端图库",
+      "platform": "all",
+      "zh": "从系统文件中选择图片，包括 iCloud 云盘中的文件。",
+      "en": "Choose images from Files, including iCloud Drive."
+    },
+    {
+      "key": "source.icloud.title",
+      "section": "4.2 本地与苹果端图库",
+      "platform": "all",
+      "zh": "iCloud 照片",
+      "en": "iCloud Photos"
+    },
+    {
+      "key": "source.icloud.body.ios",
+      "section": "4.2 本地与苹果端图库",
+      "platform": "ios",
+      "zh": "从这台 iPad 的系统照片库读取，云端照片会先下载到本机。",
+      "en": "Reads this iPad’s system photo library. Photos stored in iCloud are downloaded first."
+    },
+    {
+      "key": "source.icloud.body.android",
+      "section": "4.2 本地与苹果端图库",
+      "platform": "android",
+      "zh": "请先将 iCloud 照片导出到本地，再从文件导入。",
+      "en": "Export your iCloud photos to this device first, then import from Files."
+    },
+    {
+      "key": "source.icloud.not_a_login",
+      "section": "4.2 本地与苹果端图库",
+      "platform": "all",
+      "zh": "不需要输入 Apple ID 密码。",
+      "en": "No Apple ID password is required."
+    },
+    {
+      "key": "source.icloud.track_album",
+      "section": "4.2 本地与苹果端图库",
+      "platform": "all",
+      "zh": "跟踪相册变化",
+      "en": "Keep this album in sync"
+    },
+    {
+      "key": "source.icloud.track_album_body",
+      "section": "4.2 本地与苹果端图库",
+      "platform": "all",
+      "zh": "开启后会持续检查该相册的新照片，需要照片库访问权限。",
+      "en": "Checks the album for new photos. Requires photo library access."
+    },
+    {
+      "key": "source.icloud.downloading_from_cloud",
+      "section": "4.2 本地与苹果端图库",
+      "platform": "all",
+      "zh": "正在从 iCloud 下载",
+      "en": "Downloading from iCloud"
+    },
+    {
+      "key": "source.google.title",
+      "section": "4.3 Google Photos",
+      "platform": "all",
+      "zh": "Google 相册",
+      "en": "Google Photos"
+    },
+    {
+      "key": "source.google.choose",
+      "section": "4.3 Google Photos",
+      "platform": "all",
+      "zh": "选择 Google Photos 照片",
+      "en": "Choose from Google Photos"
+    },
+    {
+      "key": "source.google.body",
+      "section": "4.3 Google Photos",
+      "platform": "all",
+      "zh": "在 Google 官方页面选择照片，选中的照片会下载到本机。",
+      "en": "Pick photos on Google’s own page. Selected photos are downloaded to this device."
+    },
+    {
+      "key": "source.google.not_full_sync",
+      "section": "4.3 Google Photos",
+      "platform": "all",
+      "zh": "不会自动同步你的全部 Google 相册；新增照片需要再次选择。",
+      "en": "This does not sync your entire Google library. Choose again to add new photos."
+    },
+    {
+      "key": "source.google.opening_browser",
+      "section": "4.3 Google Photos",
+      "platform": "all",
+      "zh": "正在打开 Google 选择页面",
+      "en": "Opening Google’s photo picker"
+    },
+    {
+      "key": "source.google.waiting_selection",
+      "section": "4.3 Google Photos",
+      "platform": "all",
+      "zh": "请在浏览器中完成选择",
+      "en": "Finish choosing in your browser"
+    },
+    {
+      "key": "source.google.selection_cancelled",
+      "section": "4.3 Google Photos",
+      "platform": "all",
+      "zh": "未选择任何照片",
+      "en": "No photos were chosen"
+    },
+    {
+      "key": "source.google.batch_name",
+      "section": "4.3 Google Photos",
+      "platform": "all",
+      "zh": "Google 导入 · {date}",
+      "en": "Google import · {date}",
+      "placeholders": {
+        "date": "string"
+      }
+    },
+    {
+      "key": "source.google.reselect",
+      "section": "4.3 Google Photos",
+      "platform": "all",
+      "zh": "再次选择照片",
+      "en": "Choose more photos"
+    },
+    {
+      "key": "source.google.account",
+      "section": "4.3 Google Photos",
+      "platform": "all",
+      "zh": "账号：{account}",
+      "en": "Account: {account}",
+      "placeholders": {
+        "account": "string"
+      }
+    },
+    {
+      "key": "source.google.unavailable_title",
+      "section": "4.3 Google Photos",
+      "platform": "all",
+      "zh": "暂不支持 Google 相册",
+      "en": "Google Photos isn’t available yet"
+    },
+    {
+      "key": "source.google.unavailable_body",
+      "section": "4.3 Google Photos",
+      "platform": "all",
+      "zh": "这个来源还在准备中，当前版本无法使用。",
+      "en": "This source is still being prepared and can’t be used in this version."
+    },
+    {
+      "key": "source.google.retention_gated",
+      "section": "4.3 Google Photos",
+      "platform": "all",
+      "zh": "该来源的照片保留方式仍在确认中。",
+      "en": "How photos from this source may be kept is still being confirmed."
+    },
+    {
+      "key": "source.nas.title",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "NAS 共享文件夹",
+      "en": "NAS shared folder"
+    },
+    {
+      "key": "source.nas.body",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "连接家中的 NAS，按目录导入照片。",
+      "en": "Connect your home NAS and import photos by folder."
+    },
+    {
+      "key": "source.nas.protocol",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "协议",
+      "en": "Protocol"
+    },
+    {
+      "key": "source.nas.protocol_webdav_https",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "WebDAV（HTTPS）",
+      "en": "WebDAV (HTTPS)"
+    },
+    {
+      "key": "source.nas.protocol_webdav_http",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "WebDAV（HTTP）",
+      "en": "WebDAV (HTTP)"
+    },
+    {
+      "key": "source.nas.protocol_smb",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "SMB",
+      "en": "SMB"
+    },
+    {
+      "key": "source.nas.host",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "主机地址",
+      "en": "Host"
+    },
+    {
+      "key": "source.nas.port",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "端口",
+      "en": "Port"
+    },
+    {
+      "key": "source.nas.share",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "共享名",
+      "en": "Share"
+    },
+    {
+      "key": "source.nas.path",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "路径",
+      "en": "Path"
+    },
+    {
+      "key": "source.nas.username",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "用户名",
+      "en": "Username"
+    },
+    {
+      "key": "source.nas.password",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "密码",
+      "en": "Password"
+    },
+    {
+      "key": "source.nas.guest",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "以访客身份连接",
+      "en": "Connect as guest"
+    },
+    {
+      "key": "source.nas.test_connection",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "测试连接",
+      "en": "Test connection"
+    },
+    {
+      "key": "source.nas.testing",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "正在连接",
+      "en": "Connecting"
+    },
+    {
+      "key": "source.nas.test_ok",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "连接成功",
+      "en": "Connected"
+    },
+    {
+      "key": "source.nas.security_signed",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "已启用签名",
+      "en": "Signing enabled"
+    },
+    {
+      "key": "source.nas.security_encrypted",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "已加密传输",
+      "en": "Encrypted connection"
+    },
+    {
+      "key": "source.nas.security_plain",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "未加密传输",
+      "en": "Not encrypted"
+    },
+    {
+      "key": "source.nas.choose_folders",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "选择要同步的目录",
+      "en": "Choose folders to sync"
+    },
+    {
+      "key": "source.nas.sync_selected_only",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "仅同步所选目录",
+      "en": "Sync selected folders only"
+    },
+    {
+      "key": "source.nas.include_subfolders",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "包含子目录",
+      "en": "Include subfolders"
+    },
+    {
+      "key": "source.nas.mirror_delete",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "同步源端删除",
+      "en": "Mirror deletions from the source"
+    },
+    {
+      "key": "source.nas.mirror_delete_body",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "源文件被删除时，本机副本也会删除，包括已加入相框的照片。",
+      "en": "When a file is deleted at the source, its copy here is deleted too, including photos used in frames."
+    },
+    {
+      "key": "source.nas.mirror_delete_confirm",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "即将删除本机 {count} 张照片",
+      "en": {
+        "one": "{count} photo will be deleted from this device",
+        "other": "{count} photos will be deleted from this device"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "source.nas.source_removed",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "源已移除",
+      "en": "Removed at source"
+    },
+    {
+      "key": "permission.local_network.title",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "需要访问局域网",
+      "en": "Local network access needed"
+    },
+    {
+      "key": "permission.local_network.body",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "为了连接家里的 NAS，PhotoPilot 需要访问同一网络中的设备。照片只在本机处理。",
+      "en": "To reach your home NAS, PhotoPilot needs to find devices on your network. Photos stay on this device."
+    },
+    {
+      "key": "permission.local_network.continue",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "继续",
+      "en": "Continue"
+    },
+    {
+      "key": "permission.local_network.denied_title",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "已拒绝局域网访问",
+      "en": "Local network access is off"
+    },
+    {
+      "key": "permission.local_network.denied_body",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "无法连接局域网中的 NAS。已导入的照片仍可正常播放。",
+      "en": "PhotoPilot can’t reach your NAS. Photos you already imported still play normally."
+    },
+    {
+      "key": "permission.local_network.usage.ios",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "ios",
+      "zh": "用于连接你在局域网中的 NAS，读取你选择的照片。",
+      "en": "Used to connect to your NAS on the local network and read the photos you choose."
+    },
+    {
+      "key": "cert.title",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "确认服务器证书",
+      "en": "Verify the server certificate"
+    },
+    {
+      "key": "cert.body",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "这台服务器的证书无法自动验证。请确认指纹与你的 NAS 一致。",
+      "en": "This server’s certificate can’t be verified automatically. Check that the fingerprint matches your NAS."
+    },
+    {
+      "key": "cert.fingerprint",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "指纹",
+      "en": "Fingerprint"
+    },
+    {
+      "key": "cert.issuer",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "颁发者",
+      "en": "Issued by"
+    },
+    {
+      "key": "cert.valid_until",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "有效期至 {date}",
+      "en": "Valid until {date}",
+      "placeholders": {
+        "date": "string"
+      }
+    },
+    {
+      "key": "cert.hostname_mismatch",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "证书与该地址不匹配",
+      "en": "The certificate doesn’t match this address"
+    },
+    {
+      "key": "cert.trust_once",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "信任这台服务器",
+      "en": "Trust this server"
+    },
+    {
+      "key": "cert.revoke_trust",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "撤销信任",
+      "en": "Revoke trust"
+    },
+    {
+      "key": "cert.trusted_hosts_title",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "已信任的服务器",
+      "en": "Trusted servers"
+    },
+    {
+      "key": "cert.trusted_hosts_body",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "这些服务器的证书指纹已被你信任，可随时撤销。",
+      "en": "These servers’ certificate fingerprints are trusted by you and can be revoked at any time."
+    },
+    {
+      "key": "cert.changed_title",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "证书已变化",
+      "en": "The certificate changed"
+    },
+    {
+      "key": "cert.changed_body",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "这台服务器的证书与上次不同。如果不是你更换了证书，请不要继续。",
+      "en": "This server’s certificate differs from last time. If you didn’t change it, don’t continue."
+    },
+    {
+      "key": "cleartext.title",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "这个连接未加密",
+      "en": "This connection isn’t encrypted"
+    },
+    {
+      "key": "cleartext.body",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "用户名、密码和照片会以明文传输。仅建议在你信任的家庭网络中使用。",
+      "en": "Your username, password, and photos would be sent unencrypted. Use this only on a home network you trust."
+    },
+    {
+      "key": "cleartext.allow_private_only",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "仅在本地网络继续",
+      "en": "Continue on local network only"
+    },
+    {
+      "key": "cleartext.public_blocked",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "公网地址不允许未加密连接。",
+      "en": "Unencrypted connections to public addresses are not allowed."
+    },
+    {
+      "key": "import.title",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "导入",
+      "en": "Import"
+    },
+    {
+      "key": "import.preparing",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "正在准备 {ready}/{total} 张照片",
+      "en": {
+        "one": "Preparing {ready} of {total} photo",
+        "other": "Preparing {ready} of {total} photos"
+      },
+      "plural": true,
+      "placeholders": {
+        "ready": "int",
+        "total": "int"
+      },
+      "plural_variable": "total"
+    },
+    {
+      "key": "import.preparing_unknown_total",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "正在准备照片",
+      "en": "Preparing photos"
+    },
+    {
+      "key": "import.enumerating",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "正在读取目录",
+      "en": "Reading folders"
+    },
+    {
+      "key": "import.summary",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "已导入 {imported} / {total}，可播 {playable}，失败 {failed}",
+      "en": "{imported} of {total} imported · {playable} ready · {failed} failed",
+      "placeholders": {
+        "imported": "int",
+        "total": "int",
+        "playable": "int",
+        "failed": "int"
+      }
+    },
+    {
+      "key": "import.estimated_size",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "预计 {size}",
+      "en": "About {size}",
+      "placeholders": {
+        "size": "string"
+      }
+    },
+    {
+      "key": "import.size_calculating",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "计算中",
+      "en": "Calculating"
+    },
+    {
+      "key": "import.pause",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "暂停",
+      "en": "Pause"
+    },
+    {
+      "key": "import.resume",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "继续",
+      "en": "Resume"
+    },
+    {
+      "key": "import.cancel_job",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "取消导入",
+      "en": "Cancel import"
+    },
+    {
+      "key": "import.cancel_keeps_imported",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "已导入的照片会保留。",
+      "en": "Photos already imported will be kept."
+    },
+    {
+      "key": "import.cancel_and_delete",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "取消并删除本批已导入",
+      "en": "Cancel and delete this batch"
+    },
+    {
+      "key": "import.waiting_network",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "等待网络",
+      "en": "Waiting for network"
+    },
+    {
+      "key": "import.waiting_wifi",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "等待 Wi-Fi",
+      "en": "Waiting for Wi-Fi"
+    },
+    {
+      "key": "import.use_cellular",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "使用蜂窝数据下载",
+      "en": "Download over cellular"
+    },
+    {
+      "key": "import.waiting_space",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "等待可用空间",
+      "en": "Waiting for storage"
+    },
+    {
+      "key": "import.needs_auth",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "请重新授权以继续导入",
+      "en": "Allow access again to continue importing"
+    },
+    {
+      "key": "import.partial_failed",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "部分照片未能导入",
+      "en": "Some photos couldn’t be imported"
+    },
+    {
+      "key": "import.retry_failed_only",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "只重试失败项",
+      "en": "Retry failed only"
+    },
+    {
+      "key": "import.video_skipped",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "不支持的视频已跳过",
+      "en": "Unsupported videos were skipped"
+    },
+    {
+      "key": "import.live_photo_still",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "Live Photo 将保存为静态照片",
+      "en": "Live Photos will be saved as still images"
+    },
+    {
+      "key": "import.skipped_deleted",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "已跳过你之前删除的照片",
+      "en": "Skipped photos you deleted earlier"
+    },
+    {
+      "key": "import.done",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "导入完成",
+      "en": "Import complete"
+    },
+    {
+      "key": "library.title",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "照片库",
+      "en": "Library"
+    },
+    {
+      "key": "library.choose_title",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "选择展示内容",
+      "en": "Choose what to display"
+    },
+    {
+      "key": "library.tab_folders",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "目录",
+      "en": "Folders"
+    },
+    {
+      "key": "library.tab_photos",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "照片",
+      "en": "Photos"
+    },
+    {
+      "key": "library.empty_title",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "还没有照片",
+      "en": "No photos yet"
+    },
+    {
+      "key": "library.empty_body",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "先从来源导入照片。",
+      "en": "Import photos from a source first."
+    },
+    {
+      "key": "library.search_placeholder",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "搜索目录或文件名",
+      "en": "Search folders or file names"
+    },
+    {
+      "key": "library.search_no_result",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "没有符合条件的照片",
+      "en": "No photos match"
+    },
+    {
+      "key": "library.filter_source",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "来源",
+      "en": "Source"
+    },
+    {
+      "key": "library.filter_time",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "时间",
+      "en": "Date"
+    },
+    {
+      "key": "library.filter_no_date",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "无拍摄时间",
+      "en": "No date"
+    },
+    {
+      "key": "library.filter_orientation",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "方向",
+      "en": "Orientation"
+    },
+    {
+      "key": "library.orientation_landscape",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "横图",
+      "en": "Landscape"
+    },
+    {
+      "key": "library.orientation_portrait",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "竖图",
+      "en": "Portrait"
+    },
+    {
+      "key": "library.orientation_square",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "方形",
+      "en": "Square"
+    },
+    {
+      "key": "library.filter_status",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "状态",
+      "en": "Status"
+    },
+    {
+      "key": "library.status_ready",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "可播",
+      "en": "Ready"
+    },
+    {
+      "key": "library.status_downloading",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "下载中",
+      "en": "Downloading"
+    },
+    {
+      "key": "library.status_pending",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "待下载",
+      "en": "Pending"
+    },
+    {
+      "key": "library.pending_badge",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "待下载",
+      "en": "Pending download"
+    },
+    {
+      "key": "library.status_failed",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "失败",
+      "en": "Failed"
+    },
+    {
+      "key": "library.status_excluded",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "已排除",
+      "en": "Excluded"
+    },
+    {
+      "key": "library.filter_in_frame",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "已加入此相框",
+      "en": "In this frame"
+    },
+    {
+      "key": "library.filter_active",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "筛选已启用",
+      "en": "Filters on"
+    },
+    {
+      "key": "library.select_all_scope",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "全选当前 {count} 张结果",
+      "en": {
+        "one": "Select all {count} result",
+        "other": "Select all {count} results"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "library.sort_captured_desc",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "拍摄时间（新到旧）",
+      "en": "Date taken (newest)"
+    },
+    {
+      "key": "library.sort_captured_asc",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "拍摄时间（旧到新）",
+      "en": "Date taken (oldest)"
+    },
+    {
+      "key": "library.sort_imported_desc",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "导入时间",
+      "en": "Date imported"
+    },
+    {
+      "key": "library.sort_name_asc",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "文件名",
+      "en": "File name"
+    },
+    {
+      "key": "library.folder_dynamic_badge",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "自动更新",
+      "en": "Auto-updating"
+    },
+    {
+      "key": "library.folder_snapshot_badge",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "当前照片",
+      "en": "Current photos"
+    },
+    {
+      "key": "library.add_to_frame",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "加入相框",
+      "en": "Add to frame"
+    },
+    {
+      "key": "library.added_to_frame",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "已加入相框",
+      "en": "Added to frame"
+    },
+    {
+      "key": "library.selection_summary",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "已选 {selected} 张 · {playable} 张可播",
+      "en": "{selected} selected · {playable} ready",
+      "placeholders": {
+        "selected": "int",
+        "playable": "int"
+      }
+    },
+    {
+      "key": "library.selection_note_static",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "新增照片不会自动展示",
+      "en": "New photos are not included"
+    },
+    {
+      "key": "library.remove_from_frame",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "从相框移除",
+      "en": "Remove from frame"
+    },
+    {
+      "key": "library.remove_from_frame_note",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "仅从此相框移除，不删除照片",
+      "en": "Remove from this frame only. Your photo will not be deleted."
+    },
+    {
+      "key": "library.photo_detail",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "照片详情",
+      "en": "Photo details"
+    },
+    {
+      "key": "library.detail_source",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "来源",
+      "en": "Source"
+    },
+    {
+      "key": "library.detail_dimensions",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "尺寸",
+      "en": "Dimensions"
+    },
+    {
+      "key": "library.detail_file_size",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "文件大小",
+      "en": "File size"
+    },
+    {
+      "key": "library.detail_taken_at",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "拍摄时间",
+      "en": "Date taken"
+    },
+    {
+      "key": "library.detail_imported_at",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "导入时间",
+      "en": "Date imported"
+    },
+    {
+      "key": "library.detail_in_frames",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "用于 {count} 个相框",
+      "en": {
+        "one": "Used in {count} frame",
+        "other": "Used in {count} frames"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "library.detail_unavailable",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "这张照片当前无法显示",
+      "en": "This photo can’t be shown right now"
+    },
+    {
+      "key": "rule.dynamic_toggle",
+      "section": "5.1 动态目录",
+      "platform": "all",
+      "zh": "自动加入这个目录的新照片",
+      "en": "Include new photos from this folder"
+    },
+    {
+      "key": "rule.dynamic_warning",
+      "section": "5.1 动态目录",
+      "platform": "all",
+      "zh": "新照片会自动显示在这个相框中。",
+      "en": "New photos will appear in this frame automatically."
+    },
+    {
+      "key": "rule.recursive_toggle",
+      "section": "5.1 动态目录",
+      "platform": "all",
+      "zh": "包含子目录",
+      "en": "Include subfolders"
+    },
+    {
+      "key": "rule.excluded_count",
+      "section": "5.1 动态目录",
+      "platform": "all",
+      "zh": "已排除 {count} 张",
+      "en": {
+        "one": "{count} photo excluded",
+        "other": "{count} photos excluded"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "rule.manage_excluded",
+      "section": "5.1 动态目录",
+      "platform": "all",
+      "zh": "管理已排除的照片",
+      "en": "Manage excluded photos"
+    },
+    {
+      "key": "order.manual_title",
+      "section": "5.2 手动排序（S10a）",
+      "platform": "all",
+      "zh": "手动排序",
+      "en": "Custom order"
+    },
+    {
+      "key": "order.manual_hint",
+      "section": "5.2 手动排序（S10a）",
+      "platform": "all",
+      "zh": "长按并拖动调整顺序。",
+      "en": "Touch and hold, then drag to reorder."
+    },
+    {
+      "key": "order.move_to_start",
+      "section": "5.2 手动排序（S10a）",
+      "platform": "all",
+      "zh": "移到开头",
+      "en": "Move to start"
+    },
+    {
+      "key": "order.move_to_end",
+      "section": "5.2 手动排序（S10a）",
+      "platform": "all",
+      "zh": "移到末尾",
+      "en": "Move to end"
+    },
+    {
+      "key": "order.new_badge",
+      "section": "5.2 手动排序（S10a）",
+      "platform": "all",
+      "zh": "新加入",
+      "en": "New"
+    },
+    {
+      "key": "order.new_appended",
+      "section": "5.2 手动排序（S10a）",
+      "platform": "all",
+      "zh": "新照片已添加到末尾。",
+      "en": "New photos were added to the end."
+    },
+    {
+      "key": "delete.from_device_title",
+      "section": "5.3 删除（S16）",
+      "platform": "all",
+      "zh": "从本机删除 {count} 张照片？",
+      "en": {
+        "one": "Delete {count} photo from this device?",
+        "other": "Delete {count} photos from this device?"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "delete.from_device_body",
+      "section": "5.3 删除（S16）",
+      "platform": "all",
+      "zh": "这会删除本机副本，并影响 {frames} 个相框。源文件不会被删除。",
+      "en": {
+        "one": "This deletes the copies on this device and affects {frames} frame.",
+        "other": "This deletes the copies on this device and affects {frames} frames. Files at the source are not deleted."
+      },
+      "plural": true,
+      "placeholders": {
+        "frames": "int"
+      },
+      "plural_variable": "frames"
+    },
+    {
+      "key": "delete.from_device_action",
+      "section": "5.3 删除（S16）",
+      "platform": "all",
+      "zh": "从本机删除",
+      "en": "Delete from this device"
+    },
+    {
+      "key": "delete.undo",
+      "section": "5.3 删除（S16）",
+      "platform": "all",
+      "zh": "撤销",
+      "en": "Undo"
+    },
+    {
+      "key": "delete.notice",
+      "section": "5.3 删除（S16）",
+      "platform": "all",
+      "zh": "已删除",
+      "en": "Photo deleted"
+    },
+    {
+      "key": "delete.undone",
+      "section": "5.3 删除（S16）",
+      "platform": "all",
+      "zh": "已恢复",
+      "en": "Restored"
+    },
+    {
+      "key": "delete.hide_globally",
+      "section": "5.3 删除（S16）",
+      "platform": "all",
+      "zh": "不再显示这张照片",
+      "en": "Never show this photo"
+    },
+    {
+      "key": "delete.hide_globally_body",
+      "section": "5.3 删除（S16）",
+      "platform": "all",
+      "zh": "这张照片会从所有相框中移除，并且不会再被导入。",
+      "en": "It will be removed from every frame and won’t be imported again."
+    },
+    {
+      "key": "delete.clear_cache",
+      "section": "5.3 删除（S16）",
+      "platform": "all",
+      "zh": "清理可重建缓存",
+      "en": "Clear rebuildable cache"
+    },
+    {
+      "key": "delete.clear_cache_body",
+      "section": "5.3 删除（S16）",
+      "platform": "all",
+      "zh": "只清理缩略图等可重新生成的文件，不影响你的照片。",
+      "en": "Clears thumbnails and other files that can be regenerated. Your photos are untouched."
+    },
+    {
+      "key": "delete.clear_all_title",
+      "section": "5.3 删除（S16）",
+      "platform": "all",
+      "zh": "清除所有数据？",
+      "en": "Erase all data?"
+    },
+    {
+      "key": "settings.danger",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "数据与清理",
+      "en": "Data and cleanup"
+    },
+    {
+      "key": "delete.clear_all_body",
+      "section": "5.3 删除（S16）",
+      "platform": "all",
+      "zh": "会删除本机照片副本、相框、设置和保存的连接信息。系统照片和 NAS 上的原文件不受影响。",
+      "en": "This erases photo copies, frames, settings, and saved connections on this device. Your system photo library and files on your NAS are not affected."
+    },
+    {
+      "key": "delete.restore_deleted",
+      "section": "5.3 删除（S16）",
+      "platform": "all",
+      "zh": "重新导入已删除的照片",
+      "en": "Import deleted photos again"
+    },
+    {
+      "key": "player.previous",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "上一张",
+      "en": "Previous"
+    },
+    {
+      "key": "player.pause",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "暂停",
+      "en": "Pause"
+    },
+    {
+      "key": "player.play",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "播放",
+      "en": "Play"
+    },
+    {
+      "key": "player.next",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "下一张",
+      "en": "Next"
+    },
+    {
+      "key": "player.more",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "更多",
+      "en": "More"
+    },
+    {
+      "key": "player.exit",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "退出全屏",
+      "en": "Exit full screen"
+    },
+    {
+      "key": "player.remove_current",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "不再展示这张",
+      "en": "Stop showing this photo"
+    },
+    {
+      "key": "player.offline_notice",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "网络已断开，继续播放本地照片",
+      "en": "Offline. Playing downloaded photos."
+    },
+    {
+      "key": "player.empty_title",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "还没有可播放的照片",
+      "en": "No photos to play yet"
+    },
+    {
+      "key": "player.empty_body",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "选择要展示的照片，或查看下载进度。",
+      "en": "Choose photos to display, or check the download progress."
+    },
+    {
+      "key": "player.empty_action_choose",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "选择展示内容",
+      "en": "Choose what to display"
+    },
+    {
+      "key": "player.empty_action_downloads",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "查看下载",
+      "en": "View downloads"
+    },
+    {
+      "key": "player.all_pending_title",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "照片还在准备中",
+      "en": "Your photos are still preparing"
+    },
+    {
+      "key": "player.decode_failed_notice",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "有照片无法显示，已跳过",
+      "en": "Some photos couldn’t be shown and were skipped"
+    },
+    {
+      "key": "player.single_photo_notice",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "只有一张照片在展示",
+      "en": "Only one photo is on display"
+    },
+    {
+      "key": "player.resting_title",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "休息中",
+      "en": "Resting"
+    },
+    {
+      "key": "player.resting_body",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "轻点可继续展示。",
+      "en": "Tap to keep showing photos."
+    },
+    {
+      "key": "player.resting_resume",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "继续展示",
+      "en": "Keep showing"
+    },
+    {
+      "key": "player.revoked_fallback",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "当前照片已停止展示，已切换为安全画面。",
+      "en": "The current photo is no longer shown. Switched to a safe screen."
+    },
+    {
+      "key": "player.low_power_notice",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "已降低画面效果以保持稳定",
+      "en": "Visual effects reduced to stay stable"
+    },
+    {
+      "key": "playback.title",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "播放设置",
+      "en": "Playback"
+    },
+    {
+      "key": "playback.preview",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "预览",
+      "en": "Preview"
+    },
+    {
+      "key": "playback.manage_photos",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "管理照片",
+      "en": "Manage photos",
+      "note": "播放设置页进入选片编辑器增删播放照片"
+    },
+    {
+      "key": "playback.hold_duration",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "照片停留时间",
+      "en": "Photo duration"
+    },
+    {
+      "key": "playback.hold_duration_help",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "完整展示一张照片的时间",
+      "en": "How long each photo stays fully visible"
+    },
+    {
+      "key": "playback.hold_custom_title",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "自定义停留时间",
+      "en": "Custom duration"
+    },
+    {
+      "key": "playback.hold_custom_help",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "3 秒至 60 分钟",
+      "en": "Between 3 seconds and 60 minutes"
+    },
+    {
+      "key": "playback.transition",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "转场",
+      "en": "Transition"
+    },
+    {
+      "key": "playback.transition_none",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "无转场",
+      "en": "None"
+    },
+    {
+      "key": "playback.transition_crossfade",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "淡入淡出",
+      "en": "Crossfade"
+    },
+    {
+      "key": "playback.transition_slide",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "轻推移",
+      "en": "Slide"
+    },
+    {
+      "key": "playback.transition_wipe",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "擦除",
+      "en": "Wipe"
+    },
+    {
+      "key": "playback.transition_zoom",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "缩放淡入",
+      "en": "Zoom"
+    },
+    {
+      "key": "playback.transition_ripple",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "涟漪",
+      "en": "Ripple"
+    },
+    {
+      "key": "playback.transition_duration",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "转场时长",
+      "en": "Transition duration"
+    },
+    {
+      "key": "playback.transition_duration_help",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "两张照片之间的过渡时间",
+      "en": "How long the change between photos lasts"
+    },
+    {
+      "key": "playback.transition_duration_disabled",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "选择“无转场”时不需要设置时长。",
+      "en": "No duration is needed when transitions are off."
+    },
+    {
+      "key": "playback.fit_mode",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "画面适配",
+      "en": "Photo fit"
+    },
+    {
+      "key": "playback.fit_blur",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "完整展示 · 模糊补边",
+      "en": "Fit with blurred edges"
+    },
+    {
+      "key": "playback.fit_color",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "完整展示 · 纯色补边",
+      "en": "Fit with solid color"
+    },
+    {
+      "key": "playback.fill_crop",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "裁剪铺满",
+      "en": "Fill and crop"
+    },
+    {
+      "key": "playback.fit_crop_warning",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "裁剪铺满可能裁掉照片边缘。",
+      "en": "Fill and crop may crop the edges of your photos."
+    },
+    {
+      "key": "playback.solid_black",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "黑色",
+      "en": "Black"
+    },
+    {
+      "key": "playback.solid_warm_white",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "暖白",
+      "en": "Warm white"
+    },
+    {
+      "key": "playback.solid_auto",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "自动取色",
+      "en": "From the photo"
+    },
+    {
+      "key": "playback.order",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "播放顺序",
+      "en": "Play order"
+    },
+    {
+      "key": "playback.order_captured",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "按拍摄时间",
+      "en": "By date taken"
+    },
+    {
+      "key": "playback.order_random",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "随机",
+      "en": "Shuffle"
+    },
+    {
+      "key": "playback.order_manual",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "手动顺序",
+      "en": "Custom order"
+    },
+    {
+      "key": "playback.clock",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "时钟",
+      "en": "Clock"
+    },
+    {
+      "key": "playback.date",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "日期",
+      "en": "Date"
+    },
+    {
+      "key": "playback.weather",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "天气",
+      "en": "Weather"
+    },
+    {
+      "key": "playback.overlay_position",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "显示位置",
+      "en": "Position"
+    },
+    {
+      "key": "playback.position_bottom_leading",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "左下",
+      "en": "Bottom left"
+    },
+    {
+      "key": "playback.position_bottom_trailing",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "右下",
+      "en": "Bottom right"
+    },
+    {
+      "key": "playback.position_top_leading",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "左上",
+      "en": "Top left"
+    },
+    {
+      "key": "playback.position_top_trailing",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "右上",
+      "en": "Top right"
+    },
+    {
+      "key": "playback.hour_format",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "时间格式",
+      "en": "Time format"
+    },
+    {
+      "key": "playback.hour_24",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "24 小时",
+      "en": "24-hour"
+    },
+    {
+      "key": "playback.hour_12",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "12 小时",
+      "en": "12-hour"
+    },
+    {
+      "key": "playback.brightness",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "播放亮度",
+      "en": "Brightness while playing"
+    },
+    {
+      "key": "playback.keep_awake_paused",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "暂停时保持屏幕开启",
+      "en": "Keep the screen on when paused"
+    },
+    {
+      "key": "playback.unsaved_title",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "放弃未保存的更改？",
+      "en": "Discard unsaved changes?"
+    },
+    {
+      "key": "playback.invalid_number",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "请输入有效的数字",
+      "en": "Enter a valid number"
+    },
+    {
+      "key": "playback.out_of_range",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "请输入 {min} 到 {max} 之间的值",
+      "en": "Enter a value between {min} and {max}",
+      "placeholders": {
+        "min": "int",
+        "max": "int"
+      }
+    },
+    {
+      "key": "playback.saved_next_photo",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "新设置将从下一张照片开始生效。",
+      "en": "New settings start with the next photo."
+    },
+    {
+      "key": "weather.title",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "天气",
+      "en": "Weather"
+    },
+    {
+      "key": "weather.choose_city",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "选择城市",
+      "en": "Choose a city"
+    },
+    {
+      "key": "weather.search_city",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "搜索城市",
+      "en": "Search for a city"
+    },
+    {
+      "key": "weather.use_current_location",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "使用当前位置",
+      "en": "Use current location"
+    },
+    {
+      "key": "weather.enable",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "显示天气信息",
+      "en": "Show weather"
+    },
+    {
+      "key": "weather.location_help",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "只用于获取天气，不会持续定位。",
+      "en": "Used only to get the weather. Your location isn’t tracked."
+    },
+    {
+      "key": "weather.units",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "温度单位",
+      "en": "Temperature unit"
+    },
+    {
+      "key": "weather.unit_celsius",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "摄氏（°C）",
+      "en": "Celsius (°C)"
+    },
+    {
+      "key": "weather.unit_fahrenheit",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "华氏（°F）",
+      "en": "Fahrenheit (°F)"
+    },
+    {
+      "key": "weather.updated_at",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "更新于 {time}",
+      "en": "Updated {time}",
+      "placeholders": {
+        "time": "string"
+      }
+    },
+    {
+      "key": "weather.delayed",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "更新延迟",
+      "en": "Update delayed"
+    },
+    {
+      "key": "weather.unavailable",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "天气暂不可用",
+      "en": "Weather unavailable"
+    },
+    {
+      "key": "weather.attribution",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "天气数据来自 {provider}",
+      "en": "Weather data by {provider}",
+      "placeholders": {
+        "provider": "string"
+      }
+    },
+    {
+      "key": "weather.condition.clear",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "晴",
+      "en": "Clear"
+    },
+    {
+      "key": "weather.condition.partly_cloudy",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "多云",
+      "en": "Partly cloudy"
+    },
+    {
+      "key": "weather.condition.cloudy",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "阴",
+      "en": "Cloudy"
+    },
+    {
+      "key": "weather.condition.fog",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "雾",
+      "en": "Fog"
+    },
+    {
+      "key": "weather.condition.drizzle",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "小雨",
+      "en": "Drizzle"
+    },
+    {
+      "key": "weather.condition.rain",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "雨",
+      "en": "Rain"
+    },
+    {
+      "key": "weather.condition.heavy_rain",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "大雨",
+      "en": "Heavy rain"
+    },
+    {
+      "key": "weather.condition.thunderstorm",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "雷雨",
+      "en": "Thunderstorm"
+    },
+    {
+      "key": "weather.condition.sleet",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "雨夹雪",
+      "en": "Sleet"
+    },
+    {
+      "key": "weather.condition.snow",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "雪",
+      "en": "Snow"
+    },
+    {
+      "key": "weather.condition.heavy_snow",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "大雪",
+      "en": "Heavy snow"
+    },
+    {
+      "key": "weather.condition.hail",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "冰雹",
+      "en": "Hail"
+    },
+    {
+      "key": "weather.condition.windy",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "大风",
+      "en": "Windy"
+    },
+    {
+      "key": "weather.condition.haze",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "霾",
+      "en": "Haze"
+    },
+    {
+      "key": "weather.condition.sand",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "沙尘",
+      "en": "Dust"
+    },
+    {
+      "key": "weather.disabled_notice",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "天气已关闭，时钟仍会显示。",
+      "en": "Weather is off. The clock still shows."
+    },
+    {
+      "key": "permission.location.usage",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "用于获取你所在城市的天气，仅在使用期间。",
+      "en": "Used to get the weather for your city while you use the app."
+    },
+    {
+      "key": "permission.location.denied_body",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "未获得定位权限，可手动选择城市。",
+      "en": "Location access is off. You can choose a city manually."
+    },
+    {
+      "key": "settings.title",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "设置",
+      "en": "Settings"
+    },
+    {
+      "key": "settings.appearance",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "外观",
+      "en": "Appearance"
+    },
+    {
+      "key": "settings.appearance_system",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "跟随系统",
+      "en": "Match system"
+    },
+    {
+      "key": "settings.appearance_light",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "浅色",
+      "en": "Light"
+    },
+    {
+      "key": "settings.appearance_dark",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "深色",
+      "en": "Dark"
+    },
+    {
+      "key": "settings.language",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "语言",
+      "en": "Language"
+    },
+    {
+      "key": "settings.language_system",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "跟随系统",
+      "en": "Match system"
+    },
+    {
+      "key": "settings.language_zh",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "简体中文",
+      "en": "English"
+    },
+    {
+      "key": "settings.language_en",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "English",
+      "en": "English"
+    },
+    {
+      "key": "settings.language_system_note",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "系统弹窗的语言由设备设置决定。",
+      "en": "System dialogs use your device’s language settings."
+    },
+    {
+      "key": "settings.accessibility",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "无障碍",
+      "en": "Accessibility"
+    },
+    {
+      "key": "settings.reduce_motion_note",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "已按系统设置减少动态效果",
+      "en": "Motion is reduced to match system settings"
+    },
+    {
+      "key": "settings.reduce_transparency_note",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "已按系统设置降低透明效果",
+      "en": "Transparency is reduced to match system settings"
+    },
+    {
+      "key": "settings.storage",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "存储",
+      "en": "Storage"
+    },
+    {
+      "key": "settings.storage_photos",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "照片副本",
+      "en": "Photo copies"
+    },
+    {
+      "key": "settings.storage_cache",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "可重建缓存",
+      "en": "Rebuildable cache"
+    },
+    {
+      "key": "settings.storage_free",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "剩余空间 {size}",
+      "en": "{size} available",
+      "placeholders": {
+        "size": "string"
+      }
+    },
+    {
+      "key": "settings.storage_low_title",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "空间不足",
+      "en": "Storage is low"
+    },
+    {
+      "key": "settings.storage_threshold",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "保留可用空间",
+      "en": "Reserved free space"
+    },
+    {
+      "key": "settings.network",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "网络与同步",
+      "en": "Network and syncing"
+    },
+    {
+      "key": "settings.wifi_only",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "仅在 Wi-Fi 下下载",
+      "en": "Download over Wi-Fi only"
+    },
+    {
+      "key": "settings.auto_play",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "打开应用时自动播放",
+      "en": "Start playing when the app opens"
+    },
+    {
+      "key": "settings.background_note",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "系统可能延迟后台同步；锁屏后可能需要手动唤醒设备。",
+      "en": "The system may delay background syncing. You may need to wake the device after it locks."
+    },
+    {
+      "key": "settings.rest_window",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "休息时段",
+      "en": "Rest hours"
+    },
+    {
+      "key": "settings.rest_start",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "开始时间",
+      "en": "Starts"
+    },
+    {
+      "key": "settings.rest_end",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "结束时间",
+      "en": "Ends"
+    },
+    {
+      "key": "settings.rest_help",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "这段时间内暂停播放并调暗屏幕。",
+      "en": "Pauses the slideshow and dims the screen during these hours."
+    },
+    {
+      "key": "settings.rest_invalid",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "开始与结束时间不能相同",
+      "en": "Start and end times must be different"
+    },
+    {
+      "key": "settings.privacy",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "隐私",
+      "en": "Privacy"
+    },
+    {
+      "key": "settings.privacy_summary",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "照片只在这台设备上处理，不会上传。",
+      "en": "Photos are processed on this device and never uploaded."
+    },
+    {
+      "key": "settings.diagnostics",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "诊断信息",
+      "en": "Diagnostics"
+    },
+    {
+      "key": "settings.diagnostics_help",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "导出前会移除照片名、地址和凭证。",
+      "en": "Photo names, addresses, and credentials are removed before export."
+    },
+    {
+      "key": "settings.export_diagnostics",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "导出诊断信息",
+      "en": "Export diagnostics"
+    },
+    {
+      "key": "settings.share_statistics",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "共享使用统计",
+      "en": "Share usage statistics"
+    },
+    {
+      "key": "settings.about",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "关于",
+      "en": "About"
+    },
+    {
+      "key": "settings.version",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "版本 {version}",
+      "en": "Version {version}",
+      "placeholders": {
+        "version": "string"
+      }
+    },
+    {
+      "key": "settings.version_label",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "版本",
+      "en": "Version"
+    },
+    {
+      "key": "settings.licenses",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "开放源代码许可",
+      "en": "Open source licenses"
+    },
+    {
+      "key": "settings.update",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "检查更新",
+      "en": "Check for update"
+    },
+    {
+      "key": "update.checking",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "正在检查更新…",
+      "en": "Checking for updates…"
+    },
+    {
+      "key": "update.latest",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "当前已是最新版本",
+      "en": "You’re up to date"
+    },
+    {
+      "key": "update.available_title",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "发现新版本",
+      "en": "Update available"
+    },
+    {
+      "key": "update.available_body",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "新版本 {version}（{size}）可用，是否下载？",
+      "en": "Version {version} ({size}) is available. Download it?",
+      "placeholders": {
+        "version": "string",
+        "size": "string"
+      }
+    },
+    {
+      "key": "update.download",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "下载",
+      "en": "Download"
+    },
+    {
+      "key": "update.downloading",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "正在下载更新…",
+      "en": "Downloading update…"
+    },
+    {
+      "key": "update.progress",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "已下载 {percent}%",
+      "en": "{percent}% downloaded",
+      "placeholders": {
+        "percent": "int"
+      }
+    },
+    {
+      "key": "update.ready",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "下载完成，可以安装",
+      "en": "Download complete — ready to install"
+    },
+    {
+      "key": "update.install",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "安装",
+      "en": "Install"
+    },
+    {
+      "key": "update.failed",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "下载失败，请检查网络后重试",
+      "en": "Download failed. Check your connection and try again"
+    },
+    {
+      "key": "update.check_failed",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "检查更新失败，请稍后重试",
+      "en": "Couldn’t check for updates. Try again later"
+    },
+    {
+      "key": "update.install_permission",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "请在系统设置中允许安装应用",
+      "en": "Allow app installs in system settings"
+    },
+    {
+      "key": "update.channel_name",
+      "section": "9. 设置（S15、S17）",
+      "platform": "android",
+      "zh": "更新通知",
+      "en": "Update notifications"
+    },
+    {
+      "key": "settings.license_notice",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "本应用及其源代码仅供非商业用途。如需商业使用，请联系 chunguangwee@gmail.com。",
+      "en": "This app and its source code are licensed for non-commercial use only. For commercial use, contact chunguangwee@gmail.com.",
+      "note": "非商业许可声明；关于页与开源许可页展示"
+    },
+    {
+      "key": "settings.privacy_policy",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "隐私政策",
+      "en": "Privacy Policy"
+    },
+    {
+      "key": "settings.terms",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "服务条款",
+      "en": "Terms of Service"
+    },
+    {
+      "key": "permission.photos.usage",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "用于把你选择的照片导入到相框中。",
+      "en": "Used to import the photos you choose into your frames."
+    },
+    {
+      "key": "permission.photos.add_usage",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "用于在你导出照片时写入系统相册。",
+      "en": "Used to save photos to your library when you export them."
+    },
+    {
+      "key": "permission.photos.limited_notice",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "当前仅可访问你已授权的照片。",
+      "en": "Only the photos you allowed are available."
+    },
+    {
+      "key": "permission.notifications.usage",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "用于在导入完成或需要你处理时提醒你。",
+      "en": "Used to let you know when an import finishes or needs your attention."
+    },
+    {
+      "key": "permission.denied_generic",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "已拒绝权限，可在系统设置中更改。",
+      "en": "Access is off. You can change this in Settings."
+    },
+    {
+      "key": "error.auth_cancelled.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "已取消授权。",
+      "en": "Authorization was cancelled."
+    },
+    {
+      "key": "error.auth_denied.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "未获得访问权限。可在系统设置中开启。",
+      "en": "Access wasn’t granted. You can turn it on in Settings."
+    },
+    {
+      "key": "error.auth_limited.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "仅能访问你已授权的照片。",
+      "en": "Only the photos you allowed are available."
+    },
+    {
+      "key": "error.auth_expired.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "授权已过期，请重新授权。",
+      "en": "Your authorization expired. Please allow access again."
+    },
+    {
+      "key": "error.auth_account_mismatch.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "账号与本次导入不一致，请重新选择。",
+      "en": "This account doesn’t match the import. Please choose again."
+    },
+    {
+      "key": "error.perm_local_network_denied.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "无法访问局域网，因此连不上 NAS。",
+      "en": "PhotoPilot can’t use the local network, so it can’t reach your NAS."
+    },
+    {
+      "key": "error.perm_photos_denied.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "没有照片访问权限。",
+      "en": "PhotoPilot doesn’t have access to your photos."
+    },
+    {
+      "key": "error.net_offline.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "网络已断开。已下载的照片仍会继续播放。",
+      "en": "You’re offline. Downloaded photos keep playing."
+    },
+    {
+      "key": "error.net_timeout.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "连接超时。",
+      "en": "The connection timed out."
+    },
+    {
+      "key": "error.net_metered_not_allowed.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "当前仅在 Wi-Fi 下下载。",
+      "en": "Downloads happen over Wi-Fi only right now."
+    },
+    {
+      "key": "error.net_rate_limited.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "请求过于频繁，稍后会自动重试。",
+      "en": "Too many requests. PhotoPilot will retry shortly."
+    },
+    {
+      "key": "error.tls_untrusted_cert.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "服务器证书无法验证。",
+      "en": "The server’s certificate couldn’t be verified."
+    },
+    {
+      "key": "error.tls_hostname_mismatch.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "证书与该地址不匹配。",
+      "en": "The certificate doesn’t match this address."
+    },
+    {
+      "key": "error.tls_fingerprint_changed.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "服务器证书已变化，需要重新确认。",
+      "en": "The server’s certificate changed. Please confirm it again."
+    },
+    {
+      "key": "error.tls_cleartext_blocked.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "未加密的连接已被阻止。",
+      "en": "The unencrypted connection was blocked."
+    },
+    {
+      "key": "error.smb_protocol_unsupported.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "该服务器不支持 SMB2 或 SMB3。",
+      "en": "This server doesn’t support SMB2 or SMB3."
+    },
+    {
+      "key": "error.source_cert_untrusted.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "无法验证服务器证书。如确认这是你的设备，可在警告页核对指纹后信任。",
+      "en": "The server’s certificate couldn’t be verified. If this is your device, verify the fingerprint on the warning screen to trust it."
+    },
+    {
+      "key": "error.source_cert_hostname_mismatch.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "证书与服务器地址不匹配。请核对地址，或在警告页确认指纹后信任这台服务器。",
+      "en": "The certificate doesn’t match this server’s address. Check the address, or confirm the fingerprint on the warning screen to trust it."
+    },
+    {
+      "key": "error.source_plaintext_private_only.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "未加密连接仅允许在本地网络使用，且需要你逐台确认。公网地址不允许明文连接。",
+      "en": "Unencrypted connections are allowed only on your local network and need your per-device confirmation. Public addresses never allow plaintext."
+    },
+    {
+      "key": "error.src_auth_failed.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "用户名或密码不正确。",
+      "en": "The username or password is incorrect."
+    },
+    {
+      "key": "error.src_path_not_found.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "找不到该目录。",
+      "en": "That folder couldn’t be found."
+    },
+    {
+      "key": "error.src_permission_denied.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "没有访问该目录的权限。",
+      "en": "You don’t have permission for that folder."
+    },
+    {
+      "key": "error.src_unavailable.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "暂时无法连接到来源。已导入的照片不会丢失。",
+      "en": "The source is unavailable right now. Photos you already imported are safe."
+    },
+    {
+      "key": "error.src_session_expired.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "选择已过期，请重新选择照片。",
+      "en": "That selection expired. Please choose photos again."
+    },
+    {
+      "key": "error.src_asset_gone.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "这张照片在来源中已不存在。",
+      "en": "This photo no longer exists at the source."
+    },
+    {
+      "key": "error.media_unsupported_format.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "不支持这种图片格式。",
+      "en": "This image format isn’t supported."
+    },
+    {
+      "key": "error.media_decode_failed.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "这张照片无法显示。",
+      "en": "This photo couldn’t be displayed."
+    },
+    {
+      "key": "error.media_truncated.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "照片文件不完整。",
+      "en": "The photo file is incomplete."
+    },
+    {
+      "key": "error.media_too_large.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "这张照片太大，无法显示。",
+      "en": "This photo is too large to display."
+    },
+    {
+      "key": "error.media_video_skipped.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "视频不会被导入。",
+      "en": "Videos aren’t imported."
+    },
+    {
+      "key": "error.store_low_space.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "空间不足，导入已暂停。",
+      "en": "Storage is low. Import paused."
+    },
+    {
+      "key": "error.store_write_failed.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "保存照片时出错。",
+      "en": "Something went wrong while saving."
+    },
+    {
+      "key": "error.store_file_locked.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "设备锁定时无法读取照片，解锁后继续。",
+      "en": "Photos can’t be read while the device is locked. Unlock to continue."
+    },
+    {
+      "key": "error.db_migration_failed.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "数据升级未完成，你的照片仍在本机。",
+      "en": "The library update didn’t finish. Your photos are still here."
+    },
+    {
+      "key": "error.db_constraint_violation.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "数据出现异常，请导出诊断信息。",
+      "en": "Something’s wrong with the library data. Please export diagnostics."
+    },
+    {
+      "key": "error.selection_conflict.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "这个相框刚刚被改动过，请重新载入。",
+      "en": "This frame changed just now. Please reload it."
+    },
+    {
+      "key": "error.frame_no_playable.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "还没有可播放的照片。",
+      "en": "There are no photos to play yet."
+    },
+    {
+      "key": "error.policy_retention_gated.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "该来源的照片保留方式仍在确认中。",
+      "en": "How photos from this source may be kept is still being confirmed."
+    },
+    {
+      "key": "error.weather_unavailable.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "天气暂不可用。",
+      "en": "Weather unavailable."
+    },
+    {
+      "key": "error.weather_stale.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "天气更新延迟。",
+      "en": "Weather update delayed."
+    },
+    {
+      "key": "error.skipped_by_tombstone.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "已跳过你之前删除的照片。",
+      "en": "Skipped a photo you deleted earlier."
+    },
+    {
+      "key": "a11y.logo",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "PhotoPilot 标志",
+      "en": "PhotoPilot logo"
+    },
+    {
+      "key": "a11y.photo_cell",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "照片，{date}",
+      "en": "Photo, {date}",
+      "placeholders": {
+        "date": "string"
+      }
+    },
+    {
+      "key": "a11y.photo_cell_no_date",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "照片，无拍摄时间",
+      "en": "Photo, no date"
+    },
+    {
+      "key": "a11y.photo_selected",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "已选中",
+      "en": "Selected"
+    },
+    {
+      "key": "a11y.photo_not_selected",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "未选中",
+      "en": "Not selected"
+    },
+    {
+      "key": "a11y.photo_pending",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "正在准备",
+      "en": "Preparing"
+    },
+    {
+      "key": "a11y.photo_pending_download",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "待下载",
+      "en": "Pending download"
+    },
+    {
+      "key": "a11y.revoked_announcement",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "当前照片已被撤下，播放已切换到安全画面。",
+      "en": "The current photo was removed. Playback switched to a safe screen."
+    },
+    {
+      "key": "a11y.select_hint",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "轻点两次以选择",
+      "en": "Double-tap to select"
+    },
+    {
+      "key": "a11y.player_controls",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "播放控制",
+      "en": "Playback controls"
+    },
+    {
+      "key": "a11y.current_photo",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "当前照片，{index} / {total}",
+      "en": "Current photo, {index} of {total}",
+      "placeholders": {
+        "index": "int",
+        "total": "int"
+      }
+    },
+    {
+      "key": "a11y.clock_overlay",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "当前时间 {time}",
+      "en": "Current time, {time}",
+      "placeholders": {
+        "time": "string"
+      }
+    },
+    {
+      "key": "a11y.weather_overlay",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "天气，{condition}，{temperature}",
+      "en": "Weather, {condition}, {temperature}",
+      "placeholders": {
+        "condition": "string",
+        "temperature": "string"
+      }
+    },
+    {
+      "key": "a11y.selection_summary",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "已选 {count} 张照片",
+      "en": {
+        "one": "{count} photo selected",
+        "other": "{count} photos selected"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "a11y.drag_handle",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "拖动以重新排序",
+      "en": "Drag to reorder"
+    },
+    {
+      "key": "a11y.progress",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "进度 {percent}%",
+      "en": "{percent} percent complete",
+      "placeholders": {
+        "percent": "int"
+      }
+    },
+    {
+      "key": "a11y.toggle_on",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "已开启",
+      "en": "On"
+    },
+    {
+      "key": "a11y.toggle_off",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "已关闭",
+      "en": "Off"
+    },
+    {
+      "key": "a11y.destructive_hint",
+      "section": "11. 无障碍标签",
+      "platform": "all",
+      "zh": "这是删除操作",
+      "en": "This deletes content"
+    },
+    {
+      "key": "format.temperature",
+      "section": "12. 格式与单位",
+      "platform": "all",
+      "zh": "{value}°",
+      "en": "{value}°",
+      "placeholders": {
+        "value": "int"
+      }
+    },
+    {
+      "key": "format.file_size_kb",
+      "section": "12. 格式与单位",
+      "platform": "all",
+      "zh": "{value} KB",
+      "en": "{value} KB",
+      "placeholders": {
+        "value": "int"
+      }
+    },
+    {
+      "key": "format.file_size_mb",
+      "section": "12. 格式与单位",
+      "platform": "all",
+      "zh": "{value} MB",
+      "en": "{value} MB",
+      "placeholders": {
+        "value": "int"
+      }
+    },
+    {
+      "key": "format.file_size_gb",
+      "section": "12. 格式与单位",
+      "platform": "all",
+      "zh": "{value} GB",
+      "en": "{value} GB",
+      "placeholders": {
+        "value": "int"
+      }
+    },
+    {
+      "key": "format.dimensions",
+      "section": "12. 格式与单位",
+      "platform": "all",
+      "zh": "{width} × {height}",
+      "en": "{width} × {height}",
+      "placeholders": {
+        "width": "int",
+        "height": "int"
+      }
+    },
+    {
+      "key": "format.relative_just_now",
+      "section": "12. 格式与单位",
+      "platform": "all",
+      "zh": "刚刚",
+      "en": "Just now"
+    },
+    {
+      "key": "format.relative_minutes",
+      "section": "12. 格式与单位",
+      "platform": "all",
+      "zh": "{count} 分钟前",
+      "en": {
+        "one": "{count} minute ago",
+        "other": "{count} minutes ago"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "format.relative_hours",
+      "section": "12. 格式与单位",
+      "platform": "all",
+      "zh": "{count} 小时前",
+      "en": {
+        "one": "{count} hour ago",
+        "other": "{count} hours ago"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "format.relative_days",
+      "section": "12. 格式与单位",
+      "platform": "all",
+      "zh": "{count} 天前",
+      "en": {
+        "one": "{count} day ago",
+        "other": "{count} days ago"
+      },
+      "plural": true,
+      "placeholders": {
+        "count": "int"
+      },
+      "plural_variable": "count"
+    },
+    {
+      "key": "format.seconds_short",
+      "section": "12. 格式与单位",
+      "platform": "all",
+      "zh": "{value} 秒",
+      "en": "{value}s",
+      "placeholders": {
+        "value": "int"
+      }
+    },
+    {
+      "key": "format.minutes_short",
+      "section": "12. 格式与单位",
+      "platform": "all",
+      "zh": "{value} 分钟",
+      "en": "{value} min",
+      "placeholders": {
+        "value": "int"
+      }
+    },
+    {
+      "key": "format.range",
+      "section": "12. 格式与单位",
+      "platform": "all",
+      "zh": "{start} – {end}",
+      "en": "{start} – {end}",
+      "placeholders": {
+        "start": "string",
+        "end": "string"
+      }
+    },
+    {
+      "key": "app_name",
+      "section": "scaffold",
+      "platform": "android",
+      "zh": "PhotoPilot",
+      "en": "PhotoPilot",
+      "note": "脚手架占位词条，保留以维持 check_scaffold 键对称"
+    },
+    {
+      "key": "scaffold_notice",
+      "section": "scaffold",
+      "platform": "android",
+      "zh": "基础脚手架，业务功能尚未实现。",
+      "en": "Scaffold only. Product features are not implemented.",
+      "note": "脚手架占位词条，保留"
+    },
+    {
+      "key": "scaffold.title",
+      "section": "scaffold",
+      "platform": "ios",
+      "zh": "PhotoPilot · 光屿",
+      "en": "PhotoPilot · 光屿",
+      "note": "脚手架占位词条，保留"
+    },
+    {
+      "key": "scaffold.subtitle",
+      "section": "scaffold",
+      "platform": "ios",
+      "zh": "基础脚手架，业务功能尚未实现。",
+      "en": "Scaffold only. Product features are not implemented.",
+      "note": "脚手架占位词条，保留"
+    },
+    {
+      "key": "format.seconds_decimal",
+      "section": "12. 格式与单位",
+      "platform": "all",
+      "zh": "{value} 秒",
+      "en": "{value}s",
+      "placeholders": {
+        "value": "string"
+      },
+      "note": "小数秒（转场默认 0.8）；整数秒仍用 format.seconds_short；调用方预格式化为一位小数字符串"
+    },
+    {
+      "key": "playback.hold_unit",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "停留时间单位",
+      "en": "Duration unit"
+    },
+    {
+      "key": "playback.unit_seconds",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "秒",
+      "en": "Seconds"
+    },
+    {
+      "key": "playback.unit_minutes",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "分钟",
+      "en": "Minutes"
+    },
+    {
+      "key": "playback.transition_range",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "0.2–3.0 秒，步进 0.1 秒",
+      "en": "0.2–3.0 seconds, in 0.1-second steps"
+    },
+    {
+      "key": "playback.quality",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "画面质量",
+      "en": "Rendering quality",
+      "note": "对应 04 settings_json qualityLevel"
+    },
+    {
+      "key": "playback.quality_auto",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "自动",
+      "en": "Automatic"
+    },
+    {
+      "key": "playback.quality_balanced",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "均衡",
+      "en": "Balanced"
+    },
+    {
+      "key": "playback.quality_low",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "低功耗",
+      "en": "Low power"
+    },
+    {
+      "key": "playback.overlay_alignment",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "文字对齐",
+      "en": "Text alignment"
+    },
+    {
+      "key": "playback.align_left",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "左对齐",
+      "en": "Left"
+    },
+    {
+      "key": "playback.align_right",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "右对齐",
+      "en": "Right"
+    },
+    {
+      "key": "playback.brightness_restore_help",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "离开播放或进入后台时恢复原亮度，不永久更改系统亮度。",
+      "en": "Original brightness is restored when playback ends or the app enters the background. System brightness is not permanently changed."
+    },
+    {
+      "key": "library.selection_unsaved",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "展示内容尚未保存",
+      "en": "Display selection has not been saved"
+    },
+    {
+      "key": "order.excluded_order_preserved",
+      "section": "5.2 手动排序（S10a）",
+      "platform": "all",
+      "zh": "已排除这张照片，其余照片的相对顺序保持不变。",
+      "en": "This photo was excluded. The relative order of the remaining photos is unchanged."
+    },
+    {
+      "key": "settings.storage_threshold_help",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "默认保留至少 1 GB 或总容量的 5%，取较大值。低于阈值暂停导入，不自动删除照片。",
+      "en": "Reserve at least 1 GB or 5% of total capacity, whichever is larger. Imports pause below this limit; photos are not deleted automatically."
+    },
+    {
+      "key": "settings.storage_threshold_risk",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "降低保留空间可能使后续导入失败。确认后才会应用，不删除已有照片。",
+      "en": "Reducing reserved space may cause later imports to fail. Apply only after confirmation; existing photos will not be deleted."
+    },
+    {
+      "key": "settings.import_originals",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "保留导入原文件，按需生成展示副本",
+      "en": "Keep imported originals and generate display copies as needed"
+    },
+    {
+      "key": "source.local_files.body.android",
+      "section": "4.2 本地与苹果端图库",
+      "platform": "android",
+      "zh": "从系统文件选择器导入已保存在设备上的图片。",
+      "en": "Import images saved on this device using the system file picker.",
+      "note": "Android SAF 口径，不提 iCloud 云盘"
+    },
+    {
+      "key": "settings.holiday",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "节日播放",
+      "en": "Holiday playback"
+    },
+    {
+      "key": "holiday.title",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "节日播放",
+      "en": "Holiday playback",
+      "note": "节日规则管理页标题"
+    },
+    {
+      "key": "holiday.empty",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "还没有节日规则。添加一条后，节日期间会自动播放指定相框。",
+      "en": "No holiday rules yet. Add one and the app plays its frame automatically during that window."
+    },
+    {
+      "key": "holiday.add",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "添加规则",
+      "en": "Add rule"
+    },
+    {
+      "key": "holiday.name",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "节日名称",
+      "en": "Holiday name"
+    },
+    {
+      "key": "holiday.date_range",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "生效日期",
+      "en": "Active dates"
+    },
+    {
+      "key": "holiday.date_start",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "开始日期",
+      "en": "Start date"
+    },
+    {
+      "key": "holiday.date_end",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "结束日期",
+      "en": "End date"
+    },
+    {
+      "key": "holiday.time_range",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "每日时段（可选）",
+      "en": "Daily hours (optional)"
+    },
+    {
+      "key": "holiday.time_help",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "两者都不设置则全天播放；结束时间早于开始时间视为跨午夜。",
+      "en": "Leave both unset to play all day; an end time earlier than the start time crosses midnight."
+    },
+    {
+      "key": "holiday.frame",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "播放相框",
+      "en": "Frame to play"
+    },
+    {
+      "key": "holiday.frame_placeholder",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "选择相框",
+      "en": "Choose a frame"
+    },
+    {
+      "key": "holiday.enabled",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "启用规则",
+      "en": "Enable rule"
+    },
+    {
+      "key": "holiday.invalid",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "请填写名称、日期和相框。",
+      "en": "Fill in the name, dates, and frame."
+    },
+    {
+      "key": "holiday.conflict_title",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "时间冲突",
+      "en": "Time conflict"
+    },
+    {
+      "key": "holiday.conflict_body",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "与已启用规则「{name}」的时间重叠，仍要保存吗？",
+      "en": "This overlaps with the enabled rule \"{name}\". Save anyway?",
+      "placeholders": {"name": "string"}
+    },
+    {
+      "key": "holiday.conflict_confirm",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "仍要保存",
+      "en": "Save anyway"
+    },
+    {
+      "key": "holiday.notice_switched",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "进入「{name}」，已切换到节日相框",
+      "en": "\"{name}\" started — switched to its holiday frame",
+      "placeholders": {"name": "string"}
+    },
+    {
+      "key": "holiday.notice_missing",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "节日规则「{name}」的相框缺失或没有可播照片，已回落",
+      "en": "Frame for \"{name}\" is missing or empty; fell back",
+      "placeholders": {"name": "string"}
+    },
+    {
+      "key": "holiday.notice_returned",
+      "section": "6. 播放器（S12）",
+      "platform": "all",
+      "zh": "节日时段结束，已回到之前的相框",
+      "en": "Holiday window ended — back to your last frame"
+    }
+  ]
+}

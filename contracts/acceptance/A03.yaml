@@ -1,0 +1,26 @@
+# 验收契约 A03 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "91564b39faa0d419b5c2de132ce0dc29b43c82b12ac42ad07f372111f36f84d1"
+  id: A03
+  title: "动态目录成员与排除"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "动态目录排除单图"
+  pass_conditions:
+    - "新增自动加入"
+    - "排除图始终不播"
+    - "递归规则有效"
+telemetry:
+  role: required
+  events:
+    - name: frame.selection_committed
+      params:
+        - include_future
+        - exclude_count
+    - name: playback.photo_enter
+    - name: playback.photo_exit
+  metrics:
+    - PM10

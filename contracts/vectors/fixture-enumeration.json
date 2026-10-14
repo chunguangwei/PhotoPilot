@@ -1,0 +1,60 @@
+{
+ "meta": {
+  "truth": "夹具适配器枚举口径（2026-10-04 裁决，2026-10-08 扩展）：只枚举媒体扩展名文件（含视频 mp4/mov 与 RAW 扩展，由探测阶段决定可解性），工具元数据（manifest.json 等）不是照片，不进入导入候选",
+  "note": "双端 LocalFiles 夹具适配器与测试必须消费本文件，禁止各自写常数。expected_count 以 tests/fixtures/smoke-v1 下符合 media_extensions 的文件实际数为准（当前 120，manifest.json 不计入）。",
+  "cursor_prefix": "offset:",
+  "done_sentinel": "__done__",
+  "cursor_rule": "偏移类分页游标统一 cursor_prefix+十进制偏移；枚举完成后 import_job.cursor 写 done_sentinel；断点续举以持久化 cursor 恢复，禁止重头枚举（R11-S3，2026-10-09 裁决）"
+ },
+ "media_extensions": [
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "heic",
+  "heif",
+  "webp",
+  "bmp",
+  "tif",
+  "tiff",
+  "mp4",
+  "mov",
+  "dng",
+  "cr2",
+  "nef",
+  "arw",
+  "raf",
+  "orf",
+  "rw2"
+ ],
+ "excluded_examples": [
+  "manifest.json"
+ ],
+ "expected_count": 120,
+ "remote_id_rule": "来源内稳定相对路径（含子目录，Unicode NFC）",
+ "cases": [
+  {
+   "id": "ENUM-01",
+   "desc": "全量枚举只收媒体文件",
+   "expected_count": 120,
+   "must_not_contain": [
+    "manifest.json"
+   ]
+  },
+  {
+   "id": "ENUM-02",
+   "desc": "remote_id 为相对路径且嵌套目录同名文件不冲突",
+   "example": "nested/duplicate.jpg 与根目录 duplicate.jpg 必须同时存在且 remote_id 不同"
+  },
+  {
+   "id": "ENUM-03",
+   "desc": "分页枚举不漏不重：任意 page_size 下并集 = 全量且交集为空",
+   "page_sizes": [
+    1,
+    7,
+    50,
+    500
+   ]
+  }
+ ]
+}

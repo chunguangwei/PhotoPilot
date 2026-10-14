@@ -1,0 +1,253 @@
+{
+  "version": "1.2",
+  "display_name": "PhotoPilot",
+  "source": "tools/generate_brand_assets.py",
+  "source_sha256": "d6aa24927372072cda3b53765cbd511ce3da25a071860ce39aecc7c049fd8d20",
+  "origin": "Original user-confirmed frame-and-light vector; no external artwork, fonts or generation API.",
+  "license": "Project root LICENSE applies; non-commercial use only.",
+  "rendering": "Pillow polygonal stroke outline derived from the same M/H/Q/V geometry; 128 samples per quadratic, 256 per circle; minimum 1024px supersampling and Lanczos downsampling. Preview text uses Pillow's bundled default font.",
+  "geometry": {
+    "viewBox": [
+      0,
+      0,
+      256,
+      256
+    ],
+    "path": "M 164 56 H 84 Q 56 56 56 84 V 172 Q 56 200 84 200 H 172 Q 200 200 200 172 V 112",
+    "stroke": 14,
+    "cap": "round",
+    "join": "round",
+    "circle": [
+      200,
+      56,
+      16
+    ],
+    "colors": {
+      "canvas": "#F4F1EB",
+      "ink": "#202321",
+      "gold": "#B89A68",
+      "dark_gold": "#CFB380"
+    },
+    "actual_visible_bounds": [
+      49,
+      40,
+      216,
+      207
+    ],
+    "user_optical_bounds": [
+      49,
+      33,
+      216,
+      207
+    ],
+    "icon_translation": [
+      -4.5,
+      8.0
+    ],
+    "bounds_note": "The supplied optical top 33 differs from the exact circle top 40. Geometry is unchanged; optical bounds drive icon centering only. Transparent marks retain the original viewport."
+  },
+  "adaptive": {
+    "viewport_dp": 108,
+    "nominal_mask_dp": 72,
+    "safe_circle_diameter_dp": 66,
+    "scale": 0.28125,
+    "translation": [
+      16.734375,
+      20.25
+    ],
+    "normalized_alignment": "(adaptive_coordinate - 18) / 72 == icon_coordinate / 256",
+    "monochrome": "Opaque black geometry, transparent exterior, tinted by Android 13+ launcher."
+  },
+  "handoff": {
+    "ios_appicon_name": "AppIcon",
+    "ios_launch_image_name": "LaunchMark",
+    "launch_point_size": [
+      128,
+      128
+    ],
+    "integration_status": "Assets only; project.yml, Info.plist and pp_launch_screen.xml are not edited.",
+    "preview_status": "Design-only static composites, not runtime screenshots or acceptance evidence."
+  },
+  "assets": {
+    "android/app/src/main/res/drawable/pp_brand_mark.xml": {
+      "sha256": "658ff6cb53fd62725b33ee847fe90d8b9b0e324b49100e714d4ee7b00915e2c8",
+      "bytes": 542
+    },
+    "android/app/src/main/res/drawable/pp_launcher_background.xml": {
+      "sha256": "757620f1ba653819ef15f5fb291f6ef719c4b4780c334dcc40780f03d26298b5",
+      "bytes": 137
+    },
+    "android/app/src/main/res/drawable/pp_launcher_foreground.xml": {
+      "sha256": "0b74f10523e28e3c3a58af811c4b02bb0f4814dcf7e69e30b3a39c930b77a760",
+      "bytes": 671
+    },
+    "android/app/src/main/res/drawable/pp_launcher_monochrome.xml": {
+      "sha256": "0d50d33406f59600d2a6ac8df47a71bc7540d2f678cd94d8978bb67cdc04e622",
+      "bytes": 671
+    },
+    "android/app/src/main/res/drawable-night/pp_brand_mark.xml": {
+      "sha256": "0ec947d30eb5368eb08a5b1a22ebc83341ea904562c3d655fcaacd7eb7fc314e",
+      "bytes": 542
+    },
+    "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml": {
+      "sha256": "e15c70c4002e83c92ebd8cc12291d5f22526d6aa7716fdb4d94a48edc3f326d8",
+      "bytes": 228
+    },
+    "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher.xml": {
+      "sha256": "26da0ae83ab2a47ff17e5f3b13ea447371e6b6890a31282d0640806c9fd3602c",
+      "bytes": 296
+    },
+    "android/app/src/main/res/mipmap-hdpi/ic_launcher.png": {
+      "sha256": "4e3a71dabdfc7839e6ca23452615eab166a1646ef0b10a4b2e376b7607497ffc",
+      "bytes": 1503
+    },
+    "android/app/src/main/res/mipmap-mdpi/ic_launcher.png": {
+      "sha256": "9fc2cd170691bf050bd53d60de35ecf10285c553e53e4dbc48312172d404cd28",
+      "bytes": 953
+    },
+    "android/app/src/main/res/mipmap-nodpi/ic_launcher.png": {
+      "sha256": "eac23b15e60cca444dcce30a466cdd899c8bee84009c66c3781e8e72bf5c1298",
+      "bytes": 24655
+    },
+    "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png": {
+      "sha256": "8ad36d3f6076ac7f45ef9ff6d3fdf9c82a82a9d67f24844f5fa4d302af45cb71",
+      "bytes": 2049
+    },
+    "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": {
+      "sha256": "62ac7ebb170fb6d4bbf2b8d267fd365d2c0fb2d641ed82f43d699ebdc1adb620",
+      "bytes": 3137
+    },
+    "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
+      "sha256": "ccd81fe803450aa26acfdc81260b542aeadc7b094281e51c94025dd8a13efbd0",
+      "bytes": 4107
+    },
+    "design/export/brand-v1.2/app-icon-master.png": {
+      "sha256": "eac23b15e60cca444dcce30a466cdd899c8bee84009c66c3781e8e72bf5c1298",
+      "bytes": 24655
+    },
+    "design/export/brand-v1.2/app-icon-master.svg": {
+      "sha256": "52399b0ae302ffe3d53a98ff498db84db7a69fc45ff5fb197e236665dc23d6d6",
+      "bytes": 427
+    },
+    "design/export/brand-v1.2/brand-preview.png": {
+      "sha256": "2f074da1b810ff889da23480bfc6520f706eef81872e8c16a863cf6a3333fee8",
+      "bytes": 72965
+    },
+    "design/export/brand-v1.2/launch-static-dark.png": {
+      "sha256": "2a96f003694bc2ab845f30b7e6611d8c63ce453474e006727248d1c815f76ef5",
+      "bytes": 7955
+    },
+    "design/export/brand-v1.2/launch-static-light.png": {
+      "sha256": "58477bc3b0bef5df72a3acd1b29f577f18e3cb0ad1d066c3c8801d74955e475b",
+      "bytes": 7730
+    },
+    "design/export/brand-v1.2/logo-dark.png": {
+      "sha256": "ee0d5faefa88574946bdcbb9a899502124ce47bdab0616c13b9b65d32576acbf",
+      "bytes": 29894
+    },
+    "design/export/brand-v1.2/logo-dark.svg": {
+      "sha256": "1c46c4a849c95fa26c4494e17e48304860142f751103834b78cbc756a1040aa9",
+      "bytes": 334
+    },
+    "design/export/brand-v1.2/logo-monochrome.png": {
+      "sha256": "cd177d93e3c7c22bad418bc11fcdbdf578feb2388e3bcdab10da69e4d4776abe",
+      "bytes": 25831
+    },
+    "design/export/brand-v1.2/logo-monochrome.svg": {
+      "sha256": "3a7338a9b902a809627065bc40031bc5383610715658319e10def0582e2fce6a",
+      "bytes": 334
+    },
+    "design/export/brand-v1.2/logo-primary.png": {
+      "sha256": "38fe2f57be5abf32f235c44aaf9869aeafafa80340555538ec9d193bb1e29aa5",
+      "bytes": 27506
+    },
+    "design/export/brand-v1.2/logo-primary.svg": {
+      "sha256": "b818455c9848ae7a05faf08e45a86e9125b2bb2c4646a66db8c7210ab145e366",
+      "bytes": 334
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json": {
+      "sha256": "d40fe347add563ea59d48ce74fd60233471260e3a14a427cbe4924cc8983198a",
+      "bytes": 2206
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png": {
+      "sha256": "eac23b15e60cca444dcce30a466cdd899c8bee84009c66c3781e8e72bf5c1298",
+      "bytes": 24655
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-120.png": {
+      "sha256": "afb803ec35852bb4c8f536b3aec20ee428166541d3f76104926b48a76af1f8e2",
+      "bytes": 2544
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-152.png": {
+      "sha256": "e1e74a62a712edf3d5ef3d6cfcf4c08a7293e6f71cf430e0f673a5fdf72a1042",
+      "bytes": 3169
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-167.png": {
+      "sha256": "e95cf7cdf71d013cd3d0f3367583a4fcf063ebb3b63cdf9576bf9acadff73dfd",
+      "bytes": 3578
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-180.png": {
+      "sha256": "419f3f45fceead70472db26477c17f0b5f2806ecdca7ad3aa97d5659ece90194",
+      "bytes": 3853
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-20.png": {
+      "sha256": "9828df4b26aca59fb0359e5a60e1aa296a188c9ab3af5c63804e752e70229d3b",
+      "bytes": 477
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-29.png": {
+      "sha256": "8ba38fe579ac6b29780815b86da5adf99ee24af7fe890c4ceb9e77c189a2c3cb",
+      "bytes": 672
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-40.png": {
+      "sha256": "ee608de090c3f134061e64bb8a2c8145149bce173e01010bd56e30e7b9b365f0",
+      "bytes": 859
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-58.png": {
+      "sha256": "e023c77edab6c39e07af12fdd430a0f3879a14b4d09aa19af59fce59b42d15c4",
+      "bytes": 1256
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-60.png": {
+      "sha256": "2515855fd421af6232194c2e702fe2ab28c9dd26cd641437535a07b27fd226e0",
+      "bytes": 1243
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-76.png": {
+      "sha256": "6e63e02c2c0e04511aea5ed8329aa2248d9ff24a11b6f817727a53a07cd7a2cc",
+      "bytes": 1532
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-80.png": {
+      "sha256": "236acd69e7eedf1ddaaf7ec2b3ccd313e38f251773785155f10a42cebef3cab4",
+      "bytes": 1642
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-87.png": {
+      "sha256": "d597e123992b73cbdfa655a5f380efe8b67c94cb503386a89b236530c77594aa",
+      "bytes": 1878
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/LaunchMark.imageset/Contents.json": {
+      "sha256": "da01f4fa37e5b823e30efbdd38b25c10188240ea3e5813a044495ff0b38b2cff",
+      "bytes": 1035
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/LaunchMark.imageset/launch-dark@1x.png": {
+      "sha256": "b18a99b35743e7f6b9030eeb949baa076bd42fd8db60284967430dab3437764b",
+      "bytes": 2938
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/LaunchMark.imageset/launch-dark@2x.png": {
+      "sha256": "6e387d4b54e0e02e41949fbc4e1c6c4f1e035cbd40ebc0aaceee5fbe5891e63f",
+      "bytes": 6545
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/LaunchMark.imageset/launch-dark@3x.png": {
+      "sha256": "7efe6d508d231f51377389fc64d1c0e26cf81bf9cdb6f0ee149dcd5dd17b11f6",
+      "bytes": 10171
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/LaunchMark.imageset/launch-light@1x.png": {
+      "sha256": "baaf321700f0067433e2331d707f659933680ec22569666d55d3ae59aaf4fec9",
+      "bytes": 2756
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/LaunchMark.imageset/launch-light@2x.png": {
+      "sha256": "2751829c75257b660b6584b294d46268d5c2367e215d0f8d23360054ac33d55e",
+      "bytes": 6001
+    },
+    "ios/PhotoPilot/Resources/Assets.xcassets/LaunchMark.imageset/launch-light@3x.png": {
+      "sha256": "70d907572fec1b199549142699f107f1eca3d3e62acb9f82a573e797b5621f98",
+      "bytes": 9338
+    }
+  }
+}

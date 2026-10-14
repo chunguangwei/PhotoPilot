@@ -1,0 +1,49 @@
+PhotoPilot (光屿) — Non-Commercial License / 非商业使用许可
+
+Copyright (c) 2026 PhotoPilot (光屿) authors. All rights reserved.
+版权所有 (c) 2026 PhotoPilot（光屿）作者，保留所有权利。
+
+English
+
+This application and its source code are licensed for NON-COMMERCIAL USE ONLY.
+
+You may copy, modify, distribute and run this application and its source code
+for personal, educational, research or other non-commercial purposes, provided
+that the above copyright notice and this permission notice are included in all
+copies or substantial portions of the software.
+
+Commercial use — including but not limited to distributing this application or
+a modified version of it for a fee, embedding it in a commercial product, or
+offering it as part of a paid service — requires prior written permission from
+the copyright holders. To arrange commercial use, contact:
+
+    chunguangwee@gmail.com
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE.
+
+简体中文
+
+本应用及其源代码仅供非商业用途。
+
+您可以为个人、教育、研究或其他非商业目的复制、修改、分发和运行本应用及其
+源代码，条件是上述版权声明和本许可声明须包含在软件的所有副本或主要部分中。
+
+商业使用——包括但不限于以收费方式分发本应用或其修改版本、将其嵌入商业产品，
+或作为付费服务的一部分提供——须事先获得版权所有者的书面许可。商业使用请联系：
+
+    chunguangwee@gmail.com
+
+本软件按"现状"提供，不含任何形式的明示或暗示担保，包括但不限于对适销性、
+特定用途适用性和非侵权的担保。在任何情况下，作者或版权持有人均不对因本软件
+或本软件的使用或其他交易而产生的任何索赔、损害或其他责任承担责任。
+
+Third-party components / 第三方组件
+
+Third-party libraries included with this application remain under their own
+licenses (for example: AMSMB2 — MIT; Room — Apache-2.0; Kotlin — Apache-2.0;
+SQLite — Public Domain). 本应用包含的第三方库仍适用各自的许可证。

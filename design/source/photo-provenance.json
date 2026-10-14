@@ -1,0 +1,45 @@
+{
+  "method": "Deterministic Pillow synthesis; no AI screenshot crops, no private or network photos",
+  "generator": "design/source/synthesize_photos.py",
+  "license": "Original project-generated illustrative assets; no external photography or identifiable people",
+  "date": "2026-10-04",
+  "use": "Design review only; not tests/fixtures",
+  "files": [
+    {
+      "file": "lake-blur.jpg",
+      "bytes": 1376
+    },
+    {
+      "file": "lake-portrait-blur.jpg",
+      "bytes": 1375
+    },
+    {
+      "file": "lake-portrait.jpg",
+      "bytes": 81114
+    },
+    {
+      "file": "lake.jpg",
+      "bytes": 86689
+    },
+    {
+      "file": "mountain-blur.jpg",
+      "bytes": 1366
+    },
+    {
+      "file": "mountain.jpg",
+      "bytes": 87979
+    }
+  ],
+  "materialStressAssets": {
+    "generator": "design/source/render_materials.py",
+    "files": [
+      "material-white.jpg",
+      "material-black.jpg",
+      "material-portrait-tones.jpg",
+      "material-leaves.jpg",
+      "material-snow.jpg"
+    ],
+    "method": "Deterministic script-generated abstract surfaces; portrait-tone silhouette contains no identifiable person",
+    "use": "Design material contrast samples; real-photo native test still required"
+  }
+}

@@ -1,0 +1,21 @@
+# 验收契约 A18 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "112b50946339972cc8196767e32d43d8e9c11300ff40a61c6451df2df225615c"
+  id: A18
+  title: "大库交互性能"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "大库与交互"
+  pass_conditions:
+    - "1 万张元数据分页可用"
+    - "操作反馈目标 ≤100ms，不在主线程解码大图"
+telemetry:
+  role: required
+  events: []
+  events_note: "09 §7 仅述「列表分页事件、输入反馈计时」，未给具体事件名"
+  metrics:
+    - PM5
+    - PM6

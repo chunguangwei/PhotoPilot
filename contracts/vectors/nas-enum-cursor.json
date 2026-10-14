@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "truth": "NAS 枚举游标互操作格式（RV-3 裁决，2026-10-10）：游标 = \"queue:\" + JSON 对象 {\"dirs\": [待枚举目录…], \"skip\": 目录内已消费文件数}。dirs 按 BFS 顺序、目录内文件按 rel_path 升序消费；skip 仅作用于 dirs[0]。空 dirs 表示枚举完成（nextCursor=null，不写空游标）。无前缀输入按空状态处理（dirs=[]、skip=0），不得抛错。",
+    "note": "双端 WebDAV/SMB 适配器与测试必须消费本文件。golden 串为 Android NasEnumCursor 实际输出；序列化端只要求 parse(format(state)) == state，不要求字节序（键序允许不同）。",
+    "cursor_prefix": "queue:",
+    "state_shape": "queue:{\"dirs\":[string…],\"skip\":int}"
+  },
+  "cases": [
+    {
+      "id": "CURSOR-01",
+      "desc": "初始状态序列化后可无损解析回来",
+      "state": {"dirs": ["", "sub"], "skip": 0},
+      "roundtrip": true
+    },
+    {
+      "id": "CURSOR-02",
+      "desc": "Android 现格式 golden 串可被双端解析",
+      "golden": "queue:{\"dirs\":[\"a/b\",\"c\"],\"skip\":3}",
+      "state": {"dirs": ["a/b", "c"], "skip": 3}
+    },
+    {
+      "id": "CURSOR-03",
+      "desc": "空 dirs 游标可解析（枚举完成的防御读取）",
+      "golden": "queue:{\"dirs\":[],\"skip\":0}",
+      "state": {"dirs": [], "skip": 0}
+    },
+    {
+      "id": "CURSOR-04",
+      "desc": "无 queue: 前缀的历史串按空状态回退，不抛错",
+      "legacy": "[]",
+      "state": {"dirs": [], "skip": 0}
+    },
+    {
+      "id": "CURSOR-05",
+      "desc": "skip 大于 0 且 dirs 多项的状态往返一致",
+      "state": {"dirs": ["photos/2024", "photos/2025", "videos"], "skip": 57},
+      "roundtrip": true
+    },
+    {
+      "id": "CURSOR-06",
+      "desc": "目录名含空格与中文时往返一致",
+      "state": {"dirs": ["家庭 照片/2025 春节"], "skip": 2},
+      "roundtrip": true
+    }
+  ]
+}

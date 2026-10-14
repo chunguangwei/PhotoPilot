@@ -1,0 +1,22 @@
+# 验收契约 A17 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "573c774d44076df67e78621f5e9ae354c142a80abef6110c95219630e94990ce"
+  id: A17
+  title: "冷启动首张可播"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "本地冷启动"
+  pass_conditions:
+    - "最低设备 P95 首张可播 ≤3 秒"
+    - "主流设备目标 ≤1.5 秒，排除 OS 启动动画"
+telemetry:
+  role: required
+  events:
+    - name: app.launch_start
+    - name: playback.first_playable_shown
+  metrics:
+    - PM1
+    - PM2

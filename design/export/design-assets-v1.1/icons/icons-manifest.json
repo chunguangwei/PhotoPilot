@@ -1,0 +1,1097 @@
+{
+  "version": "1.1",
+  "date": "2026-10-04",
+  "source": "Original AI-assisted path drawing; brand icon is an optically simplified UI derivative, not a replacement logo master.",
+  "grid": "24-unit canonical geometry; size-specific uniform stroke widths; >=2 units inset including stroke; rounded caps and joins.",
+  "optical_notes": "Below 32, brand light is a short rounded stroke and horizon simplified; all UI marks remain monochrome outline. Fractional 1.75/2.5 strokes are antialiased, not claimed pixel-perfect native rendering.",
+  "ios_integration": "Single-page vector PDF. Set template rendering and Preserve Vector Data when integrating; asset catalog not created.",
+  "android_integration": "VectorDrawable, strokeColor=?android:attr/textColorPrimary. Inflate/tint on device still pending.",
+  "limitations": [
+    "Local design candidate, not native UI validation or M0 evidence.",
+    "Large type is 1.6x design stress, not the OS maximum.",
+    "PNG uses locally rendered macOS font fallback; Android system-font and native accessibility verification pending.",
+    "No fonts are embedded or distributed; store wordmark license pending."
+  ],
+  "entries": [
+    {
+      "semantic": "nav_frames",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_nav_frames_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_nav_frames_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_nav_frames_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "相框",
+        "en": "Frames"
+      }
+    },
+    {
+      "semantic": "nav_frames",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_nav_frames_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_nav_frames_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_nav_frames_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "相框",
+        "en": "Frames"
+      }
+    },
+    {
+      "semantic": "nav_frames",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_nav_frames_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_nav_frames_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_nav_frames_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "相框",
+        "en": "Frames"
+      }
+    },
+    {
+      "semantic": "nav_library",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_nav_library_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_nav_library_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_nav_library_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "照片库",
+        "en": "Library"
+      }
+    },
+    {
+      "semantic": "nav_library",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_nav_library_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_nav_library_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_nav_library_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "照片库",
+        "en": "Library"
+      }
+    },
+    {
+      "semantic": "nav_library",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_nav_library_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_nav_library_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_nav_library_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "照片库",
+        "en": "Library"
+      }
+    },
+    {
+      "semantic": "nav_sources",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_nav_sources_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_nav_sources_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_nav_sources_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "来源",
+        "en": "Sources"
+      }
+    },
+    {
+      "semantic": "nav_sources",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_nav_sources_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_nav_sources_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_nav_sources_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "来源",
+        "en": "Sources"
+      }
+    },
+    {
+      "semantic": "nav_sources",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_nav_sources_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_nav_sources_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_nav_sources_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "来源",
+        "en": "Sources"
+      }
+    },
+    {
+      "semantic": "nav_settings",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_nav_settings_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_nav_settings_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_nav_settings_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "设置",
+        "en": "Settings"
+      }
+    },
+    {
+      "semantic": "nav_settings",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_nav_settings_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_nav_settings_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_nav_settings_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "设置",
+        "en": "Settings"
+      }
+    },
+    {
+      "semantic": "nav_settings",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_nav_settings_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_nav_settings_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_nav_settings_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "设置",
+        "en": "Settings"
+      }
+    },
+    {
+      "semantic": "play_previous",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_play_previous_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_previous_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_previous_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "上一张",
+        "en": "Previous photo"
+      }
+    },
+    {
+      "semantic": "play_previous",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_play_previous_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_previous_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_previous_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "上一张",
+        "en": "Previous photo"
+      }
+    },
+    {
+      "semantic": "play_previous",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_play_previous_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_previous_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_previous_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "上一张",
+        "en": "Previous photo"
+      }
+    },
+    {
+      "semantic": "play_pause",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_play_pause_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_pause_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_pause_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "暂停",
+        "en": "Pause"
+      }
+    },
+    {
+      "semantic": "play_pause",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_play_pause_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_pause_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_pause_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "暂停",
+        "en": "Pause"
+      }
+    },
+    {
+      "semantic": "play_pause",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_play_pause_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_pause_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_pause_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "暂停",
+        "en": "Pause"
+      }
+    },
+    {
+      "semantic": "play_next",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_play_next_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_next_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_next_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "下一张",
+        "en": "Next photo"
+      }
+    },
+    {
+      "semantic": "play_next",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_play_next_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_next_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_next_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "下一张",
+        "en": "Next photo"
+      }
+    },
+    {
+      "semantic": "play_next",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_play_next_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_next_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_next_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "下一张",
+        "en": "Next photo"
+      }
+    },
+    {
+      "semantic": "play_more",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_play_more_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_more_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_more_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "更多",
+        "en": "More"
+      }
+    },
+    {
+      "semantic": "play_more",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_play_more_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_more_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_more_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "更多",
+        "en": "More"
+      }
+    },
+    {
+      "semantic": "play_more",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_play_more_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_more_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_more_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "更多",
+        "en": "More"
+      }
+    },
+    {
+      "semantic": "play",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_play_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "播放",
+        "en": "Play"
+      }
+    },
+    {
+      "semantic": "play",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_play_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "播放",
+        "en": "Play"
+      }
+    },
+    {
+      "semantic": "play",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_play_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_play_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_play_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "播放",
+        "en": "Play"
+      }
+    },
+    {
+      "semantic": "check",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_check_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_check_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_check_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "已选",
+        "en": "Selected"
+      }
+    },
+    {
+      "semantic": "check",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_check_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_check_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_check_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "已选",
+        "en": "Selected"
+      }
+    },
+    {
+      "semantic": "check",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_check_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_check_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_check_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "已选",
+        "en": "Selected"
+      }
+    },
+    {
+      "semantic": "close",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_close_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_close_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_close_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "关闭",
+        "en": "Close"
+      }
+    },
+    {
+      "semantic": "close",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_close_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_close_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_close_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "关闭",
+        "en": "Close"
+      }
+    },
+    {
+      "semantic": "close",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_close_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_close_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_close_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "关闭",
+        "en": "Close"
+      }
+    },
+    {
+      "semantic": "back",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_back_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_back_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_back_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "返回",
+        "en": "Back"
+      }
+    },
+    {
+      "semantic": "back",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_back_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_back_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_back_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "返回",
+        "en": "Back"
+      }
+    },
+    {
+      "semantic": "back",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_back_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_back_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_back_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "返回",
+        "en": "Back"
+      }
+    },
+    {
+      "semantic": "empty",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_empty_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_empty_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_empty_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "暂无内容",
+        "en": "No content"
+      }
+    },
+    {
+      "semantic": "empty",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_empty_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_empty_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_empty_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "暂无内容",
+        "en": "No content"
+      }
+    },
+    {
+      "semantic": "empty",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_empty_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_empty_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_empty_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "暂无内容",
+        "en": "No content"
+      }
+    },
+    {
+      "semantic": "brand",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_brand_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_brand_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_brand_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "光屿",
+        "en": "PhotoPilot"
+      }
+    },
+    {
+      "semantic": "brand",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_brand_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_brand_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_brand_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "光屿",
+        "en": "PhotoPilot"
+      }
+    },
+    {
+      "semantic": "brand",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_brand_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_brand_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_brand_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "光屿",
+        "en": "PhotoPilot"
+      }
+    },
+    {
+      "semantic": "download",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_download_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_download_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_download_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "下载",
+        "en": "Download"
+      }
+    },
+    {
+      "semantic": "download",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_download_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_download_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_download_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "下载",
+        "en": "Download"
+      }
+    },
+    {
+      "semantic": "download",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_download_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_download_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_download_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "下载",
+        "en": "Download"
+      }
+    },
+    {
+      "semantic": "retry",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_retry_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_retry_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_retry_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "重试",
+        "en": "Retry"
+      }
+    },
+    {
+      "semantic": "retry",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_retry_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_retry_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_retry_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "重试",
+        "en": "Retry"
+      }
+    },
+    {
+      "semantic": "retry",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_retry_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_retry_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_retry_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "重试",
+        "en": "Retry"
+      }
+    },
+    {
+      "semantic": "warning",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_warning_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_warning_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_warning_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "警告",
+        "en": "Warning"
+      }
+    },
+    {
+      "semantic": "warning",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_warning_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_warning_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_warning_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "警告",
+        "en": "Warning"
+      }
+    },
+    {
+      "semantic": "warning",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_warning_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_warning_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_warning_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "警告",
+        "en": "Warning"
+      }
+    },
+    {
+      "semantic": "search",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_search_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_search_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_search_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "搜索",
+        "en": "Search"
+      }
+    },
+    {
+      "semantic": "search",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_search_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_search_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_search_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "搜索",
+        "en": "Search"
+      }
+    },
+    {
+      "semantic": "search",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_search_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_search_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_search_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "搜索",
+        "en": "Search"
+      }
+    },
+    {
+      "semantic": "lock",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_lock_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_lock_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_lock_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "权限",
+        "en": "Permission"
+      }
+    },
+    {
+      "semantic": "lock",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_lock_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_lock_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_lock_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "权限",
+        "en": "Permission"
+      }
+    },
+    {
+      "semantic": "lock",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_lock_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_lock_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_lock_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "权限",
+        "en": "Permission"
+      }
+    },
+    {
+      "semantic": "plus",
+      "size": 20,
+      "stroke_width": 1.75,
+      "formats": {
+        "svg": "design/icons/ic_plus_20.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_plus_20.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_plus_20.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "添加",
+        "en": "Add"
+      }
+    },
+    {
+      "semantic": "plus",
+      "size": 24,
+      "stroke_width": 2,
+      "formats": {
+        "svg": "design/icons/ic_plus_24.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_plus_24.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_plus_24.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "添加",
+        "en": "Add"
+      }
+    },
+    {
+      "semantic": "plus",
+      "size": 32,
+      "stroke_width": 2.5,
+      "formats": {
+        "svg": "design/icons/ic_plus_32.svg",
+        "pdf": "design/export/design-assets-v1.1/icons/ios/ic_plus_32.pdf",
+        "vector_drawable": "design/export/design-assets-v1.1/icons/android/ic_plus_32.xml"
+      },
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "labels": {
+        "zh": "添加",
+        "en": "Add"
+      }
+    }
+  ]
+}

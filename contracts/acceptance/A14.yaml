@@ -1,0 +1,20 @@
+# 验收契约 A14 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "b43edc15b737be3133562d857c9e214927e8e9761387dccd0565b8b553644ff1"
+  id: A14
+  title: "NAS 异常不误删"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "NAS 网络异常"
+  pass_conditions:
+    - "不把离线误判删除"
+    - "TLS/认证失败有正确反馈"
+telemetry:
+  role: required
+  events:
+    - name: source.connect_test
+    - name: delete.guard_triggered
+  metrics: []

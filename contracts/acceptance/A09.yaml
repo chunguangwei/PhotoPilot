@@ -1,0 +1,23 @@
+# 验收契约 A09 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "14900110ccf9a1d0b6732d6b76fce35b6d88a151cf8605f1a3570873c544164a"
+  id: A09
+  title: "单项失败隔离"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "空间不足 / 坏图"
+  pass_conditions:
+    - "单项失败隔离"
+    - "不误删受保护照片、不重置批次"
+telemetry:
+  role: required
+  events:
+    - name: storage.threshold_hit
+    - name: import.item_failed
+    - name: render.decode_failed
+  metrics:
+    - PM8
+    - PM9

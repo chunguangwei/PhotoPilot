@@ -1,0 +1,3088 @@
+{
+  "version": "smoke-v1",
+  "generator": "tools/generate_fixtures.py",
+  "generatorSha256": "a2b7895433b18588204574cae59e039eaf63989c8e3e9707669a33ac5332cbbd",
+  "pillowVersion": "12.2.0",
+  "license": "项目原创脚本合成，仅用作 PhotoPilot 开发与测试；无第三方摄影、无真人数据。",
+  "reproducibility": "相同生成器和 Pillow 版本输出固定哈希；版本变化需重建并评审 manifest。",
+  "coverage": "120 个轻量文件，覆盖可本地合成的子集，不等于 F01–F28 全覆盖或业务测试通过。",
+  "unavailable": [
+    "F03 HEIC/HEIF",
+    "F13 超大像素",
+    "F15 交错 PNG",
+    "F16 ICC 广色域",
+    "F17 alpha HEIC",
+    "F18 Live Photo",
+    "F20 视频",
+    "F21 RAW",
+    "F23 emoji/近文件系统路径上限",
+    "F25 HEIC",
+    "F27 千张混合",
+    "F28 万张元数据"
+  ],
+  "entries": [
+    {
+      "id": "fixture-001",
+      "file": "F01/baseline.jpg",
+      "bytes": 2493,
+      "sha256": "d2dda116da2b1a7ffedfb924ff556c8b22ba54404ed48be3ece4d4101696d7ac",
+      "categories": [
+        "F01",
+        "F10"
+      ],
+      "acceptance": [
+        "A02",
+        "A04",
+        "A06"
+      ],
+      "expected": "正常解码；无拍摄时间，浏览回退导入时间，播放 NULLS LAST。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-002",
+      "file": "F02/png-p.png",
+      "bytes": 10111,
+      "sha256": "c44b97eb8182d6ff3b14dc95b4aabe8850e9e687fbda061ce0fb1c74eac85e29",
+      "categories": [
+        "F02"
+      ],
+      "acceptance": [
+        "A09"
+      ],
+      "expected": "按 PNG 色彩模式解码，失败仅影响单项。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "P",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-003",
+      "file": "F02/png-rgb.png",
+      "bytes": 620,
+      "sha256": "870d50c9377553adf74c2a96ef87177da355941aab00c7fea98a612cb90f6817",
+      "categories": [
+        "F02"
+      ],
+      "acceptance": [
+        "A09"
+      ],
+      "expected": "按 PNG 色彩模式解码，失败仅影响单项。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-004",
+      "file": "F02/png-rgba.png",
+      "bytes": 675,
+      "sha256": "92c185013dbaedbaf1dd95282a40d4b6a06c13c79d2e08c8fd89540b60be59c8",
+      "categories": [
+        "F02"
+      ],
+      "acceptance": [
+        "A09"
+      ],
+      "expected": "按 PNG 色彩模式解码，失败仅影响单项。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-005",
+      "file": "F04/240x160.png",
+      "bytes": 620,
+      "sha256": "870d50c9377553adf74c2a96ef87177da355941aab00c7fea98a612cb90f6817",
+      "categories": [
+        "F04"
+      ],
+      "acceptance": [
+        "A06",
+        "A09"
+      ],
+      "expected": "保留完整构图、不拉伸；极端尺寸须受控下采样。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-006",
+      "file": "F04/240x180.png",
+      "bytes": 673,
+      "sha256": "7b120d6ff71851e1e05b1fcf4a552d865b254700a8e3a7e8196035aad2e12a14",
+      "categories": [
+        "F04"
+      ],
+      "acceptance": [
+        "A06",
+        "A09"
+      ],
+      "expected": "保留完整构图、不拉伸；极端尺寸须受控下采样。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 180,
+      "displayWidth": 240,
+      "displayHeight": 180,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-007",
+      "file": "F04/256x144.png",
+      "bytes": 577,
+      "sha256": "583d1fcabfebac3c68013955a480332ef4d82e4ed82530fdf5d691b5b29db65b",
+      "categories": [
+        "F04"
+      ],
+      "acceptance": [
+        "A06",
+        "A09"
+      ],
+      "expected": "保留完整构图、不拉伸；极端尺寸须受控下采样。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 256,
+      "height": 144,
+      "displayWidth": 256,
+      "displayHeight": 144,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-008",
+      "file": "F05/160x240.png",
+      "bytes": 739,
+      "sha256": "a997480b35b4d3026cd2eacc7a918be61e90d90c5318db19e9acd30cb7840007",
+      "categories": [
+        "F05"
+      ],
+      "acceptance": [
+        "A06",
+        "A09"
+      ],
+      "expected": "保留完整构图、不拉伸；极端尺寸须受控下采样。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 160,
+      "height": 240,
+      "displayWidth": 160,
+      "displayHeight": 240,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-009",
+      "file": "F05/144x256.png",
+      "bytes": 778,
+      "sha256": "a18839c1ef12244174a998dfb384cd56f5066c7cc12d52d28bb5d8e2ff37143d",
+      "categories": [
+        "F05"
+      ],
+      "acceptance": [
+        "A06",
+        "A09"
+      ],
+      "expected": "保留完整构图、不拉伸；极端尺寸须受控下采样。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 144,
+      "height": 256,
+      "displayWidth": 144,
+      "displayHeight": 256,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-010",
+      "file": "F06/160x160.png",
+      "bytes": 559,
+      "sha256": "eb6afe5660153c1c610efb835695c83f271044199c5f7c6660d218d79013aba7",
+      "categories": [
+        "F06"
+      ],
+      "acceptance": [
+        "A06",
+        "A09"
+      ],
+      "expected": "保留完整构图、不拉伸；极端尺寸须受控下采样。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 160,
+      "height": 160,
+      "displayWidth": 160,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-011",
+      "file": "F07/10000x1200.png",
+      "bytes": 38158,
+      "sha256": "21569d74406ae2c6e908bca58b404df179aecae8c4df4eef3ab7e41fb5881b96",
+      "categories": [
+        "F07"
+      ],
+      "acceptance": [
+        "A06",
+        "A09"
+      ],
+      "expected": "保留完整构图、不拉伸；极端尺寸须受控下采样。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 10000,
+      "height": 1200,
+      "displayWidth": 10000,
+      "displayHeight": 1200,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-012",
+      "file": "F08/600x8000.png",
+      "bytes": 30230,
+      "sha256": "e6cbe449173613869cb74c7067bb469f346c31d1ba59f6ecd8c340a8b0061826",
+      "categories": [
+        "F08"
+      ],
+      "acceptance": [
+        "A06",
+        "A09"
+      ],
+      "expected": "保留完整构图、不拉伸；极端尺寸须受控下采样。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 600,
+      "height": 8000,
+      "displayWidth": 600,
+      "displayHeight": 8000,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-013",
+      "file": "F14/1x1.png",
+      "bytes": 69,
+      "sha256": "df204152f8ca733e4cb90ca08583722c2a7a093154df803f3e95ad7906e4d6d3",
+      "categories": [
+        "F14"
+      ],
+      "acceptance": [
+        "A06",
+        "A09"
+      ],
+      "expected": "保留完整构图、不拉伸；极端尺寸须受控下采样。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 1,
+      "height": 1,
+      "displayWidth": 1,
+      "displayHeight": 1,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-014",
+      "file": "F14/16x16.png",
+      "bytes": 107,
+      "sha256": "9ec5f977fc2ff620d8b067474bfb4522a6c20f7ab2c992fdf0bbe29391dba02c",
+      "categories": [
+        "F14"
+      ],
+      "acceptance": [
+        "A06",
+        "A09"
+      ],
+      "expected": "保留完整构图、不拉伸；极端尺寸须受控下采样。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 16,
+      "height": 16,
+      "displayWidth": 16,
+      "displayHeight": 16,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-015",
+      "file": "F14/32x24.png",
+      "bytes": 124,
+      "sha256": "bc0874e4471ed50674fe32891013528f69a8b837ceccf4d4d4a63a1ba2c0c0f3",
+      "categories": [
+        "F14"
+      ],
+      "acceptance": [
+        "A06",
+        "A09"
+      ],
+      "expected": "保留完整构图、不拉伸；极端尺寸须受控下采样。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 32,
+      "height": 24,
+      "displayWidth": 32,
+      "displayHeight": 24,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-016",
+      "file": "F09/orientation-1.png",
+      "bytes": 658,
+      "sha256": "50eb8ebada4a148f5c114da42e8fa727a83ccc52ff893491470e0cc363ea4d00",
+      "categories": [
+        "F09"
+      ],
+      "acceptance": [
+        "A06"
+      ],
+      "expected": "方向校正后应与 orientation-1 逐像素相同。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null,
+      "normalizedPixelSha256": "01c028f525af15587af1958497ba8f0be6001d83ec79e17d68994ead2ff2d1a8"
+    },
+    {
+      "id": "fixture-017",
+      "file": "F09/orientation-2.png",
+      "bytes": 655,
+      "sha256": "d8ecf7fae1ace139f064871ba0e19e8b318a4dd751319f827f99270b2d045a96",
+      "categories": [
+        "F09"
+      ],
+      "acceptance": [
+        "A06"
+      ],
+      "expected": "方向校正后应与 orientation-1 逐像素相同。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 2,
+      "capturedAt": null,
+      "normalizedPixelSha256": "01c028f525af15587af1958497ba8f0be6001d83ec79e17d68994ead2ff2d1a8"
+    },
+    {
+      "id": "fixture-018",
+      "file": "F09/orientation-3.png",
+      "bytes": 666,
+      "sha256": "42d2460ea9ca181d0740343f90fe14867f427619b382f541d760fd0e454aae49",
+      "categories": [
+        "F09"
+      ],
+      "acceptance": [
+        "A06"
+      ],
+      "expected": "方向校正后应与 orientation-1 逐像素相同。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 3,
+      "capturedAt": null,
+      "normalizedPixelSha256": "01c028f525af15587af1958497ba8f0be6001d83ec79e17d68994ead2ff2d1a8"
+    },
+    {
+      "id": "fixture-019",
+      "file": "F09/orientation-4.png",
+      "bytes": 656,
+      "sha256": "d76bd8ad21cd7f2ddcb32620092b7c27650bf1ffdedce688142786e1fe86777d",
+      "categories": [
+        "F09"
+      ],
+      "acceptance": [
+        "A06"
+      ],
+      "expected": "方向校正后应与 orientation-1 逐像素相同。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 4,
+      "capturedAt": null,
+      "normalizedPixelSha256": "01c028f525af15587af1958497ba8f0be6001d83ec79e17d68994ead2ff2d1a8"
+    },
+    {
+      "id": "fixture-020",
+      "file": "F09/orientation-5.png",
+      "bytes": 779,
+      "sha256": "78a1eff03263bb422ffb1509a016c2ae83ba73e538a8df4a61b850c2b61836f9",
+      "categories": [
+        "F09"
+      ],
+      "acceptance": [
+        "A06"
+      ],
+      "expected": "方向校正后应与 orientation-1 逐像素相同。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 160,
+      "height": 240,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 5,
+      "capturedAt": null,
+      "normalizedPixelSha256": "01c028f525af15587af1958497ba8f0be6001d83ec79e17d68994ead2ff2d1a8"
+    },
+    {
+      "id": "fixture-021",
+      "file": "F09/orientation-6.png",
+      "bytes": 781,
+      "sha256": "5c6197e48e65339d2731b3fb639cb6d19f95f487359d194597d3bdf599039c4b",
+      "categories": [
+        "F09"
+      ],
+      "acceptance": [
+        "A06"
+      ],
+      "expected": "方向校正后应与 orientation-1 逐像素相同。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 160,
+      "height": 240,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 6,
+      "capturedAt": null,
+      "normalizedPixelSha256": "01c028f525af15587af1958497ba8f0be6001d83ec79e17d68994ead2ff2d1a8"
+    },
+    {
+      "id": "fixture-022",
+      "file": "F09/orientation-7.png",
+      "bytes": 774,
+      "sha256": "bb9793ae5a3593eb555a8fca446ce950172f36c5658d4bcd6880264fbffa0770",
+      "categories": [
+        "F09"
+      ],
+      "acceptance": [
+        "A06"
+      ],
+      "expected": "方向校正后应与 orientation-1 逐像素相同。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 160,
+      "height": 240,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 7,
+      "capturedAt": null,
+      "normalizedPixelSha256": "01c028f525af15587af1958497ba8f0be6001d83ec79e17d68994ead2ff2d1a8"
+    },
+    {
+      "id": "fixture-023",
+      "file": "F09/orientation-8.png",
+      "bytes": 771,
+      "sha256": "18faa584e1205c29b200cbcb4d4a375ab8787b13f2bd86be8ca788454f945dc6",
+      "categories": [
+        "F09"
+      ],
+      "acceptance": [
+        "A06"
+      ],
+      "expected": "方向校正后应与 orientation-1 逐像素相同。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 160,
+      "height": 240,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 8,
+      "capturedAt": null,
+      "normalizedPixelSha256": "01c028f525af15587af1958497ba8f0be6001d83ec79e17d68994ead2ff2d1a8"
+    },
+    {
+      "id": "fixture-024",
+      "file": "F11/no-date.jpg",
+      "bytes": 1697,
+      "sha256": "46855f06f7bcea1c5bd423643f52b820230e5ed309d5f412383b346a297033ef",
+      "categories": [
+        "F11"
+      ],
+      "acceptance": [
+        "A06",
+        "A25"
+      ],
+      "expected": "存在 EXIF 但无 DateTimeOriginal；不得回填虚假拍摄时间。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-025",
+      "file": "F12/tie-00.jpg",
+      "bytes": 1938,
+      "sha256": "0de70da70197ce26d1911a52a922be14de82df1215a391017e7aaddea8adbc3b",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-026",
+      "file": "F12/tie-01.jpg",
+      "bytes": 1947,
+      "sha256": "63b4bc777d758b8fe4e8da37fa88dc68aedc55ea4c5a04acd57e31ce93bcb143",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-027",
+      "file": "F12/tie-02.jpg",
+      "bytes": 1961,
+      "sha256": "87a4e3e2889ee00f530bd0805b20c8405704a5ec40cca3ace60a4d470c72afbf",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-028",
+      "file": "F12/tie-03.jpg",
+      "bytes": 2026,
+      "sha256": "4ecee7256f340f3333e48fbca5100e8eac3cf81d61dc150fd1c4002afbee9140",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-029",
+      "file": "F12/tie-04.jpg",
+      "bytes": 2036,
+      "sha256": "b82d65c60361a13a23c8dc37782fe0767d6acbbee2ff7e4b6e503be2941db7b2",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-030",
+      "file": "F12/tie-05.jpg",
+      "bytes": 2037,
+      "sha256": "ede8510dccff4d892ac208f5b9f87cdadfa02e4efebb3ddeaff3b902b5f5a615",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-031",
+      "file": "F12/tie-06.jpg",
+      "bytes": 2045,
+      "sha256": "08d738a11351a8b04608bb96bf970430420d29047e8e4987d0ad33c784fc3292",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-032",
+      "file": "F12/tie-07.jpg",
+      "bytes": 2044,
+      "sha256": "5429e5b841196c1d73d78ef11d46608a351b08b79f39831100debd8b6462fb0a",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-033",
+      "file": "F12/tie-08.jpg",
+      "bytes": 2046,
+      "sha256": "620404d94899944711d88fb61d781bff92c002289c062a50884a7cb20c6797b3",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-034",
+      "file": "F12/tie-09.jpg",
+      "bytes": 2044,
+      "sha256": "1bf1b389adcd25db4119e366123c4f8f3f2773217776edee4cadfd2c8c9daccc",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-035",
+      "file": "F12/tie-10.jpg",
+      "bytes": 1997,
+      "sha256": "6b0a3d09382214b4b3892fe6d99e27a48e6bc517a6e1e38e966ebaf0fd957f1b",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-036",
+      "file": "F12/tie-11.jpg",
+      "bytes": 2076,
+      "sha256": "ca9e2b7558ffbaae11919bb64722f6e71f7cda5750f2406fb028992fd4133855",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-037",
+      "file": "F12/tie-12.jpg",
+      "bytes": 2091,
+      "sha256": "ae4863ac9b919a5af5d9efa685597402cb12ebbe673354ca239909f2f7193e28",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-038",
+      "file": "F12/tie-13.jpg",
+      "bytes": 2096,
+      "sha256": "b6ee1d382a7790e6b4f01c53fd58f66fa649d3dc03ae438e382e27d2bae75069",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-039",
+      "file": "F12/tie-14.jpg",
+      "bytes": 2101,
+      "sha256": "2971b601c47de8a6f174775d20d3a3e6d67cb4ff4612bbb54c955e888314906c",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-040",
+      "file": "F12/tie-15.jpg",
+      "bytes": 2102,
+      "sha256": "53d531a913cc69f41286ca4e6a6cb55d572bb50cda82dbedb8f0b4e5e0fb02c2",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-041",
+      "file": "F12/tie-16.jpg",
+      "bytes": 2102,
+      "sha256": "d22c1fdab3572bbd71e9d7c31e3bf85d75c0ad06c20069b8329c3d1fcff82645",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-042",
+      "file": "F12/tie-17.jpg",
+      "bytes": 2100,
+      "sha256": "35a0e0ddfcb8ff25c8c80cc28a71d31f38f5fd38e99435ccb3e3a233ff43f4eb",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-043",
+      "file": "F12/tie-18.jpg",
+      "bytes": 2057,
+      "sha256": "5d77f1019277d35ffeb3df507fdfb534ef4d90b18fa29ddc6e2c5ad3686543d5",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-044",
+      "file": "F12/tie-19.jpg",
+      "bytes": 2123,
+      "sha256": "f24765e4ba48363a7da4acd9363630a850ff391f3e7e131a2b70cc901def2ed7",
+      "categories": [
+        "F12"
+      ],
+      "acceptance": [
+        "A04",
+        "A25"
+      ],
+      "expected": "同拍摄时间按稳定 ID 排序，不依据文件遍历顺序。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": "2024:06:01 09:00:00"
+    },
+    {
+      "id": "fixture-045",
+      "file": "F15/progressive.jpg",
+      "bytes": 1243,
+      "sha256": "c4a3f6751eac044696196daad5e9f47153fabbe3fc8269da367e1979acd81706",
+      "categories": [
+        "F15"
+      ],
+      "acceptance": [
+        "A09"
+      ],
+      "expected": "完整下载校验后方可提交。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-046",
+      "file": "F16/cmyk.jpg",
+      "bytes": 2802,
+      "sha256": "5d510ca30171612c3e911f064886478b79816be95a168fc043dd060ee9302483",
+      "categories": [
+        "F16"
+      ],
+      "acceptance": [
+        "A09"
+      ],
+      "expected": "CMYK JPEG 颜色路径；不代表 ICC 广色域覆盖。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "CMYK",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-047",
+      "file": "F17/alpha.png",
+      "bytes": 736,
+      "sha256": "bff7cedb0175106ef20dec4b1080c230e6768894182deb8b5b02b130eb17ac3a",
+      "categories": [
+        "F17"
+      ],
+      "acceptance": [
+        "A06",
+        "A09"
+      ],
+      "expected": "透明度合成，不包含 alpha HEIC 覆盖。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-048",
+      "file": "F19/single.gif",
+      "bytes": 1078,
+      "sha256": "0a72b2ba52beb776616fbe017b324763686ae2bc381113235bcda5e30afc97a7",
+      "categories": [
+        "F19"
+      ],
+      "acceptance": [
+        "A09"
+      ],
+      "expected": "取静态代表帧并明示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "GIF",
+      "mode": "P",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-049",
+      "file": "F19/animated.gif",
+      "bytes": 1197,
+      "sha256": "b835de82cf5f0135bc5f995d2a424896bbe04e3409c08f7563534bafad790e2c",
+      "categories": [
+        "F19"
+      ],
+      "acceptance": [
+        "A09"
+      ],
+      "expected": "多帧 GIF 只取静态代表帧。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "GIF",
+      "mode": "P",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-050",
+      "file": "F22/empty.jpg",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "categories": [
+        "F22"
+      ],
+      "acceptance": [
+        "A09"
+      ],
+      "expected": "空文件必须单项失败。",
+      "validImage": false,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false
+    },
+    {
+      "id": "fixture-051",
+      "file": "F22/not-image.jpg",
+      "bytes": 39,
+      "sha256": "226e10c5c6fc337f9957e83d7156c81d018dc14c73aa9dfebdf9068f46214be7",
+      "categories": [
+        "F22"
+      ],
+      "acceptance": [
+        "A09"
+      ],
+      "expected": "非图片不得作为已导入可播项。",
+      "validImage": false,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false
+    },
+    {
+      "id": "fixture-052",
+      "file": "F22/truncated.jpg",
+      "bytes": 32,
+      "sha256": "24ed41e8c3e0f8abf034ffba78a9e1416b6fb99d4a7166d0add4750a6297ae09",
+      "categories": [
+        "F22"
+      ],
+      "acceptance": [
+        "A09"
+      ],
+      "expected": "不完整文件必须单项失败，不提交可播副本。",
+      "validImage": false,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false
+    },
+    {
+      "id": "fixture-053",
+      "file": "F22/png-with-jpeg-extension.jpg",
+      "bytes": 620,
+      "sha256": "870d50c9377553adf74c2a96ef87177da355941aab00c7fea98a612cb90f6817",
+      "categories": [
+        "F22"
+      ],
+      "acceptance": [
+        "A09"
+      ],
+      "expected": "真实格式识别或明确拒绝；不得只信任扩展名。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-054",
+      "file": "F23/山与海.png",
+      "bytes": 620,
+      "sha256": "870d50c9377553adf74c2a96ef87177da355941aab00c7fea98a612cb90f6817",
+      "categories": [
+        "F23"
+      ],
+      "acceptance": [
+        "A09",
+        "A25"
+      ],
+      "expected": "合成文件名，只用于本地解析和搜索测试，不写业务日志。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-055",
+      "file": "F23/name with spaces.png",
+      "bytes": 620,
+      "sha256": "870d50c9377553adf74c2a96ef87177da355941aab00c7fea98a612cb90f6817",
+      "categories": [
+        "F23"
+      ],
+      "acceptance": [
+        "A09",
+        "A25"
+      ],
+      "expected": "合成文件名，只用于本地解析和搜索测试，不写业务日志。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-056",
+      "file": "F23/a.b.c.png",
+      "bytes": 620,
+      "sha256": "870d50c9377553adf74c2a96ef87177da355941aab00c7fea98a612cb90f6817",
+      "categories": [
+        "F23"
+      ],
+      "acceptance": [
+        "A09",
+        "A25"
+      ],
+      "expected": "合成文件名，只用于本地解析和搜索测试，不写业务日志。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-057",
+      "file": "F23/صورة.png",
+      "bytes": 620,
+      "sha256": "870d50c9377553adf74c2a96ef87177da355941aab00c7fea98a612cb90f6817",
+      "categories": [
+        "F23"
+      ],
+      "acceptance": [
+        "A09",
+        "A25"
+      ],
+      "expected": "合成文件名，只用于本地解析和搜索测试，不写业务日志。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-058",
+      "file": "F23/long-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.png",
+      "bytes": 620,
+      "sha256": "870d50c9377553adf74c2a96ef87177da355941aab00c7fea98a612cb90f6817",
+      "categories": [
+        "F23"
+      ],
+      "acceptance": [
+        "A09",
+        "A25"
+      ],
+      "expected": "合成文件名，只用于本地解析和搜索测试，不写业务日志。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-059",
+      "file": "F24/folder-0/duplicate.jpg",
+      "bytes": 2493,
+      "sha256": "d2dda116da2b1a7ffedfb924ff556c8b22ba54404ed48be3ece4d4101696d7ac",
+      "categories": [
+        "F24"
+      ],
+      "acceptance": [
+        "A02",
+        "A03",
+        "A21"
+      ],
+      "expected": "同字节内容须去重，墓碑跨目录有效。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null,
+      "duplicateOf": "fixture-001"
+    },
+    {
+      "id": "fixture-060",
+      "file": "F24/folder-1/duplicate.jpg",
+      "bytes": 2493,
+      "sha256": "d2dda116da2b1a7ffedfb924ff556c8b22ba54404ed48be3ece4d4101696d7ac",
+      "categories": [
+        "F24"
+      ],
+      "acceptance": [
+        "A02",
+        "A03",
+        "A21"
+      ],
+      "expected": "同字节内容须去重，墓碑跨目录有效。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null,
+      "duplicateOf": "fixture-001"
+    },
+    {
+      "id": "fixture-061",
+      "file": "F24/folder-2/duplicate.jpg",
+      "bytes": 2493,
+      "sha256": "d2dda116da2b1a7ffedfb924ff556c8b22ba54404ed48be3ece4d4101696d7ac",
+      "categories": [
+        "F24"
+      ],
+      "acceptance": [
+        "A02",
+        "A03",
+        "A21"
+      ],
+      "expected": "同字节内容须去重，墓碑跨目录有效。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null,
+      "duplicateOf": "fixture-001"
+    },
+    {
+      "id": "fixture-062",
+      "file": "F24/folder-3/duplicate.jpg",
+      "bytes": 2493,
+      "sha256": "d2dda116da2b1a7ffedfb924ff556c8b22ba54404ed48be3ece4d4101696d7ac",
+      "categories": [
+        "F24"
+      ],
+      "acceptance": [
+        "A02",
+        "A03",
+        "A21"
+      ],
+      "expected": "同字节内容须去重，墓碑跨目录有效。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null,
+      "duplicateOf": "fixture-001"
+    },
+    {
+      "id": "fixture-063",
+      "file": "F24/folder-4/duplicate.jpg",
+      "bytes": 2493,
+      "sha256": "d2dda116da2b1a7ffedfb924ff556c8b22ba54404ed48be3ece4d4101696d7ac",
+      "categories": [
+        "F24"
+      ],
+      "acceptance": [
+        "A02",
+        "A03",
+        "A21"
+      ],
+      "expected": "同字节内容须去重，墓碑跨目录有效。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null,
+      "duplicateOf": "fixture-001"
+    },
+    {
+      "id": "fixture-064",
+      "file": "F25/q95.jpg",
+      "bytes": 2041,
+      "sha256": "bb8229d9f9ea3364476b1d9da4ea6e3f6b77314c9eb43c1951ab695a1cd2de8c",
+      "categories": [
+        "F25"
+      ],
+      "acceptance": [
+        "A02"
+      ],
+      "expected": "不同编码、不同字节应各自保留；不按视觉相似度合并。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-065",
+      "file": "F25/q60.jpg",
+      "bytes": 1572,
+      "sha256": "75dc10a76344d390173d9f737fa26edb51290d774b772dd367389c22d3176283",
+      "categories": [
+        "F25"
+      ],
+      "acceptance": [
+        "A02"
+      ],
+      "expected": "不同编码、不同字节应各自保留；不按视觉相似度合并。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "JPEG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-066",
+      "file": "F25/lossless.png",
+      "bytes": 620,
+      "sha256": "870d50c9377553adf74c2a96ef87177da355941aab00c7fea98a612cb90f6817",
+      "categories": [
+        "F25"
+      ],
+      "acceptance": [
+        "A02"
+      ],
+      "expected": "不同编码、不同字节应各自保留；不按视觉相似度合并。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "displayWidth": 240,
+      "displayHeight": 160,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-067",
+      "file": "F26/smoke-066.png",
+      "bytes": 339,
+      "sha256": "789652e9762a412b8f79f10cd3d6030f43b9f2c4822fdcbf2c0555162fce8777",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-068",
+      "file": "F26/smoke-067.png",
+      "bytes": 339,
+      "sha256": "c222ccc7ee4a0405bb7772e2413a5dff7b489df709fa6b4a299af24b46253ad7",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-069",
+      "file": "F26/smoke-068.png",
+      "bytes": 339,
+      "sha256": "895e18211dc699cab51522ca42f37c2d9cd49fa6a25756ab969e403f6a7c2450",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-070",
+      "file": "F26/smoke-069.png",
+      "bytes": 339,
+      "sha256": "7c32b63bf194a921231ca2d0e09befb08b9f08d07eab5075c2c4b6398be278d0",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-071",
+      "file": "F26/smoke-070.png",
+      "bytes": 339,
+      "sha256": "658200375c9dbbd3b3341fb4168dd40953ad36def2ebd0589d63238706a1afaa",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-072",
+      "file": "F26/smoke-071.png",
+      "bytes": 338,
+      "sha256": "bb1d874dbc0f23d551f6ba551c68f4bec850d3f70f4a7d463e6c0e43a958ea33",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-073",
+      "file": "F26/smoke-072.png",
+      "bytes": 338,
+      "sha256": "1b1992be8a5ece4e38265a390207f71096e2b4489d5f39ea6ba5d9c7e4f8edc2",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-074",
+      "file": "F26/smoke-073.png",
+      "bytes": 339,
+      "sha256": "3d8339536469eadcfc0a637bc51d80e7fb74e86a6f1fec5377e97b2a8dafab53",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-075",
+      "file": "F26/smoke-074.png",
+      "bytes": 340,
+      "sha256": "a52c70388f0cd76720dc3132d2a94a94b7b2f9789e6fe882243a6370bdbc2d9a",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-076",
+      "file": "F26/smoke-075.png",
+      "bytes": 339,
+      "sha256": "bd28ee74988117a4b3b6c56d3ee323ecef1cfa823cf1dec9ad2630252fb4f09b",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-077",
+      "file": "F26/smoke-076.png",
+      "bytes": 340,
+      "sha256": "152e3d5c38658f8cbfed5ed9a3cf8a0f24c5dc1347e174f52173b4505824a31e",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-078",
+      "file": "F26/smoke-077.png",
+      "bytes": 340,
+      "sha256": "15e0e8ea639b99f65c112422270c1eaffeaf83a8a6be5ef2172067dc355cc0c1",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-079",
+      "file": "F26/smoke-078.png",
+      "bytes": 339,
+      "sha256": "a39a016fcc0c3971ce1d91540b25881b5f67cd10ef6d3174675e8fa6a7a5d437",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-080",
+      "file": "F26/smoke-079.png",
+      "bytes": 340,
+      "sha256": "6331aaf1b0574357ad71fcd0e967439e8eb3def445377771c0c1b8b82129200e",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-081",
+      "file": "F26/smoke-080.png",
+      "bytes": 340,
+      "sha256": "b20bd5be3f2532e32fe64b74b9008841b17f3aededc176503f0f807fcf23f1ae",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-082",
+      "file": "F26/smoke-081.png",
+      "bytes": 339,
+      "sha256": "3e9ebc1fc67712c355ee0ec60e921ad08970447d6e2c91f25020e425887e83b7",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-083",
+      "file": "F26/smoke-082.png",
+      "bytes": 340,
+      "sha256": "25e9145a2f578708e8c2df5e531b4a003154f45761c938b047f0c6d6b61ab8d3",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-084",
+      "file": "F26/smoke-083.png",
+      "bytes": 339,
+      "sha256": "aefddde6420ef09e00de8d3f5ed130353a2fce4d78eb9445a8554ac24dec8adf",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-085",
+      "file": "F26/smoke-084.png",
+      "bytes": 320,
+      "sha256": "73a2edb67dd6c93732c0804bf3842ab83a1c51dbe5acd4a40b2e3afcf2c3cb8b",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-086",
+      "file": "F26/smoke-085.png",
+      "bytes": 325,
+      "sha256": "3b417f315c5c4539fe861efa81dbe1f441eefe378141e8f47e8e5c66999d2db0",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-087",
+      "file": "F26/smoke-086.png",
+      "bytes": 328,
+      "sha256": "2698d894e0e8009b870cf055694ffa2f7cbd1a2cc7c1eb6828d1570dfffd786d",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-088",
+      "file": "F26/smoke-087.png",
+      "bytes": 326,
+      "sha256": "011ee09f62c950a2e2442d05dd3b0044b64fe989d195ac84d39de6cd33f08fd3",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-089",
+      "file": "F26/smoke-088.png",
+      "bytes": 326,
+      "sha256": "a9f0482cffb722e71f8c98517e528501a945878f77ea0a172c42108ac6052a14",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-090",
+      "file": "F26/smoke-089.png",
+      "bytes": 327,
+      "sha256": "e69d6a17160672f18cbc42162d069c50865a4aa514a41de2659658c77bbc72dd",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-091",
+      "file": "F26/smoke-090.png",
+      "bytes": 327,
+      "sha256": "d17d1cecc2ec7e1fcdf10b7accfd0315b5489d1759ee39c2446a895b4a290511",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-092",
+      "file": "F26/smoke-091.png",
+      "bytes": 327,
+      "sha256": "6eebbab1ef5e48ef66eb94f347d6ec69b8ecb2a365b9b448db10a36f4ea018bc",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-093",
+      "file": "F26/smoke-092.png",
+      "bytes": 327,
+      "sha256": "c4e76028a6694bd01f24ca6c32260a6151133336a882a71bb4630a8eee56bd2f",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-094",
+      "file": "F26/smoke-093.png",
+      "bytes": 327,
+      "sha256": "0be28c8871d648029c7fba39594ee70fc670eaca1599c19511b5b7d0445cfbea",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-095",
+      "file": "F26/smoke-094.png",
+      "bytes": 326,
+      "sha256": "ce9526c14e79b2e84d9bcc7b2cdc16f9595b7fc68866ac8bb043ca959590a624",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-096",
+      "file": "F26/smoke-095.png",
+      "bytes": 326,
+      "sha256": "2fa2bcfb06d97b88190b55f23df59748a4cd03b144f5aaceebedf088d271399c",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-097",
+      "file": "F26/smoke-096.png",
+      "bytes": 326,
+      "sha256": "d44c782e02236222d8edb6dd587ac93a2b6c12dd04cd6f05d8fd3919b6fd5b7c",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-098",
+      "file": "F26/smoke-097.png",
+      "bytes": 326,
+      "sha256": "738087b4e02daa504eee9280e4d9e7756b62ac737895225c11625acfd72e25ed",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-099",
+      "file": "F26/smoke-098.png",
+      "bytes": 330,
+      "sha256": "fb8a15ae7bfd4fb59f24f0cac3832d70022b374b1708babc1a4fe97a4518d097",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-100",
+      "file": "F26/smoke-099.png",
+      "bytes": 327,
+      "sha256": "83edcf519c98850b62df6b42e26084a810583d9e90bb97a02bc3ca56c7d0e73c",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-101",
+      "file": "F26/smoke-100.png",
+      "bytes": 328,
+      "sha256": "7c9e73733068c46f80dfb3faab78bf70ca41393464cc56a9bbef307bc3c1c4b5",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-102",
+      "file": "F26/smoke-101.png",
+      "bytes": 328,
+      "sha256": "dafcc8e44facf902ca6a1d29c585ead0a66b5019d0b898dc77ae3783ad79375d",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-103",
+      "file": "F26/smoke-102.png",
+      "bytes": 327,
+      "sha256": "253ea47f2e51febc4c84f4e580986afd8e82b72f283783a3eac2e456762d1098",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-104",
+      "file": "F26/smoke-103.png",
+      "bytes": 328,
+      "sha256": "a253a4ae6acc11d830c34e6f29fd2092873551eea60f250ef653c40b6ca2b64e",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-105",
+      "file": "F26/smoke-104.png",
+      "bytes": 327,
+      "sha256": "095570d39bd4c5ac0984366a202cdd583440c66661ad594b1943d328d5d465cd",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-106",
+      "file": "F26/smoke-105.png",
+      "bytes": 327,
+      "sha256": "ffe8f9171e54ec1c098641c3c92f4184b539374e52c5f4eec4a87355488c4a6c",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-107",
+      "file": "F26/smoke-106.png",
+      "bytes": 329,
+      "sha256": "9e148ad8a663c2a6718f3f923a543549722eb6cfee001cb8fcd6f56f5b8957b0",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-108",
+      "file": "F26/smoke-107.png",
+      "bytes": 327,
+      "sha256": "996bd3c6a735f93af33b6016bd8710c2d0b3c0d4a4d88f93d3826f5d372a1917",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-109",
+      "file": "F26/smoke-108.png",
+      "bytes": 329,
+      "sha256": "c432ab82872c12a323db2ff693a2d3529c56f817d2dbb287e024a74fee239b2d",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-110",
+      "file": "F26/smoke-109.png",
+      "bytes": 329,
+      "sha256": "143b0c898642d8d30be2374586334a65ed4759bc54ea3905b635004810b5413b",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-111",
+      "file": "F26/smoke-110.png",
+      "bytes": 326,
+      "sha256": "b844fa93c98f6310b240e74e398831345239c00e5fb3cc3beac726a4aa06eae9",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-112",
+      "file": "F26/smoke-111.png",
+      "bytes": 326,
+      "sha256": "e12e808017b27ffb518ff3431ac2d518b2447df01ae0add00ba550c253c35b1d",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-113",
+      "file": "F26/smoke-112.png",
+      "bytes": 325,
+      "sha256": "1a99e8c94e1aab7ca8425832530d3c9b4f6abd18818f35e165b1b15f1d5d0098",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-114",
+      "file": "F26/smoke-113.png",
+      "bytes": 325,
+      "sha256": "7f0166b72c47332d01d1e68f645ab187eb1947a169fea57b37d7b35bacdf8e41",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-115",
+      "file": "F26/smoke-114.png",
+      "bytes": 325,
+      "sha256": "d62064100cdd6acbead8e4bb135d533797ff0650c957142695f11a3efabd6685",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-116",
+      "file": "F26/smoke-115.png",
+      "bytes": 325,
+      "sha256": "56971a330e8c8b3c4d488f68607cf16ebcdd792597ced1cb569363c41d625b5b",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-117",
+      "file": "F26/smoke-116.png",
+      "bytes": 326,
+      "sha256": "999f6d7773acb8760a2b1f7dfdb5df479e7f4fb49ba970437133f60657280dc1",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-118",
+      "file": "F26/smoke-117.png",
+      "bytes": 326,
+      "sha256": "93d9a09ff69451ef9bc6c296ab1b9363122faafae60c360393b93047336508f8",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-119",
+      "file": "F26/smoke-118.png",
+      "bytes": 326,
+      "sha256": "73b8611f77613c9c282d4188c58663b113979e10162952dc059eddfd3524724b",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    },
+    {
+      "id": "fixture-120",
+      "file": "F26/smoke-119.png",
+      "bytes": 325,
+      "sha256": "0a63d37feb198738da3da004396a165df6b3ca9abf0b379427f951cde0dec610",
+      "categories": [
+        "F26"
+      ],
+      "acceptance": [
+        "A01",
+        "A02",
+        "A04"
+      ],
+      "expected": "轻量批次样本；导入不自动展示。",
+      "validImage": true,
+      "origin": "original-script-synthetic",
+      "containsPersonalData": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 96,
+      "height": 64,
+      "displayWidth": 96,
+      "displayHeight": 64,
+      "orientation": 1,
+      "capturedAt": null
+    }
+  ],
+  "selectionScenario": {
+    "importIds": [
+      "fixture-001",
+      "fixture-002",
+      "fixture-003",
+      "fixture-004",
+      "fixture-005",
+      "fixture-006",
+      "fixture-007",
+      "fixture-008",
+      "fixture-009",
+      "fixture-010",
+      "fixture-011",
+      "fixture-012",
+      "fixture-013",
+      "fixture-014",
+      "fixture-015",
+      "fixture-016",
+      "fixture-017",
+      "fixture-018",
+      "fixture-019",
+      "fixture-020",
+      "fixture-021",
+      "fixture-022",
+      "fixture-023",
+      "fixture-024"
+    ],
+    "selectedIds": [
+      "fixture-001",
+      "fixture-005",
+      "fixture-008"
+    ],
+    "automaticDisplayOfNewImports": false,
+    "scope": "仅给未来业务测试提供输入，不是 SelectionResolver 实现或通过证据。"
+  }
+}

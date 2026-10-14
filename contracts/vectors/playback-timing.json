@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "truth": "04-工程规格书.md §11 计时公式与 01-产品需求PRD.md §7.2 时长边界、§8 休息时段（2026-10-05 冻结）",
+    "note": "双端测试必须消费本文件，禁止各自另写期望值。时间均为 epoch 毫秒整数；hold_seconds 为整数秒（3–3600），transition_seconds 为 0.1 秒步进（0.2–3.0）。schedule：next_transition_at = t0 + hold；next_stable_at = next_transition_at +（transition='none' 时为 0，否则 transition）。pause_resume：remaining = next_transition_at − pause_at（不得为负），恢复后 next_transition_at = resume_at + remaining（U12 无跳秒）。validate：hold 非整数秒或越界、transition 类型未知、transition_seconds 越界或步进不符均 invalid；transition='none' 时跳过 transition_seconds 校验（U13 不使用转场时长）。rest：分钟制（0–1439），start==end 视为未启用；跨午夜（start>end）时 active ⇔ now≥start 或 now<end；同日 active ⇔ start≤now<end；enabled=false 恒 false。",
+    "transitions": ["none", "crossfade", "slide", "wipe", "zoom", "ripple"],
+    "hold_range_seconds": [3, 3600],
+    "transition_range_seconds": [0.2, 3.0]
+  },
+  "cases": [
+    {"id": "PBT-01", "scenario": "schedule", "t0": 1000, "hold_seconds": 10, "transition": "crossfade", "transition_seconds": 0.8, "expected": {"next_transition_at": 11000, "next_stable_at": 11800}},
+    {"id": "PBT-02", "note": "U13：none 不使用转场时长", "scenario": "schedule", "t0": 1000, "hold_seconds": 10, "transition": "none", "transition_seconds": 0.8, "expected": {"next_transition_at": 11000, "next_stable_at": 11000}},
+    {"id": "PBT-03", "scenario": "schedule", "t0": 5000, "hold_seconds": 5, "transition": "slide", "transition_seconds": 0.3, "expected": {"next_transition_at": 10000, "next_stable_at": 10300}},
+    {"id": "PBT-04", "note": "U12：暂停与恢复无跳秒", "scenario": "pause_resume", "t0": 1000, "hold_seconds": 10, "pause_at": 6000, "resume_at": 9000, "expected": {"next_transition_at": 14000}},
+    {"id": "PBT-05", "note": "在转场启动瞬间暂停，remaining=0，恢复立即转场", "scenario": "pause_resume", "t0": 1000, "hold_seconds": 10, "pause_at": 11000, "resume_at": 20000, "expected": {"next_transition_at": 20000}},
+    {"id": "PBT-06", "scenario": "validate", "hold_seconds": 10, "transition": "crossfade", "transition_seconds": 0.8, "expected": {"valid": true}},
+    {"id": "PBT-07", "scenario": "validate", "hold_seconds": 2, "transition": "crossfade", "transition_seconds": 0.8, "expected": {"valid": false}},
+    {"id": "PBT-08", "scenario": "validate", "hold_seconds": 3600, "transition": "crossfade", "transition_seconds": 0.8, "expected": {"valid": true}},
+    {"id": "PBT-09", "scenario": "validate", "hold_seconds": 3601, "transition": "crossfade", "transition_seconds": 0.8, "expected": {"valid": false}},
+    {"id": "PBT-10", "scenario": "validate", "hold_seconds": 10, "transition": "crossfade", "transition_seconds": 0.1, "expected": {"valid": false}},
+    {"id": "PBT-11", "scenario": "validate", "hold_seconds": 10, "transition": "crossfade", "transition_seconds": 0.2, "expected": {"valid": true}},
+    {"id": "PBT-12", "scenario": "validate", "hold_seconds": 10, "transition": "crossfade", "transition_seconds": 3.0, "expected": {"valid": true}},
+    {"id": "PBT-13", "scenario": "validate", "hold_seconds": 10, "transition": "crossfade", "transition_seconds": 3.1, "expected": {"valid": false}},
+    {"id": "PBT-14", "note": "步进 0.1 秒", "scenario": "validate", "hold_seconds": 10, "transition": "crossfade", "transition_seconds": 0.85, "expected": {"valid": false}},
+    {"id": "PBT-15", "note": "U13：none 跳过转场时长校验", "scenario": "validate", "hold_seconds": 10, "transition": "none", "transition_seconds": 9.9, "expected": {"valid": true}},
+    {"id": "PBT-16", "note": "停留须为整数秒", "scenario": "validate", "hold_seconds": 10.5, "transition": "crossfade", "transition_seconds": 0.8, "expected": {"valid": false}},
+    {"id": "PBT-17", "note": "未知转场类型", "scenario": "validate", "hold_seconds": 10, "transition": "dissolve", "transition_seconds": 0.8, "expected": {"valid": false}},
+    {"id": "PBT-18", "scenario": "rest", "enabled": true, "start_minute": 1320, "end_minute": 360, "now_minute": 1380, "expected": {"active": true}},
+    {"id": "PBT-19", "scenario": "rest", "enabled": true, "start_minute": 1320, "end_minute": 360, "now_minute": 720, "expected": {"active": false}},
+    {"id": "PBT-20", "scenario": "rest", "enabled": true, "start_minute": 1320, "end_minute": 360, "now_minute": 359, "expected": {"active": true}},
+    {"id": "PBT-21", "note": "结束时刻不含", "scenario": "rest", "enabled": true, "start_minute": 1320, "end_minute": 360, "now_minute": 360, "expected": {"active": false}},
+    {"id": "PBT-22", "note": "开始时刻含", "scenario": "rest", "enabled": true, "start_minute": 1320, "end_minute": 360, "now_minute": 1320, "expected": {"active": true}},
+    {"id": "PBT-23", "scenario": "rest", "enabled": true, "start_minute": 720, "end_minute": 840, "now_minute": 780, "expected": {"active": true}},
+    {"id": "PBT-24", "scenario": "rest", "enabled": true, "start_minute": 720, "end_minute": 840, "now_minute": 840, "expected": {"active": false}},
+    {"id": "PBT-25", "scenario": "rest", "enabled": false, "start_minute": 1320, "end_minute": 360, "now_minute": 1380, "expected": {"active": false}},
+    {"id": "PBT-26", "note": "start==end 视为未启用", "scenario": "rest", "enabled": true, "start_minute": 600, "end_minute": 600, "now_minute": 600, "expected": {"active": false}}
+    ,
+    {"id": "PBT-27", "note": "十二报：wipe/zoom/ripple 转正", "scenario": "validate", "hold_seconds": 10, "transition": "wipe", "transition_seconds": 0.8, "expected": {"valid": true}},
+    {"id": "PBT-28", "scenario": "validate", "hold_seconds": 10, "transition": "zoom", "transition_seconds": 0.8, "expected": {"valid": true}},
+    {"id": "PBT-29", "scenario": "validate", "hold_seconds": 10, "transition": "ripple", "transition_seconds": 0.8, "expected": {"valid": true}},
+    {"id": "PBT-30", "scenario": "schedule", "t0": 1000, "hold_seconds": 10, "transition": "wipe", "transition_seconds": 0.5, "expected": {"next_transition_at": 11000, "next_stable_at": 11500}},
+    {"id": "PBT-31", "scenario": "schedule", "t0": 2000, "hold_seconds": 4, "transition": "zoom", "transition_seconds": 1.0, "expected": {"next_transition_at": 6000, "next_stable_at": 7000}},
+    {"id": "PBT-32", "scenario": "schedule", "t0": 0, "hold_seconds": 3, "transition": "ripple", "transition_seconds": 0.2, "expected": {"next_transition_at": 3000, "next_stable_at": 3200}}
+  ]
+}

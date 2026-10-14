@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="pp_surface_canvas">#F4F1EB</color>
+    <color name="pp_surface_panel">#FCFAF6</color>
+    <color name="pp_text_primary">#202321</color>
+    <color name="pp_text_secondary">#62675F</color>
+    <color name="pp_accent_brand">#B89A68</color>
+    <color name="pp_accent_action">#6A5431</color>
+    <color name="pp_separator">#DDDCD4</color>
+    <color name="pp_status_success">#35644A</color>
+    <color name="pp_status_warning">#865B20</color>
+    <color name="pp_status_error">#A73930</color>
+    <color name="pp_surface_rest">#000000</color>
+    <color name="pp_text_on_photo">#F4F1EB</color>
+    <color name="pp_surface_photo_control">#171A18</color>
+</resources>

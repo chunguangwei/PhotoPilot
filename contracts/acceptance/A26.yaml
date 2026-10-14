@@ -1,0 +1,22 @@
+# 验收契约 A26 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "5c49f1f6b8bcd7f8b72a60630bac7cd750980662161220024e5599c5346c5ccd"
+  id: A26
+  title: "分屏与多窗口"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "分屏与多窗口"
+  pass_conditions:
+    - "尺寸变化后适配重算正确"
+    - "同一时刻仅一个播放实例，接管逻辑清晰"
+telemetry:
+  role: supportive
+  events:
+    - name: playback.session_start
+      params:
+        - resumed 与窗口接管路径
+    - name: playback.session_end
+  metrics: []

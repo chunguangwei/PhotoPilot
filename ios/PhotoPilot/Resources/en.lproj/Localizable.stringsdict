@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- 由 contracts/strings 生成，勿手改 -->
+    <key>frames.selected_count</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%1$d photo selected</string>
+            <key>other</key>
+            <string>%1$d photos selected</string>
+        </dict>
+    </dict>
+    <key>frames.playable_count</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%1$d photo available offline</string>
+            <key>other</key>
+            <string>%1$d photos available offline</string>
+        </dict>
+    </dict>
+    <key>frames.pending_count</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%1$d photo preparing</string>
+            <key>other</key>
+            <string>%1$d photos preparing</string>
+        </dict>
+    </dict>
+    <key>frames.failed_count</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%1$d photo failed</string>
+            <key>other</key>
+            <string>%1$d photos failed</string>
+        </dict>
+    </dict>
+    <key>sources.folders_count</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%1$d folder</string>
+            <key>other</key>
+            <string>%1$d folders</string>
+        </dict>
+    </dict>
+    <key>source.nas.mirror_delete_confirm</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%1$d photo will be deleted from this device</string>
+            <key>other</key>
+            <string>%1$d photos will be deleted from this device</string>
+        </dict>
+    </dict>
+    <key>import.preparing</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@total@</string>
+        <key>total</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>Preparing %1$d of %2$d photo</string>
+            <key>other</key>
+            <string>Preparing %1$d of %2$d photos</string>
+        </dict>
+    </dict>
+    <key>library.select_all_scope</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>Select all %1$d result</string>
+            <key>other</key>
+            <string>Select all %1$d results</string>
+        </dict>
+    </dict>
+    <key>library.detail_in_frames</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>Used in %1$d frame</string>
+            <key>other</key>
+            <string>Used in %1$d frames</string>
+        </dict>
+    </dict>
+    <key>rule.excluded_count</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%1$d photo excluded</string>
+            <key>other</key>
+            <string>%1$d photos excluded</string>
+        </dict>
+    </dict>
+    <key>delete.from_device_title</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>Delete %1$d photo from this device?</string>
+            <key>other</key>
+            <string>Delete %1$d photos from this device?</string>
+        </dict>
+    </dict>
+    <key>delete.from_device_body</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@frames@</string>
+        <key>frames</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>This deletes the copies on this device and affects %1$d frame.</string>
+            <key>other</key>
+            <string>This deletes the copies on this device and affects %1$d frames. Files at the source are not deleted.</string>
+        </dict>
+    </dict>
+    <key>a11y.selection_summary</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%1$d photo selected</string>
+            <key>other</key>
+            <string>%1$d photos selected</string>
+        </dict>
+    </dict>
+    <key>format.relative_minutes</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%1$d minute ago</string>
+            <key>other</key>
+            <string>%1$d minutes ago</string>
+        </dict>
+    </dict>
+    <key>format.relative_hours</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%1$d hour ago</string>
+            <key>other</key>
+            <string>%1$d hours ago</string>
+        </dict>
+    </dict>
+    <key>format.relative_days</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%1$d day ago</string>
+            <key>other</key>
+            <string>%1$d days ago</string>
+        </dict>
+    </dict>
+</dict>
+</plist>

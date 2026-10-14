@@ -1,0 +1,25 @@
+# 验收契约 A24 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "d14ee3ec49373008f293f5f8a490ea1781a37b8f0cc99b31af05cc4329322feb"
+  id: A24
+  title: "证书与明文例外"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "证书与明文例外"
+  pass_conditions:
+    - "自签名/主机名不匹配展示指纹并需用户确认"
+    - "指纹变化须重新确认"
+    - "明文仅私有地址显式例外，公网拒绝"
+    - "无“始终信任全部证书”"
+telemetry:
+  role: required
+  events:
+    - name: source.connect_test
+      params:
+        - tls_mode=strict/pinned/lan_http
+        - error_code 含证书与明文例外码
+    - name: import.item_failed
+  metrics: []

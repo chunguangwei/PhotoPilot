@@ -1,0 +1,23 @@
+# 验收契约 A23 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "b3da1e9840dcdf5c8705ffa71498f2382ac1cb04ac7cb427a86a0f95c484bd53"
+  id: A23
+  title: "本地网络权限说明屏"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "本地网络权限（苹果端）"
+  pass_conditions:
+    - "说明屏先于系统弹窗"
+    - "拒绝后给出明确原因与系统设置入口，不显示为“连接失败”"
+    - "其他来源与已导入副本不受影响"
+telemetry:
+  role: supportive
+  events:
+    - name: source.connect_test
+      params:
+        - result 含本地网络权限拒绝分支
+    - name: app.ready_routed
+  metrics: []

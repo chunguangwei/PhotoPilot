@@ -1,0 +1,21 @@
+# 验收契约 A20 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "9eabb0fe9a66e4be6a7877a4305ae63a04f0ef7a83eca4ed2cebfeaec4a696da"
+  id: A20
+  title: "上下文中断"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "上下文中断"
+  pass_conditions:
+    - "锁屏、来电、分屏、时区改变、休息时段跨午夜不破坏状态"
+telemetry:
+  role: required
+  events:
+    - name: playback.session_end
+    - name: schedule.background_deferred
+    - name: settings.locale_changed
+  metrics:
+    - PM12

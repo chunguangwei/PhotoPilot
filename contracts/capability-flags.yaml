@@ -1,0 +1,102 @@
+# 能力位契约
+# 真源：04-工程规格书.md §6.1（七位，R13 裁决 2026-10-04）
+# 由 tools/check_contracts.py 校验；改动须同步更新 meta.expected 并复审。
+meta:
+  checksum: "28addd5cd461bd47b7fc261f97e696803845987366dcd7abe34a89f355306a83"
+  source: "04-工程规格书.md §6.1"
+  rulings: ["R13"]
+  expected:
+    flag_count: 7
+gating_rules:
+  - rule: "Google Photos 的 PERSISTENT_LOCAL_COPY（位 4）在合规结论前为 unknown；运行时按 policy_gated 处理，不默认为真"
+    source_ref: "04 §6.1 首期取值表"
+flags:
+  - bit: 0
+    name: HIERARCHY
+    meaning: "提供真实目录树"
+  - bit: 1
+    name: DELTA
+    meaning: "支持增量变化检测"
+  - bit: 2
+    name: BACKGROUND_FETCH
+    meaning: "允许系统后台补充拉取"
+  - bit: 3
+    name: USER_SELECTION_ONLY
+    meaning: "只能按用户每次选择获取"
+  - bit: 4
+    name: PERSISTENT_LOCAL_COPY
+    meaning: "允许长期保留本地副本"
+    unknown_for: ["google_picker"]
+  - bit: 5
+    name: REMOTE_DELETION_DETECTION
+    meaning: "可信地判断源端删除"
+  - bit: 6
+    name: CONTINUOUS_ACCESS
+    meaning: "授权后可重复访问同一范围"
+initial_values:
+  - source: local_photos
+    label: "本地图库"
+    values:
+      HIERARCHY: no
+      DELTA: conditional
+      BACKGROUND_FETCH: no
+      USER_SELECTION_ONLY: conditional
+      PERSISTENT_LOCAL_COPY: yes
+      REMOTE_DELETION_DETECTION: no
+      CONTINUOUS_ACCESS: conditional
+    notes: "DELTA/CONTINUOUS_ACCESS：启用跟踪时/授权内；USER_SELECTION_ONLY：否则为 yes"
+  - source: local_files
+    label: "本地文件"
+    values:
+      HIERARCHY: conditional
+      DELTA: no
+      BACKGROUND_FETCH: no
+      USER_SELECTION_ONLY: yes
+      PERSISTENT_LOCAL_COPY: yes
+      REMOTE_DELETION_DETECTION: no
+      CONTINUOUS_ACCESS: no
+    notes: "HIERARCHY：单次"
+  - source: icloud_photos
+    label: "iCloud 系统图库"
+    values:
+      HIERARCHY: no
+      DELTA: conditional
+      BACKGROUND_FETCH: no
+      USER_SELECTION_ONLY: conditional
+      PERSISTENT_LOCAL_COPY: yes
+      REMOTE_DELETION_DETECTION: no
+      CONTINUOUS_ACCESS: conditional
+    notes: "DELTA/CONTINUOUS_ACCESS：启用跟踪时/授权内；USER_SELECTION_ONLY：否则为 yes"
+  - source: google_picker
+    label: "Google Picker"
+    values:
+      HIERARCHY: no
+      DELTA: no
+      BACKGROUND_FETCH: no
+      USER_SELECTION_ONLY: yes
+      PERSISTENT_LOCAL_COPY: unknown
+      REMOTE_DELETION_DETECTION: no
+      CONTINUOUS_ACCESS: no
+    notes: "位 4 合规结论前为 unknown，运行时按 policy_gated 处理"
+  - source: smb
+    label: "SMB"
+    values:
+      HIERARCHY: yes
+      DELTA: yes
+      BACKGROUND_FETCH: no
+      USER_SELECTION_ONLY: no
+      PERSISTENT_LOCAL_COPY: yes
+      REMOTE_DELETION_DETECTION: conditional
+      CONTINUOUS_ACCESS: yes
+    notes: "REMOTE_DELETION_DETECTION：条件性"
+  - source: webdav
+    label: "WebDAV"
+    values:
+      HIERARCHY: yes
+      DELTA: yes
+      BACKGROUND_FETCH: no
+      USER_SELECTION_ONLY: no
+      PERSISTENT_LOCAL_COPY: yes
+      REMOTE_DELETION_DETECTION: conditional
+      CONTINUOUS_ACCESS: yes
+    notes: "REMOTE_DELETION_DETECTION：条件性"

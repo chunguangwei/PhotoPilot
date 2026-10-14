@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "truth": "04-工程规格书.md §7.2 信号的 item 副作用表（2026-10-04 补充冻结，R11-S）",
+    "note": "双端 ImportCoordinator 测试必须消费本文件。itemTransitions 只列发生变化的 item；未列出的 item 必须保持原状态。expectedJobState 为信号处理并聚合推导后的 import_job.state。",
+    "terminalItemStates": ["imported", "failed", "canceled", "skipped"]
+  },
+  "cases": [
+    {
+      "id": "SIG-01",
+      "items": ["downloading", "queued"],
+      "signal": "user_cancel",
+      "itemTransitions": {"downloading": "canceled", "queued": "canceled"},
+      "expectedJobState": "canceled"
+    },
+    {
+      "id": "SIG-02",
+      "items": ["downloading", "imported"],
+      "signal": "user_cancel",
+      "itemTransitions": {"downloading": "canceled"},
+      "expectedJobState": "canceled"
+    },
+    {
+      "id": "SIG-03",
+      "items": ["downloading", "queued"],
+      "signal": "user_pause",
+      "itemTransitions": {"downloading": "paused", "queued": "paused"},
+      "expectedJobState": "paused"
+    },
+    {
+      "id": "SIG-04",
+      "items": ["downloading", "imported"],
+      "signal": "auto_pause",
+      "itemTransitions": {},
+      "expectedJobState": "paused_auto"
+    },
+    {
+      "id": "SIG-05",
+      "items": ["downloading", "imported"],
+      "signal": "fatal_error",
+      "itemTransitions": {"downloading": "failed"},
+      "failureCode": "SRC_UNAVAILABLE",
+      "retryable": false,
+      "expectedJobState": "failed"
+    },
+    {
+      "id": "SIG-06",
+      "items": ["failed", "imported"],
+      "signal": "fatal_error",
+      "itemTransitions": {},
+      "expectedJobState": "failed"
+    },
+    {
+      "id": "SIG-07",
+      "items": ["paused", "imported"],
+      "signal": "resume",
+      "itemTransitions": {"paused": "queued"},
+      "expectedJobState": "running"
+    },
+    {
+      "id": "SIG-08",
+      "items": ["skipped", "skipped"],
+      "signal": "fatal_error",
+      "itemTransitions": {},
+      "expectedJobState": "failed"
+    }
+  ]
+}

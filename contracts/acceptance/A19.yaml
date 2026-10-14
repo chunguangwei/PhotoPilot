@@ -1,0 +1,22 @@
+# 验收契约 A19 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "7dbe3b2759dc113b00b58b0dd037b1bde463b9707eb2a6c33e81211933bc5815"
+  id: A19
+  title: "帧率与内存"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "帧率与内存"
+  pass_conditions:
+    - "基线设备淡入淡出目标 ≥30 fps"
+    - "主流目标 60 fps"
+    - "峰值内存预算需按原型实测冻结"
+telemetry:
+  role: required
+  events:
+    - name: render.transition_completed
+  metrics:
+    - PM3
+    - PM4

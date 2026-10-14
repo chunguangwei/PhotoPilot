@@ -1,0 +1,178 @@
+{
+  "meta": {
+    "truth": "04-工程规格书.md §5.1 集合定义（含 R01/R02/R10 裁决，2026-10-05 冻结）",
+    "note": "双端测试必须消费本文件，禁止各自另写期望值。selections 中 asset 为 asset_id 引用、source 为 source_asset_id 引用（恰一非空）。candidates/pending 为排除规则应用前的集合；allowed = candidates − excluded − privacy_excluded − deleted（pending 占位在 allowed 中保留，除非其 source 引用被 exclude）；playable = allowed 中 readiness=ready 且 file_exists 且 policy_allowed 的 asset。输出列表均按 id 字典序升序。递归展开沿 collection_children 下钻，用访问集合防环，同一 asset 多目录只计一次。policy_allowed=false 表示该 asset 无任何 policy_state=allowed 且 origin_state=active 的 asset_origin（R01）。",
+    "fields": {
+      "readiness": "ready|importing|failed|deleted",
+      "privacy_excluded": "bool",
+      "deleted": "bool（deleted_at 非空）",
+      "file_exists": "bool",
+      "policy_allowed": "bool"
+    }
+  },
+  "cases": [
+    {
+      "id": "SEL-01",
+      "note": "U01：exclude 胜过动态目录与 include",
+      "selections": [
+        {"asset": "a1", "mode": "include"},
+        {"asset": "a1", "mode": "exclude"}
+      ],
+      "rules": [{"collection": "c1", "recursive": false}],
+      "collection_children": {},
+      "collection_assets": {"c1": ["a1", "a2"]},
+      "assets": {
+        "a1": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true},
+        "a2": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true}
+      },
+      "expected": {"candidates": ["a1", "a2"], "pending": [], "allowed": ["a2"], "playable": ["a2"]}
+    },
+    {
+      "id": "SEL-02",
+      "note": "U03：非递归目录只取本层成员",
+      "selections": [],
+      "rules": [{"collection": "c1", "recursive": false}],
+      "collection_children": {"c1": ["c2"]},
+      "collection_assets": {"c1": ["a1"], "c2": ["a2"]},
+      "assets": {
+        "a1": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true},
+        "a2": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true}
+      },
+      "expected": {"candidates": ["a1"], "pending": [], "allowed": ["a1"], "playable": ["a1"]}
+    },
+    {
+      "id": "SEL-03",
+      "note": "U03：递归目录取整棵子树",
+      "selections": [],
+      "rules": [{"collection": "c1", "recursive": true}],
+      "collection_children": {"c1": ["c2"], "c2": ["c3"]},
+      "collection_assets": {"c1": ["a1"], "c2": ["a2"], "c3": ["a3"]},
+      "assets": {
+        "a1": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true},
+        "a2": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true},
+        "a3": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true}
+      },
+      "expected": {"candidates": ["a1", "a2", "a3"], "pending": [], "allowed": ["a1", "a2", "a3"], "playable": ["a1", "a2", "a3"]}
+    },
+    {
+      "id": "SEL-04",
+      "note": "U04：同一 asset 在多个目录与 include 中只计一次",
+      "selections": [{"asset": "a1", "mode": "include"}],
+      "rules": [
+        {"collection": "c1", "recursive": false},
+        {"collection": "c2", "recursive": false}
+      ],
+      "collection_children": {},
+      "collection_assets": {"c1": ["a1"], "c2": ["a1", "a2"]},
+      "assets": {
+        "a1": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true},
+        "a2": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true}
+      },
+      "expected": {"candidates": ["a1", "a2"], "pending": [], "allowed": ["a1", "a2"], "playable": ["a1", "a2"]}
+    },
+    {
+      "id": "SEL-05",
+      "note": "R02：source_asset_id 引用为待下载占位，进 candidates/pending 与 allowed，不进 playable",
+      "selections": [
+        {"source": "sa1", "mode": "include"},
+        {"asset": "a1", "mode": "include"}
+      ],
+      "rules": [],
+      "collection_children": {},
+      "collection_assets": {},
+      "assets": {
+        "a1": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true}
+      },
+      "expected": {"candidates": ["a1"], "pending": ["sa1"], "allowed": ["a1", "sa1"], "playable": ["a1"]}
+    },
+    {
+      "id": "SEL-06",
+      "note": "privacy_excluded=1 从 allowed 移除",
+      "selections": [],
+      "rules": [{"collection": "c1", "recursive": false}],
+      "collection_children": {},
+      "collection_assets": {"c1": ["a1", "a2"]},
+      "assets": {
+        "a1": {"readiness": "ready", "privacy_excluded": true, "deleted": false, "file_exists": true, "policy_allowed": true},
+        "a2": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true}
+      },
+      "expected": {"candidates": ["a1", "a2"], "pending": [], "allowed": ["a2"], "playable": ["a2"]}
+    },
+    {
+      "id": "SEL-07",
+      "note": "deleted_at 非空从 allowed 移除",
+      "selections": [],
+      "rules": [{"collection": "c1", "recursive": false}],
+      "collection_children": {},
+      "collection_assets": {"c1": ["a1", "a2"]},
+      "assets": {
+        "a1": {"readiness": "deleted", "privacy_excluded": false, "deleted": true, "file_exists": false, "policy_allowed": false},
+        "a2": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true}
+      },
+      "expected": {"candidates": ["a1", "a2"], "pending": [], "allowed": ["a2"], "playable": ["a2"]}
+    },
+    {
+      "id": "SEL-08",
+      "note": "readiness 非 ready 留在 allowed，不进 playable",
+      "selections": [],
+      "rules": [{"collection": "c1", "recursive": false}],
+      "collection_children": {},
+      "collection_assets": {"c1": ["a1", "a2"]},
+      "assets": {
+        "a1": {"readiness": "importing", "privacy_excluded": false, "deleted": false, "file_exists": false, "policy_allowed": false},
+        "a2": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true}
+      },
+      "expected": {"candidates": ["a1", "a2"], "pending": [], "allowed": ["a1", "a2"], "playable": ["a2"]}
+    },
+    {
+      "id": "SEL-09",
+      "note": "文件缺失不进 playable",
+      "selections": [{"asset": "a1", "mode": "include"}],
+      "rules": [],
+      "collection_children": {},
+      "collection_assets": {},
+      "assets": {
+        "a1": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": false, "policy_allowed": true}
+      },
+      "expected": {"candidates": ["a1"], "pending": [], "allowed": ["a1"], "playable": []}
+    },
+    {
+      "id": "SEL-10",
+      "note": "R01：origin 全部 detached（无 active+allowed）不进 playable，但仍属 allowed",
+      "selections": [{"asset": "a1", "mode": "include"}],
+      "rules": [],
+      "collection_children": {},
+      "collection_assets": {},
+      "assets": {
+        "a1": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": false}
+      },
+      "expected": {"candidates": ["a1"], "pending": [], "allowed": ["a1"], "playable": []}
+    },
+    {
+      "id": "SEL-11",
+      "note": "exclude 的 source_asset_id 引用使待下载占位退出 allowed",
+      "selections": [
+        {"source": "sa1", "mode": "include"},
+        {"source": "sa1", "mode": "exclude"}
+      ],
+      "rules": [],
+      "collection_children": {},
+      "collection_assets": {},
+      "assets": {},
+      "expected": {"candidates": [], "pending": ["sa1"], "allowed": [], "playable": []}
+    },
+    {
+      "id": "SEL-12",
+      "note": "目录父子成环时递归展开必须终止且不重复计数",
+      "selections": [],
+      "rules": [{"collection": "c1", "recursive": true}],
+      "collection_children": {"c1": ["c2"], "c2": ["c1"]},
+      "collection_assets": {"c1": ["a1"], "c2": ["a2"]},
+      "assets": {
+        "a1": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true},
+        "a2": {"readiness": "ready", "privacy_excluded": false, "deleted": false, "file_exists": true, "policy_allowed": true}
+      },
+      "expected": {"candidates": ["a1", "a2"], "pending": [], "allowed": ["a1", "a2"], "playable": ["a1", "a2"]}
+    }
+  ]
+}

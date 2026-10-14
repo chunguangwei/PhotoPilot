@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="pp_space_4">4dp</dimen>
+    <dimen name="pp_space_8">8dp</dimen>
+    <dimen name="pp_space_12">12dp</dimen>
+    <dimen name="pp_space_16">16dp</dimen>
+    <dimen name="pp_space_24">24dp</dimen>
+    <dimen name="pp_space_32">32dp</dimen>
+    <dimen name="pp_space_48">48dp</dimen>
+    <dimen name="pp_radius_thumbnail">12dp</dimen>
+    <dimen name="pp_radius_group">16dp</dimen>
+    <dimen name="pp_radius_modal">24dp</dimen>
+    <dimen name="pp_sidebar_width">216dp</dimen>
+    <dimen name="pp_rail_width">88dp</dimen>
+    <dimen name="pp_content_inset">32dp</dimen>
+    <dimen name="pp_content_inset_compact">16dp</dimen>
+    <dimen name="pp_body_max_width">720dp</dimen>
+    <dimen name="pp_grid_gap">16dp</dimen>
+    <dimen name="pp_grid_cell_min">150dp</dimen>
+    <dimen name="pp_touch_target">48dp</dimen>
+    <dimen name="pp_text_title">32sp</dimen>
+    <dimen name="pp_text_heading">22sp</dimen>
+    <dimen name="pp_text_body">17sp</dimen>
+    <dimen name="pp_text_caption">15sp</dimen>
+    <dimen name="pp_text_meta">13sp</dimen>
+    <dimen name="pp_text_clock">64sp</dimen>
+</resources>

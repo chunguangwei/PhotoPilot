@@ -1,0 +1,120 @@
+{
+  "meta": {
+    "truth": "04-工程规格书.md §7.2 推导算法（2026-10-04 冻结；含 R11-S2 规则 0）",
+    "signals": ["none", "user_cancel", "fatal_error", "user_pause", "auto_pause"],
+    "terminalItemStates": ["imported", "failed", "canceled", "skipped"],
+    "note": "双端测试必须消费本文件，禁止各自另写期望值。item 级 canceled 不构成取消信号。enumeration_complete 仅规则 0（空 itemStates）使用；非空 items 的用例该字段一律为 true。"
+  },
+  "cases": [
+    {
+      "id": "VEC-17",
+      "items": [],
+      "signal": "none",
+      "enumeration_complete": false,
+      "expected": "running"
+    },
+    {
+      "id": "VEC-18",
+      "items": [],
+      "signal": "none",
+      "enumeration_complete": true,
+      "expected": "completed"
+    },
+    {
+      "id": "VEC-01",
+      "items": ["imported", "imported"],
+      "signal": "none",
+      "expected": "completed"
+    },
+    {
+      "id": "VEC-02",
+      "items": ["imported", "failed"],
+      "signal": "none",
+      "expected": "partial_failed"
+    },
+    {
+      "id": "VEC-03",
+      "items": ["failed", "failed"],
+      "signal": "none",
+      "expected": "failed"
+    },
+    {
+      "id": "VEC-04",
+      "items": ["imported", "canceled"],
+      "signal": "user_cancel",
+      "expected": "canceled"
+    },
+    {
+      "id": "VEC-05",
+      "items": ["canceled", "canceled"],
+      "signal": "user_cancel",
+      "expected": "canceled"
+    },
+    {
+      "id": "VEC-06",
+      "items": ["canceled", "canceled"],
+      "signal": "none",
+      "expected": "completed"
+    },
+    {
+      "id": "VEC-07",
+      "items": ["skipped", "skipped"],
+      "signal": "none",
+      "expected": "completed"
+    },
+    {
+      "id": "VEC-08",
+      "items": ["skipped", "failed"],
+      "signal": "none",
+      "expected": "failed"
+    },
+    {
+      "id": "VEC-09",
+      "items": ["imported", "downloading"],
+      "signal": "none",
+      "expected": "running"
+    },
+    {
+      "id": "VEC-10",
+      "items": ["imported", "downloading"],
+      "signal": "user_pause",
+      "expected": "paused"
+    },
+    {
+      "id": "VEC-11",
+      "items": ["queued", "downloading"],
+      "signal": "auto_pause",
+      "expected": "paused_auto"
+    },
+    {
+      "id": "VEC-12",
+      "items": ["imported", "downloading"],
+      "signal": "fatal_error",
+      "expected": "failed"
+    },
+    {
+      "id": "VEC-13",
+      "items": ["imported", "failed"],
+      "signal": "user_cancel",
+      "expected": "canceled"
+    },
+    {
+      "id": "VEC-14",
+      "items": ["downloading"],
+      "signal": "user_cancel",
+      "expected": "canceled"
+    },
+    {
+      "id": "VEC-15",
+      "items": ["queued"],
+      "signal": "fatal_error",
+      "expected": "failed"
+    },
+    {
+      "id": "VEC-16",
+      "items": ["skipped", "imported"],
+      "signal": "none",
+      "expected": "completed"
+    }
+  ]
+}

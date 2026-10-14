@@ -1,0 +1,4 @@
+/* 由 contracts/strings 生成，勿手改 */
+"NSLocalNetworkUsageDescription" = "Used to connect to your NAS on the local network and read the photos you choose.";
+"NSLocationWhenInUseUsageDescription" = "Used to get the weather for your city while you use the app.";
+"NSPhotoLibraryUsageDescription" = "Used to import the photos you choose into your frames.";

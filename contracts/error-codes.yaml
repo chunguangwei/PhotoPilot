@@ -1,0 +1,199 @@
+# 错误码契约
+# 真源：04-工程规格书.md §10（含 R05 裁决 2026-10-04 新增 SOURCE_CERT_UNTRUSTED / SOURCE_CERT_HOSTNAME_MISMATCH / SOURCE_PLAINTEXT_PRIVATE_ONLY）
+# user_facing 依 11-双语词条表.md §10：除 CANCELLED_BY_USER / CANCELLED_BY_EPOCH 外均有用户文案。
+# 由 tools/check_contracts.py 校验；改动须同步更新 meta.expected 并复审。
+meta:
+  checksum: "57fe444600dda895ea33921f1984b00d921578c994319115fcdd0ed3daeb9f72"
+  source: "04-工程规格书.md §10"
+  rulings: ["R05"]
+  format: "DOMAIN_REASON"
+  user_facing_source: "11-双语词条表.md §10"
+  expected:
+    code_count: 43
+error_codes:
+  - code: AUTH_CANCELLED
+    domain: 授权
+    user_action: "重新发起"
+    auto_retry: false
+  - code: AUTH_DENIED
+    domain: 授权
+    user_action: "打开系统设置"
+    auto_retry: false
+  - code: AUTH_LIMITED
+    domain: 授权
+    user_action: "管理授权范围"
+    auto_retry: false
+  - code: AUTH_EXPIRED
+    domain: 授权
+    user_action: "重新授权"
+    auto_retry: false
+  - code: AUTH_ACCOUNT_MISMATCH
+    domain: 授权
+    user_action: "重新选择账号"
+    auto_retry: false
+  - code: PERM_LOCAL_NETWORK_DENIED
+    domain: 权限
+    user_action: "打开系统设置"
+    auto_retry: false
+  - code: PERM_PHOTOS_DENIED
+    domain: 权限
+    user_action: "打开系统设置"
+    auto_retry: false
+  - code: NET_OFFLINE
+    domain: 网络
+    user_action: "等待联网"
+    auto_retry: true
+  - code: NET_TIMEOUT
+    domain: 网络
+    user_action: "重试"
+    auto_retry: true
+  - code: NET_METERED_NOT_ALLOWED
+    domain: 网络
+    user_action: "确认使用蜂窝"
+    auto_retry: false
+  - code: NET_RATE_LIMITED
+    domain: 网络
+    user_action: "稍后重试"
+    auto_retry: true
+    retry_note: "遵守 Retry-After"
+  - code: TLS_UNTRUSTED_CERT
+    domain: 安全
+    user_action: "查看指纹并确认"
+    auto_retry: false
+  - code: TLS_HOSTNAME_MISMATCH
+    domain: 安全
+    user_action: "查看指纹并确认"
+    auto_retry: false
+  - code: TLS_FINGERPRINT_CHANGED
+    domain: 安全
+    user_action: "重新确认"
+    auto_retry: false
+  - code: TLS_CLEARTEXT_BLOCKED
+    domain: 安全
+    user_action: "改用 HTTPS 或私网例外"
+    auto_retry: false
+  - code: SOURCE_CERT_UNTRUSTED
+    domain: 安全
+    user_action: "查看指纹并在警告页逐主机信任"
+    auto_retry: false
+    ruling: "R05 裁决 2026-10-04"
+  - code: SOURCE_CERT_HOSTNAME_MISMATCH
+    domain: 安全
+    user_action: "查看指纹并逐主机确认"
+    auto_retry: false
+    ruling: "R05 裁决 2026-10-04"
+  - code: SOURCE_PLAINTEXT_PRIVATE_ONLY
+    domain: 安全
+    user_action: "逐主机允许私网明文，或改用 HTTPS"
+    auto_retry: false
+    ruling: "R05 裁决 2026-10-04；私网明文规则为候选，待 M0 实测"
+  - code: SMB_PROTOCOL_UNSUPPORTED
+    domain: 来源
+    user_action: "启用 SMB2/3"
+    auto_retry: false
+  - code: SRC_AUTH_FAILED
+    domain: 来源
+    user_action: "检查账号密码"
+    auto_retry: false
+  - code: SRC_PATH_NOT_FOUND
+    domain: 来源
+    user_action: "重选目录"
+    auto_retry: false
+  - code: SRC_PERMISSION_DENIED
+    domain: 来源
+    user_action: "检查共享权限"
+    auto_retry: false
+  - code: SRC_UNAVAILABLE
+    domain: 来源
+    user_action: "测试连接"
+    auto_retry: true
+  - code: SRC_SESSION_EXPIRED
+    domain: 来源
+    user_action: "重新选择照片"
+    auto_retry: false
+  - code: SRC_ASSET_GONE
+    domain: 来源
+    user_action: "跳过"
+    auto_retry: false
+  - code: MEDIA_UNSUPPORTED_FORMAT
+    domain: 媒体
+    user_action: "无需操作"
+    auto_retry: false
+  - code: MEDIA_DECODE_FAILED
+    domain: 媒体
+    user_action: "重新导入"
+    auto_retry: false
+  - code: MEDIA_TRUNCATED
+    domain: 媒体
+    user_action: "重试下载"
+    auto_retry: true
+    retry_note: "1 次"
+  - code: MEDIA_TOO_LARGE
+    domain: 媒体
+    user_action: "无需操作"
+    auto_retry: false
+  - code: MEDIA_VIDEO_SKIPPED
+    domain: 媒体
+    user_action: "无需操作"
+    auto_retry: false
+    presentation: "提示性"
+  - code: STORE_LOW_SPACE
+    domain: 存储
+    user_action: "管理存储"
+    auto_retry: true
+    retry_note: "空间恢复后"
+  - code: STORE_WRITE_FAILED
+    domain: 存储
+    user_action: "重试"
+    auto_retry: true
+  - code: STORE_FILE_LOCKED
+    domain: 存储
+    user_action: "解锁设备"
+    auto_retry: true
+  - code: DB_MIGRATION_FAILED
+    domain: 数据
+    user_action: "重试/导出诊断"
+    auto_retry: false
+  - code: DB_CONSTRAINT_VIOLATION
+    domain: 数据
+    user_action: "上报诊断"
+    auto_retry: false
+  - code: SELECTION_CONFLICT
+    domain: 业务
+    user_action: "重新载入"
+    auto_retry: false
+  - code: FRAME_NO_PLAYABLE
+    domain: 业务
+    user_action: "选择展示内容"
+    auto_retry: false
+  - code: POLICY_RETENTION_GATED
+    domain: 合规
+    user_action: "查看说明"
+    auto_retry: false
+  - code: WEATHER_UNAVAILABLE
+    domain: 天气
+    user_action: "稍后或改城市"
+    auto_retry: true
+  - code: WEATHER_STALE
+    domain: 天气
+    user_action: "无需操作"
+    auto_retry: true
+  - code: CANCELLED_BY_USER
+    domain: 控制
+    user_action: null
+    auto_retry: false
+    user_facing: false
+    user_facing_source: "11 §10：不面向用户展示文案，只进诊断日志"
+  - code: CANCELLED_BY_EPOCH
+    domain: 控制
+    user_action: null
+    auto_retry: false
+    user_facing: false
+    user_facing_source: "11 §10：不面向用户展示文案，只进诊断日志"
+  - code: SKIPPED_BY_TOMBSTONE
+    domain: 控制
+    user_action: "可重新导入"
+    auto_retry: false
+logging_rules:
+  - "日志只记录码与结构化参数，不记录凭证、完整路径、照片名（04 §10，技术方案 §12.2）"
+  - "业务层只返回码＋参数，文案由 UI 本地化（PRD §10.2、03 §10.3）"

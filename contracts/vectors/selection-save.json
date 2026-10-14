@@ -1,0 +1,180 @@
+{
+  "meta": {
+    "truth": "04-工程规格书.md §5.2 保存选片的事务与 §3.6 include_future 确认约束（2026-10-05 冻结）",
+    "note": "双端测试必须消费本文件，禁止各自另写期望值。frame_selection 主键为 (frame_id, ref_key)，同一 ref 至多一行（include 或 exclude）。操作顺序：①remove_refs 删除对应行；②upsert add_includes（mode=include，已存在行保留原 added_at/manual_order）；③upsert add_excludes（mode=exclude，同 ref include 行被翻转为 exclude——exclude 优先）；④rule_changes：include_future=0 展开为 include 快照行（members 中已是 exclude 的 ref 跳过、不翻转），不写规则行；include_future=1 须 confirmed=true 否则整个请求 rejected 不落任何写入；⑤remove_rules 删除规则行；⑥order_mode=manual 时全部 include 行按 (manual_order NULLS LAST, added_at, ref) 重编号为 1..n；⑦selection_version+1。base_version ≠ current_version → conflict（SELECTION_CONFLICT），不落任何写入。输出 include_rows 按 ref 字典序，exclude_rows 按字典序，rule_rows 按 collection 字典序。",
+    "results": ["ok", "conflict", "rejected"]
+  },
+  "cases": [
+    {
+      "id": "SAV-01",
+      "note": "U19：版本冲突不落任何写入",
+      "current_version": 4,
+      "base_version": 3,
+      "order_mode": "captured_asc",
+      "existing_includes": [{"ref": "a1", "manual_order": null, "added_at": 1}],
+      "existing_excludes": [],
+      "existing_rules": [],
+      "request": {"add_includes": [{"ref": "a2", "added_at": 9}], "remove_refs": [], "add_excludes": [], "rule_changes": [], "remove_rules": []},
+      "expected": {"result": "conflict", "error": "SELECTION_CONFLICT"}
+    },
+    {
+      "id": "SAV-02",
+      "note": "U02：include_future=0 保存时展开为 include 快照，不写规则行",
+      "current_version": 0,
+      "base_version": 0,
+      "order_mode": "captured_asc",
+      "existing_includes": [{"ref": "a1", "manual_order": null, "added_at": 1}],
+      "existing_excludes": [],
+      "existing_rules": [],
+      "request": {"add_includes": [], "remove_refs": [], "add_excludes": [], "rule_changes": [{"collection": "c1", "recursive": true, "include_future": false, "confirmed": false, "members": ["a1", "a2"], "added_at": 10}], "remove_rules": []},
+      "expected": {
+        "result": "ok",
+        "new_version": 1,
+        "include_rows": [{"ref": "a1", "manual_order": null}, {"ref": "a2", "manual_order": null}],
+        "exclude_rows": [],
+        "rule_rows": []
+      }
+    },
+    {
+      "id": "SAV-03",
+      "note": "include_future=1 无确认标记，整个请求拒绝",
+      "current_version": 2,
+      "base_version": 2,
+      "order_mode": "captured_asc",
+      "existing_includes": [],
+      "existing_excludes": [],
+      "existing_rules": [],
+      "request": {"add_includes": [{"ref": "a1", "added_at": 5}], "remove_refs": [], "add_excludes": [], "rule_changes": [{"collection": "c1", "recursive": false, "include_future": true, "confirmed": false, "members": [], "added_at": 10}], "remove_rules": []},
+      "expected": {"result": "rejected"}
+    },
+    {
+      "id": "SAV-04",
+      "note": "include_future=1 带确认标记，保留规则行动态求值",
+      "current_version": 0,
+      "base_version": 0,
+      "order_mode": "captured_asc",
+      "existing_includes": [],
+      "existing_excludes": [],
+      "existing_rules": [],
+      "request": {"add_includes": [], "remove_refs": [], "add_excludes": [], "rule_changes": [{"collection": "c1", "recursive": true, "include_future": true, "confirmed": true, "members": ["a1"], "added_at": 10}], "remove_rules": []},
+      "expected": {
+        "result": "ok",
+        "new_version": 1,
+        "include_rows": [],
+        "exclude_rows": [],
+        "rule_rows": [{"collection": "c1", "recursive": true, "include_future": true}]
+      }
+    },
+    {
+      "id": "SAV-05",
+      "note": "U16：manual 模式重编号为连续整数；新增项 manual_order NULL 排末尾后编号",
+      "current_version": 7,
+      "base_version": 7,
+      "order_mode": "manual",
+      "existing_includes": [
+        {"ref": "r1", "manual_order": 2, "added_at": 1},
+        {"ref": "r2", "manual_order": 1, "added_at": 2}
+      ],
+      "existing_excludes": [],
+      "existing_rules": [],
+      "request": {"add_includes": [{"ref": "r3", "added_at": 3}], "remove_refs": [], "add_excludes": [], "rule_changes": [], "remove_rules": []},
+      "expected": {
+        "result": "ok",
+        "new_version": 8,
+        "include_rows": [{"ref": "r1", "manual_order": 2}, {"ref": "r2", "manual_order": 1}, {"ref": "r3", "manual_order": 3}],
+        "exclude_rows": [],
+        "rule_rows": []
+      }
+    },
+    {
+      "id": "SAV-06",
+      "note": "删除 exclude 行并新增 exclude",
+      "current_version": 1,
+      "base_version": 1,
+      "order_mode": "captured_asc",
+      "existing_includes": [{"ref": "a1", "manual_order": null, "added_at": 1}],
+      "existing_excludes": ["e1"],
+      "existing_rules": [],
+      "request": {"add_includes": [], "remove_refs": ["e1"], "add_excludes": ["e2"], "rule_changes": [], "remove_rules": []},
+      "expected": {
+        "result": "ok",
+        "new_version": 2,
+        "include_rows": [{"ref": "a1", "manual_order": null}],
+        "exclude_rows": ["e2"],
+        "rule_rows": []
+      }
+    },
+    {
+      "id": "SAV-07",
+      "note": "幂等：重复 add include 不产生重复行，版本仍 +1",
+      "current_version": 3,
+      "base_version": 3,
+      "order_mode": "captured_asc",
+      "existing_includes": [{"ref": "a1", "manual_order": null, "added_at": 1}],
+      "existing_excludes": [],
+      "existing_rules": [],
+      "request": {"add_includes": [{"ref": "a1", "added_at": 99}], "remove_refs": [], "add_excludes": [], "rule_changes": [], "remove_rules": []},
+      "expected": {
+        "result": "ok",
+        "new_version": 4,
+        "include_rows": [{"ref": "a1", "manual_order": null}],
+        "exclude_rows": [],
+        "rule_rows": []
+      }
+    },
+    {
+      "id": "SAV-08",
+      "note": "remove_rules 删除既有规则行",
+      "current_version": 5,
+      "base_version": 5,
+      "order_mode": "captured_asc",
+      "existing_includes": [],
+      "existing_excludes": [],
+      "existing_rules": [{"collection": "c9", "recursive": false, "include_future": true}],
+      "request": {"add_includes": [], "remove_refs": [], "add_excludes": [], "rule_changes": [], "remove_rules": ["c9"]},
+      "expected": {
+        "result": "ok",
+        "new_version": 6,
+        "include_rows": [],
+        "exclude_rows": [],
+        "rule_rows": []
+      }
+    },
+    {
+      "id": "SAV-09",
+      "note": "单 ref 单行：add exclude 使同 ref 的 include 行翻转为 exclude",
+      "current_version": 2,
+      "base_version": 2,
+      "order_mode": "captured_asc",
+      "existing_includes": [{"ref": "a1", "manual_order": null, "added_at": 1}],
+      "existing_excludes": [],
+      "existing_rules": [],
+      "request": {"add_includes": [], "remove_refs": [], "add_excludes": ["a1"], "rule_changes": [], "remove_rules": []},
+      "expected": {
+        "result": "ok",
+        "new_version": 3,
+        "include_rows": [],
+        "exclude_rows": ["a1"],
+        "rule_rows": []
+      }
+    },
+    {
+      "id": "SAV-10",
+      "note": "U01 保存侧：快照展开跳过已是 exclude 的成员，不翻转",
+      "current_version": 1,
+      "base_version": 1,
+      "order_mode": "captured_asc",
+      "existing_includes": [],
+      "existing_excludes": ["a2"],
+      "existing_rules": [],
+      "request": {"add_includes": [], "remove_refs": [], "add_excludes": [], "rule_changes": [{"collection": "c1", "recursive": false, "include_future": false, "confirmed": false, "members": ["a1", "a2"], "added_at": 10}], "remove_rules": []},
+      "expected": {
+        "result": "ok",
+        "new_version": 2,
+        "include_rows": [{"ref": "a1", "manual_order": null}],
+        "exclude_rows": ["a2"],
+        "rule_rows": []
+      }
+    }
+  ]
+}

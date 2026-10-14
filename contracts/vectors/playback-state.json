@@ -1,0 +1,514 @@
+{
+  "meta": {
+    "truth": "04-工程规格书.md §11 播放器状态机（含 R03 裁决，2026-10-05 冻结）",
+    "note": "双端测试必须消费本文件，禁止各自另写期望值。状态机为纯函数 reduce(state, event) -> (nextState, effects)，effects 按字典序输出、无则空表。撤权事件（asset_revoked 或 selection_changed.category=revoke）一律附加 clear_textures + show_safe_image + rebuild_queue_at_safe_point；运行态（holding/transitioning/preparing）在 playable_remaining=false 时转 empty，否则保持/回到 holding；paused/suspended/resting 保持原状态且不得解除，重建在安全点进行。selection_changed 的 add/config 类只加 rebuild_queue_at_safe_point、不打断当前图、不解除暂停/休息；empty 态收到 add 直接 preparing+rebuild_queue。app_foreground 需带 queue_intact。decode_fail 需带 limit_reached（由 decode_fail_limit(queue_length)=min(5,queue_length) 判定）。",
+    "states": [
+      "idle",
+      "preparing",
+      "holding",
+      "transitioning",
+      "paused",
+      "suspended",
+      "empty",
+      "resting",
+      "failed"
+    ],
+    "effects": [
+      "clear_textures",
+      "show_safe_image",
+      "rebuild_queue",
+      "rebuild_queue_at_safe_point",
+      "apply_pending_rebuild",
+      "persist_snapshot",
+      "save_remaining_hold",
+      "complete_transition",
+      "reset_hold_timer",
+      "resume_until_rest_end",
+      "skip_to_next"
+    ]
+  },
+  "cases": [
+    {
+      "id": "PBS-01",
+      "state": "idle",
+      "event": {
+        "type": "start"
+      },
+      "expected": {
+        "state": "preparing",
+        "effects": [
+          "rebuild_queue"
+        ]
+      }
+    },
+    {
+      "id": "PBS-02",
+      "state": "preparing",
+      "event": {
+        "type": "first_ready"
+      },
+      "expected": {
+        "state": "holding",
+        "effects": [
+          "reset_hold_timer"
+        ]
+      }
+    },
+    {
+      "id": "PBS-03",
+      "state": "preparing",
+      "event": {
+        "type": "none_playable"
+      },
+      "expected": {
+        "state": "empty",
+        "effects": []
+      }
+    },
+    {
+      "id": "PBS-04",
+      "state": "holding",
+      "event": {
+        "type": "hold_elapsed",
+        "next_ready": true
+      },
+      "expected": {
+        "state": "transitioning",
+        "effects": []
+      }
+    },
+    {
+      "id": "PBS-05",
+      "note": "下一张未就绪：延长当前图，不切黑",
+      "state": "holding",
+      "event": {
+        "type": "hold_elapsed",
+        "next_ready": false
+      },
+      "expected": {
+        "state": "holding",
+        "effects": []
+      }
+    },
+    {
+      "id": "PBS-06",
+      "state": "holding",
+      "event": {
+        "type": "user_next"
+      },
+      "expected": {
+        "state": "transitioning",
+        "effects": []
+      }
+    },
+    {
+      "id": "PBS-07",
+      "state": "holding",
+      "event": {
+        "type": "user_prev"
+      },
+      "expected": {
+        "state": "transitioning",
+        "effects": []
+      }
+    },
+    {
+      "id": "PBS-08",
+      "note": "转场完成进入 Holding 为队列重建安全点",
+      "state": "transitioning",
+      "event": {
+        "type": "transition_finished"
+      },
+      "expected": {
+        "state": "holding",
+        "effects": [
+          "apply_pending_rebuild",
+          "reset_hold_timer"
+        ]
+      }
+    },
+    {
+      "id": "PBS-09",
+      "state": "transitioning",
+      "event": {
+        "type": "user_pause"
+      },
+      "expected": {
+        "state": "paused",
+        "effects": [
+          "complete_transition",
+          "save_remaining_hold"
+        ]
+      }
+    },
+    {
+      "id": "PBS-10",
+      "state": "holding",
+      "event": {
+        "type": "user_pause"
+      },
+      "expected": {
+        "state": "paused",
+        "effects": [
+          "save_remaining_hold"
+        ]
+      }
+    },
+    {
+      "id": "PBS-11",
+      "state": "paused",
+      "event": {
+        "type": "user_resume"
+      },
+      "expected": {
+        "state": "holding",
+        "effects": []
+      }
+    },
+    {
+      "id": "PBS-12",
+      "state": "holding",
+      "event": {
+        "type": "app_background"
+      },
+      "expected": {
+        "state": "suspended",
+        "effects": [
+          "persist_snapshot"
+        ]
+      }
+    },
+    {
+      "id": "PBS-13",
+      "state": "paused",
+      "event": {
+        "type": "app_background"
+      },
+      "expected": {
+        "state": "suspended",
+        "effects": [
+          "persist_snapshot"
+        ]
+      }
+    },
+    {
+      "id": "PBS-14",
+      "state": "suspended",
+      "event": {
+        "type": "app_foreground",
+        "queue_intact": true
+      },
+      "expected": {
+        "state": "holding",
+        "effects": []
+      }
+    },
+    {
+      "id": "PBS-15",
+      "state": "suspended",
+      "event": {
+        "type": "app_foreground",
+        "queue_intact": false
+      },
+      "expected": {
+        "state": "preparing",
+        "effects": [
+          "rebuild_queue"
+        ]
+      }
+    },
+    {
+      "id": "PBS-16",
+      "note": "R03：Paused 被撤权保持暂停",
+      "state": "paused",
+      "event": {
+        "type": "asset_revoked",
+        "playable_remaining": true
+      },
+      "expected": {
+        "state": "paused",
+        "effects": [
+          "clear_textures",
+          "rebuild_queue_at_safe_point",
+          "show_safe_image"
+        ]
+      }
+    },
+    {
+      "id": "PBS-17",
+      "state": "holding",
+      "event": {
+        "type": "asset_revoked",
+        "playable_remaining": true
+      },
+      "expected": {
+        "state": "holding",
+        "effects": [
+          "clear_textures",
+          "rebuild_queue_at_safe_point",
+          "show_safe_image"
+        ]
+      }
+    },
+    {
+      "id": "PBS-18",
+      "state": "holding",
+      "event": {
+        "type": "asset_revoked",
+        "playable_remaining": false
+      },
+      "expected": {
+        "state": "empty",
+        "effects": [
+          "clear_textures",
+          "show_safe_image"
+        ]
+      }
+    },
+    {
+      "id": "PBS-19",
+      "state": "suspended",
+      "event": {
+        "type": "asset_revoked",
+        "playable_remaining": true
+      },
+      "expected": {
+        "state": "suspended",
+        "effects": [
+          "clear_textures",
+          "rebuild_queue_at_safe_point",
+          "show_safe_image"
+        ]
+      }
+    },
+    {
+      "id": "PBS-20",
+      "state": "resting",
+      "event": {
+        "type": "asset_revoked",
+        "playable_remaining": false
+      },
+      "expected": {
+        "state": "resting",
+        "effects": [
+          "clear_textures",
+          "rebuild_queue_at_safe_point",
+          "show_safe_image"
+        ]
+      }
+    },
+    {
+      "id": "PBS-21",
+      "state": "holding",
+      "event": {
+        "type": "rest_window_start"
+      },
+      "expected": {
+        "state": "resting",
+        "effects": [
+          "persist_snapshot"
+        ]
+      }
+    },
+    {
+      "id": "PBS-22",
+      "state": "paused",
+      "event": {
+        "type": "rest_window_start"
+      },
+      "expected": {
+        "state": "resting",
+        "effects": [
+          "persist_snapshot"
+        ]
+      }
+    },
+    {
+      "id": "PBS-23",
+      "state": "resting",
+      "event": {
+        "type": "user_tap"
+      },
+      "expected": {
+        "state": "holding",
+        "effects": [
+          "resume_until_rest_end"
+        ]
+      }
+    },
+    {
+      "id": "PBS-24",
+      "state": "holding",
+      "event": {
+        "type": "decode_fail",
+        "limit_reached": true
+      },
+      "expected": {
+        "state": "failed",
+        "effects": []
+      }
+    },
+    {
+      "id": "PBS-25",
+      "state": "holding",
+      "event": {
+        "type": "decode_fail",
+        "limit_reached": false
+      },
+      "expected": {
+        "state": "holding",
+        "effects": [
+          "skip_to_next"
+        ]
+      }
+    },
+    {
+      "id": "PBS-26",
+      "state": "failed",
+      "event": {
+        "type": "user_retry"
+      },
+      "expected": {
+        "state": "preparing",
+        "effects": [
+          "rebuild_queue"
+        ]
+      }
+    },
+    {
+      "id": "PBS-27",
+      "state": "holding",
+      "event": {
+        "type": "takeover_by_other_window"
+      },
+      "expected": {
+        "state": "idle",
+        "effects": []
+      }
+    },
+    {
+      "id": "PBS-28",
+      "state": "holding",
+      "event": {
+        "type": "selection_changed",
+        "category": "config"
+      },
+      "expected": {
+        "state": "holding",
+        "effects": [
+          "rebuild_queue_at_safe_point"
+        ]
+      }
+    },
+    {
+      "id": "PBS-29",
+      "state": "paused",
+      "event": {
+        "type": "selection_changed",
+        "category": "add"
+      },
+      "expected": {
+        "state": "paused",
+        "effects": [
+          "rebuild_queue_at_safe_point"
+        ]
+      }
+    },
+    {
+      "id": "PBS-30",
+      "note": "R03：selection_changed 分类为撤权时按撤权处理",
+      "state": "paused",
+      "event": {
+        "type": "selection_changed",
+        "category": "revoke"
+      },
+      "expected": {
+        "state": "paused",
+        "effects": [
+          "clear_textures",
+          "rebuild_queue_at_safe_point",
+          "show_safe_image"
+        ]
+      }
+    },
+    {
+      "id": "PBS-31",
+      "state": "empty",
+      "event": {
+        "type": "selection_changed",
+        "category": "add"
+      },
+      "expected": {
+        "state": "preparing",
+        "effects": [
+          "rebuild_queue"
+        ]
+      }
+    },
+    {
+      "id": "PBS-32",
+      "state": "holding",
+      "event": {
+        "type": "window_resize"
+      },
+      "expected": {
+        "state": "holding",
+        "effects": []
+      }
+    },
+    {
+      "id": "PBS-33",
+      "note": "转场中撤权：取消转场立即切安全图",
+      "state": "transitioning",
+      "event": {
+        "type": "asset_revoked",
+        "playable_remaining": true
+      },
+      "expected": {
+        "state": "holding",
+        "effects": [
+          "clear_textures",
+          "rebuild_queue_at_safe_point",
+          "show_safe_image"
+        ]
+      }
+    },
+    {
+      "id": "PBS-34",
+      "state": "preparing",
+      "event": {
+        "type": "asset_revoked",
+        "playable_remaining": false
+      },
+      "expected": {
+        "state": "empty",
+        "effects": [
+          "clear_textures",
+          "show_safe_image"
+        ]
+      }
+    }
+  ],
+  "decode_fail_limit_cases": [
+    {
+      "id": "PBD-01",
+      "queue_length": 1,
+      "expected": 1
+    },
+    {
+      "id": "PBD-02",
+      "queue_length": 3,
+      "expected": 3
+    },
+    {
+      "id": "PBD-03",
+      "queue_length": 5,
+      "expected": 5
+    },
+    {
+      "id": "PBD-04",
+      "queue_length": 9,
+      "expected": 5
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+# 验收契约 A16 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "fa49f97b9a6dec770644e287889d27e354bf7309ce0951100223b5079c124b4f"
+  id: A16
+  title: "24 小时长稳播放"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "最低设备连续播放 24h"
+  pass_conditions:
+    - "无崩溃"
+    - "内存无持续增长"
+    - "温度无持续严重告警"
+telemetry:
+  role: required
+  events:
+    - name: playback.session_start
+    - name: playback.session_end
+    - name: playback.asset_skipped
+  metrics:
+    - PM4
+    - PM7
+    - PM9

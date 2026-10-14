@@ -1,0 +1,23 @@
+# 验收契约 A06 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "3c4d743ff21271134f3b1fecf817fd9c221584611a3c34028f6bee9ba21f9133"
+  id: A06
+  title: "方向与 EXIF 保真"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "横竖图与 EXIF"
+  pass_conditions:
+    - "不拉伸"
+    - "默认不裁主体"
+    - "边缘无黑缝"
+    - "旋转保持本图"
+telemetry:
+  role: supportive
+  events:
+    - name: playback.photo_enter
+      params:
+        - orientation_match
+  metrics: []

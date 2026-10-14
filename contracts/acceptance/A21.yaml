@@ -1,0 +1,20 @@
+# 验收契约 A21 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "4cc750caf7277458f6e24a9548db771d2ffce8f0ed5496a62527ed62f6ed29b2"
+  id: A21
+  title: "墓碑抑制再导入"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "本地删除与再同步"
+  pass_conditions:
+    - "本地删除墓碑有效"
+    - "不反复恢复用户删除项"
+telemetry:
+  role: required
+  events:
+    - name: delete.performed
+    - name: import.job_resumed
+  metrics: []

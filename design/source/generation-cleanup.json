@@ -1,0 +1,5 @@
+{
+  "removedObsoleteGeneratedViewports": [],
+  "scope": "Only this generator Sxx/platform/width/locale output names, never other design assets",
+  "manifest": "design/source/manifest.json"
+}

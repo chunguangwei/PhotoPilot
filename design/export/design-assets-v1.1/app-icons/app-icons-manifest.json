@@ -1,0 +1,56 @@
+{
+  "version": "1.1",
+  "date": "2026-10-04",
+  "source_masters": {
+    "design/brand/logo-primary.svg": "1d571fafc1476d5e09450fda0d9ae191a54bb34335371587b58ba4586a444ae3",
+    "design/brand/logo-monochrome.svg": "64c94a056419563dbd11d409876defa8b010b59d1b6d853576999baf18be9145",
+    "design/brand/app-icon-master.svg": "28f744fc00de4d5a7016c05283ce5ff761c5afcf619e75e17b1352fe3ba4aa19"
+  },
+  "ios": {
+    "file": "design/export/design-assets-v1.1/app-icons/ios/app-icon-1024.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "geometry": "translate(0,-8) scale(4), identical to app-icon-master.svg; no pre-rounded corners"
+  },
+  "android": {
+    "grid": [
+      108,
+      108
+    ],
+    "foreground_transform": "translate(15.6,15.6) scale(0.30)",
+    "safe_circle": {
+      "centre": [
+        54,
+        54
+      ],
+      "radius": 30,
+      "design_candidate": true,
+      "rendered_max_ink_radius_px": 29.129,
+      "ink_within_candidate_circle": true
+    },
+    "layers": [
+      "foreground.svg",
+      "foreground.xml",
+      "background.svg",
+      "background.xml",
+      "monochrome.svg",
+      "monochrome.xml"
+    ],
+    "mask_previews": [
+      "circle",
+      "squircle",
+      "rounded-square"
+    ]
+  },
+  "limitations": [
+    "Local design candidate, not native UI validation or M0 evidence.",
+    "Large type is 1.6x design stress, not the OS maximum.",
+    "PNG uses locally rendered macOS font fallback; Android system-font and native accessibility verification pending.",
+    "No fonts are embedded or distributed; store wordmark license pending.",
+    "Adaptive safe area, minimum launcher size, wallpaper/folder/settings/Spotlight and platform submission requirements need release-time platform verification."
+  ]
+}

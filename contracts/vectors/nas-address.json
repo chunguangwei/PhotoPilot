@@ -1,0 +1,350 @@
+{
+ "meta": {
+  "truth": "04-工程规格书.md §6.2/§14 + PRD §5.4（R05 裁决）NAS 地址解析与私网明文资格判定（2026-10-07 冻结补充：私网明文例外地址族=RFC1918(10/8,172.16/12,192.168/16)+链路本地(169.254/16,fe80::/10)+ULA(fc00::/7)；loopback 127/8 与 ::1 明确不具明文资格；主机名不具字面资格，须解析后判定；指纹规范化=协议小写+主机小写+恒含有效端口（省略规则 2026-10-07 废除：TLS/明文不同端口即不同端点，身份应区分，规则统一无特例）+路径按 nas-path 规范化+不含凭证；解析时缺省端口先填默认值再入指纹",
+  "note": "双端测试必须消费本文件。parse_input 输入为用户在 S06 表单输入的主机字段原文。classify_host 只对字面 IP 判定 kind；hostname 一律 kind=hostname 且 private_eligible=false（运行时解析后再判定，解析结果属运行时数据不入向量）。port 合法域 1..65535。default_port: smb=445, webdav=443(默认 https), webdav_http=80(仅私网例外)。"
+ },
+ "default_ports": {
+  "smb": 445,
+  "webdav": 443,
+  "webdav_http": 80
+ },
+ "cases": [
+  {
+   "id": "ADR-01",
+   "parse_input": "192.168.1.10",
+   "expected": {
+    "ok": true,
+    "host": "192.168.1.10",
+    "port": null
+   },
+   "classify_host": "192.168.1.10",
+   "expected_kind": "ipv4",
+   "expected_private": true,
+   "desc": "RFC1918 192.168/16"
+  },
+  {
+   "id": "ADR-02",
+   "parse_input": "10.0.0.5",
+   "expected": {
+    "ok": true,
+    "host": "10.0.0.5",
+    "port": null
+   },
+   "classify_host": "10.0.0.5",
+   "expected_kind": "ipv4",
+   "expected_private": true,
+   "desc": "RFC1918 10/8"
+  },
+  {
+   "id": "ADR-03",
+   "parse_input": "172.16.0.1",
+   "expected": {
+    "ok": true,
+    "host": "172.16.0.1",
+    "port": null
+   },
+   "classify_host": "172.16.0.1",
+   "expected_kind": "ipv4",
+   "expected_private": true,
+   "desc": "172.16/12 下边界"
+  },
+  {
+   "id": "ADR-04",
+   "parse_input": "172.31.255.255",
+   "expected": {
+    "ok": true,
+    "host": "172.31.255.255",
+    "port": null
+   },
+   "classify_host": "172.31.255.255",
+   "expected_kind": "ipv4",
+   "expected_private": true,
+   "desc": "172.16/12 上边界"
+  },
+  {
+   "id": "ADR-05",
+   "parse_input": "172.32.0.1",
+   "expected": {
+    "ok": true,
+    "host": "172.32.0.1",
+    "port": null
+   },
+   "classify_host": "172.32.0.1",
+   "expected_kind": "ipv4",
+   "expected_private": false,
+   "desc": "172.32 出界=公网"
+  },
+  {
+   "id": "ADR-06",
+   "parse_input": "169.254.1.1",
+   "expected": {
+    "ok": true,
+    "host": "169.254.1.1",
+    "port": null
+   },
+   "classify_host": "169.254.1.1",
+   "expected_kind": "ipv4",
+   "expected_private": true,
+   "desc": "IPv4 链路本地"
+  },
+  {
+   "id": "ADR-07",
+   "parse_input": "8.8.8.8",
+   "expected": {
+    "ok": true,
+    "host": "8.8.8.8",
+    "port": null
+   },
+   "classify_host": "8.8.8.8",
+   "expected_kind": "ipv4",
+   "expected_private": false,
+   "desc": "公网 IP 不具明文资格"
+  },
+  {
+   "id": "ADR-08",
+   "parse_input": "127.0.0.1",
+   "expected": {
+    "ok": true,
+    "host": "127.0.0.1",
+    "port": null
+   },
+   "classify_host": "127.0.0.1",
+   "expected_kind": "ipv4",
+   "expected_private": false,
+   "desc": "loopback 明确排除（冻结）"
+  },
+  {
+   "id": "ADR-09",
+   "parse_input": "0.0.0.0",
+   "expected": {
+    "ok": false
+   },
+   "desc": "0.0.0.0 非法主机"
+  },
+  {
+   "id": "ADR-10",
+   "parse_input": "NAS.local",
+   "expected": {
+    "ok": true,
+    "host": "nas.local",
+    "port": null
+   },
+   "classify_host": "nas.local",
+   "expected_kind": "hostname",
+   "expected_private": false,
+   "desc": "主机名小写化；字面不具明文资格"
+  },
+  {
+   "id": "ADR-11",
+   "parse_input": "  My NAS.lan  ",
+   "expected": {
+    "ok": false
+   },
+   "desc": "主机含空格非法"
+  },
+  {
+   "id": "ADR-12",
+   "parse_input": "  nas.local  ",
+   "expected": {
+    "ok": true,
+    "host": "nas.local",
+    "port": null
+   },
+   "desc": "首尾空白裁剪"
+  },
+  {
+   "id": "ADR-13",
+   "parse_input": "[fe80::1]",
+   "expected": {
+    "ok": true,
+    "host": "fe80::1",
+    "port": null
+   },
+   "classify_host": "fe80::1",
+   "expected_kind": "ipv6",
+   "expected_private": true,
+   "desc": "IPv6 链路本地"
+  },
+  {
+   "id": "ADR-14",
+   "parse_input": "[fd12:3456::1]",
+   "expected": {
+    "ok": true,
+    "host": "fd12:3456::1",
+    "port": null
+   },
+   "classify_host": "fd12:3456::1",
+   "expected_kind": "ipv6",
+   "expected_private": true,
+   "desc": "ULA fc00::/7 具明文资格（冻结）"
+  },
+  {
+   "id": "ADR-15",
+   "parse_input": "[2001:db8::1]",
+   "expected": {
+    "ok": true,
+    "host": "2001:db8::1",
+    "port": null
+   },
+   "classify_host": "2001:db8::1",
+   "expected_kind": "ipv6",
+   "expected_private": false,
+   "desc": "IPv6 公网文档段"
+  },
+  {
+   "id": "ADR-16",
+   "parse_input": "[::1]",
+   "expected": {
+    "ok": true,
+    "host": "::1",
+    "port": null
+   },
+   "classify_host": "::1",
+   "expected_kind": "ipv6",
+   "expected_private": false,
+   "desc": "IPv6 loopback 排除"
+  },
+  {
+   "id": "ADR-17",
+   "parse_input": "192.168.1.10:4450",
+   "expected": {
+    "ok": true,
+    "host": "192.168.1.10",
+    "port": 4450
+   },
+   "desc": "显式端口"
+  },
+  {
+   "id": "ADR-18",
+   "parse_input": "[fe80::1]:8443",
+   "expected": {
+    "ok": true,
+    "host": "fe80::1",
+    "port": 8443
+   },
+   "desc": "IPv6 括号+端口"
+  },
+  {
+   "id": "ADR-19",
+   "parse_input": "nas.local:8080",
+   "expected": {
+    "ok": true,
+    "host": "nas.local",
+    "port": 8080
+   },
+   "desc": "主机名+端口"
+  },
+  {
+   "id": "ADR-20",
+   "parse_input": "fe80::1",
+   "expected": {
+    "ok": true,
+    "host": "fe80::1",
+    "port": null
+   },
+   "desc": "裸 IPv6 无括号可接受（无端口歧义时）"
+  },
+  {
+   "id": "ADR-21",
+   "parse_input": "host:abc",
+   "expected": {
+    "ok": false
+   },
+   "desc": "非数字端口"
+  },
+  {
+   "id": "ADR-22",
+   "parse_input": "host:0",
+   "expected": {
+    "ok": false
+   },
+   "desc": "端口下界"
+  },
+  {
+   "id": "ADR-23",
+   "parse_input": "host:65536",
+   "expected": {
+    "ok": false
+   },
+   "desc": "端口上界"
+  },
+  {
+   "id": "ADR-24",
+   "parse_input": "host:65535",
+   "expected": {
+    "ok": true,
+    "host": "host",
+    "port": 65535
+   },
+   "desc": "端口最大合法值"
+  },
+  {
+   "id": "ADR-25",
+   "parse_input": "",
+   "expected": {
+    "ok": false
+   },
+   "desc": "空输入"
+  },
+  {
+   "id": "ADR-26",
+   "parse_input": "host:80:90",
+   "expected": {
+    "ok": false
+   },
+   "desc": "多冒号非 IPv6 括号形式非法"
+  },
+  {
+   "id": "ADR-27",
+   "parse_input": "[fe80::1",
+   "expected": {
+    "ok": false
+   },
+   "desc": "括号不配对"
+  },
+  {
+   "id": "ADR-28",
+   "fingerprint_input": {
+    "protocol": "SMB",
+    "host": "NAS.local",
+    "port": 445,
+    "path": "/Photos//2024/"
+   },
+   "expected_fingerprint": "smb://nas.local:445/Photos/2024",
+   "desc": "指纹规范化：协议/主机小写、默认端口省略与否一致化（见 ADR-29）、路径规范化、不含凭证"
+  },
+  {
+   "id": "ADR-29",
+   "fingerprint_input": {
+    "protocol": "smb",
+    "host": "nas.local",
+    "port": 4450,
+    "path": "photos"
+   },
+   "expected_fingerprint": "smb://nas.local:4450/photos",
+   "desc": "非默认端口保留；端口恒含有效值（无省略特例）"
+  },
+  {
+   "id": "ADR-30",
+   "fingerprint_input": {
+    "protocol": "webdav",
+    "host": "Drive.EXAMPLE.com",
+    "port": 443,
+    "path": ""
+   },
+   "expected_fingerprint": "webdav://drive.example.com:443",
+   "desc": "默认端口 443 同样恒含"
+  },
+  {
+   "id": "ADR-31",
+   "fingerprint_input": {
+    "protocol": "webdav",
+    "host": "192.168.1.2",
+    "port": 80,
+    "path": "/"
+   },
+   "expected_fingerprint": "webdav://192.168.1.2:80",
+   "desc": "webdav_http 80 恒含、根路径省略尾斜杠"
+  }
+ ]
+}

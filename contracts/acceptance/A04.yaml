@@ -1,0 +1,22 @@
+# 验收契约 A04 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "a3cd062b57386cf606d09b2e9342c86e24a5ac633010aece2dd66fe39addbacd"
+  id: A04
+  title: "播放队列基数场景"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "0 / 1 / 多张"
+  pass_conditions:
+    - "0 有恢复入口"
+    - "1 不重复转场"
+    - "多张按规则轮播"
+telemetry:
+  role: required
+  events:
+    - name: playback.queue_empty
+    - name: playback.session_start
+    - name: render.transition_completed
+  metrics: []

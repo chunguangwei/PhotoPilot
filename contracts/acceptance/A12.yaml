@@ -1,0 +1,20 @@
+# 验收契约 A12 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "e7cbe07dd29e250ddd0077782c8431daf13d1d31153b732d0b7b0ab478ae74a9"
+  id: A12
+  title: "权限收回处理"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "权限收回"
+  pass_conditions:
+    - "停止越权读取"
+    - "可用副本按明确策略处理"
+telemetry:
+  role: required
+  events:
+    - name: source.access_revoked
+    - name: delete.performed
+  metrics: []

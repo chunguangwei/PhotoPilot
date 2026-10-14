@@ -1,0 +1,24 @@
+# 验收契约 A07 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "5f432aed3c56edd20d3901de0ed7d181ac572836586971eceb4a9d8c074e1174"
+  id: A07
+  title: "断网长播"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "断网 24 小时"
+  pass_conditions:
+    - "已下载合法选片继续播"
+    - "天气过期明确"
+    - "日志不刷屏"
+telemetry:
+  role: required
+  events:
+    - name: playback.session_end
+    - name: weather.staleness_changed
+    - name: log.dropped
+  metrics:
+    - PM7
+    - PM11

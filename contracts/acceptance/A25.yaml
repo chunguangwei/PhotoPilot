@@ -1,0 +1,22 @@
+# 验收契约 A25 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "70180d786921a28ac403303d068eca43de7e1d78d5e095d5c33f05562e495f03"
+  id: A25
+  title: "筛选与手动排序"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "搜索筛选与手动排序"
+  pass_conditions:
+    - "筛选不改变已选集合与相框规则"
+    - "全选仅作用于筛选结果"
+    - "手动顺序持久化，动态新增追加末尾且可再排"
+telemetry:
+  role: required
+  events:
+    - name: frame.selection_committed
+    - name: frame.selection_abandoned
+  metrics:
+    - PM10

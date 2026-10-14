@@ -1,0 +1,21 @@
+# 验收契约 A10 — 真源：01-产品需求PRD.md §14、09-埋点与度量口径.md §7
+# 由 tools/check_contracts.py 校验。
+meta:
+  checksum: "0a94052641fcd501615483bb05ee84aebe8c2923af1dd6ca730a0b088ec2fd8f"
+  id: A10
+  title: "双语与大字"
+  source: "01-产品需求PRD.md §14"
+  telemetry_source: "09-埋点与度量口径.md §7"
+  automation_test_id: null
+acceptance:
+  scenario: "中英切换 / 大字"
+  pass_conditions:
+    - "关键按钮不截断"
+    - "英文复数正确"
+    - "中文无缺字"
+telemetry:
+  role: supportive
+  events:
+    - name: settings.locale_changed
+    - name: a11y.state_changed
+  metrics: []
