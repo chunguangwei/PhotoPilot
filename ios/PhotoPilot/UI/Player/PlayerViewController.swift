@@ -261,6 +261,10 @@ final class PlayerViewController: UIViewController {
         fatalError("init(coder:) is not supported")
     }
 
+    override var prefersStatusBarHidden: Bool { true }
+
+    override var prefersHomeIndicatorAutoHidden: Bool { true }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = ThemeColor.canvas

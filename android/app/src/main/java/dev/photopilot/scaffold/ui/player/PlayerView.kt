@@ -507,13 +507,45 @@ class PlayerView(
         keepScreenOn = keep
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        setImmersive(true)
+    }
+
     override fun onDetachedFromWindow() {
+        setImmersive(false)
         musicPlayer.release()
         musicStarted = null
         restoreBrightness()
         removeCallbacks(clockTickRunnable)
         removeCallbacks(hideControlsRunnable)
         super.onDetachedFromWindow()
+    }
+
+    private fun setImmersive(immersive: Boolean) {
+        val window = (context as? android.app.Activity)?.window ?: return
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            val controller = window.insetsController ?: return
+            if (immersive) {
+                controller.systemBarsBehavior =
+                    android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                controller.hide(android.view.WindowInsets.Type.systemBars())
+            } else {
+                controller.show(android.view.WindowInsets.Type.systemBars())
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = if (immersive) {
+                android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                    android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or
+                    android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                    android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                    android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                    android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            } else {
+                android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            }
+        }
     }
 
     fun applyBrightnessIfNeeded(activity: android.app.Activity) {
