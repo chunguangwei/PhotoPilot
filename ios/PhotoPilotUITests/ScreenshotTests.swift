@@ -76,6 +76,13 @@ final class ScreenshotTests: XCTestCase {
 
         let saveButton = app.buttons["Save"]
         XCTAssertTrue(saveButton.waitForExistence(timeout: 10))
+
+        XCUIDevice.shared.orientation = .landscapeLeft
+        sleep(2)
+        capture("06-editor-landscape")
+        XCUIDevice.shared.orientation = .portrait
+        sleep(2)
+
         saveButton.tap()
 
         let musicButton = app.buttons["Background music"]

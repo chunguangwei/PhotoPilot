@@ -722,7 +722,7 @@ class FrameEditView(
                 val pad = resources.getDimensionPixelSize(R.dimen.pp_space_4)
                 setPadding(pad, pad, pad, pad)
                 background = GradientDrawable().apply {
-                    setColor(Color.argb(0x80, 0, 0, 0))
+                    setColor(Color.argb(0x99, 0, 0, 0))
                     shape = GradientDrawable.OVAL
                 }
                 importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO

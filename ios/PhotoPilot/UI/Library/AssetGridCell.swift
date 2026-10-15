@@ -2,7 +2,7 @@ import UIKit
 
 final class AssetGridCell: UICollectionViewCell {
     static let reuseID = "AssetGridCell"
-    private static let coverStarTint = UIColor(red: 0.95, green: 0.78, blue: 0.30, alpha: 1)
+    private static let coverStarTint = UIColor(red: 1.0, green: 0.84, blue: 0.04, alpha: 1)
 
     let imageView = UIImageView()
     private let statusLabel = UILabel()
@@ -43,7 +43,7 @@ final class AssetGridCell: UICollectionViewCell {
         badgeView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(badgeView)
 
-        starBackdrop.backgroundColor = ThemeColor.photoControl.withAlphaComponent(0.55)
+        starBackdrop.backgroundColor = ThemeColor.photoControl.withAlphaComponent(0.72)
         starBackdrop.layer.cornerRadius = ThemeMetrics.space16
         starBackdrop.isUserInteractionEnabled = false
         starBackdrop.translatesAutoresizingMaskIntoConstraints = false
@@ -126,7 +126,7 @@ final class AssetGridCell: UICollectionViewCell {
         starButton.isHidden = !visible
         badgeView.isHidden = !cellSelected || visible
         let symbol = isCover ? "star.fill" : "star"
-        let configuration = UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
+        let configuration = UIImage.SymbolConfiguration(pointSize: 17, weight: .bold)
         starButton.setImage(UIImage(systemName: symbol, withConfiguration: configuration), for: .normal)
         starButton.tintColor = isCover ? Self.coverStarTint : ThemeColor.accentBrand
     }

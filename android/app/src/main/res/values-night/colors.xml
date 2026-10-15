@@ -13,5 +13,5 @@
     <color name="pp_surface_rest">#000000</color>
     <color name="pp_text_on_photo">#F4F1EB</color>
     <color name="pp_surface_photo_control">#171A18</color>
-    <color name="pp_star_filled">#F2C94C</color>
+    <color name="pp_star_filled">#FFD60A</color>
 </resources>
