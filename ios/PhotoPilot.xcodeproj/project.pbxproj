@@ -139,7 +139,6 @@
 		D6E6134E392783E46F9F8FBD /* music_spring_festival_01.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 2FDE475AB42725C936CF2E41 /* music_spring_festival_01.m4a */; };
 		D70650E8270D44D5CA3AACFA /* NasAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E2E32194324DC64052FFB7 /* NasAddress.swift */; };
 		DC8F3A2BEE86B9F30668F808 /* demo_flowers.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 1B67B857C3152F9ED19E909E /* demo_flowers.jpg */; };
-		DDCC74D82D127EE6506370F2 /* ScreenHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E6C99BC672CA9665BDD14B /* ScreenHeaderView.swift */; };
 		DDF69584FE515AEA9C762235 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = B84C53DABE6D0535B335026D /* AppEnvironment.swift */; };
 		DE547019035A6D34A33517C3 /* NasCertTrustViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FA1ACE15205C3AC603205F /* NasCertTrustViewController.swift */; };
 		DEAC269ADF83468B7D0524EE /* PlaybackSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A709EA94ADA86A555D80075 /* PlaybackSettingsViewController.swift */; };
@@ -194,7 +193,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		00E6C99BC672CA9665BDD14B /* ScreenHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenHeaderView.swift; sourceTree = "<group>"; };
 		0187547AE703C417FC51F6F3 /* LibraryFilterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFilterViewController.swift; sourceTree = "<group>"; };
 		01C40DE3E335C772BE580A13 /* SourcesListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcesListViewController.swift; sourceTree = "<group>"; };
 		02EE926A5A24E68E504B7064 /* playback-timing.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "playback-timing.json"; sourceTree = "<group>"; };
@@ -821,7 +819,6 @@
 				9A099B699DD88C4DECD3EFBF /* FormatStrings.swift */,
 				5CFADF402EC3AD5D32BBA583 /* KeyboardDismiss.swift */,
 				3792A589DEAAA2B972FD2C2C /* L10n.swift */,
-				00E6C99BC672CA9665BDD14B /* ScreenHeaderView.swift */,
 			);
 			path = Controls;
 			sourceTree = "<group>";
@@ -1242,7 +1239,6 @@
 				4E598A3DE68EDA1F5C5C887F /* ResolutionCache.swift in Sources */,
 				857F4A3A3FEDE6AE944DA971 /* SceneDelegate.swift in Sources */,
 				9528905B0E785912D6C4F216 /* SchemaModel.swift in Sources */,
-				DDCC74D82D127EE6506370F2 /* ScreenHeaderView.swift in Sources */,
 				E34EC02CBFF09245BDB043B3 /* SectionPlaceholderViewController.swift in Sources */,
 				A7EEBE65C98B19A550CE177B /* SelectionResolver.swift in Sources */,
 				8E91AE928B0C2B9EE432E504 /* SelectionSavePlanner.swift in Sources */,
@@ -1354,7 +1350,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1367,7 +1363,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.8;
+				MARKETING_VERSION = 1.1.9;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1491,7 +1487,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1510,7 +1506,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.8;
+				MARKETING_VERSION = 1.1.9;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

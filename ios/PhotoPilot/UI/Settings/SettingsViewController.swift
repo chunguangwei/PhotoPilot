@@ -867,9 +867,20 @@ final class LicensesViewController: UIViewController {
         enableEdgeSwipeBack()
         view.backgroundColor = ThemeColor.canvas
 
-        let topBar = ScreenHeaderView(title: L10n.string("settings.licenses"))
-        topBar.onBack = { [weak self] in self?.handleBack() }
-        topBar.pinToTop(of: view)
+        let backButton = ActionButton(titleKey: "common.back", style: .secondary)
+        backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
+        let titleLabel = UILabel()
+        titleLabel.text = L10n.string("settings.licenses")
+        titleLabel.font = ThemeFont.heading()
+        titleLabel.adjustsFontForContentSizeCategory = true
+        titleLabel.textColor = ThemeColor.textPrimary
+        titleLabel.accessibilityTraits.insert(.header)
+        let topBar = UIStackView(arrangedSubviews: [backButton, titleLabel, UIView()])
+        topBar.axis = .horizontal
+        topBar.alignment = .center
+        topBar.spacing = ThemeMetrics.space12
+        topBar.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(topBar)
 
         let noticeLabel = UILabel()
         noticeLabel.text = L10n.string("settings.license_notice")
@@ -900,6 +911,18 @@ final class LicensesViewController: UIViewController {
         view.addSubview(content)
 
         NSLayoutConstraint.activate([
+            topBar.topAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.topAnchor,
+                constant: ThemeMetrics.space8
+            ),
+            topBar.leadingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.leadingAnchor,
+                constant: ThemeMetrics.contentInsetCompact
+            ),
+            topBar.trailingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.trailingAnchor,
+                constant: -ThemeMetrics.contentInsetCompact
+            ),
             content.topAnchor.constraint(
                 equalTo: topBar.bottomAnchor,
                 constant: ThemeMetrics.space16

@@ -30,14 +30,25 @@ final class PhotoPermissionViewController: UIViewController {
         enableEdgeSwipeBack()
         view.backgroundColor = ThemeColor.canvas
 
-        let backRow = ScreenHeaderView()
-        backRow.onBack = { [weak self] in self?.handleBack() }
-        backRow.pinToTop(of: view)
+        let backButton = ActionButton(titleKey: "common.back", style: .secondary)
+        backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
+        let backRow = UIStackView(arrangedSubviews: [backButton, UIView()])
+        backRow.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(backRow)
 
         contentScroll.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(contentScroll)
 
         NSLayoutConstraint.activate([
+            backRow.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            backRow.leadingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.leadingAnchor,
+                constant: ThemeMetrics.contentInsetCompact
+            ),
+            backRow.trailingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.trailingAnchor,
+                constant: -ThemeMetrics.contentInsetCompact
+            ),
             contentScroll.topAnchor.constraint(equalTo: backRow.bottomAnchor),
             contentScroll.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             contentScroll.trailingAnchor.constraint(equalTo: view.trailingAnchor),

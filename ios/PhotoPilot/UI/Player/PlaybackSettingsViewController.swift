@@ -114,9 +114,20 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     }
 
     private func buildLayout() {
-        let topBar = ScreenHeaderView(title: L10n.string("playback.title"))
-        topBar.onBack = { [weak self] in self?.handleBack() }
-        topBar.pinToTop(of: view)
+        let backButton = ActionButton(titleKey: "common.back", style: .secondary)
+        backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
+        let titleLabel = UILabel()
+        titleLabel.text = L10n.string("playback.title")
+        titleLabel.font = ThemeFont.heading()
+        titleLabel.adjustsFontForContentSizeCategory = true
+        titleLabel.textColor = ThemeColor.textPrimary
+        titleLabel.accessibilityTraits.insert(.header)
+        let topBar = UIStackView(arrangedSubviews: [backButton, titleLabel, UIView()])
+        topBar.axis = .horizontal
+        topBar.alignment = .center
+        topBar.spacing = ThemeMetrics.space12
+        topBar.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(topBar)
 
         let scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -140,6 +151,18 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         let readable = formStack.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
         readable.priority = .defaultHigh
         NSLayoutConstraint.activate([
+            topBar.topAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.topAnchor,
+                constant: ThemeMetrics.space8
+            ),
+            topBar.leadingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.leadingAnchor,
+                constant: ThemeMetrics.contentInsetCompact
+            ),
+            topBar.trailingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.trailingAnchor,
+                constant: -ThemeMetrics.contentInsetCompact
+            ),
             scrollView.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: ThemeMetrics.space8),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),

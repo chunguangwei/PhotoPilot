@@ -40,9 +40,19 @@ final class ImportProgressViewController: UIViewController {
         enableEdgeSwipeBack()
         view.backgroundColor = ThemeColor.canvas
 
-        let backRow = ScreenHeaderView(title: L10n.string("import.title"))
-        backRow.onBack = { [weak self] in self?.handleBack() }
-        backRow.pinToTop(of: view)
+        let backButton = ActionButton(titleKey: "common.back", style: .secondary)
+        backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
+        let backRow = UIStackView(arrangedSubviews: [backButton, UIView()])
+        backRow.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(backRow)
+
+        let titleLabel = UILabel()
+        titleLabel.text = L10n.string("import.title")
+        titleLabel.font = ThemeFont.heading()
+        titleLabel.adjustsFontForContentSizeCategory = true
+        titleLabel.textColor = ThemeColor.textPrimary
+        titleLabel.textAlignment = .center
+        titleLabel.accessibilityTraits.insert(.header)
 
         configure(statusLabel, font: ThemeFont.body(), color: ThemeColor.textSecondary)
         configure(summaryLabel, font: ThemeFont.body(), color: ThemeColor.textPrimary)
@@ -70,6 +80,7 @@ final class ImportProgressViewController: UIViewController {
         chooseContentButton.isHidden = true
 
         let stack = UIStackView(arrangedSubviews: [
+            titleLabel,
             statusLabel,
             progressView,
             activityIndicator,
@@ -100,6 +111,15 @@ final class ImportProgressViewController: UIViewController {
         let verticalCenter = stack.centerYAnchor.constraint(equalTo: scrollView.frameLayoutGuide.centerYAnchor)
         verticalCenter.priority = .defaultLow
         NSLayoutConstraint.activate([
+            backRow.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            backRow.leadingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.leadingAnchor,
+                constant: ThemeMetrics.contentInsetCompact
+            ),
+            backRow.trailingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.trailingAnchor,
+                constant: -ThemeMetrics.contentInsetCompact
+            ),
             scrollView.topAnchor.constraint(equalTo: backRow.bottomAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),

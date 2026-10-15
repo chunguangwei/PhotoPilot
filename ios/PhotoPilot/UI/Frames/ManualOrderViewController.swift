@@ -115,8 +115,18 @@ final class ManualOrderViewController: UIViewController,
         enableEdgeSwipeBack { [weak self] in self?.handleBack() }
         view.backgroundColor = ThemeColor.canvas
 
-        let topBar = ScreenHeaderView(title: L10n.string("order.manual_title"))
-        topBar.onBack = { [weak self] in self?.handleBack() }
+        let backButton = ActionButton(titleKey: "common.back", style: .secondary)
+        backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
+        let titleLabel = UILabel()
+        titleLabel.text = L10n.string("order.manual_title")
+        titleLabel.font = ThemeFont.heading()
+        titleLabel.adjustsFontForContentSizeCategory = true
+        titleLabel.textColor = ThemeColor.textPrimary
+        titleLabel.accessibilityTraits.insert(.header)
+        let topBar = UIStackView(arrangedSubviews: [backButton, titleLabel, UIView()])
+        topBar.axis = .horizontal
+        topBar.alignment = .center
+        topBar.spacing = ThemeMetrics.space12
 
         let hintLabel = UILabel()
         hintLabel.text = L10n.string("order.manual_hint")
