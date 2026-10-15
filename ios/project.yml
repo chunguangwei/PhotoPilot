@@ -102,6 +102,22 @@ targets:
         IPHONEOS_DEPLOYMENT_TARGET: "15.0"
         TARGETED_DEVICE_FAMILY: "2"
         GENERATE_INFOPLIST_FILE: "YES"
+  PhotoPilotUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: PhotoPilotUITests
+        excludes:
+          - SeedMedia
+    dependencies:
+      - target: PhotoPilot
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: "YES"
+        TEST_TARGET_NAME: PhotoPilot
 schemes:
   PhotoPilot:
     build:
@@ -118,3 +134,15 @@ schemes:
       config: Debug
     archive:
       config: Release
+  PhotoPilotScreenshots:
+    build:
+      targets:
+        PhotoPilot: all
+        PhotoPilotUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - PhotoPilotUITests
+      environmentVariables:
+        - variable: SCREENSHOT_DIR
+          value: "$(SRCROOT)/../store/appstore/raw"
