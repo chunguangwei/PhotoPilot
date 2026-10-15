@@ -1610,6 +1610,8 @@ class MainActivity : Activity() {
                     showAllPending = !hasPlayable && hasSelections,
                     persistedManualOrder = persistedOrder,
                     coverAssetId = frame.coverAssetId,
+                    defaultCoverAssetId = frame.coverAssetId
+                        ?: env.frames.buildPlayQueue(frame.id).firstOrNull(),
                 )
             }
         }

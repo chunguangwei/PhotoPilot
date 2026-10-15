@@ -26,6 +26,8 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
     private let manualButton = ActionButton(titleKey: "order.manual_title", style: .secondary)
     private let saveButton = ActionButton(titleKey: "common.save", style: .primary)
     private var gridChild: AssetGridViewController?
+    private var gridEdgeConstraints: [NSLayoutConstraint] = []
+    private var gridColumnConstraints: [NSLayoutConstraint] = []
 
     init(environment: AppEnvironment, frameID: String?, routeToMainAfterSave: Bool = false) {
         self.environment = environment
@@ -155,8 +157,6 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
                 equalTo: tabControl.bottomAnchor,
                 constant: ThemeMetrics.space8
             ),
-            photosContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            photosContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             photosContainer.bottomAnchor.constraint(equalTo: bottomBar.topAnchor),
             directoriesTable.topAnchor.constraint(equalTo: photosContainer.topAnchor),
             directoriesTable.leadingAnchor.constraint(equalTo: header.leadingAnchor),
@@ -167,9 +167,32 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             bottomBar.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
         ])
 
+        gridEdgeConstraints = [
+            photosContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            photosContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+        ]
+        gridColumnConstraints = [
+            photosContainer.leadingAnchor.constraint(equalTo: header.leadingAnchor),
+            photosContainer.trailingAnchor.constraint(equalTo: header.trailingAnchor),
+        ]
+        updateGridWidthConstraints()
+
         embedGrid()
         enableKeyboardDismissal()
         reload()
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if traitCollection.horizontalSizeClass != previousTraitCollection?.horizontalSizeClass {
+            updateGridWidthConstraints()
+        }
+    }
+
+    private func updateGridWidthConstraints() {
+        let useColumn = traitCollection.horizontalSizeClass == .regular
+        NSLayoutConstraint.deactivate(useColumn ? gridEdgeConstraints : gridColumnConstraints)
+        NSLayoutConstraint.activate(useColumn ? gridColumnConstraints : gridEdgeConstraints)
     }
 
     private func embedGrid() {
@@ -262,7 +285,11 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             dirty = false
             pendingManualOrder = nil
             pendingCoverAssetID = fetched.coverAssetId
-            gridChild?.coverAssetID = pendingCoverAssetID
+            if let explicit = fetched.coverAssetId {
+                gridChild?.coverAssetID = explicit
+            } else {
+                gridChild?.coverAssetID = try? await environment.frameManager.firstQueueAssetID(frameID: frameID)
+            }
             gridChild?.applySelection(selectedAssetIDs)
             collections = (try? await environment.assets.collections()) ?? []
             memberCache = [:]

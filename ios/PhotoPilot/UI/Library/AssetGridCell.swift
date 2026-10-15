@@ -43,18 +43,19 @@ final class AssetGridCell: UICollectionViewCell {
         badgeView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(badgeView)
 
-        starBackdrop.backgroundColor = ThemeColor.photoControl.withAlphaComponent(0.72)
+        starBackdrop.backgroundColor = ThemeColor.photoControl.withAlphaComponent(0.88)
         starBackdrop.layer.cornerRadius = ThemeMetrics.space16
         starBackdrop.isUserInteractionEnabled = false
+        starBackdrop.isHidden = true
         starBackdrop.translatesAutoresizingMaskIntoConstraints = false
 
-        starButton.tintColor = ThemeColor.accentBrand
+        starButton.tintColor = .white
         starButton.isHidden = true
         starButton.accessibilityLabel = L10n.string("frames.set_cover")
         starButton.translatesAutoresizingMaskIntoConstraints = false
         starButton.addTarget(self, action: #selector(handleStarTap), for: .touchUpInside)
+        contentView.addSubview(starBackdrop)
         contentView.addSubview(starButton)
-        starButton.insertSubview(starBackdrop, at: 0)
 
         NSLayoutConstraint.activate([
             imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
@@ -124,11 +125,13 @@ final class AssetGridCell: UICollectionViewCell {
     func setStarVisible(_ visible: Bool, isCover: Bool) {
         starVisible = visible
         starButton.isHidden = !visible
+        starBackdrop.isHidden = !visible
         badgeView.isHidden = !cellSelected || visible
         let symbol = isCover ? "star.fill" : "star"
-        let configuration = UIImage.SymbolConfiguration(pointSize: 17, weight: .bold)
+        let color = isCover ? Self.coverStarTint : UIColor.white
+        let configuration = UIImage.SymbolConfiguration(pointSize: 20, weight: .bold)
+            .applying(UIImage.SymbolConfiguration(paletteColors: [color]))
         starButton.setImage(UIImage(systemName: symbol, withConfiguration: configuration), for: .normal)
-        starButton.tintColor = isCover ? Self.coverStarTint : ThemeColor.accentBrand
     }
 
     @objc private func handleStarTap() {

@@ -51,6 +51,7 @@ class FrameEditView(
         val showAllPending: Boolean,
         val persistedManualOrder: List<Pair<String, Long?>> = emptyList(),
         val coverAssetId: String? = null,
+        val defaultCoverAssetId: String? = null,
     )
 
     data class State(
@@ -80,6 +81,7 @@ class FrameEditView(
     private val removedExcludes = mutableSetOf<String>()
     private val ruleStates = mutableMapOf<String, RuleUiState>()
     private var pendingCoverId: String? = null
+    private var displayCoverId: String? = null
     private var manualOrderWorking: MutableList<String>? = null
     private var manualOrderDirty = false
     private val assets = mutableListOf<AssetEntity>()
@@ -262,6 +264,7 @@ class FrameEditView(
         }
         initialRuleStates = ruleStates.toMap()
         pendingCoverId = model.coverAssetId
+        displayCoverId = model.coverAssetId ?: model.defaultCoverAssetId
         manualOrderDirty = false
         manualOrderWorking = if (model.orderMode == FrameOrderMode.MANUAL) {
             val persisted = model.persistedManualOrder.map { it.first }
@@ -548,6 +551,7 @@ class FrameEditView(
 
     private fun applyPendingCover(assetId: String) {
         pendingCoverId = assetId
+        displayCoverId = assetId
         gridAdapter.notifyDataSetChanged()
     }
 
@@ -638,7 +642,7 @@ class FrameEditView(
             val asset = getItem(position)
             val size = cellSizePx.coerceAtLeast(1)
             cell.layoutParams = AbsListView.LayoutParams(size, size)
-            cell.bind(asset, size, selectedAssetIds.contains(asset.id), pendingCoverId == asset.id, loader)
+            cell.bind(asset, size, selectedAssetIds.contains(asset.id), displayCoverId == asset.id, loader)
             cell.onCoverTap = { showCoverPreview(asset) }
             cell.setOnClickListener {
                 if (!selectedAssetIds.remove(asset.id)) {
@@ -652,8 +656,9 @@ class FrameEditView(
                 } else {
                     manualOrderWorking?.remove(asset.id)
                     if (pendingCoverId == asset.id) pendingCoverId = null
+                    if (displayCoverId == asset.id) displayCoverId = null
                 }
-                cell.bind(asset, size, selectedAssetIds.contains(asset.id), pendingCoverId == asset.id, loader)
+                cell.bind(asset, size, selectedAssetIds.contains(asset.id), displayCoverId == asset.id, loader)
                 updateSummary()
             }
             cell.setOnLongClickListener { anchor ->
@@ -722,7 +727,7 @@ class FrameEditView(
                 val pad = resources.getDimensionPixelSize(R.dimen.pp_space_4)
                 setPadding(pad, pad, pad, pad)
                 background = GradientDrawable().apply {
-                    setColor(Color.argb(0x99, 0, 0, 0))
+                    setColor(Color.argb(0xE0, 0, 0, 0))
                     shape = GradientDrawable.OVAL
                 }
                 importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO

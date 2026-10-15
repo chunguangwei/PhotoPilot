@@ -214,6 +214,22 @@ actor FrameManager {
         }
     }
 
+    func firstQueueAssetID(frameID: String) async throws -> String? {
+        let context = makeContext()
+        return try await context.perform {
+            let selections = NSFetchRequest<NSManagedObject>(entityName: "FrameSelection")
+            selections.predicate = NSPredicate(
+                format: "frame.id == %@ AND mode == %@",
+                frameID,
+                SelectionResolver.modeInclude
+            )
+            selections.sortDescriptors = [NSSortDescriptor(key: "added_at", ascending: true)]
+            selections.fetchLimit = 1
+            guard let row = try context.fetch(selections).first else { return nil }
+            return row.value(forKeyPath: "asset.id") as? String
+        }
+    }
+
     func queueAssetRelPaths(frameID: String, limit: Int) async throws -> [String] {
         let context = makeContext()
         return try await context.perform {
