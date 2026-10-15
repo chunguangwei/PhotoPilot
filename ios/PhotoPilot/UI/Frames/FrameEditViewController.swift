@@ -105,10 +105,11 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         summaryLabel.adjustsFontForContentSizeCategory = true
         summaryLabel.textColor = ThemeColor.textPrimary
 
-        noteLabel.text = L10n.string("library.selection_note_static")
+        noteLabel.text = L10n.string("library.selection_note_static") + "\n" + L10n.string("frames.cover_hint")
         noteLabel.font = ThemeFont.meta()
         noteLabel.adjustsFontForContentSizeCategory = true
         noteLabel.textColor = ThemeColor.textSecondary
+        noteLabel.numberOfLines = 0
 
         pendingLabel.text = L10n.string("player.all_pending_title")
         pendingLabel.font = ThemeFont.meta()

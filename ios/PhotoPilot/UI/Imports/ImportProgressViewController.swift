@@ -320,7 +320,7 @@ final class ImportProgressViewController: UIViewController {
             guard let self else { return }
             let cards = (try? await environment.frameManager.frameCards()) ?? []
             if cards.isEmpty {
-                await createAndPresentEditor()
+                presentEditor(frameID: nil)
                 return
             }
             let alert = UIAlertController(
@@ -337,7 +337,7 @@ final class ImportProgressViewController: UIViewController {
                 title: L10n.string("import.pick_frame_new"),
                 style: .default
             ) { [weak self] _ in
-                Task { [weak self] in await self?.createAndPresentEditor() }
+                self?.presentEditor(frameID: nil)
             })
             alert.addAction(UIAlertAction(title: L10n.string("common.cancel"), style: .cancel))
             alert.popoverPresentationController?.sourceView = chooseContentButton
@@ -346,14 +346,7 @@ final class ImportProgressViewController: UIViewController {
         }
     }
 
-    private func createAndPresentEditor() async {
-        guard let frameID = try? await environment.frameManager.createFrame(
-            name: L10n.string("frames.name_default")
-        ) else { return }
-        presentEditor(frameID: frameID)
-    }
-
-    private func presentEditor(frameID: String) {
+    private func presentEditor(frameID: String?) {
         let editor = FrameEditViewController(
             environment: environment,
             frameID: frameID,

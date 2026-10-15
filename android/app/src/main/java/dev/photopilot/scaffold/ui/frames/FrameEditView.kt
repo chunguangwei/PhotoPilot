@@ -238,7 +238,8 @@ class FrameEditView(
             setTextColor(context.getColor(R.color.pp_text_primary))
         }
         val note = TextView(context).apply {
-            text = res.getString(R.string.library_selection_note_static)
+            text = res.getString(R.string.library_selection_note_static) + "\n" +
+                res.getString(R.string.frames_cover_hint)
             setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_meta))
             setTextColor(context.getColor(R.color.pp_text_secondary))
         }

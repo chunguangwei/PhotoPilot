@@ -4101,6 +4101,14 @@
       "en": "Set as cover"
     },
     {
+      "key": "frames.cover_hint",
+      "section": "3. 导航与相框（S03）",
+      "platform": "all",
+      "zh": "长按照片可设为封面",
+      "en": "Long-press a photo to set it as the cover",
+      "note": "相框编辑页照片格底部提示：长按设为封面"
+    },
+    {
       "key": "frames.cover_set",
       "section": "5. 照片库与选片（S09–S11）",
       "platform": "all",
