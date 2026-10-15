@@ -112,7 +112,7 @@ class MusicPickerView(context: Context) : ScrollView(context) {
 
     private fun onOffTap() {
         selection = selection.copy(enabled = false)
-        stopPreview()
+        endPreview()
         onSelect?.invoke(selection)
         rebuildRows()
     }
@@ -123,7 +123,7 @@ class MusicPickerView(context: Context) : ScrollView(context) {
             selection.source != FramePlaybackSettings.MUSIC_SOURCE_LOCAL &&
             selection.trackId == track.id
         if (alreadySelected && previewingKey == key) {
-            stopPreview()
+            endPreview()
             rebuildRows()
             return
         }
@@ -143,7 +143,7 @@ class MusicPickerView(context: Context) : ScrollView(context) {
             selection.source == FramePlaybackSettings.MUSIC_SOURCE_LOCAL &&
             selection.localPath == localPath
         if (alreadySelected && previewingKey == key) {
-            stopPreview()
+            endPreview()
             rebuildRows()
             return
         }
@@ -164,7 +164,12 @@ class MusicPickerView(context: Context) : ScrollView(context) {
         preview.start(selection)
     }
 
-    private fun stopPreview() {
+    fun stopPreview() {
+        previewingKey = null
+        preview.pause()
+    }
+
+    private fun endPreview() {
         previewingKey = null
         preview.stop()
     }

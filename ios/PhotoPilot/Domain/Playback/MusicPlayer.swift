@@ -3,7 +3,12 @@ import AVFoundation
 final class MusicPlayer {
     private var player: AVAudioPlayer?
     private var url: URL?
+    private var sessionActive = false
     private(set) var isPlaying = false
+
+    var hasPlayableContent: Bool {
+        player != nil || url != nil
+    }
 
     func start(selection: MusicSelection) {
         guard let url = MusicCatalog.url(for: selection) else {
@@ -19,6 +24,7 @@ final class MusicPlayer {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playback, mode: .default)
             try session.setActive(true)
+            sessionActive = true
             let audio = try AVAudioPlayer(contentsOf: url)
             audio.numberOfLoops = -1
             audio.prepareToPlay()
@@ -30,6 +36,7 @@ final class MusicPlayer {
             player = nil
             self.url = nil
             isPlaying = false
+            deactivateSession()
         }
     }
 
@@ -41,8 +48,15 @@ final class MusicPlayer {
     func resume() {
         guard !isPlaying else { return }
         if let player {
-            player.play()
-            isPlaying = true
+            do {
+                let session = AVAudioSession.sharedInstance()
+                try session.setCategory(.playback, mode: .default)
+                try session.setActive(true)
+                sessionActive = true
+            } catch {
+                return
+            }
+            isPlaying = player.play()
         } else if let url {
             start(url: url)
         }
@@ -53,6 +67,12 @@ final class MusicPlayer {
         player = nil
         url = nil
         isPlaying = false
+        deactivateSession()
+    }
+
+    private func deactivateSession() {
+        guard sessionActive else { return }
+        sessionActive = false
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 }

@@ -47,7 +47,10 @@ enum MusicCatalog {
     }
 
     static func localURL(localPath: String) -> URL? {
-        guard !localPath.isEmpty, (localPath as NSString).lastPathComponent == localPath else {
+        guard !localPath.isEmpty,
+              localPath != ".",
+              localPath != "..",
+              !localPath.contains("/") else {
             return nil
         }
         return musicDirectory().appendingPathComponent(localPath)

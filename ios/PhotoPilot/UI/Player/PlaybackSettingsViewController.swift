@@ -828,13 +828,13 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         }
         settings["qualityLevel"] = Self.qualityWireValues[safe: qualitySegmented.selectedSegmentIndex]
             ?? "auto"
-        settings["music"] = [
-            "enabled": musicSelection.enabled,
-            "source": musicSelection.source,
-            "trackId": musicSelection.trackId ?? NSNull(),
-            "localPath": musicSelection.localPath ?? NSNull(),
-            "localTitle": musicSelection.localTitle ?? NSNull(),
-        ]
+        var music = settings["music"] as? [String: Any] ?? [:]
+        music["enabled"] = musicSelection.enabled
+        music["source"] = musicSelection.source
+        music["trackId"] = musicSelection.trackId ?? NSNull()
+        music["localPath"] = musicSelection.localPath ?? NSNull()
+        music["localTitle"] = musicSelection.localTitle ?? NSNull()
+        settings["music"] = music
 
         guard let data = try? JSONSerialization.data(withJSONObject: settings, options: [.sortedKeys]) else {
             return

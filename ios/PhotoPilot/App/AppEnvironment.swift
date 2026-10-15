@@ -163,6 +163,12 @@ final class AppEnvironment: @unchecked Sendable {
     func runStartupMaintenance() async {
         _ = try? await assets.purgeExpiredDeletedAssets()
         let coordinator = ImportCoordinator(controller: persistence, adapter: photoLibraryAdapter)
+        let interruptedJobs = (try? await coordinator.fetchJobs(
+            withState: ImportJobState.running.rawValue
+        )) ?? []
+        for job in interruptedJobs {
+            _ = try? await coordinator.handleSignal(jobID: job.id, signal: .autoPause)
+        }
         let pausedJobs = (try? await coordinator.fetchJobs(
             withState: ImportJobState.pausedAuto.rawValue
         )) ?? []

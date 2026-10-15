@@ -119,7 +119,7 @@ class DemoPlayerView(context: Context) : FrameLayout(context) {
         super.onSizeChanged(w, h, oldw, oldh)
         if (w <= 0 || h <= 0 || slides.isNotEmpty()) return
         executor.execute {
-            val bundled = loadBundledSlides()
+            val bundled = loadBundledSlides(w, h)
             val generated = if (bundled.isNotEmpty()) {
                 bundled
             } else {
@@ -162,10 +162,23 @@ class DemoPlayerView(context: Context) : FrameLayout(context) {
         showingA = !showingA
     }
 
-    private fun loadBundledSlides(): List<Bitmap> = BUNDLED_SLIDES.mapNotNull { name ->
+    private fun loadBundledSlides(width: Int, height: Int): List<Bitmap> = BUNDLED_SLIDES.mapNotNull { name ->
         runCatching {
-            context.assets.open("demo/$name").use { BitmapFactory.decodeStream(it) }
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            context.assets.open("demo/$name").use { BitmapFactory.decodeStream(it, null, bounds) }
+            val options = BitmapFactory.Options().apply {
+                inSampleSize = sampleSize(bounds, width * 2, height * 2)
+            }
+            context.assets.open("demo/$name").use { BitmapFactory.decodeStream(it, null, options) }
         }.getOrNull()
+    }
+
+    private fun sampleSize(bounds: BitmapFactory.Options, targetWidth: Int, targetHeight: Int): Int {
+        var sample = 1
+        while (bounds.outWidth / (sample * 2) >= targetWidth && bounds.outHeight / (sample * 2) >= targetHeight) {
+            sample *= 2
+        }
+        return sample
     }
 
     private fun renderSlide(index: Int, width: Int, height: Int): Bitmap {

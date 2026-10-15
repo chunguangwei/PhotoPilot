@@ -31,10 +31,21 @@ class ResumeLogicTest {
     }
 
     @Test
+    fun rangeNotSatisfiableRestartsFromScratch() {
+        assertEquals(
+            ResumeLogic.Decision.RESTART,
+            ResumeLogic.decide(500L, 1_000L, ResumeLogic.HTTP_RANGE_NOT_SATISFIABLE),
+        )
+        assertEquals(
+            ResumeLogic.Decision.RESTART,
+            ResumeLogic.decide(0L, 1_000L, ResumeLogic.HTTP_RANGE_NOT_SATISFIABLE),
+        )
+    }
+
+    @Test
     fun unexpectedStatusMeansRetry() {
         assertEquals(ResumeLogic.Decision.RETRY, ResumeLogic.decide(500L, 1_000L, 404))
         assertEquals(ResumeLogic.Decision.RETRY, ResumeLogic.decide(500L, 1_000L, 500))
-        assertEquals(ResumeLogic.Decision.RETRY, ResumeLogic.decide(500L, 1_000L, 416))
     }
 
     @Test

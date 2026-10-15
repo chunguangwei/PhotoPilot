@@ -40,6 +40,9 @@ class UpdateDownloadService : Service() {
         }
         val versionName = intent.getStringExtra(EXTRA_VERSION_NAME).orEmpty()
         val totalSize = intent.getLongExtra(EXTRA_TOTAL_SIZE, 0L)
+        if (wakeLock != null) {
+            return START_NOT_STICKY
+        }
         publish(UpdateState.Downloading(0L, totalSize))
         startForeground(
             NOTIFICATION_ID,

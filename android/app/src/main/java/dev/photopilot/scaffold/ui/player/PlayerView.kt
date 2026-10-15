@@ -78,7 +78,9 @@ class PlayerView(
     private var controlsTouchActive = false
     private val musicPlayer = MusicPlayer(context)
     private var musicStarted: MusicCatalog.Selection? = null
+    private var musicFailedSelection: MusicCatalog.Selection? = null
     private var musicWasPlayingInBackground = false
+    private var appBackgrounded = false
 
     private val hideControlsRunnable = Runnable {
         if (controlsBar.hasFocus() || hasAccessibilityFocus(controlsBar) || controlsTouchActive) {
@@ -267,30 +269,43 @@ class PlayerView(
     }
 
     private fun syncMusic(state: String) {
+        if (appBackgrounded) return
         val selection = MusicCatalog.selectionOf(settings)
-        if (musicStarted != selection || (musicStarted != null && !musicPlayer.isLoaded())) {
+        if (musicStarted != selection) {
             musicPlayer.stop()
             musicStarted = null
-            if (selection.enabled) {
-                musicPlayer.start(selection)
+        }
+        val started = musicStarted
+        if (started != null && !musicPlayer.isLoaded()) {
+            musicPlayer.stop()
+            musicFailedSelection = started
+            musicStarted = null
+        }
+        if (musicStarted == null) {
+            val playable = state == PlaybackController.HOLDING || state == PlaybackController.TRANSITIONING
+            if (!selection.enabled || !playable || musicFailedSelection == selection) return
+            if (musicPlayer.start(selection)) {
                 musicStarted = selection
+            } else {
+                musicFailedSelection = selection
+                return
             }
         }
-        if (musicStarted == null) return
         when (state) {
-            PlaybackController.PAUSED, PlaybackController.RESTING -> musicPlayer.pause()
             PlaybackController.HOLDING, PlaybackController.TRANSITIONING -> musicPlayer.resume()
-            else -> Unit
+            else -> musicPlayer.pause()
         }
     }
 
     fun onAppBackground() {
+        appBackgrounded = true
         musicWasPlayingInBackground = musicPlayer.isPlaying()
         musicPlayer.stop()
         musicStarted = null
     }
 
     fun onAppForeground() {
+        appBackgrounded = false
         if (musicWasPlayingInBackground) {
             musicWasPlayingInBackground = false
             engine?.currentState()?.let { syncMusic(it) }
@@ -595,6 +610,7 @@ class PlayerView(
 
     fun reloadSettings(freshFrame: FrameEntity) {
         settings = FramePlaybackSettings.parse(freshFrame.settingsJson)
+        musicFailedSelection = null
         clockLine.visibility = if (settings.clockEnabled) View.VISIBLE else View.GONE
         dateLine.visibility = if (settings.dateEnabled) View.VISIBLE else View.GONE
         applyClockPosition()

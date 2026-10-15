@@ -4,6 +4,7 @@ object ResumeLogic {
 
     const val HTTP_OK = 200
     const val HTTP_PARTIAL = 206
+    const val HTTP_RANGE_NOT_SATISFIABLE = 416
 
     enum class Decision { APPEND, RESTART, RETRY }
 
@@ -14,6 +15,7 @@ object ResumeLogic {
             Decision.RESTART
         }
         HTTP_OK -> Decision.RESTART
+        HTTP_RANGE_NOT_SATISFIABLE -> Decision.RESTART
         else -> Decision.RETRY
     }
 

@@ -224,11 +224,6 @@ final class MusicPickerViewController: UIViewController, UIDocumentPickerDelegat
             let filename = UUID().uuidString + (pathExtension.isEmpty ? "" : ".\(pathExtension)")
             let destination = directory.appendingPathComponent(filename)
             try FileManager.default.copyItem(at: url, to: destination)
-            if selection.source == MusicCatalog.sourceLocal,
-               let previous = selection.localPath,
-               previous != filename {
-                try? FileManager.default.removeItem(at: directory.appendingPathComponent(previous))
-            }
             selection = MusicSelection(
                 enabled: true,
                 source: MusicCatalog.sourceLocal,

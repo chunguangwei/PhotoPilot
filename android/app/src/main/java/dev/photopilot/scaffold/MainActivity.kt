@@ -155,6 +155,8 @@ class MainActivity : Activity() {
 
     private fun setBaseTracked(view: View) {
         overlayMeta.clear()
+        progressView = null
+        progressJobId = null
         root.setBase(view)
     }
 
@@ -226,6 +228,7 @@ class MainActivity : Activity() {
     private var photoDetailView: PhotoDetailView? = null
     private var frameEditView: FrameEditView? = null
     private var editorModel: FrameEditView.Model? = null
+    private var frameSaveInFlight = false
     private var manualOrderView: ManualOrderView? = null
     private var playerView: PlayerView? = null
     private var playerEngine: PlayerEngine? = null
@@ -332,6 +335,7 @@ class MainActivity : Activity() {
         pollHandler.removeCallbacks(pollRunnable)
         playerView?.onAppBackground()
         playerEngine?.onBackground()
+        musicPickerView?.stopPreview()
         super.onPause()
     }
 
@@ -1575,7 +1579,7 @@ class MainActivity : Activity() {
                     includedAssetIds = emptySet(),
                     excludedRefs = emptySet(),
                     dynamicRules = emptyMap(),
-                    showAllPending = true,
+                    showAllPending = false,
                 )
             } else {
                 val selections = env.database.frameSelectionDao().getByFrame(frame.id)
@@ -1592,6 +1596,7 @@ class MainActivity : Activity() {
                         it.collectionId to SaveRuleRow(it.collectionId, it.recursive, it.includeFuture)
                     }
                 val hasPlayable = env.frames.resolve(frame.id).playable.isNotEmpty()
+                val hasSelections = selections.isNotEmpty() || rules.isNotEmpty()
                 val persistedOrder = if (frame.orderMode == FrameOrderMode.MANUAL) {
                     selections
                         .filter { it.mode == FrameSelectionMode.INCLUDE && it.assetId != null }
@@ -1612,7 +1617,7 @@ class MainActivity : Activity() {
                     includedAssetIds = included,
                     excludedRefs = excluded,
                     dynamicRules = rules,
-                    showAllPending = !hasPlayable,
+                    showAllPending = !hasPlayable && hasSelections,
                     persistedManualOrder = persistedOrder,
                 )
             }
@@ -1646,81 +1651,94 @@ class MainActivity : Activity() {
     }
 
     private fun saveFrameEdit(view: FrameEditView, frame: FrameEntity?, state: FrameEditView.State) {
+        if (frameSaveInFlight) return
         val env = environment ?: return
         val model = editorModel ?: return
+        frameSaveInFlight = true
         scope.launch {
-            val now = System.currentTimeMillis()
-            val target = if (frame != null) {
-                if (state.name != frame.name) {
-                    env.frameManager.renameFrame(frame.id, state.name)
-                }
-                frame
-            } else {
-                env.frameManager.createFrame(
-                    state.name.ifEmpty { getString(R.string.frames_name_default) },
-                )
+            try {
+                saveFrameEditInternal(env, model, frame, state)
+            } finally {
+                frameSaveInFlight = false
             }
-            val staticMembers = mutableMapOf<String, List<String>>()
-            state.ruleStates
-                .filter { it.value.checked && !it.value.dynamic }
-                .keys
-                .forEach { collectionId ->
-                    staticMembers[collectionId] = withContext(Dispatchers.IO) {
-                        env.database.collectionAssetDao().getByCollection(collectionId)
-                            .map { it.assetId }
-                    }
-                }
-            val diff = FrameEditDiff.plan(
-                includedAssetIds = model.includedAssetIds,
-                dynamicRules = model.dynamicRules,
-                selectedAssetIds = state.selectedAssetIds,
-                removedExcludes = state.removedExcludes,
-                ruleStates = state.ruleStates,
-                staticMembers = staticMembers,
-                now = now,
+        }
+    }
+
+    private suspend fun saveFrameEditInternal(
+        env: AppEnvironment,
+        model: FrameEditView.Model,
+        frame: FrameEntity?,
+        state: FrameEditView.State,
+    ) {
+        val now = System.currentTimeMillis()
+        val target = if (frame != null) {
+            if (state.name != frame.name) {
+                env.frameManager.renameFrame(frame.id, state.name)
+            }
+            frame
+        } else {
+            env.frameManager.createFrame(
+                state.name.ifEmpty { getString(R.string.frames_name_default) },
             )
-            val result = env.frames.save(
-                frameId = target.id,
-                baseVersion = frame?.selectionVersion ?: 0L,
-                addIncludes = diff.addIncludes.map {
-                    SelectionRefEdit(assetId = it.ref, sourceAssetId = null)
-                },
-                removeRefs = diff.removeRefs.map {
-                    SelectionRefEdit(assetId = it, sourceAssetId = null)
-                },
-                ruleChanges = diff.ruleChanges,
-                removeRules = diff.removeRules,
-                manualOrderRefs = state.manualOrder,
-                now = now,
-            )
-            when (result) {
-                is SelectionSaveResult.Ok -> {
-                    framesDirty = true
-                    closeFrameEditor()
-                    if (root.baseView !is MainContainerView) {
-                        showMainContainer()
-                        if (frame == null) {
-                            openPlaybackSettings(target)
-                        }
-                    }
+        }
+        val staticMembers = mutableMapOf<String, List<String>>()
+        state.ruleStates
+            .filter { it.value.checked && !it.value.dynamic }
+            .keys
+            .forEach { collectionId ->
+                staticMembers[collectionId] = withContext(Dispatchers.IO) {
+                    env.database.collectionAssetDao().getByCollection(collectionId)
+                        .map { it.assetId }
                 }
-                is SelectionSaveResult.Conflict,
-                SelectionSaveResult.Rejected,
-                -> {
-                    AlertDialog.Builder(this@MainActivity)
-                        .setMessage(R.string.error_selection_conflict_body)
-                        .setPositiveButton(R.string.common_done) { _, _ ->
-                            scope.launch {
-                                val fresh = withContext(Dispatchers.IO) {
-                                    env.database.frameDao().getById(target.id)
-                                }
-                                val reloaded = loadEditModel(fresh)
-                                editorModel = reloaded
-                                frameEditView?.bind(reloaded)
+            }
+        val diff = FrameEditDiff.plan(
+            includedAssetIds = model.includedAssetIds,
+            dynamicRules = model.dynamicRules,
+            selectedAssetIds = state.selectedAssetIds,
+            removedExcludes = state.removedExcludes,
+            ruleStates = state.ruleStates,
+            staticMembers = staticMembers,
+            now = now,
+        )
+        val result = env.frames.save(
+            frameId = target.id,
+            baseVersion = frame?.selectionVersion ?: 0L,
+            addIncludes = diff.addIncludes.map {
+                SelectionRefEdit(assetId = it.ref, sourceAssetId = null)
+            },
+            removeRefs = diff.removeRefs.map {
+                SelectionRefEdit(assetId = it, sourceAssetId = null)
+            },
+            ruleChanges = diff.ruleChanges,
+            removeRules = diff.removeRules,
+            manualOrderRefs = state.manualOrder,
+            now = now,
+        )
+        when (result) {
+            is SelectionSaveResult.Ok -> {
+                framesDirty = true
+                closeFrameEditor()
+                if (root.baseView !is MainContainerView) {
+                    showMainContainer()
+                    openPlaybackSettings(target)
+                }
+            }
+            is SelectionSaveResult.Conflict,
+            SelectionSaveResult.Rejected,
+            -> {
+                AlertDialog.Builder(this@MainActivity)
+                    .setMessage(R.string.error_selection_conflict_body)
+                    .setPositiveButton(R.string.common_done) { _, _ ->
+                        scope.launch {
+                            val fresh = withContext(Dispatchers.IO) {
+                                env.database.frameDao().getById(target.id)
                             }
+                            val reloaded = loadEditModel(fresh)
+                            editorModel = reloaded
+                            frameEditView?.bind(reloaded)
                         }
-                        .show()
-                }
+                    }
+                    .show()
             }
         }
     }
@@ -2082,13 +2100,21 @@ class MainActivity : Activity() {
                     dir.mkdirs()
                     val fileName = "${java.util.UUID.randomUUID()}.$extension"
                     val target = File(dir, fileName)
-                    contentResolver.openInputStream(uri)?.use { input ->
-                        target.outputStream().use { out -> input.copyTo(out) }
-                    } ?: throw java.io.FileNotFoundException("unreadable uri")
+                    try {
+                        contentResolver.openInputStream(uri)?.use { input ->
+                            target.outputStream().use { out -> input.copyTo(out) }
+                        } ?: throw java.io.FileNotFoundException("unreadable uri")
+                    } catch (error: Exception) {
+                        target.delete()
+                        throw error
+                    }
                     fileName to displayName
                 }.getOrNull()
             }
-            if (musicPickerView !== picker) return@launch
+            if (musicPickerView !== picker) {
+                staged?.let { File(MusicCatalog.musicDir(this@MainActivity), it.first).delete() }
+                return@launch
+            }
             if (staged == null) {
                 Toast.makeText(this@MainActivity, R.string.playback_music_local_error, Toast.LENGTH_SHORT).show()
             } else {

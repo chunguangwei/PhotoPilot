@@ -453,7 +453,7 @@ final class PlayerViewController: UIViewController {
         } else if musicPausedForRest {
             musicPausedForRest = false
             if controllerState != PlaybackController.paused {
-                musicPlayer.resume()
+                resumeOrStartMusic()
             }
         }
         for effect in outcome.effects {
@@ -1180,6 +1180,15 @@ final class PlayerViewController: UIViewController {
         musicPlayer.start(selection: settings.music)
     }
 
+    private func resumeOrStartMusic() {
+        guard settings.music.enabled else { return }
+        if musicPlayer.hasPlayableContent {
+            musicPlayer.resume()
+        } else {
+            startMusicIfNeeded()
+        }
+    }
+
     private func reloadMusicSettings() {
         Task { [weak self] in
             guard let self,
@@ -1189,7 +1198,7 @@ final class PlayerViewController: UIViewController {
             guard updated.music != settings.music else {
                 if controllerState == PlaybackController.holding
                     || controllerState == PlaybackController.transitioning {
-                    musicPlayer.resume()
+                    resumeOrStartMusic()
                 }
                 return
             }
@@ -1204,11 +1213,10 @@ final class PlayerViewController: UIViewController {
     }
 
     private func restartMusicForFrameSwitch() {
-        let wasPlaying = musicPlayer.isPlaying
         musicPlayer.stop()
-        if wasPlaying {
-            startMusicIfNeeded()
-        }
+        guard controllerState != PlaybackController.paused,
+              controllerState != PlaybackController.resting else { return }
+        startMusicIfNeeded()
     }
 
     private func startWeatherTask() {
@@ -1610,7 +1618,7 @@ final class PlayerViewController: UIViewController {
             dispatch(PlaybackEvent(type: "user_resume"))
             scheduleHoldTimer()
             videoPlayer?.play()
-            musicPlayer.resume()
+            resumeOrStartMusic()
         } else {
             dispatch(PlaybackEvent(type: "user_pause"))
             videoPlayer?.pause()
@@ -1698,9 +1706,14 @@ final class PlayerViewController: UIViewController {
     @objc private func handleForeground() {
         applyBrightness()
         checkRevocation()
+        evaluateRestWindow()
         if musicPlayingBeforeBackground {
             musicPlayingBeforeBackground = false
-            startMusicIfNeeded()
+            if controllerState == PlaybackController.resting {
+                musicPausedForRest = true
+            } else if controllerState != PlaybackController.paused {
+                startMusicIfNeeded()
+            }
         }
         Task { [weak self] in
             guard let self else { return }

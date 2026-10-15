@@ -49,7 +49,7 @@ class MusicPlayer(context: Context) {
 
     fun isPlaying(): Boolean = runCatching { mediaPlayer?.isPlaying == true }.getOrDefault(false)
 
-    fun start(selection: MusicCatalog.Selection) {
+    fun start(selection: MusicCatalog.Selection): Boolean {
         stop()
         val player = MediaPlayer()
         val ready = runCatching {
@@ -67,9 +67,11 @@ class MusicPlayer(context: Context) {
             player.setAudioAttributes(audioAttributes)
             player.isLooping = true
             player.setOnPreparedListener { mp ->
-                prepared = true
-                if (wantPlaying && mp === mediaPlayer && requestFocus()) {
-                    runCatching { mp.start() }
+                if (mp === mediaPlayer) {
+                    prepared = true
+                    if (wantPlaying && requestFocus()) {
+                        runCatching { mp.start() }
+                    }
                 }
             }
             player.setOnErrorListener { _, _, _ ->
@@ -81,9 +83,10 @@ class MusicPlayer(context: Context) {
         }.isSuccess
         if (!ready) {
             player.release()
-            return
+            return false
         }
         mediaPlayer = player
+        return true
     }
 
     fun pause() {

@@ -42,16 +42,15 @@ object UpdateChecker {
         val root = JsonMini.parseObject(json)
         val tagName = root["tag_name"] as? String ?: return null
         val assets = root["assets"] as? List<*> ?: return null
-        for (item in assets) {
-            val asset = item as? Map<*, *> ?: continue
-            val name = asset["name"] as? String ?: continue
-            val parsed = parseAssetName(name) ?: continue
+        return assets.mapNotNull { item ->
+            val asset = item as? Map<*, *> ?: return@mapNotNull null
+            val name = asset["name"] as? String ?: return@mapNotNull null
+            val parsed = parseAssetName(name) ?: return@mapNotNull null
             val url = asset["browser_download_url"] as? String
-            if (url.isNullOrEmpty()) continue
+            if (url.isNullOrEmpty()) return@mapNotNull null
             val size = (asset["size"] as? Number)?.toLong() ?: 0L
-            return ReleaseInfo(tagName, parsed.first, parsed.second, url, size)
-        }
-        return null
+            ReleaseInfo(tagName, parsed.first, parsed.second, url, size)
+        }.maxByOrNull { it.versionCode }
     }
 
     fun fetchLatestReleaseJson(): String {

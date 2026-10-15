@@ -51,14 +51,13 @@ class UpdateCheckerTest {
     }
 
     @Test
-    fun parseLatestReleaseReadsFirstMatchingAsset() {
+    fun parseLatestReleaseReadsMatchingAsset() {
         val json = """
             {
               "tag_name": "v1.0.0",
               "assets": [
                 {"name": "checksums.txt", "browser_download_url": "https://example.com/sums.txt", "size": 128},
-                {"name": "PhotoPilot-v1.0.0-2.apk", "browser_download_url": "https://example.com/PhotoPilot-v1.0.0-2.apk", "size": 52428800},
-                {"name": "PhotoPilot-v9.9.9-99.apk", "browser_download_url": "https://example.com/other.apk", "size": 1}
+                {"name": "PhotoPilot-v1.0.0-2.apk", "browser_download_url": "https://example.com/PhotoPilot-v1.0.0-2.apk", "size": 52428800}
               ]
             }
         """.trimIndent()
@@ -68,6 +67,24 @@ class UpdateCheckerTest {
         assertEquals(2L, info?.versionCode)
         assertEquals("https://example.com/PhotoPilot-v1.0.0-2.apk", info?.apkUrl)
         assertEquals(52_428_800L, info?.apkSize)
+    }
+
+    @Test
+    fun parseLatestReleasePicksHighestVersionCodeAmongMatches() {
+        val json = """
+            {
+              "tag_name": "v1.0.0",
+              "assets": [
+                {"name": "PhotoPilot-v1.0.0-2.apk", "browser_download_url": "https://example.com/PhotoPilot-v1.0.0-2.apk", "size": 52428800},
+                {"name": "checksums.txt", "browser_download_url": "https://example.com/sums.txt", "size": 128},
+                {"name": "PhotoPilot-v9.9.9-99.apk", "browser_download_url": "https://example.com/PhotoPilot-v9.9.9-99.apk", "size": 1}
+              ]
+            }
+        """.trimIndent()
+        val info = UpdateChecker.parseLatestRelease(json)
+        assertEquals("9.9.9", info?.versionName)
+        assertEquals(99L, info?.versionCode)
+        assertEquals("https://example.com/PhotoPilot-v9.9.9-99.apk", info?.apkUrl)
     }
 
     @Test
