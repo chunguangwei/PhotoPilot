@@ -161,7 +161,10 @@ actor ImportCoordinator {
                     )
                     let sourceAsset = upsert.row
                     if !upsert.isNew, !upsert.revisionChanged {
-                        continue
+                        let origins = sourceAsset.value(forKey: "assetOrigins") as? Set<NSManagedObject> ?? []
+                        if !origins.isEmpty {
+                            continue
+                        }
                     }
                     let itemRequest = NSFetchRequest<NSManagedObject>(entityName: "ImportItem")
                     itemRequest.predicate = NSPredicate(

@@ -420,7 +420,6 @@ class MainActivity : Activity() {
         SourcesView(this).apply {
             onLocalPhotosClick = { showPhotoPermissionOverlay() }
             onLocalFilesClick = { launchFilePicker() }
-            onICloudClick = { launchFilePicker() }
             onNasClick = { onNasSourceClicked() }
             onNasSync = { sourceId -> nasSyncNow(sourceId) }
             onNasDisconnect = { sourceId -> confirmNasDisconnect(sourceId) }

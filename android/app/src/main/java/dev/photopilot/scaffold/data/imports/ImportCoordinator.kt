@@ -594,41 +594,11 @@ class ImportCoordinator(
             ),
         )
         if (existing == null) {
-            scope.insertItem(
-                ImportItemEntity(
-                    id = idGen(),
-                    jobId = jobId,
-                    sourceAssetId = sourceAssetId,
-                    state = ImportItemState.QUEUED,
-                    tempRelPath = null,
-                    retryCount = 0L,
-                    retryAt = null,
-                    failureCode = null,
-                    bytesDone = 0L,
-                    bytesTotal = candidate.byteSize,
-                    createdAt = now,
-                    updatedAt = now,
-                ),
-            )
+            scope.insertItem(newQueuedItem(jobId, sourceAssetId, candidate.byteSize, now))
         } else if (existing.revision != candidate.revision) {
             val queued = scope.itemsForJob(jobId).firstOrNull { it.sourceAssetId == existing.id }
             if (queued == null) {
-                scope.insertItem(
-                    ImportItemEntity(
-                        id = idGen(),
-                        jobId = jobId,
-                        sourceAssetId = existing.id,
-                        state = ImportItemState.QUEUED,
-                        tempRelPath = null,
-                        retryCount = 0L,
-                        retryAt = null,
-                        failureCode = null,
-                        bytesDone = 0L,
-                        bytesTotal = candidate.byteSize,
-                        createdAt = now,
-                        updatedAt = now,
-                    ),
-                )
+                scope.insertItem(newQueuedItem(jobId, existing.id, candidate.byteSize, now))
             } else if (queued.state in ImportJobAggregate.terminalItemStates) {
                 scope.updateItem(
                     queued.copy(
@@ -639,8 +609,31 @@ class ImportCoordinator(
                     ),
                 )
             }
+        } else if (scope.originsForSourceAsset(existing.id).isEmpty()) {
+            scope.insertItem(newQueuedItem(jobId, existing.id, candidate.byteSize, now))
         }
     }
+
+    private fun newQueuedItem(
+        jobId: String,
+        sourceAssetId: String,
+        byteSize: Long?,
+        now: Long,
+    ): ImportItemEntity =
+        ImportItemEntity(
+            id = idGen(),
+            jobId = jobId,
+            sourceAssetId = sourceAssetId,
+            state = ImportItemState.QUEUED,
+            tempRelPath = null,
+            retryCount = 0L,
+            retryAt = null,
+            failureCode = null,
+            bytesDone = 0L,
+            bytesTotal = byteSize,
+            createdAt = now,
+            updatedAt = now,
+        )
 
     private suspend fun finishSkipped(item: ImportItemEntity, now: Long) {
         transition(item, ImportItemState.SKIPPED, now, failureCode = ERR_SKIPPED_BY_TOMBSTONE)

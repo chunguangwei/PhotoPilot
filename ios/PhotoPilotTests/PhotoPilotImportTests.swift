@@ -314,6 +314,20 @@ final class PhotoPilotImportTests: XCTestCase {
         XCTAssertEqual(jobDTO?.counts["queued"], expected)
     }
 
+    func testEnqueueItemsRequeuesSourceAssetsLeftWithoutOriginsByInterruptedJob() async throws {
+        let expected = try expectedFixtureCount
+        _ = seedSource(id: "s1")
+        try save()
+        let interrupted = try await coordinator.createJob(sourceID: "s1", scopeJSON: "{}")
+        _ = try await coordinator.enqueueItems(jobID: interrupted.id)
+
+        let followUp = try await coordinator.createJob(sourceID: "s1", scopeJSON: "{}")
+        _ = try await coordinator.enqueueItems(jobID: followUp.id)
+
+        let followUpDTO = try await coordinator.fetchJob(id: followUp.id)
+        XCTAssertEqual(followUpDTO?.counts["queued"], expected)
+    }
+
     func testOffsetCursorFormatMatchesVector() async throws {
         let meta = try XCTUnwrap(try loadVector("fixture-enumeration")["meta"] as? [String: Any])
         XCTAssertEqual(try XCTUnwrap(meta["cursor_prefix"] as? String), OffsetCursor.prefix)

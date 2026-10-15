@@ -70,6 +70,61 @@ class CreateJobPersistenceTest {
     }
 
     @Test
+    fun enumerateRequeuesSourceAssetsLeftWithoutOriginsByInterruptedJob() = runBlocking {
+        val scope = FakeCommitScope()
+        val coordinator = newCoordinator(scope)
+        val sourceId = scope.seedSource().id
+        val root = File(folder.root, "source").apply { mkdirs() }
+        File(root, "a.png").writeBytes(ByteArray(16) { 1 })
+        File(root, "b.png").writeBytes(ByteArray(16) { 2 })
+        val adapter = { LocalFilesSourceAdapter(root, "local_files:test-root") }
+
+        val interruptedJobId = coordinator.createJob(sourceId, "{}")
+        coordinator.enumerate(interruptedJobId, adapter())
+
+        val followUpJobId = coordinator.createJob(sourceId, "{}")
+        coordinator.enumerate(followUpJobId, adapter())
+
+        assertEquals(2, scope.itemsForJob(followUpJobId).size)
+    }
+
+    @Test
+    fun enumerateSkipsSourceAssetsThatAlreadyHaveOrigins() = runBlocking {
+        val scope = FakeCommitScope()
+        val coordinator = newCoordinator(scope)
+        val sourceId = scope.seedSource().id
+        val root = File(folder.root, "source").apply { mkdirs() }
+        File(root, "a.png").writeBytes(ByteArray(16) { 1 })
+        File(root, "b.png").writeBytes(ByteArray(16) { 2 })
+        val adapter = { LocalFilesSourceAdapter(root, "local_files:test-root") }
+
+        val firstJobId = coordinator.createJob(sourceId, "{}")
+        coordinator.enumerate(firstJobId, adapter())
+        val committed = scope.itemsForJob(firstJobId).first()
+        scope.insertOrigin(
+            dev.photopilot.scaffold.data.db.AssetOriginEntity(
+                assetId = "asset-1",
+                sourceAssetId = committed.sourceAssetId,
+                importedAt = now,
+                policyState = dev.photopilot.scaffold.data.db.PolicyState.ALLOWED,
+                originState = dev.photopilot.scaffold.data.db.OriginState.ACTIVE,
+                createdAt = now,
+                updatedAt = now,
+            ),
+        )
+
+        val followUpJobId = coordinator.createJob(sourceId, "{}")
+        coordinator.enumerate(followUpJobId, adapter())
+
+        val followUpItems = scope.itemsForJob(followUpJobId)
+        assertEquals(1, followUpItems.size)
+        assertEquals(
+            scope.itemsForJob(firstJobId).first { it.id != committed.id }.sourceAssetId,
+            followUpItems.first().sourceAssetId,
+        )
+    }
+
+    @Test
     fun updateOnMissingRowDoesNotCreateItMatchingRoomSemantics() = runBlocking {
         val scope = FakeCommitScope()
         val nowMillis = 1_700_000_000_000L

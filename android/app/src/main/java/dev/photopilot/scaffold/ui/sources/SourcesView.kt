@@ -16,7 +16,6 @@ class SourcesView(context: Context) : ScrollView(context) {
 
     var onLocalPhotosClick: (() -> Unit)? = null
     var onLocalFilesClick: (() -> Unit)? = null
-    var onICloudClick: (() -> Unit)? = null
     var onNasClick: (() -> Unit)? = null
     var onJobStatusClick: (() -> Unit)? = null
     var onNasSync: ((String) -> Unit)? = null
@@ -55,10 +54,6 @@ class SourcesView(context: Context) : ScrollView(context) {
             titleRes = R.string.source_nas_title,
             bodyRes = R.string.source_nas_body,
         ) { onNasClick?.invoke() }
-        val icloudRow = sourceRow(
-            titleRes = R.string.source_icloud_title,
-            bodyRes = R.string.source_icloud_body_android,
-        ) { onICloudClick?.invoke() }
         nasSourcesColumn = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
         }
@@ -101,12 +96,6 @@ class SourcesView(context: Context) : ScrollView(context) {
             photosRow,
             LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_24)
-            },
-        )
-        column.addView(
-            icloudRow,
-            LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = res.getDimensionPixelSize(R.dimen.pp_space_12)
             },
         )
         column.addView(
