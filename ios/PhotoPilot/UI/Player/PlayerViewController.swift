@@ -176,7 +176,7 @@ final class PlayerImageLoader: @unchecked Sendable {
 final class PlayerViewController: UIViewController {
     static let blurDimOpacity: CGFloat = 0.4
     private static let controlsHideDelayNanos: UInt64 = 4_000_000_000
-    private static weak var activePlayer: PlayerViewController?
+    private(set) static weak var activePlayer: PlayerViewController?
 
     static func dismissActiveIfAny() {
         activePlayer?.exitPlayer()
@@ -398,12 +398,7 @@ final class PlayerViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         guard controllerState == PlaybackController.idle else {
-            workTask = Task { [weak self] in
-                guard let self,
-                      let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: frameID) else { return }
-                settings = PlayerSettings.parse(json: bundle.settingsJSON)
-                applyBrightness()
-            }
+            reloadBrightnessFromStore()
             checkRevocation()
             reloadMusicSettings()
             dispatch(PlaybackEvent(type: "selection_changed"))
@@ -1392,6 +1387,15 @@ final class PlayerViewController: UIViewController {
             originalBrightness = UIScreen.main.brightness
         }
         UIScreen.main.brightness = CGFloat(min(max(brightness, 0), 1))
+    }
+
+    func reloadBrightnessFromStore() {
+        workTask = Task { [weak self] in
+            guard let self,
+                  let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: frameID) else { return }
+            settings = PlayerSettings.parse(json: bundle.settingsJSON)
+            applyBrightness()
+        }
     }
 
     private func restoreBrightness() {

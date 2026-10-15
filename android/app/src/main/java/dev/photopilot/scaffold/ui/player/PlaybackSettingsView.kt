@@ -833,6 +833,10 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         previewOriginalBrightness = null
     }
 
+    fun commitBrightnessPreview() {
+        previewOriginalBrightness = null
+    }
+
     private fun addLabel(parent: LinearLayout, textRes: Int, marginRes: Int) {
         val res = resources
         val view = TextView(context).apply {

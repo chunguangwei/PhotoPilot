@@ -883,7 +883,11 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
                 try? await environment.frameManager.updateOrderMode(frameID: frameID, orderMode: orderMode)
             }
             dirty = false
-            restoreBrightnessPreview()
+            if let player = PlayerViewController.activePlayer {
+                player.reloadBrightnessFromStore()
+            } else {
+                restoreBrightnessPreview()
+            }
             dismiss(animated: true)
         }
     }

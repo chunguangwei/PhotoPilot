@@ -2150,6 +2150,7 @@ class MainActivity : Activity() {
             if (fresh != null && playerView != null && playerEngine != null && fresh.id == frame.id) {
                 playerEngine?.reloadSettings(fresh)
                 playerView?.reloadSettings(fresh)
+                view.commitBrightnessPreview()
             }
             framesDirty = true
             closePlaybackSettings()
