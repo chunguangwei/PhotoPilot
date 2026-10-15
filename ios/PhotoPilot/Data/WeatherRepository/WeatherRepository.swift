@@ -31,6 +31,7 @@ actor WeatherRepository {
     static let placesKey = "weather.places"
     static let enabledKey = "weather.enabled"
     static let unitsKey = "weather.units"
+    static let selectedPlaceIdKey = "weather.selected_place_id"
     static let normalLimitMillis = 60 * 60 * 1000
     static let delayedLimitMillis = 180 * 60 * 1000
 
@@ -175,7 +176,36 @@ actor WeatherRepository {
                 row.setValue(NSNumber(value: now), forKey: "created_at")
             }
             row.setValue(NSNumber(value: now), forKey: "updated_at")
+            let selectedRequest = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
+            selectedRequest.predicate = NSPredicate(format: "key == %@", Self.selectedPlaceIdKey)
+            selectedRequest.fetchLimit = 1
+            let selectedRow = try context.fetch(selectedRequest).first ?? NSEntityDescription.insertNewObject(
+                forEntityName: "SettingsKV",
+                into: context
+            )
+            selectedRow.setValue(Self.selectedPlaceIdKey, forKey: "key")
+            selectedRow.setValue(place.placeId, forKey: "value_json")
+            if selectedRow.value(forKey: "created_at") == nil {
+                selectedRow.setValue(NSNumber(value: now), forKey: "created_at")
+            }
+            selectedRow.setValue(NSNumber(value: now), forKey: "updated_at")
             try context.save()
         }
+    }
+
+    func selectedPlace() throws -> WeatherPlace? {
+        let all = try places()
+        guard !all.isEmpty else { return nil }
+        let context = makeContext()
+        let selectedID: String? = try context.performAndWait {
+            let request = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
+            request.predicate = NSPredicate(format: "key == %@", Self.selectedPlaceIdKey)
+            request.fetchLimit = 1
+            return try context.fetch(request).first?.value(forKey: "value_json") as? String
+        }
+        if let selectedID, let hit = all.first(where: { $0.placeId == selectedID }) {
+            return hit
+        }
+        return all.last
     }
 }

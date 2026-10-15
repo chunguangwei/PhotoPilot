@@ -23,6 +23,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import dev.photopilot.scaffold.R
 import dev.photopilot.scaffold.data.db.AssetEntity
+import dev.photopilot.scaffold.data.db.AssetReadiness
 import dev.photopilot.scaffold.data.db.CollectionEntity
 import dev.photopilot.scaffold.data.db.SourceAssetEntity
 import dev.photopilot.scaffold.data.db.SourceEntity
@@ -392,7 +393,10 @@ class LibraryView(
 
     private fun updateSelectionSummary() {
         val count = selectedIds.size
-        selectionSummary.text = resources.getString(R.string.library_selection_summary, count, count)
+        val ready = selectedIds.count { id ->
+            assets.any { it.id == id && it.readiness == AssetReadiness.READY }
+        }
+        selectionSummary.text = resources.getString(R.string.library_selection_summary, count, ready)
         selectionSummary.contentDescription = resources.getQuantityString(
             R.plurals.a11y_selection_summary, count, count,
         )

@@ -157,8 +157,9 @@ final class FramesListViewController: UIViewController {
                 let counts = (try? await environment.frameManager.frameCounts(frameID: card.id))
                     ?? (playable: 0, pending: 0)
                 var relPath = card.coverRelPath
-                if relPath == nil {
-                    relPath = try? await environment.frameManager.firstQueueAssetRelPath(frameID: card.id)
+                if relPath == nil,
+                   let firstID = (try? await environment.frames.buildPlayQueue(frameID: card.id))?.first {
+                    relPath = try? await environment.assets.fetchAsset(id: firstID)?.originalRelPath
                 }
                 enriched.append(FrameCardDTO(
                     id: card.id,

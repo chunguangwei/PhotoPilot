@@ -100,7 +100,7 @@
 "source.local_files.title" = "文件";
 "source.local_files.body" = "从系统文件中选择图片，包括 iCloud 云盘中的文件。";
 "source.icloud.title" = "iCloud 照片";
-"source.icloud.body.ios" = "从这台 iPad 的系统照片库读取，云端照片会先下载到本机。";
+"source.icloud.body.ios" = "从这台设备的系统照片库读取，云端照片会先下载到本机。";
 "source.icloud.not_a_login" = "不需要输入 Apple ID 密码。";
 "source.icloud.track_album" = "跟踪相册变化";
 "source.icloud.track_album_body" = "开启后会持续检查该相册的新照片，需要照片库访问权限。";

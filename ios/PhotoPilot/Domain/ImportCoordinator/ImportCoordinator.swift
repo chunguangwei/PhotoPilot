@@ -477,6 +477,7 @@ actor ImportCoordinator {
         do {
             payload = try await adapter.assetPayload(remoteID: ref.remoteKey)
         } catch {
+            if Self.isCancellation(error) { throw error }
             let code = Self.failureCode(for: error).code
             try await markItemFailed(itemID: itemID, code: code, retryable: code == .mediaTruncated)
             throw code
@@ -528,6 +529,7 @@ actor ImportCoordinator {
         do {
             payload = try await adapter.assetPayload(remoteID: ref.remoteKey)
         } catch {
+            if Self.isCancellation(error) { throw error }
             let mapped = Self.failureCode(for: error)
             try await markItemFailed(itemID: itemID, code: mapped.code, retryable: mapped.retryable)
             return
@@ -590,6 +592,7 @@ actor ImportCoordinator {
         do {
             payload = try await adapter.assetPayload(remoteID: ref.remoteKey)
         } catch {
+            if Self.isCancellation(error) { throw error }
             let mapped = Self.failureCode(for: error)
             try await markItemFailed(itemID: itemID, code: mapped.code, retryable: mapped.retryable)
             throw mapped.code
@@ -771,6 +774,10 @@ actor ImportCoordinator {
         }
         } catch let error as DataValidationFailure {
             try? await markItemFailed(itemID: itemID, code: .dbConstraintViolation, retryable: false)
+            throw error
+        } catch {
+            let mapped = Self.failureCode(for: error)
+            try? await markItemFailed(itemID: itemID, code: mapped.code, retryable: true)
             throw error
         }
     }
@@ -1193,6 +1200,11 @@ actor ImportCoordinator {
                 TombstoneMatcher.rankMatch(tombstone: $0, probe: probe) != nil
             }
         }
+    }
+
+    private static func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError { return true }
+        return (error as? URLError)?.code == .cancelled
     }
 
     private static func failureCode(for error: Error) -> (code: ImportFailureCode, retryable: Bool) {

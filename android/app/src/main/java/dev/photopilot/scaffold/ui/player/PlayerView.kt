@@ -56,6 +56,9 @@ class PlayerView(
     private val foregroundB: ImageView
     private lateinit var videoView: android.widget.VideoView
     private var videoTruncateRunnable: Runnable? = null
+    private var videoTruncateDeadlineMs = 0L
+    private var videoTruncateRemainingMs = 0L
+    private var videoTruncatePaused = false
     private var showingA = true
     private val scrim: View
     private val noticeLine: TextView
@@ -251,12 +254,16 @@ class PlayerView(
             if (isPlaying) R.string.player_pause else R.string.player_play,
         )
         pauseButton.tooltipText = pauseButton.contentDescription
-        if (state == PlaybackController.PAUSED && videoView.isPlaying) {
+        if ((state == PlaybackController.PAUSED || state == PlaybackController.RESTING) &&
+            videoView.isPlaying
+        ) {
             videoView.pause()
+            pauseVideoTruncateTimer()
         } else if (state == PlaybackController.HOLDING &&
             videoView.visibility == View.VISIBLE &&
             !videoView.isPlaying
         ) {
+            resumeVideoTruncateTimer()
             videoView.start()
         }
         val interactive = state == PlaybackController.HOLDING ||
@@ -334,6 +341,9 @@ class PlayerView(
             if (VideoProbe.isOverLimit(asset.durationMs)) {
                 val runnable = Runnable { engine?.onVideoCompleted() }
                 videoTruncateRunnable = runnable
+                videoTruncatePaused = false
+                videoTruncateRemainingMs = VideoProbe.VIDEO_MAX_DURATION_MS
+                videoTruncateDeadlineMs = System.currentTimeMillis() + VideoProbe.VIDEO_MAX_DURATION_MS
                 videoView.postDelayed(runnable, VideoProbe.VIDEO_MAX_DURATION_MS)
             }
         }
@@ -364,9 +374,27 @@ class PlayerView(
     private fun stopVideo() {
         videoTruncateRunnable?.let(videoView::removeCallbacks)
         videoTruncateRunnable = null
+        videoTruncatePaused = false
         videoView.stopPlayback()
         videoView.visibility = View.GONE
         videoView.alpha = 1f
+    }
+
+    private fun pauseVideoTruncateTimer() {
+        val runnable = videoTruncateRunnable ?: return
+        if (videoTruncatePaused) return
+        videoTruncatePaused = true
+        videoView.removeCallbacks(runnable)
+        videoTruncateRemainingMs =
+            (videoTruncateDeadlineMs - System.currentTimeMillis()).coerceAtLeast(0L)
+    }
+
+    private fun resumeVideoTruncateTimer() {
+        val runnable = videoTruncateRunnable ?: return
+        if (!videoTruncatePaused) return
+        videoTruncatePaused = false
+        videoTruncateDeadlineMs = System.currentTimeMillis() + videoTruncateRemainingMs
+        videoView.postDelayed(runnable, videoTruncateRemainingMs)
     }
 
     override fun onShowAsset(

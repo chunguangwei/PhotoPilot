@@ -73,7 +73,7 @@ final class PersistenceController: @unchecked Sendable {
         } catch {
             let backupURL = backupStore(storeURL)
             let freshURL = storeURL.deletingLastPathComponent()
-                .appendingPathComponent("library.fresh-\(UUID().uuidString).db")
+                .appendingPathComponent("library.fresh.db")
             let freshContainer = NSPersistentContainer(name: "PhotoPilot", managedObjectModel: model)
             freshContainer.persistentStoreDescriptions = [makeStoreDescription(url: freshURL)]
             try? loadStoresSynchronously(freshContainer)
@@ -104,10 +104,25 @@ final class PersistenceController: @unchecked Sendable {
         let fileManager = FileManager.default
         guard fileManager.fileExists(atPath: storeURL.path) else { return nil }
         let version = (try? schemaVersionValue(inStoreAt: storeURL)) ?? PersistenceSchema.version
-        let backupURL = storeURL.deletingLastPathComponent()
+        var backupURL = storeURL.deletingLastPathComponent()
             .appendingPathComponent("library.db.bak-\(version)")
-        guard !fileManager.fileExists(atPath: backupURL.path) else { return backupURL }
-        try? fileManager.copyItem(at: storeURL, to: backupURL)
+        if fileManager.fileExists(atPath: backupURL.path) {
+            backupURL = storeURL.deletingLastPathComponent()
+                .appendingPathComponent("library.db.bak-\(version)-\(UUID().uuidString)")
+        }
+        do {
+            try fileManager.moveItem(at: storeURL, to: backupURL)
+        } catch {
+            try? fileManager.removeItem(at: storeURL)
+        }
+        for suffix in ["-wal", "-shm"] {
+            let sidecar = URL(fileURLWithPath: storeURL.path + suffix)
+            guard fileManager.fileExists(atPath: sidecar.path) else { continue }
+            try? fileManager.moveItem(
+                at: sidecar,
+                to: URL(fileURLWithPath: backupURL.path + suffix)
+            )
+        }
         return backupURL
     }
 

@@ -110,6 +110,8 @@ final class DemoPlaceholderViewController: UIViewController {
         badgeLabel.font = ThemeFont.caption()
         badgeLabel.adjustsFontForContentSizeCategory = true
         badgeLabel.textColor = ThemeColor.textOnPhoto
+        badgeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        badgeLabel.setContentHuggingPriority(.required, for: .horizontal)
 
         let noticeLabel = UILabel()
         noticeLabel.text = L10n.string("welcome.demo_notice")

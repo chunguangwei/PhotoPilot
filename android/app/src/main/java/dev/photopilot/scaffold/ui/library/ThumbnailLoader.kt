@@ -20,7 +20,6 @@ class ThumbnailLoader(
     }
 
     private val cache = LruCache<String, Bitmap>(cacheEntries.coerceAtLeast(1))
-    private val executor = Executors.newFixedThreadPool(DECODE_THREADS)
     private val main = Handler(Looper.getMainLooper())
 
     fun load(asset: AssetEntity, sizePx: Int, key: String, callback: Callback) {
@@ -29,7 +28,7 @@ class ThumbnailLoader(
             callback.onLoaded(key, cached)
             return
         }
-        executor.execute {
+        sharedExecutor.execute {
             val file = File(originalsDir, asset.originalRelPath)
             val bitmap = if (file.isFile) {
                 runCatching {
@@ -73,6 +72,8 @@ class ThumbnailLoader(
     companion object {
         const val DECODE_THREADS = 2
         const val FIRST_FRAME_TIME_US = 500_000L
+
+        private val sharedExecutor = Executors.newFixedThreadPool(DECODE_THREADS)
 
         fun cacheKey(assetId: String, sizePx: Int): String = "$assetId@$sizePx"
     }

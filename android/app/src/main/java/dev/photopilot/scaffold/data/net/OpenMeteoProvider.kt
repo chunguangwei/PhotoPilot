@@ -69,7 +69,7 @@ class OpenMeteoProvider(
                 if (c in 'A'..'Z' || c in 'a'..'z' || c in '0'..'9' || c in "-._~") {
                     c.toString()
                 } else {
-                    "%02X".format(byte.toInt() and 0xFF)
+                    "%%%02X".format(byte.toInt() and 0xFF)
                 }
             }
             val url = "$geocodingBaseUrl/v1/search?name=$encoded&count=$SEARCH_COUNT&language=$language"

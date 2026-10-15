@@ -304,6 +304,8 @@ class MainActivity : Activity() {
         updateHandler.removeCallbacks(updatePollRunnable)
         updateProgressDialog?.dismiss()
         updateProgressDialog = null
+        playerEngine?.stop(clearSnapshot = false)
+        playerEngine = null
         scope.cancel()
         super.onDestroy()
     }

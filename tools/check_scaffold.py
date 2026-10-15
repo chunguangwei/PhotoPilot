@@ -40,6 +40,7 @@ def compare_keys(first, second):
 PHOTO_READ_PERMISSIONS = {
     "android.permission.READ_MEDIA_IMAGES",
     "android.permission.READ_MEDIA_VIDEO",
+    "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
     "android.permission.READ_EXTERNAL_STORAGE",
 }
 NETWORK_PERMISSIONS = {

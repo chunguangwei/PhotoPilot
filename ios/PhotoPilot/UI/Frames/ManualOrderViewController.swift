@@ -285,12 +285,15 @@ final class ManualOrderViewController: UIViewController,
               let source = item.sourceIndexPath,
               let destination = coordinator.destinationIndexPath,
               source.item != destination.item else { return }
+        let target = destination.item > source.item ? destination.item - 1 : destination.item
+        let clamped = min(target, items.count - 1)
+        let targetIndexPath = IndexPath(item: clamped, section: destination.section)
         collectionView.performBatchUpdates {
             let moved = items.remove(at: source.item)
-            items.insert(moved, at: destination.item)
-            collectionView.moveItem(at: source, to: destination)
+            items.insert(moved, at: clamped)
+            collectionView.moveItem(at: source, to: targetIndexPath)
         }
-        coordinator.drop(item.dragItem, toItemAt: destination)
+        coordinator.drop(item.dragItem, toItemAt: targetIndexPath)
     }
 
     func collectionView(

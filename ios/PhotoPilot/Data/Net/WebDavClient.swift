@@ -29,7 +29,10 @@ enum WebDavMultistatusParser {
         let decoded = href.removingPercentEncoding ?? href
         var path = decoded
         if !basePath.isEmpty, path.hasPrefix(basePath) {
-            path = String(path.dropFirst(basePath.count))
+            let remainder = path.dropFirst(basePath.count)
+            if remainder.isEmpty || remainder.hasPrefix("/") {
+                path = String(remainder)
+            }
         }
         return NasPath.normalize(path) ?? ""
     }

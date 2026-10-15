@@ -156,6 +156,7 @@
 		F83E9966F7F222B1E2B63E38 /* demo_sunset.jpg in Resources */ = {isa = PBXBuildFile; fileRef = C85FB910E9777184F4AC7439 /* demo_sunset.jpg */; };
 		FA7CC954DF86DBEC5B7BD758 /* HolidayTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AA4BE24907BC5EA37AC013B /* HolidayTiming.swift */; };
 		FAD928F838E21FF5BDCC2874 /* AppearanceApplier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80325ED55AF30C814A2BCA54 /* AppearanceApplier.swift */; };
+		FB9A5E04928E63B2AF3AEDAD /* WalkthroughTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA71AD309498964F78EDFBBF /* WalkthroughTests.swift */; };
 		FBD0480493A8513EACA87B53 /* SmbSourceAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D90C3A32ACA6D13D8621CCCD /* SmbSourceAdapter.swift */; };
 		FCD3DDDD8706DF3A5A8467DD /* RenderGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB5027429DF4BEDC259B9704 /* RenderGeometry.swift */; };
 		FE0FB90C768FBD8D07A61CE0 /* SourceAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F026B2BB91FE53B3CD1E26F0 /* SourceAdapter.swift */; };
@@ -356,6 +357,7 @@
 		F4F35DB99FB6F9AE613D4C02 /* AssetRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetRepository.swift; sourceTree = "<group>"; };
 		F4FD4274BD369F2865489DFE /* import-job-aggregate.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "import-job-aggregate.json"; sourceTree = "<group>"; };
 		F5E4AA3905D6BBD9D5E1D008 /* music_morning_01.m4a */ = {isa = PBXFileReference; path = music_morning_01.m4a; sourceTree = "<group>"; };
+		FA71AD309498964F78EDFBBF /* WalkthroughTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkthroughTests.swift; sourceTree = "<group>"; };
 		FB2E4083930D9F4D93EB6FF9 /* selection-resolve.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "selection-resolve.json"; sourceTree = "<group>"; };
 		FD5E99D83BC67C1EBA62A663 /* AppSettingsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsRepository.swift; sourceTree = "<group>"; };
 		FE8666FBF6D3992BE7F8993D /* HolidayListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayListViewController.swift; sourceTree = "<group>"; };
@@ -634,6 +636,7 @@
 			isa = PBXGroup;
 			children = (
 				3AF9C683F7DA2E37F1E8B105 /* ScreenshotTests.swift */,
+				FA71AD309498964F78EDFBBF /* WalkthroughTests.swift */,
 			);
 			path = PhotoPilotUITests;
 			sourceTree = "<group>";
@@ -1267,6 +1270,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2E6637A0BA9DBB3F9E26FC00 /* ScreenshotTests.swift in Sources */,
+				FB9A5E04928E63B2AF3AEDAD /* WalkthroughTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1350,7 +1354,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1363,7 +1367,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.12;
+				MARKETING_VERSION = 1.1.13;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1487,7 +1491,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1506,7 +1510,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.12;
+				MARKETING_VERSION = 1.1.13;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

@@ -224,7 +224,10 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
             pixelWidth: image.pixelWidth,
             pixelHeight: image.pixelHeight,
             exifOrientation: image.exifOrientation,
-            capturedAtMillis: image.capturedAtMillis
+            capturedAtMillis: image.capturedAtMillis,
+            mediaKind: image.mediaKind,
+            durationMillis: image.durationMillis,
+            capturedAtSource: image.capturedAtSource
         )
     }
 }

@@ -24,6 +24,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import dev.photopilot.scaffold.R
 import dev.photopilot.scaffold.data.db.AssetEntity
+import dev.photopilot.scaffold.data.db.AssetReadiness
 import dev.photopilot.scaffold.data.db.CollectionEntity
 import dev.photopilot.scaffold.data.db.FrameOrderMode
 import dev.photopilot.scaffold.data.logic.GridGeometry
@@ -379,7 +380,6 @@ class FrameEditView(
     private fun folderRow(collection: CollectionEntity, count: Long): View {
         val res = resources
         val state = ruleStates[collection.id] ?: RuleUiState(checked = false, recursive = false, dynamic = false)
-        ruleStates[collection.id] = state
         val container = LinearLayout(context).apply {
             orientation = VERTICAL
             background = GradientDrawable().apply {
@@ -390,18 +390,21 @@ class FrameEditView(
             setPadding(pad, pad, pad, pad)
         }
         val mainToggle = checkBox("${collection.name} ($count)", state.checked) { checked ->
-            val current = ruleStates[collection.id] ?: return@checkBox
+            val current = ruleStates[collection.id]
+                ?: RuleUiState(checked = false, recursive = false, dynamic = false)
             ruleStates[collection.id] = current.copy(checked = checked)
             loadFolders()
         }
         container.addView(mainToggle, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         if (state.checked) {
             val recursiveToggle = checkBox(res.getString(R.string.rule_recursive_toggle), state.recursive) { checked ->
-                val current = ruleStates[collection.id] ?: return@checkBox
+                val current = ruleStates[collection.id]
+                    ?: RuleUiState(checked = false, recursive = false, dynamic = false)
                 ruleStates[collection.id] = current.copy(recursive = checked)
             }
             val dynamicToggle = checkBox(res.getString(R.string.rule_dynamic_toggle), state.dynamic) { checked ->
-                val current = ruleStates[collection.id] ?: return@checkBox
+                val current = ruleStates[collection.id]
+                    ?: RuleUiState(checked = false, recursive = false, dynamic = false)
                 if (checked) {
                     val confirm = onConfirmDynamic
                     if (confirm != null) {
@@ -500,10 +503,16 @@ class FrameEditView(
         }
 
     private fun updateSummary() {
-        val ready = selectedAssetIds.size
-        summaryLine.text = resources.getString(
-            R.string.library_selection_summary, selectedAssetIds.size, ready,
-        )
+        val ids = selectedAssetIds.toList()
+        val source = dataSource
+        if (source == null) {
+            summaryLine.text = resources.getString(R.string.library_selection_summary, ids.size, ids.size)
+            return
+        }
+        source.fetchAssetsByIds(ids) { resolved ->
+            val ready = ids.count { resolved[it]?.readiness == AssetReadiness.READY }
+            summaryLine.text = resources.getString(R.string.library_selection_summary, ids.size, ready)
+        }
     }
 
     private fun showCoverPreview(asset: AssetEntity) {
@@ -533,9 +542,14 @@ class FrameEditView(
             setTextColor(context.getColor(R.color.pp_text_primary))
         }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         details.addView(TextView(context).apply {
+            val selected = selectedAssetIds.toList()
             text = res.getQuantityString(
-                R.plurals.frames_playable_count, selectedAssetIds.size, selectedAssetIds.size,
+                R.plurals.frames_playable_count, selected.size, selected.size,
             )
+            dataSource?.fetchAssetsByIds(selected) { resolved ->
+                val ready = selected.count { resolved[it]?.readiness == AssetReadiness.READY }
+                text = res.getQuantityString(R.plurals.frames_playable_count, ready, ready)
+            }
             setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_meta))
             setTextColor(context.getColor(R.color.pp_text_secondary))
         }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {

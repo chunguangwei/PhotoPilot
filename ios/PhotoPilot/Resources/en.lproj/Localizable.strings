@@ -100,7 +100,7 @@
 "source.local_files.title" = "Files";
 "source.local_files.body" = "Choose images from Files, including iCloud Drive.";
 "source.icloud.title" = "iCloud Photos";
-"source.icloud.body.ios" = "Reads this iPad’s system photo library. Photos stored in iCloud are downloaded first.";
+"source.icloud.body.ios" = "Reads from this device’s photo library. Cloud photos download to this device first.";
 "source.icloud.not_a_login" = "No Apple ID password is required.";
 "source.icloud.track_album" = "Keep this album in sync";
 "source.icloud.track_album_body" = "Checks the album for new photos. Requires photo library access.";

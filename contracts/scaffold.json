@@ -1,7 +1,7 @@
 {
   "stage": "m2_services_development",
   "businessImplementationAuthorized": true,
-  "authorizedScope": "M1 已交付；NAS（SMB+WebDAV）已交付；用户 2026-10-08 授权天气服务（Open-Meteo 客户端直连，手动城市），2026-10-10 UI 走查轮追加授权系统定位选当前城市（When-In-Use，不持续定位）；Google Photos 与视频/RAW 排队中（#2 顺序）；真机/签名/外部账号未授权",
+  "authorizedScope": "M1 已交付；NAS（SMB+WebDAV）已交付；天气（Open-Meteo 客户端直连）已交付；视频/RAW P1 已于 2026-10-08 冻结实装；2026-10-14 起授权双真机（iPhone/iPad）Debug 签名装机、GitHub 公开仓库与 Android Release 发版（应用内更新自 GitHub 下载）；背景音乐/封面/演示内容/节日规则已交付；Google Photos 与 Live Photo 实装仍未授权；生产发布/App Store 上传未授权",
   "minimumPlatforms": {
     "iPadOS": "15.0",
     "androidApi": 29
@@ -9,8 +9,8 @@
   "locales": ["en", "zh-Hans"],
   "applicationIdentifier": "dev.photopilot.scaffold",
   "identifierStatus": "development_placeholder",
-  "version": "0.1.0",
-  "buildNumber": 1,
+  "version": "1.1.13",
+  "buildNumber": 15,
   "networkEnabled": true,
   "thirdPartyServicesEnabled": true,
   "productionContractsFrozen": false

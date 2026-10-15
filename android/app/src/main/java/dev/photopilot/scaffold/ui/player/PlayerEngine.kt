@@ -298,7 +298,9 @@ class PlayerEngine(
             PlaybackController.EFFECT_SHOW_SAFE_IMAGE -> listener.onShowSafeImage()
             PlaybackController.EFFECT_SKIP_TO_NEXT -> skipToNext()
             PlaybackController.EFFECT_RESUME_UNTIL_REST_END ->
-                scheduleHold(settings.holdSeconds * 1000L)
+                if (!currentIsVideo()) {
+                    scheduleHold(settings.holdSeconds * 1000L)
+                }
         }
     }
 
@@ -343,33 +345,40 @@ class PlayerEngine(
     private fun showVideoIfNeeded(asset: AssetEntity, silent: Boolean): Boolean {
         if (asset.mediaKind != MediaKind.VIDEO) return false
         val path = java.io.File(originalsDir, asset.originalRelPath).absolutePath
-        val retriever = android.media.MediaMetadataRetriever()
-        val frame = runCatching {
-            retriever.setDataSource(path)
-            retriever.getFrameAtTime(FIRST_FRAME_TIME_US)
-        }.getOrNull()
-        try {
-            Unit
-        } finally {
-            retriever.release()
-        }
-        if (frame == null) {
-            if (!silent) {
-                handleDecodeFailure()
+        executor.execute {
+            val retriever = android.media.MediaMetadataRetriever()
+            val frame = runCatching {
+                retriever.setDataSource(path)
+                retriever.getFrameAtTime(FIRST_FRAME_TIME_US)
+            }.getOrNull()
+            try {
+                Unit
+            } finally {
+                retriever.release()
             }
-            return true
-        }
-        val blurred = runCatching { BitmapRenderer.blurBackground(frame) }.getOrNull()
-        val edge = runCatching {
-            BitmapRenderer.edgeColor(frame)?.let(android.graphics.Color::parseColor)
-        }.getOrNull()
-        consecutiveDecodeFails = 0
-        decodedCurrent = null
-        prefetchNext()
-        flushHolidayEnter()
-        listener.onShowVideo(asset, path, blurred, edge)
-        if (!silent) {
-            dispatch(PlaybackEvent(type = "first_ready"))
+            val blurred = frame?.let { runCatching { BitmapRenderer.blurBackground(it) }.getOrNull() }
+            val edge = frame?.let {
+                runCatching {
+                    BitmapRenderer.edgeColor(it)?.let(android.graphics.Color::parseColor)
+                }.getOrNull()
+            }
+            mainHandler.post {
+                if (stopped) return@post
+                if (frame == null) {
+                    if (!silent) {
+                        handleDecodeFailure()
+                    }
+                    return@post
+                }
+                consecutiveDecodeFails = 0
+                decodedCurrent = null
+                prefetchNext()
+                flushHolidayEnter()
+                listener.onShowVideo(asset, path, blurred, edge)
+                if (!silent) {
+                    dispatch(PlaybackEvent(type = "first_ready"))
+                }
+            }
         }
         return true
     }
@@ -463,6 +472,11 @@ class PlayerEngine(
         listener.onDecodeSkipped()
         if (queue.isEmpty()) return
         val base = transitionTargetIndex ?: index
+        if (state == PlaybackController.PREPARING) {
+            index = (base + 1) % queue.size
+            decodeAndShowFirst(silent = false)
+            return
+        }
         beginTransitionTo((base + 1) % queue.size, 1)
     }
 
@@ -476,6 +490,9 @@ class PlayerEngine(
                 limitReached = limitReached,
             ),
         )
+        if (!limitReached && state == PlaybackController.PREPARING) {
+            skipToNext()
+        }
     }
 
     private fun prefetchNext() {

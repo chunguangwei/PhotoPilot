@@ -370,7 +370,7 @@ final class SettingsViewController: UIViewController {
             }
             languageSegmented.selectedSegmentIndex = AppLanguage.values
                 .firstIndex(of: AppLanguage.overrideValue) ?? 0
-            if let place = try? await environment.weatherRepository.places().last {
+            if let place = try? await environment.weatherRepository.selectedPlace() {
                 weatherPlace = place
                 weatherCityLabel.text = AppLanguage.preferChinese ? place.nameZh : place.nameEn
             } else {

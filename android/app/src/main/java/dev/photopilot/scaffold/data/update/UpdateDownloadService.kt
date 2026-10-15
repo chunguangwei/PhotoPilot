@@ -135,7 +135,7 @@ class UpdateDownloadService : Service() {
             .setContentIntent(install)
             .setAutoCancel(true)
             .build()
-        notifyIfAllowed(NOTIFICATION_ID, notification)
+        notifyIfAllowed(COMPLETED_NOTIFICATION_ID, notification)
     }
 
     private fun notifyIfAllowed(id: Int, notification: Notification) {
@@ -156,6 +156,7 @@ class UpdateDownloadService : Service() {
         const val PART_FILE_NAME = "update.apk.part"
         const val APK_FILE_NAME = "update.apk"
         private const val NOTIFICATION_ID = 4101
+        private const val COMPLETED_NOTIFICATION_ID = 4102
         private const val WAKELOCK_TAG = "photopilot:update-download"
         private const val WAKELOCK_TIMEOUT_MS = 30L * 60L * 1000L
         private val RETRY_DELAYS_MS = longArrayOf(1_000L, 4_000L, 15_000L)

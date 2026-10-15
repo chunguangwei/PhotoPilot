@@ -242,6 +242,7 @@ final class PlayerViewController: UIViewController {
     private let musicPlayer = MusicPlayer()
     private var musicPausedForRest = false
     private var musicPlayingBeforeBackground = false
+    private var videoPlayingBeforeBackground = false
     private let weatherLabel = UILabel()
     private let weatherNoteLabel = UILabel()
     private var controlsPresented = false
@@ -454,6 +455,7 @@ final class PlayerViewController: UIViewController {
                 musicPausedForRest = true
                 musicPlayer.pause()
             }
+            videoPlayer?.pause()
         } else if musicPausedForRest {
             musicPausedForRest = false
             if controllerState != PlaybackController.paused {
@@ -612,7 +614,12 @@ final class PlayerViewController: UIViewController {
         skippedAny = true
         decodeFailStreak += 1
         let limit = PlaybackController.decodeFailLimit(queueLength: max(queue.count, 1))
-        dispatch(PlaybackEvent(type: "decode_fail", limitReached: decodeFailStreak >= limit))
+        let reached = decodeFailStreak >= limit
+        dispatch(PlaybackEvent(type: "decode_fail", limitReached: reached))
+        if !reached, controllerState == PlaybackController.preparing, !queue.isEmpty {
+            index = (index + 1) % queue.count
+            loadCurrent()
+        }
     }
 
     private func setupVideo(assetID: String, animated: Bool, firstEntry: Bool) {
@@ -646,6 +653,9 @@ final class PlayerViewController: UIViewController {
         firstEntry: Bool
     ) {
         stopVideo()
+        holdTask?.cancel()
+        remainingHoldMs = nil
+        nextTransitionAtMs = 0
         let player = AVPlayer(playerItem: item)
         player.isMuted = true
         let layer = AVPlayerLayer(player: player)
@@ -868,12 +878,14 @@ final class PlayerViewController: UIViewController {
     }
 
     private func saveRemainingHold() {
-        let now = Int64(Date().timeIntervalSince1970 * 1000)
-        remainingHoldMs = PlaybackTiming.remainingAtPause(
-            nextTransitionAt: nextTransitionAtMs,
-            pauseAt: now
-        )
         holdTask?.cancel()
+        if !currentIsVideo() {
+            let now = Int64(Date().timeIntervalSince1970 * 1000)
+            remainingHoldMs = PlaybackTiming.remainingAtPause(
+                nextTransitionAt: nextTransitionAtMs,
+                pauseAt: now
+            )
+        }
         persistSnapshot()
     }
 
@@ -930,7 +942,18 @@ final class PlayerViewController: UIViewController {
     private func resumeFromRest() {
         if queue.isEmpty {
             rebuildQueue(keepIndex: false)
-        } else if !currentIsVideo() {
+        } else if currentIsVideo() {
+            guard let player = videoPlayer, let item = player.currentItem else {
+                scheduleHoldTimer()
+                return
+            }
+            let duration = item.duration
+            if duration.isNumeric, player.currentTime() >= duration {
+                dispatch(PlaybackEvent(type: "hold_elapsed", nextReady: isNextReady()))
+            } else {
+                player.play()
+            }
+        } else {
             scheduleHoldTimer()
         }
     }
@@ -1244,7 +1267,7 @@ final class PlayerViewController: UIViewController {
     }
 
     private func currentWeatherPlace() async -> WeatherPlace? {
-        (try? await environment.weatherRepository.places())?.last
+        try? await environment.weatherRepository.selectedPlace()
     }
 
     private func refreshWeather(manual: Bool) async {
@@ -1620,7 +1643,9 @@ final class PlayerViewController: UIViewController {
     @objc private func handlePauseResume() {
         if controllerState == PlaybackController.paused {
             dispatch(PlaybackEvent(type: "user_resume"))
-            scheduleHoldTimer()
+            if !currentIsVideo() {
+                scheduleHoldTimer()
+            }
             videoPlayer?.play()
             resumeOrStartMusic()
         } else {
@@ -1703,6 +1728,8 @@ final class PlayerViewController: UIViewController {
     @objc private func handleBackground() {
         musicPlayingBeforeBackground = musicPlayer.isPlaying
         musicPlayer.stop()
+        videoPlayingBeforeBackground = videoPlayer != nil && videoPlayer?.rate != 0
+        videoPlayer?.pause()
         dispatch(PlaybackEvent(type: "app_background"))
         restoreBrightness()
     }
@@ -1726,8 +1753,15 @@ final class PlayerViewController: UIViewController {
                 $0.selectionVersion == selectionVersion && !$0.settingsJSON.isEmpty
             } ?? false
             dispatch(PlaybackEvent(type: "app_foreground", queueIntact: intact))
-            if controllerState == PlaybackController.holding, !currentIsVideo() {
-                scheduleHoldTimer()
+            if controllerState == PlaybackController.holding {
+                if currentIsVideo() {
+                    if videoPlayingBeforeBackground {
+                        videoPlayingBeforeBackground = false
+                        videoPlayer?.play()
+                    }
+                } else {
+                    scheduleHoldTimer()
+                }
             }
         }
     }

@@ -867,7 +867,22 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
             holdErrorLabel.isHidden = false
             return nil
         }
-        let seconds = unitSegmented.selectedSegmentIndex == 1 ? raw * 60 : raw
+        let seconds: Int
+        if unitSegmented.selectedSegmentIndex == 1 {
+            let scaled = raw.multipliedReportingOverflow(by: 60)
+            guard !scaled.overflow else {
+                holdErrorLabel.text = FormatStrings.string(
+                    "playback.out_of_range",
+                    PlaybackTiming.holdMinSeconds,
+                    PlaybackTiming.holdMaxSeconds
+                )
+                holdErrorLabel.isHidden = false
+                return nil
+            }
+            seconds = scaled.partialValue
+        } else {
+            seconds = raw
+        }
         guard PlaybackTiming.isValidHoldSeconds(Double(seconds)) else {
             holdErrorLabel.text = FormatStrings.string(
                 "playback.out_of_range",

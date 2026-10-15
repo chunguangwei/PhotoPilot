@@ -814,8 +814,8 @@
       "key": "source.icloud.body.ios",
       "section": "4.2 本地与苹果端图库",
       "platform": "ios",
-      "zh": "从这台 iPad 的系统照片库读取，云端照片会先下载到本机。",
-      "en": "Reads this iPad’s system photo library. Photos stored in iCloud are downloaded first."
+      "zh": "从这台设备的系统照片库读取，云端照片会先下载到本机。",
+      "en": "Reads from this device’s photo library. Cloud photos download to this device first."
     },
     {
       "key": "source.icloud.body.android",

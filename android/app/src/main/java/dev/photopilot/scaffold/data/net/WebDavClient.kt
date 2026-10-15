@@ -108,7 +108,7 @@ class WebDavClient(
             throw DavException(ERR_SRC_UNAVAILABLE, e)
         }
         val request = buildString {
-            val target = if (url.path.isEmpty()) "/" else url.path
+            val target = if (url.path.isEmpty()) "/" else encodePath(decodeHref(url.path))
             append("$method $target HTTP/1.1\r\n")
             append("Host: $host:$port\r\n")
             append("Connection: close\r\n")
@@ -255,6 +255,11 @@ class WebDavClient(
     private fun parseMultistatus(input: InputStream): List<DavEntry> {
         val factory = javax.xml.parsers.DocumentBuilderFactory.newInstance()
         factory.isNamespaceAware = true
+        runCatching {
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+        }
+        factory.isXIncludeAware = false
+        factory.isExpandEntityReferences = false
         val document = factory.newDocumentBuilder().parse(input)
         val entries = mutableListOf<DavEntry>()
         val responses = document.getElementsByTagNameNS(DAV_NS, "response")

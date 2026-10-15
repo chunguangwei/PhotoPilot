@@ -244,17 +244,22 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
 
     private func presentCoverPreview(assetID: String) {
         let trimmed = nameField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let preview = CoverPreviewViewController(
-            environment: environment,
-            relPath: gridChild?.relPath(for: assetID),
-            frameName: trimmed.isEmpty ? L10n.string("frames.name_default") : trimmed,
-            photoCount: selectedAssetIDs.count
-        ) { [weak self] in
-            self?.setPendingCover(assetID)
+        Task { [weak self] in
+            guard let self else { return }
+            let readyIDs = Set((try? await environment.assets.libraryItems())?.map(\.id) ?? [])
+            let playable = selectedAssetIDs.intersection(readyIDs).count
+            let preview = CoverPreviewViewController(
+                environment: environment,
+                relPath: gridChild?.relPath(for: assetID),
+                frameName: trimmed.isEmpty ? L10n.string("frames.name_default") : trimmed,
+                photoCount: playable
+            ) { [weak self] in
+                self?.setPendingCover(assetID)
+            }
+            preview.modalPresentationStyle = .overFullScreen
+            preview.modalTransitionStyle = .crossDissolve
+            present(preview, animated: true)
         }
-        preview.modalPresentationStyle = .overFullScreen
-        preview.modalTransitionStyle = .crossDissolve
-        present(preview, animated: true)
     }
 
     private func setPendingCover(_ assetID: String) {
@@ -288,7 +293,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             if let explicit = fetched.coverAssetId {
                 gridChild?.coverAssetID = explicit
             } else {
-                gridChild?.coverAssetID = try? await environment.frameManager.firstQueueAssetID(frameID: frameID)
+                gridChild?.coverAssetID = (try? await environment.frames.buildPlayQueue(frameID: frameID))?.first
             }
             gridChild?.applySelection(selectedAssetIDs)
             collections = (try? await environment.assets.collections()) ?? []
@@ -310,11 +315,17 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
     }
 
     private func updateSummary() {
-        summaryLabel.text = FormatStrings.string(
-            "library.selection_summary",
-            selectedAssetIDs.count,
-            selectedAssetIDs.count
-        )
+        let selected = selectedAssetIDs
+        Task { [weak self] in
+            guard let self else { return }
+            let readyIDs = Set((try? await environment.assets.libraryItems())?.map(\.id) ?? [])
+            let playable = selected.intersection(readyIDs).count
+            summaryLabel.text = FormatStrings.string(
+                "library.selection_summary",
+                selected.count,
+                playable
+            )
+        }
     }
 
     private func members(of collectionID: String) async -> [String] {

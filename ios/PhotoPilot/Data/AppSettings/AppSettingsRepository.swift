@@ -27,34 +27,39 @@ final class AppSettingsRepository {
     }
 
     func value(forKey key: String) throws -> String? {
-        let request = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
-        request.predicate = NSPredicate(format: "key == %@", key)
-        request.fetchLimit = 1
-        return try container.viewContext.fetch(request).first?.value(forKey: "value_json") as? String
+        let context = container.viewContext
+        return try context.performAndWait {
+            let request = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
+            request.predicate = NSPredicate(format: "key == %@", key)
+            request.fetchLimit = 1
+            return try context.fetch(request).first?.value(forKey: "value_json") as? String
+        }
     }
 
     func setValue(_ value: String, forKey key: String) throws {
         let context = container.viewContext
-        let request = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
-        request.predicate = NSPredicate(format: "key == %@", key)
-        request.fetchLimit = 1
-        let now = Int(Date().timeIntervalSince1970 * 1000)
-        if let row = try context.fetch(request).first {
-            row.setValue(value, forKey: "value_json")
-            row.setValue(now, forKey: "updated_at")
-        } else {
-            guard let entity = context.persistentStoreCoordinator?
-                .managedObjectModel.entitiesByName["SettingsKV"] else {
-                throw PersistenceError.dbConstraintViolation
+        try context.performAndWait {
+            let request = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
+            request.predicate = NSPredicate(format: "key == %@", key)
+            request.fetchLimit = 1
+            let now = Int(Date().timeIntervalSince1970 * 1000)
+            if let row = try context.fetch(request).first {
+                row.setValue(value, forKey: "value_json")
+                row.setValue(now, forKey: "updated_at")
+            } else {
+                guard let entity = context.persistentStoreCoordinator?
+                    .managedObjectModel.entitiesByName["SettingsKV"] else {
+                    throw PersistenceError.dbConstraintViolation
+                }
+                let created = NSManagedObject(entity: entity, insertInto: context)
+                created.setValue(key, forKey: "key")
+                created.setValue(value, forKey: "value_json")
+                created.setValue(now, forKey: "created_at")
+                created.setValue(now, forKey: "updated_at")
             }
-            let created = NSManagedObject(entity: entity, insertInto: context)
-            created.setValue(key, forKey: "key")
-            created.setValue(value, forKey: "value_json")
-            created.setValue(now, forKey: "created_at")
-            created.setValue(now, forKey: "updated_at")
-        }
-        if context.hasChanges {
-            try context.save()
+            if context.hasChanges {
+                try context.save()
+            }
         }
     }
 }

@@ -188,7 +188,6 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         musicLocalPath = s.musicLocalPath
         musicLocalTitle = s.musicLocalTitle
         if (reduceMotion) {
-            transitionIndex = 0
             reduceMotionNote.visibility = View.VISIBLE
         }
         initialDraft = currentDraft()

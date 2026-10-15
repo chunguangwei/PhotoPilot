@@ -21,8 +21,8 @@ settings:
     SWIFT_VERSION: "6.0"
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     TARGETED_DEVICE_FAMILY: "2"
-    MARKETING_VERSION: "1.1.12"
-    CURRENT_PROJECT_VERSION: "14"
+    MARKETING_VERSION: "1.1.13"
+    CURRENT_PROJECT_VERSION: "15"
 targets:
   PhotoPilot:
     type: application
@@ -146,3 +146,15 @@ schemes:
       environmentVariables:
         - variable: SCREENSHOT_DIR
           value: "$(SRCROOT)/../store/appstore/raw"
+  PhotoPilotWalkthrough:
+    build:
+      targets:
+        PhotoPilot: all
+        PhotoPilotUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - PhotoPilotUITests
+      environmentVariables:
+        - variable: SCREENSHOT_DIR
+          value: "$(SRCROOT)/../.build/walkthrough"
