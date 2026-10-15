@@ -186,6 +186,8 @@
 "import.waiting_space" = "等待可用空间";
 "import.needs_auth" = "请重新授权以继续导入";
 "import.partial_failed" = "部分照片未能导入";
+"import.pick_frame_title" = "选择要展示的相框";
+"import.pick_frame_new" = "新建相框";
 "import.retry_failed_only" = "只重试失败项";
 "import.video_skipped" = "不支持的视频已跳过";
 "import.live_photo_still" = "Live Photo 将保存为静态照片";

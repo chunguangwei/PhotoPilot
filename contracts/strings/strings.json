@@ -1469,6 +1469,22 @@
       "en": "Some photos couldn’t be imported"
     },
     {
+      "key": "import.pick_frame_title",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "选择要展示的相框",
+      "en": "Choose a frame",
+      "note": "导入完成后选择展示内容时：已有相框则让用户挑选"
+    },
+    {
+      "key": "import.pick_frame_new",
+      "section": "4.6 导入任务（S08）",
+      "platform": "all",
+      "zh": "新建相框",
+      "en": "Create new frame",
+      "note": "导入后选择展示内容：新建相框选项"
+    },
+    {
       "key": "import.retry_failed_only",
       "section": "4.6 导入任务（S08）",
       "platform": "all",

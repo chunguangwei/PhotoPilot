@@ -186,6 +186,8 @@
 "import.waiting_space" = "Waiting for storage";
 "import.needs_auth" = "Allow access again to continue importing";
 "import.partial_failed" = "Some photos couldn’t be imported";
+"import.pick_frame_title" = "Choose a frame";
+"import.pick_frame_new" = "Create new frame";
 "import.retry_failed_only" = "Retry failed only";
 "import.video_skipped" = "Unsupported videos were skipped";
 "import.live_photo_still" = "Live Photos will be saved as still images";

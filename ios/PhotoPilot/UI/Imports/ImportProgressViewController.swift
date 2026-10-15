@@ -318,17 +318,49 @@ final class ImportProgressViewController: UIViewController {
     @objc private func handleChooseContent() {
         Task { [weak self] in
             guard let self else { return }
-            guard let frameID = try? await environment.frameManager.createFrame(
-                name: L10n.string("frames.name_default")
-            ) else { return }
-            let editor = FrameEditViewController(
-                environment: environment,
-                frameID: frameID,
-                routeToMainAfterSave: true
+            let cards = (try? await environment.frameManager.frameCards()) ?? []
+            if cards.isEmpty {
+                await createAndPresentEditor()
+                return
+            }
+            let alert = UIAlertController(
+                title: L10n.string("import.pick_frame_title"),
+                message: nil,
+                preferredStyle: .actionSheet
             )
-            editor.modalPresentationStyle = .fullScreen
-            present(editor, animated: true)
+            for card in cards {
+                alert.addAction(UIAlertAction(title: card.name, style: .default) { [weak self] _ in
+                    self?.presentEditor(frameID: card.id)
+                })
+            }
+            alert.addAction(UIAlertAction(
+                title: L10n.string("import.pick_frame_new"),
+                style: .default
+            ) { [weak self] _ in
+                Task { [weak self] in await self?.createAndPresentEditor() }
+            })
+            alert.addAction(UIAlertAction(title: L10n.string("common.cancel"), style: .cancel))
+            alert.popoverPresentationController?.sourceView = chooseContentButton
+            alert.popoverPresentationController?.sourceRect = chooseContentButton.bounds
+            present(alert, animated: true)
         }
+    }
+
+    private func createAndPresentEditor() async {
+        guard let frameID = try? await environment.frameManager.createFrame(
+            name: L10n.string("frames.name_default")
+        ) else { return }
+        presentEditor(frameID: frameID)
+    }
+
+    private func presentEditor(frameID: String) {
+        let editor = FrameEditViewController(
+            environment: environment,
+            frameID: frameID,
+            routeToMainAfterSave: true
+        )
+        editor.modalPresentationStyle = .fullScreen
+        present(editor, animated: true)
     }
 
     @objc private func handleBack() {

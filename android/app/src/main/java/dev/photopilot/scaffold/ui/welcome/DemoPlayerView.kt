@@ -2,6 +2,7 @@ package dev.photopilot.scaffold.ui.welcome
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.LinearGradient
 import android.graphics.Paint
@@ -118,7 +119,12 @@ class DemoPlayerView(context: Context) : FrameLayout(context) {
         super.onSizeChanged(w, h, oldw, oldh)
         if (w <= 0 || h <= 0 || slides.isNotEmpty()) return
         executor.execute {
-            val generated = (0 until SLIDE_COUNT).map { index -> renderSlide(index, w, h) }
+            val bundled = loadBundledSlides()
+            val generated = if (bundled.isNotEmpty()) {
+                bundled
+            } else {
+                (0 until SLIDE_COUNT).map { index -> renderSlide(index, w, h) }
+            }
             post {
                 if (slides.isNotEmpty()) return@post
                 slides = generated
@@ -154,6 +160,12 @@ class DemoPlayerView(context: Context) : FrameLayout(context) {
             outgoing.animate().alpha(0f).setDuration(FADE_MS).start()
         }
         showingA = !showingA
+    }
+
+    private fun loadBundledSlides(): List<Bitmap> = BUNDLED_SLIDES.mapNotNull { name ->
+        runCatching {
+            context.assets.open("demo/$name").use { BitmapFactory.decodeStream(it) }
+        }.getOrNull()
     }
 
     private fun renderSlide(index: Int, width: Int, height: Int): Bitmap {
@@ -234,6 +246,10 @@ class DemoPlayerView(context: Context) : FrameLayout(context) {
 
     private companion object {
         const val SLIDE_COUNT = 5
+        private val BUNDLED_SLIDES = listOf(
+            "demo_lake.jpg", "demo_sunset.jpg", "demo_forest.jpg", "demo_city.jpg",
+            "demo_flowers.jpg", "demo_dog.jpg", "demo_coffee.jpg", "demo_snow.jpg",
+        )
         const val HOLD_MS = 3_000L
         const val FADE_MS = 800L
         const val CONTROLS_ALPHA = 0.94f

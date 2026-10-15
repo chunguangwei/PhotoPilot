@@ -3,7 +3,17 @@ import UIKit
 enum DemoImageFactory {
     static let sampleCount = 5
 
+    static let bundledNames = [
+        "demo_lake", "demo_sunset", "demo_forest", "demo_city",
+        "demo_flowers", "demo_dog", "demo_coffee", "demo_snow",
+    ]
+
     static func makeImages(size: CGSize, scale: CGFloat) -> [UIImage] {
+        let bundled = bundledNames.compactMap { name -> UIImage? in
+            guard let url = Bundle.main.url(forResource: name, withExtension: "jpg") else { return nil }
+            return UIImage(contentsOfFile: url.path)
+        }
+        if !bundled.isEmpty { return bundled }
         let pixelSize = CGSize(
             width: max(size.width * scale, 1),
             height: max(size.height * scale, 1)

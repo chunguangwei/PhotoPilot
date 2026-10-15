@@ -215,6 +215,8 @@
     <string name="import.waiting_space">Waiting for storage</string>
     <string name="import.needs_auth">Allow access again to continue importing</string>
     <string name="import.partial_failed">Some photos couldn’t be imported</string>
+    <string name="import.pick_frame_title">Choose a frame</string>
+    <string name="import.pick_frame_new">Create new frame</string>
     <string name="import.retry_failed_only">Retry failed only</string>
     <string name="import.video_skipped">Unsupported videos were skipped</string>
     <string name="import.live_photo_still">Live Photos will be saved as still images</string>

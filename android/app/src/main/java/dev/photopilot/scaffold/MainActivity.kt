@@ -1489,6 +1489,24 @@ class MainActivity : Activity() {
             .show()
     }
 
+    private fun chooseFrameForContent() {
+        val env = environment ?: return
+        scope.launch {
+            val frames = withContext(Dispatchers.IO) { env.frameManager.listFrames() }
+            if (frames.isEmpty()) {
+                openFrameEditor(null)
+                return@launch
+            }
+            val names = frames.map { it.name }.toTypedArray()
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle(R.string.import_pick_frame_title)
+                .setItems(names) { _, which -> openFrameEditor(frames[which]) }
+                .setPositiveButton(R.string.import_pick_frame_new) { _, _ -> openFrameEditor(null) }
+                .setNegativeButton(R.string.common_cancel, null)
+                .show()
+        }
+    }
+
     private fun openFrameEditor(frame: FrameEntity?) {
         val env = environment ?: return
         val view = FrameEditView(this, File(filesDir, "originals"))
@@ -2763,7 +2781,7 @@ class MainActivity : Activity() {
             onRetryFailedClick = { scope.launch { env.runner.retryFailed(jobId) } }
             onCancelClick = { confirmCancelJob(jobId) }
             onCloseClick = { closeImportProgress() }
-            onChooseContentClick = { openFrameEditor(null) }
+            onChooseContentClick = { chooseFrameForContent() }
         }
         progressView = view
         progressJobId = jobId
