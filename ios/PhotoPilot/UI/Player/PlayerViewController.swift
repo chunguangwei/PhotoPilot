@@ -397,8 +397,13 @@ final class PlayerViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        applyBrightness()
         guard controllerState == PlaybackController.idle else {
+            workTask = Task { [weak self] in
+                guard let self,
+                      let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: frameID) else { return }
+                settings = PlayerSettings.parse(json: bundle.settingsJSON)
+                applyBrightness()
+            }
             checkRevocation()
             reloadMusicSettings()
             dispatch(PlaybackEvent(type: "selection_changed"))
@@ -411,6 +416,7 @@ final class PlayerViewController: UIViewController {
                 return
             }
             settings = PlayerSettings.parse(json: bundle.settingsJSON)
+            applyBrightness()
             randomSeed = bundle.randomSeed
             selectionVersion = bundle.selectionVersion
             pendingSnapshot = try? await environment.frameManager.playbackSnapshot(frameID: frameID)
@@ -1378,7 +1384,10 @@ final class PlayerViewController: UIViewController {
     }
 
     private func applyBrightness() {
-        guard let brightness = settings.brightness else { return }
+        guard let brightness = settings.brightness else {
+            restoreBrightness()
+            return
+        }
         if originalBrightness == nil {
             originalBrightness = UIScreen.main.brightness
         }

@@ -53,6 +53,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private var orderIndex = 0
     private var brightnessFollow = true
     private var brightnessPercent = 50
+    private var previewOriginalBrightness: Float? = null
     private var keepAwakePaused = true
     private var restEnabled = false
     private lateinit var restRow: LinearLayout
@@ -533,6 +534,11 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         addSwitch(column, R.string.settings_appearance_system, brightnessFollow) { follow ->
             brightnessFollow = follow
             brightnessSeek.isEnabled = !follow
+            if (follow) {
+                cancelBrightnessPreview()
+            } else {
+                applyBrightnessPreview(brightnessSeek.progress)
+            }
         }
         brightnessSeek = SeekBar(context).apply {
             max = BRIGHTNESS_SEEK_MAX
@@ -541,6 +547,9 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                     brightnessPercent = progress
+                    if (fromUser && !brightnessFollow) {
+                        applyBrightnessPreview(progress)
+                    }
                 }
                 override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
                 override fun onStopTrackingTouch(seekBar: SeekBar?) = Unit
@@ -804,6 +813,25 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             android.provider.Settings.Global.ANIMATOR_DURATION_SCALE,
             1f,
         ) == 0f
+
+    private fun applyBrightnessPreview(progress: Int) {
+        val activity = context as? android.app.Activity ?: return
+        val attrs = activity.window.attributes
+        if (previewOriginalBrightness == null) {
+            previewOriginalBrightness = attrs.screenBrightness
+        }
+        attrs.screenBrightness = (progress / 100.0).toFloat().coerceIn(0f, 1f)
+        activity.window.attributes = attrs
+    }
+
+    fun cancelBrightnessPreview() {
+        val original = previewOriginalBrightness ?: return
+        val activity = context as? android.app.Activity ?: return
+        val attrs = activity.window.attributes
+        attrs.screenBrightness = original
+        activity.window.attributes = attrs
+        previewOriginalBrightness = null
+    }
 
     private fun addLabel(parent: LinearLayout, textRes: Int, marginRes: Int) {
         val res = resources

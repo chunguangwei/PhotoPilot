@@ -2052,6 +2052,7 @@ class MainActivity : Activity() {
     }
 
     private fun closePlaybackSettings() {
+        playbackSettingsView?.cancelBrightnessPreview()
         playbackSettingsView = null
         popOverlayTracked()
     }

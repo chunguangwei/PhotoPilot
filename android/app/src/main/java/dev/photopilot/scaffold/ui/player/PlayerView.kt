@@ -577,13 +577,18 @@ class PlayerView(
     }
 
     fun applyBrightnessIfNeeded(activity: android.app.Activity) {
-        val level = settings.brightness ?: return
-        if (brightnessApplied) return
+        val level = settings.brightness
+        if (level == null) {
+            restoreBrightness()
+            return
+        }
         val attrs = activity.window.attributes
-        originalBrightness = attrs.screenBrightness
+        if (!brightnessApplied) {
+            originalBrightness = attrs.screenBrightness
+            brightnessApplied = true
+        }
         attrs.screenBrightness = level.coerceIn(0f, 1f)
         activity.window.attributes = attrs
-        brightnessApplied = true
     }
 
     private fun restoreBrightness() {
@@ -673,6 +678,7 @@ class PlayerView(
         musicFailedSelection = null
         clockLine.visibility = if (settings.clockEnabled) View.VISIBLE else View.GONE
         dateLine.visibility = if (settings.dateEnabled) View.VISIBLE else View.GONE
+        (context as? android.app.Activity)?.let { applyBrightnessIfNeeded(it) }
         applyClockPosition()
         updateClock()
         engine?.currentState()?.let { syncMusic(it) }

@@ -79,6 +79,8 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     private let orderHintLabel = UILabel()
     private let brightnessSegmented = UISegmentedControl()
     private let brightnessSlider = UISlider()
+    private var originalScreenBrightness: CGFloat?
+    private var brightnessPreviewApplied = false
     private let keepAwakeSwitch = UISwitch()
     private let restSwitch = UISwitch()
     private let restStartPicker = UIDatePicker()
@@ -362,7 +364,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         formStack.addArrangedSubview(brightnessSegmented)
         brightnessSlider.minimumValue = 0
         brightnessSlider.maximumValue = 1
-        brightnessSlider.addTarget(self, action: #selector(handleControlChanged), for: .valueChanged)
+        brightnessSlider.addTarget(self, action: #selector(handleBrightnessSliderChanged), for: .valueChanged)
         brightnessSlider.accessibilityLabel = L10n.string("playback.brightness")
         formStack.addArrangedSubview(brightnessSlider)
         let brightnessHelp = makeHelpLabel(key: "playback.brightness_restore_help")
@@ -765,6 +767,32 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     @objc private func handleBrightnessModeChanged() {
         dirty = true
         refreshDependentUI()
+        if brightnessSegmented.selectedSegmentIndex == 1 {
+            applyBrightnessPreview(brightnessSlider.value)
+        } else {
+            restoreBrightnessPreview()
+        }
+    }
+
+    @objc private func handleBrightnessSliderChanged() {
+        handleControlChanged()
+        if brightnessSegmented.selectedSegmentIndex == 1 {
+            applyBrightnessPreview(brightnessSlider.value)
+        }
+    }
+
+    private func applyBrightnessPreview(_ value: Float) {
+        if originalScreenBrightness == nil {
+            originalScreenBrightness = UIScreen.main.brightness
+        }
+        UIScreen.main.brightness = CGFloat(min(max(value, 0), 1))
+        brightnessPreviewApplied = true
+    }
+
+    private func restoreBrightnessPreview() {
+        guard brightnessPreviewApplied, let original = originalScreenBrightness else { return }
+        UIScreen.main.brightness = original
+        brightnessPreviewApplied = false
     }
 
     @objc private func handleBack() {
@@ -780,7 +808,10 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         alert.addAction(UIAlertAction(
             title: L10n.string("common.discard"),
             style: .destructive,
-            handler: { [weak self] _ in self?.dismiss(animated: true) }
+            handler: { [weak self] _ in
+                self?.restoreBrightnessPreview()
+                self?.dismiss(animated: true)
+            }
         ))
         alert.addAction(UIAlertAction(
             title: L10n.string("common.cancel"),
@@ -852,6 +883,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
                 try? await environment.frameManager.updateOrderMode(frameID: frameID, orderMode: orderMode)
             }
             dirty = false
+            restoreBrightnessPreview()
             dismiss(animated: true)
         }
     }
