@@ -28,9 +28,8 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         view.addSubview(headerStack)
 
         if navigationController != nil {
-            let backButton = ActionButton(titleKey: "common.back", style: .secondary)
-            backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
-            let backRow = UIStackView(arrangedSubviews: [backButton, UIView()])
+            let backRow = ScreenHeaderView()
+            backRow.onBack = { [weak self] in self?.handleBack() }
             headerStack.addArrangedSubview(backRow)
         }
 

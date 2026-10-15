@@ -95,26 +95,14 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         view.addSubview(root)
 
         if showsCloseButton || headerTitle != nil {
-            let bar = UIStackView()
-            bar.axis = .horizontal
-            bar.alignment = .center
-            bar.spacing = ThemeMetrics.space12
-            if showsCloseButton {
-                let backButton = ActionButton(titleKey: "common.back", style: .secondary)
-                backButton.addTarget(self, action: #selector(handleClose), for: .touchUpInside)
-                bar.addArrangedSubview(backButton)
-            }
-            if let headerTitle {
-                let titleLabel = UILabel()
-                titleLabel.text = headerTitle
-                titleLabel.font = ThemeFont.heading()
-                titleLabel.adjustsFontForContentSizeCategory = true
-                titleLabel.textColor = ThemeColor.textPrimary
-                titleLabel.numberOfLines = 0
-                titleLabel.accessibilityTraits.insert(.header)
-                bar.addArrangedSubview(titleLabel)
-            }
-            bar.addArrangedSubview(UIView())
+            let bar = ScreenHeaderView(title: headerTitle, showsBackButton: showsCloseButton)
+            bar.onBack = { [weak self] in self?.handleClose() }
+            bar.directionalLayoutMargins = NSDirectionalEdgeInsets(
+                top: ThemeMetrics.space8,
+                leading: ThemeMetrics.contentInsetCompact,
+                bottom: 0,
+                trailing: ThemeMetrics.contentInsetCompact
+            )
             root.addArrangedSubview(bar)
         }
 

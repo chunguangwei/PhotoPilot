@@ -14,6 +14,7 @@ import android.widget.TextView
 import android.app.TimePickerDialog
 import dev.photopilot.scaffold.R
 import dev.photopilot.scaffold.ui.widget.primaryButton
+import dev.photopilot.scaffold.ui.widget.screenHeader
 import dev.photopilot.scaffold.ui.widget.secondaryButton
 import java.util.Calendar
 import java.util.Locale
@@ -75,29 +76,10 @@ class HolidaySettingsView(context: Context) : LinearLayout(context) {
         val res = resources
         val inset = res.getDimensionPixelSize(R.dimen.pp_content_inset)
 
-        val headerRow = LinearLayout(context).apply {
-            orientation = HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
+        val headerRow = screenHeader(context, R.string.holiday_title) {
+            if (formScroll.visibility == VISIBLE) closeEditor() else onBack?.invoke()
         }
-        val back = secondaryButton(context, R.string.common_back).apply {
-            setOnClickListener {
-                if (formScroll.visibility == VISIBLE) closeEditor() else onBack?.invoke()
-            }
-        }
-        val title = TextView(context).apply {
-            text = res.getString(R.string.holiday_title)
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_heading))
-            setTextColor(context.getColor(R.color.pp_text_primary))
-            setAccessibilityHeading(true)
-        }
-        headerRow.addView(back, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
-        headerRow.addView(
-            title,
-            LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = res.getDimensionPixelSize(R.dimen.pp_space_16)
-            },
-        )
+        headerRow.setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
         addView(headerRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
         val listScroll = ScrollView(context)

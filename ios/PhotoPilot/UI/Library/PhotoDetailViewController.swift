@@ -40,11 +40,9 @@ final class PhotoDetailViewController: UIViewController {
         enableEdgeSwipeBack()
         view.backgroundColor = ThemeColor.canvas
 
-        let backButton = ActionButton(titleKey: "common.back", style: .secondary)
-        backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
-        let backRow = UIStackView(arrangedSubviews: [backButton, UIView()])
-        backRow.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(backRow)
+        let backRow = ScreenHeaderView()
+        backRow.onBack = { [weak self] in self?.handleBack() }
+        backRow.pinToTop(of: view)
 
         imageView.contentMode = .scaleAspectFit
         imageView.clipsToBounds = true
@@ -103,15 +101,6 @@ final class PhotoDetailViewController: UIViewController {
         let readable = metadataStack.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
         readable.priority = .defaultHigh
         NSLayoutConstraint.activate([
-            backRow.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            backRow.leadingAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.leadingAnchor,
-                constant: ThemeMetrics.contentInsetCompact
-            ),
-            backRow.trailingAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.trailingAnchor,
-                constant: -ThemeMetrics.contentInsetCompact
-            ),
             imageView.topAnchor.constraint(
                 equalTo: backRow.bottomAnchor,
                 constant: ThemeMetrics.space8

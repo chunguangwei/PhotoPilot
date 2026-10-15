@@ -18,6 +18,8 @@
     <dimen name="pp_grid_gap">16dp</dimen>
     <dimen name="pp_grid_cell_min">150dp</dimen>
     <dimen name="pp_touch_target">48dp</dimen>
+    <dimen name="pp_header_height">56dp</dimen>
+    <dimen name="pp_icon_button">24dp</dimen>
     <dimen name="pp_text_title">32sp</dimen>
     <dimen name="pp_text_heading">22sp</dimen>
     <dimen name="pp_text_body">17sp</dimen>

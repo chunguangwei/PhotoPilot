@@ -29,6 +29,7 @@ import dev.photopilot.scaffold.data.db.SourceEntity
 import dev.photopilot.scaffold.data.logic.GridGeometry
 import dev.photopilot.scaffold.data.logic.LibraryCriteria
 import dev.photopilot.scaffold.data.logic.LibrarySort
+import dev.photopilot.scaffold.ui.widget.backButton
 import dev.photopilot.scaffold.ui.widget.primaryButton
 import java.io.File
 import java.util.Date
@@ -193,18 +194,12 @@ class LibraryView(
 
         backRow = LinearLayout(context).apply {
             orientation = HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             visibility = View.GONE
-            val back = TextView(context).apply {
-                text = res.getString(R.string.common_back)
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
-                setTextColor(context.getColor(R.color.pp_accent_action))
-                minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-                gravity = Gravity.CENTER_VERTICAL
-                isClickable = true
-                isFocusable = true
-                setOnClickListener { exitCollection() }
-            }
-            addView(back, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
+            addView(
+                backButton(context) { exitCollection() },
+                LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT),
+            )
         }
         addView(
             backRow,

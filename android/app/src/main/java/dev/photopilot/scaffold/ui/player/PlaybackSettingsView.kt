@@ -26,6 +26,7 @@ import dev.photopilot.scaffold.data.logic.PlaybackSettingsEdit
 import dev.photopilot.scaffold.data.logic.PlaybackTiming
 import dev.photopilot.scaffold.data.render.BitmapRenderer
 import dev.photopilot.scaffold.ui.widget.primaryButton
+import dev.photopilot.scaffold.ui.widget.screenHeader
 import dev.photopilot.scaffold.ui.widget.secondaryButton
 import java.io.File
 import java.util.Locale
@@ -101,27 +102,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         val res = resources
         val inset = res.getDimensionPixelSize(R.dimen.pp_content_inset)
 
-        val headerRow = LinearLayout(context).apply {
-            orientation = HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
-        }
-        val back = secondaryButton(context, R.string.common_back).apply {
-            setOnClickListener { onBack?.invoke(hasChanges()) }
-        }
-        val title = TextView(context).apply {
-            text = res.getString(R.string.playback_title)
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_heading))
-            setTextColor(context.getColor(R.color.pp_text_primary))
-            setAccessibilityHeading(true)
-        }
-        headerRow.addView(back, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
-        headerRow.addView(
-            title,
-            LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = res.getDimensionPixelSize(R.dimen.pp_space_16)
-            },
-        )
+        val headerRow = screenHeader(context, R.string.playback_title) { onBack?.invoke(hasChanges()) }
+        headerRow.setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
         addView(headerRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
         val scroll = ScrollView(context)

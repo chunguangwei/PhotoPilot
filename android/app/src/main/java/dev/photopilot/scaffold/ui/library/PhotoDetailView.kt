@@ -16,6 +16,7 @@ import dev.photopilot.scaffold.data.db.AssetEntity
 import dev.photopilot.scaffold.data.logic.ByteSizeFormat
 import dev.photopilot.scaffold.data.logic.RenderGeometry
 import dev.photopilot.scaffold.data.render.BitmapRenderer
+import dev.photopilot.scaffold.ui.widget.backButton
 import dev.photopilot.scaffold.ui.widget.secondaryButton
 import java.io.File
 import java.util.Date
@@ -50,12 +51,13 @@ class PhotoDetailView(context: Context) : LinearLayout(context) {
 
         val backRow = LinearLayout(context).apply {
             orientation = HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
         }
-        val back = secondaryButton(context, R.string.common_back).apply {
-            setOnClickListener { onBack?.invoke() }
-        }
-        backRow.addView(back, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
+        backRow.addView(
+            backButton(context) { onBack?.invoke() },
+            LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT),
+        )
         addView(backRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
         imageFrame = FrameLayout(context)

@@ -12,7 +12,7 @@ import android.widget.TextView
 import dev.photopilot.scaffold.R
 import dev.photopilot.scaffold.data.net.PlaceResult
 import dev.photopilot.scaffold.ui.widget.primaryButton
-import dev.photopilot.scaffold.ui.widget.secondaryButton
+import dev.photopilot.scaffold.ui.widget.screenHeader
 
 class WeatherCitySearchView(context: Context) : ScrollView(context) {
 
@@ -32,28 +32,9 @@ class WeatherCitySearchView(context: Context) : ScrollView(context) {
         val inset = res.getDimensionPixelSize(R.dimen.pp_content_inset)
         val column = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(inset, inset, inset, inset)
+            setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, inset)
         }
-        val headerRow = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        val back = secondaryButton(context, R.string.common_back).apply {
-            setOnClickListener { onBack?.invoke() }
-        }
-        val title = TextView(context).apply {
-            text = res.getString(R.string.weather_choose_city)
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_heading))
-            setTextColor(context.getColor(R.color.pp_text_primary))
-            setAccessibilityHeading(true)
-        }
-        headerRow.addView(back, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
-        headerRow.addView(
-            title,
-            LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = res.getDimensionPixelSize(R.dimen.pp_space_16)
-            },
-        )
+        val headerRow = screenHeader(context, R.string.weather_choose_city) { onBack?.invoke() }
         column.addView(headerRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
         queryInput = EditText(context).apply {

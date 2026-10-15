@@ -8,7 +8,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import dev.photopilot.scaffold.R
-import dev.photopilot.scaffold.ui.widget.secondaryButton
+import dev.photopilot.scaffold.ui.widget.screenHeader
 
 class LicensesView(context: Context) : LinearLayout(context) {
 
@@ -20,27 +20,8 @@ class LicensesView(context: Context) : LinearLayout(context) {
         isClickable = true
         val res = resources
         val inset = res.getDimensionPixelSize(R.dimen.pp_content_inset)
-        val headerRow = LinearLayout(context).apply {
-            orientation = HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
-        }
-        val back = secondaryButton(context, R.string.common_back).apply {
-            setOnClickListener { onBack?.invoke() }
-        }
-        val title = TextView(context).apply {
-            text = res.getString(R.string.settings_licenses)
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_heading))
-            setTextColor(context.getColor(R.color.pp_text_primary))
-            setAccessibilityHeading(true)
-        }
-        headerRow.addView(back, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
-        headerRow.addView(
-            title,
-            LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = res.getDimensionPixelSize(R.dimen.pp_space_16)
-            },
-        )
+        val headerRow = screenHeader(context, R.string.settings_licenses) { onBack?.invoke() }
+        headerRow.setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
         addView(headerRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
         val scroll = ScrollView(context)

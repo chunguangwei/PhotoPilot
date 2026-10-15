@@ -37,18 +37,8 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
         enableEdgeSwipeBack { [weak self] in self?.handleBack() }
         view.backgroundColor = ThemeColor.canvas
 
-        let backButton = ActionButton(titleKey: "common.back", style: .secondary)
-        backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
-        let titleLabel = UILabel()
-        titleLabel.text = L10n.string("holiday.title")
-        titleLabel.font = ThemeFont.heading()
-        titleLabel.adjustsFontForContentSizeCategory = true
-        titleLabel.textColor = ThemeColor.textPrimary
-        titleLabel.accessibilityTraits.insert(.header)
-        let topBar = UIStackView(arrangedSubviews: [backButton, titleLabel, UIView()])
-        topBar.axis = .horizontal
-        topBar.alignment = .center
-        topBar.spacing = ThemeMetrics.space12
+        let topBar = ScreenHeaderView(title: L10n.string("holiday.title"))
+        topBar.onBack = { [weak self] in self?.handleBack() }
 
         nameField.placeholder = L10n.string("holiday.name")
         nameField.font = ThemeFont.body()

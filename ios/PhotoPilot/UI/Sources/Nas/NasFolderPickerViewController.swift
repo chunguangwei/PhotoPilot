@@ -34,24 +34,13 @@ final class NasFolderPickerViewController: UIViewController, UITableViewDataSour
         super.viewDidLoad()
         view.backgroundColor = ThemeColor.canvas
 
-        let backButton = ActionButton(titleKey: "common.back", style: .secondary)
-        backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
-        let titleLabel = UILabel()
-        titleLabel.text = L10n.string("source.nas.choose_folders")
-        titleLabel.font = ThemeFont.heading()
-        titleLabel.adjustsFontForContentSizeCategory = true
-        titleLabel.textColor = ThemeColor.textPrimary
-        titleLabel.numberOfLines = 0
-        titleLabel.accessibilityTraits.insert(.header)
+        let topBar = ScreenHeaderView(title: L10n.string("source.nas.choose_folders"))
+        topBar.onBack = { [weak self] in self?.handleBack() }
         let pathLabel = UILabel()
         pathLabel.text = path.isEmpty ? "/" : path
         pathLabel.font = ThemeFont.meta()
         pathLabel.adjustsFontForContentSizeCategory = true
         pathLabel.textColor = ThemeColor.textSecondary
-        let topBar = UIStackView(arrangedSubviews: [backButton, titleLabel, UIView()])
-        topBar.axis = .horizontal
-        topBar.alignment = .center
-        topBar.spacing = ThemeMetrics.space12
 
         let header = UIStackView(arrangedSubviews: [topBar, pathLabel])
         header.axis = .vertical

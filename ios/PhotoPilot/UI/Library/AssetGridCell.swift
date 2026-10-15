@@ -2,6 +2,7 @@ import UIKit
 
 final class AssetGridCell: UICollectionViewCell {
     static let reuseID = "AssetGridCell"
+    private static let coverStarTint = UIColor(red: 0.95, green: 0.78, blue: 0.30, alpha: 1)
 
     let imageView = UIImageView()
     private let statusLabel = UILabel()
@@ -127,6 +128,7 @@ final class AssetGridCell: UICollectionViewCell {
         let symbol = isCover ? "star.fill" : "star"
         let configuration = UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
         starButton.setImage(UIImage(systemName: symbol, withConfiguration: configuration), for: .normal)
+        starButton.tintColor = isCover ? Self.coverStarTint : ThemeColor.accentBrand
     }
 
     @objc private func handleStarTap() {
