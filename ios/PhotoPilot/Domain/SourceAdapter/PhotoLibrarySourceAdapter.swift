@@ -99,7 +99,7 @@ final class PhotoLibrarySourceAdapter: SourceAdapter {
     private func videoPayload(asset: PHAsset) async throws -> LocalAssetPayload {
         let fileURL: URL = try await withCheckedThrowingContinuation { continuation in
             let options = PHVideoRequestOptions()
-            options.isNetworkAccessAllowed = false
+            options.isNetworkAccessAllowed = true
             PHImageManager.default().requestAVAsset(
                 forVideo: asset,
                 options: options
@@ -137,7 +137,7 @@ final class PhotoLibrarySourceAdapter: SourceAdapter {
 
     private func exportOriginal(asset: PHAsset, to fileURL: URL) async throws {        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let options = PHImageRequestOptions()
-            options.isNetworkAccessAllowed = false
+            options.isNetworkAccessAllowed = true
             options.deliveryMode = .highQualityFormat
             options.isSynchronous = false
             PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, _, _, info in

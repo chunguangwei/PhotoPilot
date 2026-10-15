@@ -1248,6 +1248,10 @@ actor ImportCoordinator {
         if let code = error as? ImportFailureCode {
             return (code, code == .mediaTruncated)
         }
+        let domain = (error as NSError).domain
+        if domain == "PHPhotosErrorDomain" || domain == "CloudPhotoLibraryErrorDomain" || domain == "CKErrorDomain" {
+            return (.srcUnavailable, true)
+        }
         return (.mediaDecodeFailed, false)
     }
 
