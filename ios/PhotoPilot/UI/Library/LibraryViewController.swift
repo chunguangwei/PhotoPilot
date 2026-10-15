@@ -445,7 +445,7 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
         let cell = tableView.dequeueReusableCell(withIdentifier: "CollectionCell", for: indexPath)
         let collection = collections[indexPath.row]
         var content = cell.defaultContentConfiguration()
-        content.text = collection.name
+        content.text = CollectionDisplayName.display(name: collection.name, type: collection.type)
         content.textProperties.font = ThemeFont.body()
         content.textProperties.color = ThemeColor.textPrimary
         content.secondaryText = "\(collection.memberCount)"
@@ -464,7 +464,7 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
         let grid = AssetGridViewController(
             environment: environment,
             collectionID: collection.id,
-            headerTitle: collection.name,
+            headerTitle: CollectionDisplayName.display(name: collection.name, type: collection.type),
             showsCloseButton: true
         )
         grid.modalPresentationStyle = .fullScreen

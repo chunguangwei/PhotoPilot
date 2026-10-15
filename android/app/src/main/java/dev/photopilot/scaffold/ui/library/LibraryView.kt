@@ -27,6 +27,7 @@ import dev.photopilot.scaffold.data.db.AssetReadiness
 import dev.photopilot.scaffold.data.db.CollectionEntity
 import dev.photopilot.scaffold.data.db.SourceAssetEntity
 import dev.photopilot.scaffold.data.db.SourceEntity
+import dev.photopilot.scaffold.data.logic.CollectionDisplayName
 import dev.photopilot.scaffold.data.logic.GridGeometry
 import dev.photopilot.scaffold.data.logic.LibraryCriteria
 import dev.photopilot.scaffold.data.logic.LibrarySort
@@ -91,6 +92,7 @@ class LibraryView(
 
     private val gapPx = resources.getDimensionPixelSize(R.dimen.pp_grid_gap)
     private val cellMinPx = resources.getDimensionPixelSize(R.dimen.pp_grid_cell_min)
+    private val gridInsetPx = resources.getDimensionPixelSize(R.dimen.pp_content_inset_compact)
     private val debounceHandler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
 
@@ -237,7 +239,7 @@ class LibraryView(
             horizontalSpacing = gapPx
             verticalSpacing = gapPx
             clipToPadding = false
-            setPadding(inset, gapPx, inset, inset)
+            setPadding(gridInsetPx, gapPx, gridInsetPx, inset)
             setOnItemClickListener { _, _, position, _ ->
                 if (position < pendingItems.size) return@setOnItemClickListener
                 val asset = assets.getOrNull(position - pendingItems.size) ?: return@setOnItemClickListener
@@ -328,12 +330,11 @@ class LibraryView(
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        val inset = resources.getDimensionPixelSize(R.dimen.pp_content_inset)
-        val columns = GridGeometry.columns(w - inset * 2, gapPx, cellMinPx)
+        val columns = GridGeometry.columns(w - gridInsetPx * 2, gapPx, cellMinPx)
         if (gridView.numColumns != columns) {
             gridView.numColumns = columns
         }
-        val cell = (w - inset * 2 - gapPx * (columns - 1)) / columns
+        val cell = (w - gridInsetPx * 2 - gapPx * (columns - 1)) / columns
         if (cell != cellSizePx && cell > 0) {
             cellSizePx = cell
             val approxRows = (h / (cell + gapPx)) + 1
@@ -666,6 +667,13 @@ class LibraryView(
         menu.show()
     }
 
+    private fun collectionDisplayName(collection: CollectionEntity): String =
+        CollectionDisplayName.display(
+            collection.name,
+            collection.type,
+            resources.getString(R.string.library_import_batch_name),
+        )
+
     private fun updateEmptyState() {
         val showGridContent = tab == Tab.PHOTOS || activeCollection != null
         val showEmpty = showGridContent && assets.isEmpty() && pendingItems.isEmpty() && exhausted
@@ -690,16 +698,17 @@ class LibraryView(
             foldersColumn.removeAllViews()
             val res = resources
             collections.forEach { (collection, count) ->
+                val displayName = collectionDisplayName(collection)
                 val row = LinearLayout(context).apply {
                     orientation = VERTICAL
                     gravity = Gravity.CENTER_VERTICAL
                     minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
                     isClickable = true
                     isFocusable = true
-                    contentDescription = collection.name
+                    contentDescription = displayName
                     setOnClickListener { enterCollection(collection) }
                     val name = TextView(context).apply {
-                        text = collection.name
+                        text = displayName
                         setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
                         setTextColor(context.getColor(R.color.pp_text_primary))
                         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO

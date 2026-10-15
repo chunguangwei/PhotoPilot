@@ -226,6 +226,7 @@
     <string name="library.title">Library</string>
     <string name="library.choose_title">Choose what to display</string>
     <string name="library.tab_folders">Folders</string>
+    <string name="library.import_batch_name">Import · %1$s</string>
     <string name="library.tab_photos">Photos</string>
     <string name="library.empty_title">No photos yet</string>
     <string name="library.empty_body">Import photos from a source first.</string>

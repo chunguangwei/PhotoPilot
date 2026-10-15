@@ -43,6 +43,7 @@ class ManualOrderView(
 
     private val gapPx = resources.getDimensionPixelSize(R.dimen.pp_grid_gap)
     private val cellMinPx = resources.getDimensionPixelSize(R.dimen.pp_grid_cell_min)
+    private val gridInsetPx = resources.getDimensionPixelSize(R.dimen.pp_content_inset_compact)
 
     init {
         orientation = VERTICAL
@@ -90,7 +91,7 @@ class ManualOrderView(
             horizontalSpacing = gapPx
             verticalSpacing = gapPx
             clipToPadding = false
-            setPadding(inset, gapPx, inset, gapPx)
+            setPadding(gridInsetPx, gapPx, gridInsetPx, gapPx)
         }
         addView(gridView, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
     }
@@ -112,10 +113,9 @@ class ManualOrderView(
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        val inset = resources.getDimensionPixelSize(R.dimen.pp_content_inset)
-        val columns = GridGeometry.columns(w - inset * 2, gapPx, cellMinPx)
+        val columns = GridGeometry.columns(w - gridInsetPx * 2, gapPx, cellMinPx)
         if (gridView.numColumns != columns) gridView.numColumns = columns
-        val cell = (w - inset * 2 - gapPx * (columns - 1)) / columns
+        val cell = (w - gridInsetPx * 2 - gapPx * (columns - 1)) / columns
         if (cell != cellSizePx && cell > 0) {
             cellSizePx = cell
             val approxRows = (h / (cell + gapPx)) + 1

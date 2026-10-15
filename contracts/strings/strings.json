@@ -1551,6 +1551,16 @@
       "en": "Folders"
     },
     {
+      "key": "library.import_batch_name",
+      "section": "5. 照片库与选片（S09–S11）",
+      "platform": "all",
+      "zh": "导入 · {name}",
+      "en": "Import · {name}",
+      "placeholders": {
+        "name": "string"
+      }
+    },
+    {
       "key": "library.tab_photos",
       "section": "5. 照片库与选片（S09–S11）",
       "platform": "all",

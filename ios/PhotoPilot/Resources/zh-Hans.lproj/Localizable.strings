@@ -197,6 +197,7 @@
 "library.title" = "照片库";
 "library.choose_title" = "选择展示内容";
 "library.tab_folders" = "目录";
+"library.import_batch_name" = "导入 · %1$@";
 "library.tab_photos" = "照片";
 "library.empty_title" = "还没有照片";
 "library.empty_body" = "先从来源导入照片。";

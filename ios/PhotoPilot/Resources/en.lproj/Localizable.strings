@@ -197,6 +197,7 @@
 "library.title" = "Library";
 "library.choose_title" = "Choose what to display";
 "library.tab_folders" = "Folders";
+"library.import_batch_name" = "Import · %1$@";
 "library.tab_photos" = "Photos";
 "library.empty_title" = "No photos yet";
 "library.empty_body" = "Import photos from a source first.";

@@ -517,7 +517,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         case .collection(let collection):
             let cell = tableView.dequeueReusableCell(withIdentifier: "DirectoryCell", for: indexPath)
             var content = cell.defaultContentConfiguration()
-            content.text = collection.name
+            content.text = CollectionDisplayName.display(name: collection.name, type: collection.type)
             content.textProperties.font = ThemeFont.body()
             content.textProperties.color = ThemeColor.textPrimary
             content.secondaryText = "\(collection.memberCount)"

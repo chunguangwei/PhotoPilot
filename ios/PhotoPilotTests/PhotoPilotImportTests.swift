@@ -328,6 +328,16 @@ final class PhotoPilotImportTests: XCTestCase {
         XCTAssertEqual(followUpDTO?.counts["queued"], expected)
     }
 
+    func testImportBatchDisplayNameComposedOnlyForBatches() {
+        let batch = CollectionDisplayName.display(name: "2026-10-15 21:27", type: "import_batch")
+        XCTAssertTrue(batch.hasSuffix("2026-10-15 21:27"))
+        XCTAssertNotEqual(batch, "2026-10-15 21:27")
+        XCTAssertEqual(
+            CollectionDisplayName.display(name: "DCIM/Vacation", type: "source_folder"),
+            "DCIM/Vacation"
+        )
+    }
+
     func testOffsetCursorFormatMatchesVector() async throws {
         let meta = try XCTUnwrap(try loadVector("fixture-enumeration")["meta"] as? [String: Any])
         XCTAssertEqual(try XCTUnwrap(meta["cursor_prefix"] as? String), OffsetCursor.prefix)
