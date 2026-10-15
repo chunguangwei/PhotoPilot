@@ -128,7 +128,7 @@ class FrameManager(
 
     companion object {
         const val DEFAULT_SETTINGS_JSON =
-            "{\"holdSeconds\":10,\"transition\":\"crossfade\",\"transitionSeconds\":0.8," +
+            "{\"holdSeconds\":10,\"transition\":\"random\",\"transitionSeconds\":0.8," +
                 "\"fitMode\":\"fit_blur\",\"solidColor\":null," +
                 "\"clock\":{\"enabled\":true,\"position\":\"bottom_leading\",\"hour24\":null}," +
                 "\"date\":{\"enabled\":true}," +

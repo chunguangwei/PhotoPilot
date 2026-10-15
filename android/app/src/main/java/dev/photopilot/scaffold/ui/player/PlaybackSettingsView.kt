@@ -658,7 +658,10 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private fun playTransitionDemo() {
         val bitmap = previewBitmap ?: return
         if (isDemoRunning) return
-        val transition = TRANSITIONS[transitionIndex]
+        var transition = TRANSITIONS[transitionIndex]
+        if (transition == PlaybackTiming.TRANSITION_RANDOM) {
+            transition = PlaybackTiming.randomTransitionPool.random()
+        }
         val outgoing = previewImage
         val incoming = previewImageB
         outgoing.animate().cancel()
@@ -669,7 +672,6 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             return
         }
         val demo = previewBitmapB ?: bitmap
-        val previous = previewBitmap
         val width = (if (previewFrame.width > 0) previewFrame.width else resources.displayMetrics.widthPixels).toFloat()
         isDemoRunning = true
         incoming.bringToFront()
@@ -710,8 +712,6 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             .scaleY(1f)
             .setDuration(duration)
             .withEndAction {
-                previewBitmap = demo
-                previewBitmapB = previous
                 incoming.alpha = 0f
                 incoming.translationX = 0f
                 incoming.scaleX = 1f
@@ -970,6 +970,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         val HOLD_PRESETS = listOf(5, 10, 15, 30, 60)
         val TRANSITIONS = listOf(
             PlaybackTiming.TRANSITION_NONE,
+            PlaybackTiming.TRANSITION_RANDOM,
             PlaybackTiming.TRANSITION_CROSSFADE,
             PlaybackTiming.TRANSITION_SLIDE,
             PlaybackTiming.TRANSITION_WIPE,
@@ -978,6 +979,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         )
         val TRANSITION_LABELS = listOf(
             R.string.playback_transition_none,
+            R.string.playback_transition_random,
             R.string.playback_transition_crossfade,
             R.string.playback_transition_slide,
             R.string.playback_transition_wipe,

@@ -2,6 +2,7 @@ import Foundation
 
 enum PlaybackTiming {
     static let transitionNone = "none"
+    static let transitionRandom = "random"
     static let transitionCrossfade = "crossfade"
     static let transitionSlide = "slide"
     static let transitionWipe = "wipe"
@@ -14,8 +15,13 @@ enum PlaybackTiming {
     static let transitionMaxMillis = 3000
 
     static let transitionTypes: Set<String> = [
-        transitionNone, transitionCrossfade, transitionSlide,
+        transitionNone, transitionRandom, transitionCrossfade, transitionSlide,
         transitionWipe, transitionZoom, transitionRipple,
+    ]
+
+    static let randomTransitionPool: [String] = [
+        transitionCrossfade, transitionSlide, transitionWipe,
+        transitionZoom, transitionRipple,
     ]
 
     static func transitionMillis(transition: String, transitionSeconds: Double) -> Int64 {

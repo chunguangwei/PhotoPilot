@@ -2,7 +2,7 @@ package dev.photopilot.scaffold.data.logic
 
 data class FramePlaybackSettings(
     val holdSeconds: Int = 10,
-    val transition: String = PlaybackTiming.TRANSITION_CROSSFADE,
+    val transition: String = PlaybackTiming.TRANSITION_RANDOM,
     val transitionSeconds: Double = 0.8,
     val fitMode: String = FIT_BLUR,
     val clockEnabled: Boolean = true,
@@ -58,7 +58,7 @@ data class FramePlaybackSettings(
             val music = root["music"] as? Map<*, *>
             return FramePlaybackSettings(
                 holdSeconds = (root["holdSeconds"] as? Double)?.toInt() ?: 10,
-                transition = root["transition"] as? String ?: PlaybackTiming.TRANSITION_CROSSFADE,
+                transition = root["transition"] as? String ?: PlaybackTiming.TRANSITION_RANDOM,
                 transitionSeconds = root["transitionSeconds"] as? Double ?: 0.8,
                 fitMode = root["fitMode"] as? String ?: FIT_BLUR,
                 clockEnabled = clock?.get("enabled") as? Boolean ?: true,

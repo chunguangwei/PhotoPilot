@@ -293,6 +293,7 @@
 "playback.transition_wipe" = "擦除";
 "playback.transition_zoom" = "缩放淡入";
 "playback.transition_ripple" = "涟漪";
+"playback.transition_random" = "随机";
 "playback.transition_duration" = "转场时长";
 "playback.transition_duration_help" = "两张照片之间的过渡时间";
 "playback.transition_duration_disabled" = "选择“无转场”时不需要设置时长。";

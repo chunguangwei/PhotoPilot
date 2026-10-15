@@ -122,6 +122,7 @@
 		B3841E0AB7F0E6D746C40E9E /* music_wedding_01.m4a in Resources */ = {isa = PBXBuildFile; fileRef = FF463ABAC05A313115D5D0AE /* music_wedding_01.m4a */; };
 		B4EF6D15CFDD64885A3F9828 /* PhotoPilotImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA05EC1D7B0A19D0405FD529 /* PhotoPilotImportTests.swift */; };
 		B5AA90ACA3FD0A47FA11873F /* PhotoDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D8B1E5C9BF2DC84133EC46 /* PhotoDetailViewController.swift */; };
+		B8C8361D87F3D137FF34BF2D /* TransitionPreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40874CD891A5524ED699C55 /* TransitionPreviewTests.swift */; };
 		BA0160C89936FADFAEFBBBED /* demo_lake.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 89C10ECCB47F9DDA7E17CA52 /* demo_lake.jpg */; };
 		BB445C83B01463D5F310944A /* HolidayTimingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3175407F4677C15A3B6124F4 /* HolidayTimingTests.swift */; };
 		BBB8A499A183CC23D804218F /* demo_dog.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 0603FE688CCC023324FB8485 /* demo_dog.jpg */; };
@@ -344,6 +345,7 @@
 		E061753DE4D246E9F302E4FB /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		E1539E9F9CFE610CF2E8B8FB /* PhotoPilotUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PhotoPilotUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E19A319919B8080EFD5FF613 /* NasScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NasScope.swift; sourceTree = "<group>"; };
+		E40874CD891A5524ED699C55 /* TransitionPreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPreviewTests.swift; sourceTree = "<group>"; };
 		E560A005D1305A84A7F78CE3 /* ActionButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionButton.swift; sourceTree = "<group>"; };
 		E706CA3A7EF113561D8F026A /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		E93CAFA785F64A9343640FF8 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -636,6 +638,7 @@
 			isa = PBXGroup;
 			children = (
 				3AF9C683F7DA2E37F1E8B105 /* ScreenshotTests.swift */,
+				E40874CD891A5524ED699C55 /* TransitionPreviewTests.swift */,
 				FA71AD309498964F78EDFBBF /* WalkthroughTests.swift */,
 			);
 			path = PhotoPilotUITests;
@@ -1270,6 +1273,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2E6637A0BA9DBB3F9E26FC00 /* ScreenshotTests.swift in Sources */,
+				B8C8361D87F3D137FF34BF2D /* TransitionPreviewTests.swift in Sources */,
 				FB9A5E04928E63B2AF3AEDAD /* WalkthroughTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1354,7 +1358,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18;
+				CURRENT_PROJECT_VERSION = 19;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1367,7 +1371,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.16;
+				MARKETING_VERSION = 1.1.17;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1491,7 +1495,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18;
+				CURRENT_PROJECT_VERSION = 19;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1510,7 +1514,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.16;
+				MARKETING_VERSION = 1.1.17;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

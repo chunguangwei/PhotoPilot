@@ -293,6 +293,7 @@
 "playback.transition_wipe" = "Wipe";
 "playback.transition_zoom" = "Zoom";
 "playback.transition_ripple" = "Ripple";
+"playback.transition_random" = "Random";
 "playback.transition_duration" = "Transition duration";
 "playback.transition_duration_help" = "How long the change between photos lasts";
 "playback.transition_duration_disabled" = "No duration is needed when transitions are off.";

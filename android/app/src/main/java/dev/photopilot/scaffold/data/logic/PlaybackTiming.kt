@@ -3,6 +3,7 @@ package dev.photopilot.scaffold.data.logic
 object PlaybackTiming {
 
     const val TRANSITION_NONE = "none"
+    const val TRANSITION_RANDOM = "random"
     const val TRANSITION_CROSSFADE = "crossfade"
     const val TRANSITION_SLIDE = "slide"
     const val TRANSITION_WIPE = "wipe"
@@ -15,8 +16,13 @@ object PlaybackTiming {
     const val TRANSITION_MAX_MILLIS = 3000
 
     val transitionTypes: Set<String> = setOf(
-        TRANSITION_NONE, TRANSITION_CROSSFADE, TRANSITION_SLIDE,
+        TRANSITION_NONE, TRANSITION_RANDOM, TRANSITION_CROSSFADE, TRANSITION_SLIDE,
         TRANSITION_WIPE, TRANSITION_ZOOM, TRANSITION_RIPPLE,
+    )
+
+    val randomTransitionPool: List<String> = listOf(
+        TRANSITION_CROSSFADE, TRANSITION_SLIDE, TRANSITION_WIPE,
+        TRANSITION_ZOOM, TRANSITION_RIPPLE,
     )
 
     fun transitionMillis(transition: String, transitionSeconds: Double): Long =

@@ -3,7 +3,7 @@ import UIKit
 
 struct PlayerSettings: Sendable {
     var holdSeconds = 10
-    var transition = PlaybackTiming.transitionCrossfade
+    var transition = PlaybackTiming.transitionRandom
     var transitionSeconds = 0.8
     var fitMode = "fit_blur"
     var clockEnabled = true
@@ -237,6 +237,7 @@ final class PlayerViewController: UIViewController {
     private let restClockLabel = UILabel()
     private var videoPlayer: AVPlayer?
     private var videoLayer: AVPlayerLayer?
+    private var lastRandomTransition: String?
     private var videoEndObserver: NSObjectProtocol?
     private var videoTruncateTask: Task<Void, Never>?
     private let musicPlayer = MusicPlayer()
@@ -782,8 +783,9 @@ final class PlayerViewController: UIViewController {
         incoming.image = image
         incoming.alpha = 0
         incoming.transform = .identity
+        let effect = resolveTransition()
         let edge = view.bounds.width * CGFloat(direction >= 0 ? 1 : -1)
-        switch settings.transition {
+        switch effect {
         case PlaybackTiming.transitionSlide, PlaybackTiming.transitionWipe:
             incoming.alpha = 1
             incoming.transform = CGAffineTransform(translationX: edge, y: 0)
@@ -798,7 +800,7 @@ final class PlayerViewController: UIViewController {
         UIView.animate(
             withDuration: duration,
             animations: {
-                switch self.settings.transition {
+                switch effect {
                 case PlaybackTiming.transitionSlide:
                     incoming.transform = .identity
                     outgoing.transform = CGAffineTransform(translationX: -edge, y: 0)
@@ -821,6 +823,14 @@ final class PlayerViewController: UIViewController {
                 dispatch(PlaybackEvent(type: "transition_finished"))
             }
         )
+    }
+
+    private func resolveTransition() -> String {
+        guard settings.transition == PlaybackTiming.transitionRandom else { return settings.transition }
+        let candidates = PlaybackTiming.randomTransitionPool.filter { $0 != lastRandomTransition }
+        let picked = candidates.randomElement() ?? PlaybackTiming.transitionCrossfade
+        lastRandomTransition = picked
+        return picked
     }
 
     private func updateBackdrop(for image: UIImage, assetID: String) {

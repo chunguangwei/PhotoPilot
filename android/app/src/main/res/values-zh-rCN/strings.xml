@@ -330,6 +330,7 @@
     <string name="playback.transition_wipe">擦除</string>
     <string name="playback.transition_zoom">缩放淡入</string>
     <string name="playback.transition_ripple">涟漪</string>
+    <string name="playback.transition_random">随机</string>
     <string name="playback.transition_duration">转场时长</string>
     <string name="playback.transition_duration_help">两张照片之间的过渡时间</string>
     <string name="playback.transition_duration_disabled">选择“无转场”时不需要设置时长。</string>

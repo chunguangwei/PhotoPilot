@@ -342,6 +342,7 @@
     <string name="playback.transition_wipe">Wipe</string>
     <string name="playback.transition_zoom">Zoom</string>
     <string name="playback.transition_ripple">Ripple</string>
+    <string name="playback.transition_random">Random</string>
     <string name="playback.transition_duration">Transition duration</string>
     <string name="playback.transition_duration_help">How long the change between photos lasts</string>
     <string name="playback.transition_duration_disabled">No duration is needed when transitions are off.</string>

@@ -2303,6 +2303,13 @@
       "en": "Ripple"
     },
     {
+      "key": "playback.transition_random",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "随机",
+      "en": "Random"
+    },
+    {
       "key": "playback.transition_duration",
       "section": "7. 播放设置（S13）",
       "platform": "all",

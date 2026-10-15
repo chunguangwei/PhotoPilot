@@ -81,6 +81,15 @@ class PlayerView(
     private var controlsTouchActive = false
     private val musicPlayer = MusicPlayer(context)
     private var musicStarted: MusicCatalog.Selection? = null
+    private var lastRandomTransition: String? = null
+
+    private fun resolveTransition(): String {
+        if (settings.transition != PlaybackTiming.TRANSITION_RANDOM) return settings.transition
+        val candidates = PlaybackTiming.randomTransitionPool.filter { it != lastRandomTransition }
+        val picked = candidates.randomOrNull() ?: PlaybackTiming.TRANSITION_CROSSFADE
+        lastRandomTransition = picked
+        return picked
+    }
     private var musicFailedSelection: MusicCatalog.Selection? = null
     private var musicWasPlayingInBackground = false
     private var appBackgrounded = false
@@ -418,7 +427,7 @@ class PlayerView(
         incoming.contentDescription = resources.getString(
             R.string.a11y_current_photo, currentAssetIndex, currentQueueSize.coerceAtLeast(1),
         )
-        val transition = settings.transition
+        val transition = resolveTransition()
         val distance = width.coerceAtLeast(1).toFloat()
         if (transitionMs <= 0L) {
             incoming.animate().cancel()

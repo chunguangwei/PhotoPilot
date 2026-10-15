@@ -14,7 +14,7 @@ class FramePlaybackSettingsTest {
     fun parsesContractTemplate() {
         val settings = FramePlaybackSettings.parse(FrameManager.DEFAULT_SETTINGS_JSON)
         assertEquals(10, settings.holdSeconds)
-        assertEquals("crossfade", settings.transition)
+        assertEquals("random", settings.transition)
         assertEquals(0.8, settings.transitionSeconds, 1e-9)
         assertEquals(FramePlaybackSettings.FIT_BLUR, settings.fitMode)
         assertTrue(settings.clockEnabled)
@@ -30,7 +30,7 @@ class FramePlaybackSettingsTest {
     fun malformedJsonFallsBackToDefaults() {
         val settings = FramePlaybackSettings.parse("{not json")
         assertEquals(10, settings.holdSeconds)
-        assertEquals("crossfade", settings.transition)
+        assertEquals("random", settings.transition)
         val nullJson = FramePlaybackSettings.parse(null)
         assertEquals(FramePlaybackSettings.FIT_BLUR, nullJson.fitMode)
     }

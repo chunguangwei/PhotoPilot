@@ -4,6 +4,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     private static let holdPresets = [5, 10, 15, 30, 60]
     private static let transitionWireValues = [
         PlaybackTiming.transitionNone,
+        PlaybackTiming.transitionRandom,
         PlaybackTiming.transitionCrossfade,
         PlaybackTiming.transitionSlide,
         PlaybackTiming.transitionWipe,
@@ -12,6 +13,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     ]
     private static let transitionTitleKeys = [
         "playback.transition_none",
+        "playback.transition_random",
         "playback.transition_crossfade",
         "playback.transition_slide",
         "playback.transition_wipe",
@@ -629,8 +631,12 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
 
     private func playTransitionDemoOnce() {
         guard !isDemoRunning, previewImageView.image != nil else { return }
-        let transition = Self.transitionWireValues[safe: transitionIndex]
+        var transition = Self.transitionWireValues[safe: transitionIndex]
             ?? PlaybackTiming.transitionCrossfade
+        if transition == PlaybackTiming.transitionRandom {
+            transition = PlaybackTiming.randomTransitionPool.randomElement()
+                ?? PlaybackTiming.transitionCrossfade
+        }
         guard transition != PlaybackTiming.transitionNone else {
             previewImageView.alpha = 0
             UIView.animate(
@@ -678,13 +684,11 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
                     withDuration: 0.2,
                     animations: { self.previewImageView.alpha = 0 },
                     completion: { _ in
-                        self.previewImageView.image = demoImage
+                        self.previewImageView.image = previous ?? demoImage
                         self.previewImageView.transform = .identity
                         self.demoImageView.alpha = 0
                         self.demoImageView.transform = .identity
                         self.previewImageView.alpha = 1
-                        self.previewImage = demoImage
-                        self.previewImageNext = previous
                         self.isDemoRunning = false
                     }
                 )

@@ -402,7 +402,7 @@ actor FrameManager {
     static func defaultSettingsJSON() -> String {
         let settings: [String: Any] = [
             "holdSeconds": 10,
-            "transition": "crossfade",
+            "transition": "random",
             "transitionSeconds": 0.8,
             "fitMode": "fit_blur",
             "solidColor": NSNull(),
