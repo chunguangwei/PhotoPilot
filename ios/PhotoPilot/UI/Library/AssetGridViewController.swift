@@ -23,6 +23,10 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
     private(set) var selectedAssetIDs: Set<String> = []
     var onSelectionChange: ((Set<String>) -> Void)?
     var onLongPressAsset: ((String, UICollectionViewCell) -> Void)?
+    var onCoverStarTap: ((String) -> Void)?
+    var coverAssetID: String? {
+        didSet { refreshCoverStars() }
+    }
     var emptyTitleKey: String?
     var emptyBodyKey: String?
 
@@ -40,6 +44,23 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         collectionView?.visibleCells.forEach {
             guard let cell = $0 as? AssetGridCell, let id = cell.assetID else { return }
             cell.setCellSelected(ids.contains(id), announced: false)
+            applyStarState(to: cell, assetID: id)
+        }
+    }
+
+    func relPath(for assetID: String) -> String? {
+        items.first { $0.id == assetID }?.originalRelPath
+    }
+
+    private func applyStarState(to cell: AssetGridCell, assetID: String) {
+        let selected = selectionEnabled && selectedAssetIDs.contains(assetID)
+        cell.setStarVisible(onCoverStarTap != nil && selected, isCover: coverAssetID == assetID)
+    }
+
+    private func refreshCoverStars() {
+        collectionView?.visibleCells.forEach {
+            guard let cell = $0 as? AssetGridCell, let id = cell.assetID else { return }
+            applyStarState(to: cell, assetID: id)
         }
     }
 
@@ -229,17 +250,23 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
             for: indexPath
         ) as! AssetGridCell
         let item = items[indexPath.item]
+        cell.onStarTap = { [weak self, weak cell] in
+            guard let self, let id = cell?.assetID else { return }
+            onCoverStarTap?(id)
+        }
         if item.isPending {
             cell.configure(
                 assetID: item.id,
                 accessibilityText: L10n.string("a11y.photo_pending")
             )
             cell.setCellSelected(selectionEnabled && selectedAssetIDs.contains(item.id), announced: false)
+            applyStarState(to: cell, assetID: item.id)
             cell.showPending()
             return cell
         }
         cell.configure(assetID: item.id, accessibilityText: Self.accessibilityText(for: item))
         cell.setCellSelected(selectionEnabled && selectedAssetIDs.contains(item.id), announced: false)
+        applyStarState(to: cell, assetID: item.id)
         let side = max(itemSide, ThemeMetrics.gridCellMin)
         let scale = collectionView.traitCollection.displayScale
         Task { [weak cell, loader] in
@@ -284,6 +311,9 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
             }
             (collectionView.cellForItem(at: indexPath) as? AssetGridCell)?
                 .setCellSelected(selectedAssetIDs.contains(item.id), announced: true)
+            if let cell = collectionView.cellForItem(at: indexPath) as? AssetGridCell {
+                applyStarState(to: cell, assetID: item.id)
+            }
             onSelectionChange?(selectedAssetIDs)
             return
         }

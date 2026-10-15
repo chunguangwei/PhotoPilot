@@ -852,17 +852,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
                 try? await environment.frameManager.updateOrderMode(frameID: frameID, orderMode: orderMode)
             }
             dirty = false
-            let notice = UIAlertController(
-                title: nil,
-                message: L10n.string("playback.saved_next_photo"),
-                preferredStyle: .alert
-            )
-            notice.addAction(UIAlertAction(
-                title: L10n.string("common.done"),
-                style: .default,
-                handler: { [weak self] _ in self?.dismiss(animated: true) }
-            ))
-            present(notice, animated: true)
+            dismiss(animated: true)
         }
     }
 

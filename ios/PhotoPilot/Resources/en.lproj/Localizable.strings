@@ -511,7 +511,7 @@
 "playback.brightness_restore_help" = "Original brightness is restored when playback ends or the app enters the background. System brightness is not permanently changed.";
 "library.selection_unsaved" = "Display selection has not been saved";
 "frames.set_cover" = "Set as cover";
-"frames.cover_hint" = "Long-press a photo to set it as the cover";
+"frames.cover_hint" = "Tap the star on a photo to set it as the cover";
 "frames.cover_set" = "Cover updated";
 "order.excluded_order_preserved" = "This photo was excluded. The relative order of the remaining photos is unchanged.";
 "settings.storage_threshold_help" = "Reserve at least 1 GB or 5% of total capacity, whichever is larger. Imports pause below this limit; photos are not deleted automatically.";

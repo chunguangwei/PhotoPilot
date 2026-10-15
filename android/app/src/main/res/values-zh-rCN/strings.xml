@@ -574,7 +574,7 @@
     <string name="playback.brightness_restore_help">离开播放或进入后台时恢复原亮度，不永久更改系统亮度。</string>
     <string name="library.selection_unsaved">展示内容尚未保存</string>
     <string name="frames.set_cover">设为封面</string>
-    <string name="frames.cover_hint">长按照片可设为封面</string>
+    <string name="frames.cover_hint">点照片上的星标可设为封面</string>
     <string name="frames.cover_set">已设为封面</string>
     <string name="order.excluded_order_preserved">已排除这张照片，其余照片的相对顺序保持不变。</string>
     <string name="settings.storage_threshold_help">默认保留至少 1 GB 或总容量的 5%，取较大值。低于阈值暂停导入，不自动删除照片。</string>

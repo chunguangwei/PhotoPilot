@@ -1,5 +1,6 @@
 package dev.photopilot.scaffold.ui.frames
 
+import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Outline
@@ -32,6 +33,7 @@ import dev.photopilot.scaffold.ui.library.ThumbnailLoader
 import dev.photopilot.scaffold.ui.widget.primaryButton
 import dev.photopilot.scaffold.ui.widget.secondaryButton
 import java.io.File
+import java.lang.ref.WeakReference
 import java.util.Date
 
 class FrameEditView(
@@ -47,6 +49,7 @@ class FrameEditView(
         val dynamicRules: Map<String, SaveRuleRow>,
         val showAllPending: Boolean,
         val persistedManualOrder: List<Pair<String, Long?>> = emptyList(),
+        val coverAssetId: String? = null,
     )
 
     data class State(
@@ -55,6 +58,7 @@ class FrameEditView(
         val removedExcludes: Set<String>,
         val ruleStates: Map<String, RuleUiState>,
         val manualOrder: List<String>? = null,
+        val pendingCoverId: String? = null,
     )
 
     interface DataSource {
@@ -68,13 +72,13 @@ class FrameEditView(
     var onSave: ((State) -> Unit)? = null
     var onManualOrder: (() -> Unit)? = null
     var onConfirmDynamic: ((confirmed: (Boolean) -> Unit) -> Unit)? = null
-    var onSetCover: ((String) -> Unit)? = null
 
     private var model: Model? = null
     private var initialRuleStates: Map<String, RuleUiState> = emptyMap()
     private val selectedAssetIds = mutableSetOf<String>()
     private val removedExcludes = mutableSetOf<String>()
     private val ruleStates = mutableMapOf<String, RuleUiState>()
+    private var pendingCoverId: String? = null
     private var manualOrderWorking: MutableList<String>? = null
     private var manualOrderDirty = false
     private val assets = mutableListOf<AssetEntity>()
@@ -82,6 +86,7 @@ class FrameEditView(
     private var exhausted = false
     private var cellSizePx = 0
     private var loader: ThumbnailLoader? = null
+    private val previewLoader = ThumbnailLoader(originalsDir, PREVIEW_CACHE_ENTRIES)
 
     private val nameInput: EditText
     private val tabPhotos: TextView
@@ -274,6 +279,7 @@ class FrameEditView(
             ruleStates[cid] = RuleUiState(checked = true, recursive = row.recursive, dynamic = true)
         }
         initialRuleStates = ruleStates.toMap()
+        pendingCoverId = model.coverAssetId
         manualOrderDirty = false
         manualOrderWorking = if (model.orderMode == FrameOrderMode.MANUAL) {
             val persisted = model.persistedManualOrder.map { it.first }
@@ -298,6 +304,7 @@ class FrameEditView(
         removedExcludes = removedExcludes.toSet(),
         ruleStates = ruleStates.toMap(),
         manualOrder = manualOrderWorking?.toList(),
+        pendingCoverId = pendingCoverId,
     )
 
     fun currentManualOrder(): List<String>? = manualOrderWorking?.toList()
@@ -312,6 +319,7 @@ class FrameEditView(
         if (nameInput.text.toString().trim() != current.name) return true
         if (selectedAssetIds != current.includedAssetIds) return true
         if (removedExcludes.isNotEmpty()) return true
+        if (pendingCoverId != current.coverAssetId) return true
         if (manualOrderDirty) return true
         return ruleStates.toMap() != initialRuleStates
     }
@@ -513,6 +521,93 @@ class FrameEditView(
         )
     }
 
+    private fun showCoverPreview(asset: AssetEntity) {
+        val res = resources
+        val card = LinearLayout(context).apply {
+            orientation = VERTICAL
+            background = GradientDrawable().apply {
+                setColor(context.getColor(R.color.pp_surface_panel))
+                cornerRadius = res.getDimension(R.dimen.pp_radius_group)
+            }
+            outlineProvider = ViewOutlineProvider.BACKGROUND
+            clipToOutline = true
+            importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+        card.addView(
+            PreviewCoverView(context, asset, previewLoader),
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
+        )
+        val details = LinearLayout(context).apply {
+            orientation = VERTICAL
+            val pad = res.getDimensionPixelSize(R.dimen.pp_space_16)
+            setPadding(pad, pad, pad, pad)
+        }
+        details.addView(TextView(context).apply {
+            text = nameInput.text.toString().trim().ifEmpty { res.getString(R.string.frames_name_default) }
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_heading))
+            setTextColor(context.getColor(R.color.pp_text_primary))
+        }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        details.addView(TextView(context).apply {
+            text = res.getQuantityString(
+                R.plurals.frames_playable_count, selectedAssetIds.size, selectedAssetIds.size,
+            )
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_meta))
+            setTextColor(context.getColor(R.color.pp_text_secondary))
+        }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+            topMargin = res.getDimensionPixelSize(R.dimen.pp_space_8)
+        })
+        card.addView(details, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        AlertDialog.Builder(context)
+            .setView(card)
+            .setPositiveButton(R.string.frames_set_cover) { _, _ -> applyPendingCover(asset.id) }
+            .setNegativeButton(R.string.common_cancel, null)
+            .show()
+    }
+
+    private fun applyPendingCover(assetId: String) {
+        pendingCoverId = assetId
+        gridAdapter.notifyDataSetChanged()
+    }
+
+    private class PreviewCoverView(
+        context: Context,
+        private val asset: AssetEntity,
+        private val previewLoader: ThumbnailLoader,
+    ) : FrameLayout(context) {
+        private val image = ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+        private var requestedPixels = 0
+
+        init {
+            setBackgroundColor(context.getColor(R.color.pp_surface_canvas))
+            importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+            addView(image, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        }
+
+        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+            val width = MeasureSpec.getSize(widthMeasureSpec)
+            super.onMeasure(
+                MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(width * 10 / 16, MeasureSpec.EXACTLY),
+            )
+        }
+
+        override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+            super.onLayout(changed, left, top, right, bottom)
+            if (width <= 0) return
+            val pixels = (((width + 127) / 128) * 128).coerceAtMost(1600)
+            if (pixels <= requestedPixels) return
+            requestedPixels = pixels
+            val target = WeakReference(this)
+            previewLoader.load(asset, pixels, ThumbnailLoader.cacheKey(asset.id, pixels), object : ThumbnailLoader.Callback {
+                override fun onLoaded(key: String, bitmap: android.graphics.Bitmap?) {
+                    val view = target.get() ?: return
+                    if (view.requestedPixels != pixels) return
+                    view.image.setImageBitmap(bitmap)
+                }
+            })
+        }
+    }
+
     private fun tabLabel(textRes: Int, tint: android.content.res.ColorStateList): TextView =
         TextView(context).apply {
             text = resources.getString(textRes)
@@ -561,7 +656,8 @@ class FrameEditView(
             val asset = getItem(position)
             val size = cellSizePx.coerceAtLeast(1)
             cell.layoutParams = AbsListView.LayoutParams(size, size)
-            cell.bind(asset, size, selectedAssetIds.contains(asset.id), loader)
+            cell.bind(asset, size, selectedAssetIds.contains(asset.id), pendingCoverId == asset.id, loader)
+            cell.onCoverTap = { showCoverPreview(asset) }
             cell.setOnClickListener {
                 if (!selectedAssetIds.remove(asset.id)) {
                     selectedAssetIds.add(asset.id)
@@ -573,25 +669,25 @@ class FrameEditView(
                     }
                 } else {
                     manualOrderWorking?.remove(asset.id)
+                    if (pendingCoverId == asset.id) pendingCoverId = null
                 }
-                cell.bind(asset, size, selectedAssetIds.contains(asset.id), loader)
+                cell.bind(asset, size, selectedAssetIds.contains(asset.id), pendingCoverId == asset.id, loader)
                 updateSummary()
             }
-            val coverCallback = onSetCover
-            if (coverCallback != null) {
-                cell.setOnLongClickListener { anchor ->
+            cell.setOnLongClickListener { anchor ->
+                if (selectedAssetIds.contains(asset.id)) {
                     PopupMenu(context, anchor).apply {
                         menu.add(context.getString(R.string.frames_set_cover))
                         setOnMenuItemClickListener {
-                            coverCallback(asset.id)
+                            showCoverPreview(asset)
                             true
                         }
                         show()
                     }
                     true
+                } else {
+                    false
                 }
-            } else {
-                cell.setOnLongClickListener(null)
             }
             return cell
         }
@@ -602,6 +698,9 @@ class FrameEditView(
         private val image: ImageView
         private val border: View
         private val badge: ImageView
+        private val coverStar: FrameLayout
+        private val starIcon: ImageView
+        var onCoverTap: (() -> Unit)? = null
 
         init {
             val radius = resources.getDimension(R.dimen.pp_radius_thumbnail)
@@ -636,25 +735,63 @@ class FrameEditView(
                 visibility = View.GONE
                 importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
             }
+            starIcon = ImageView(context).apply {
+                setImageDrawable(context.getDrawable(R.drawable.ic_star_outline_24))
+                val pad = resources.getDimensionPixelSize(R.dimen.pp_space_4)
+                setPadding(pad, pad, pad, pad)
+                background = GradientDrawable().apply {
+                    setColor(Color.argb(0x80, 0, 0, 0))
+                    shape = GradientDrawable.OVAL
+                }
+                importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+            }
+            coverStar = FrameLayout(context).apply {
+                isClickable = true
+                isFocusable = true
+                contentDescription = resources.getString(R.string.frames_set_cover)
+                visibility = View.GONE
+                setOnClickListener { onCoverTap?.invoke() }
+                val badgeSize = resources.getDimensionPixelSize(R.dimen.pp_space_32)
+                addView(starIcon, LayoutParams(badgeSize, badgeSize, Gravity.CENTER))
+            }
             addView(image, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
             addView(border, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
             val badgeSize = resources.getDimensionPixelSize(R.dimen.pp_space_32)
             addView(
                 badge,
                 LayoutParams(badgeSize, badgeSize).apply {
-                    gravity = Gravity.TOP or Gravity.END
+                    gravity = Gravity.TOP or Gravity.START
                     val margin = resources.getDimensionPixelSize(R.dimen.pp_space_4)
                     setMargins(margin, margin, margin, margin)
                 },
             )
+            val touchTarget = resources.getDimensionPixelSize(R.dimen.pp_touch_target)
+            addView(
+                coverStar,
+                LayoutParams(touchTarget, touchTarget).apply {
+                    gravity = Gravity.TOP or Gravity.END
+                },
+            )
         }
 
-        fun bind(asset: AssetEntity, sizePx: Int, selected: Boolean, thumbnailLoader: ThumbnailLoader?) {
+        fun bind(
+            asset: AssetEntity,
+            sizePx: Int,
+            selected: Boolean,
+            isPendingCover: Boolean,
+            thumbnailLoader: ThumbnailLoader?,
+        ) {
             val key = ThumbnailLoader.cacheKey(asset.id, sizePx)
             tag = key
             image.setImageDrawable(null)
             border.visibility = if (selected) View.VISIBLE else View.GONE
             badge.visibility = if (selected) View.VISIBLE else View.GONE
+            coverStar.visibility = if (selected) View.VISIBLE else View.GONE
+            starIcon.setImageDrawable(
+                context.getDrawable(
+                    if (isPendingCover) R.drawable.ic_star_filled_24 else R.drawable.ic_star_outline_24,
+                ),
+            )
             isSelected = selected
             contentDescription = buildString {
                 append(cellDescription(asset))
@@ -695,5 +832,6 @@ class FrameEditView(
         const val PAGE_SIZE = 120
         const val CACHE_ROWS_FACTOR = 3
         const val INDICATOR_HEIGHT_DP = 2f
+        const val PREVIEW_CACHE_ENTRIES = 4
     }
 }

@@ -1548,16 +1548,6 @@ class MainActivity : Activity() {
         view.onSave = { state -> saveFrameEdit(view, frame, state) }
         view.onManualOrder = { frame?.let { target -> openManualOrder(view, target) } }
         view.onConfirmDynamic = { completion -> confirmDynamicRule(completion) }
-        view.onSetCover = frame?.let { target ->
-            { assetId ->
-                scope.launch {
-                    withContext(Dispatchers.IO) {
-                        env.frameManager.setCover(target.id, assetId)
-                    }
-                    Toast.makeText(this@MainActivity, R.string.frames_cover_set, Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
         frameEditView = view
         pushOverlayTracked(view, mapOf("type" to "frameEdit", "frameId" to (frame?.id ?: "")))
         scope.launch {
@@ -1619,6 +1609,7 @@ class MainActivity : Activity() {
                     dynamicRules = rules,
                     showAllPending = !hasPlayable && hasSelections,
                     persistedManualOrder = persistedOrder,
+                    coverAssetId = frame.coverAssetId,
                 )
             }
         }
@@ -1716,6 +1707,11 @@ class MainActivity : Activity() {
         )
         when (result) {
             is SelectionSaveResult.Ok -> {
+                if (state.pendingCoverId != frame?.coverAssetId) {
+                    withContext(Dispatchers.IO) {
+                        env.frameManager.setCover(target.id, state.pendingCoverId)
+                    }
+                }
                 framesDirty = true
                 closeFrameEditor()
                 if (root.baseView !is MainContainerView) {
@@ -2151,7 +2147,6 @@ class MainActivity : Activity() {
                 playerView?.reloadSettings(fresh)
             }
             framesDirty = true
-            Toast.makeText(this@MainActivity, R.string.playback_saved_next_photo, Toast.LENGTH_SHORT).show()
             closePlaybackSettings()
             refreshJobUi()
         }

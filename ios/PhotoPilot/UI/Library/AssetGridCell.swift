@@ -6,8 +6,12 @@ final class AssetGridCell: UICollectionViewCell {
     let imageView = UIImageView()
     private let statusLabel = UILabel()
     private let badgeView = UIImageView()
+    private let starBackdrop = UIView()
+    private let starButton = UIButton(type: .custom)
     private(set) var assetID: String?
     private(set) var cellSelected = false
+    private var starVisible = false
+    var onStarTap: (() -> Void)?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -38,6 +42,19 @@ final class AssetGridCell: UICollectionViewCell {
         badgeView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(badgeView)
 
+        starBackdrop.backgroundColor = ThemeColor.photoControl.withAlphaComponent(0.55)
+        starBackdrop.layer.cornerRadius = ThemeMetrics.space16
+        starBackdrop.isUserInteractionEnabled = false
+        starBackdrop.translatesAutoresizingMaskIntoConstraints = false
+
+        starButton.tintColor = ThemeColor.accentBrand
+        starButton.isHidden = true
+        starButton.accessibilityLabel = L10n.string("frames.set_cover")
+        starButton.translatesAutoresizingMaskIntoConstraints = false
+        starButton.addTarget(self, action: #selector(handleStarTap), for: .touchUpInside)
+        contentView.addSubview(starButton)
+        starButton.insertSubview(starBackdrop, at: 0)
+
         NSLayoutConstraint.activate([
             imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
             imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
@@ -50,6 +67,17 @@ final class AssetGridCell: UICollectionViewCell {
                 equalTo: contentView.trailingAnchor,
                 constant: -ThemeMetrics.space4
             ),
+            starButton.topAnchor.constraint(equalTo: contentView.topAnchor, constant: ThemeMetrics.space4),
+            starButton.trailingAnchor.constraint(
+                equalTo: contentView.trailingAnchor,
+                constant: -ThemeMetrics.space4
+            ),
+            starButton.widthAnchor.constraint(equalToConstant: ThemeMetrics.touchTarget),
+            starButton.heightAnchor.constraint(equalToConstant: ThemeMetrics.touchTarget),
+            starBackdrop.centerXAnchor.constraint(equalTo: starButton.centerXAnchor),
+            starBackdrop.centerYAnchor.constraint(equalTo: starButton.centerYAnchor),
+            starBackdrop.widthAnchor.constraint(equalToConstant: ThemeMetrics.space32),
+            starBackdrop.heightAnchor.constraint(equalToConstant: ThemeMetrics.space32),
         ])
     }
 
@@ -65,6 +93,8 @@ final class AssetGridCell: UICollectionViewCell {
         statusLabel.text = L10n.string("library.status_failed")
         statusLabel.textColor = ThemeColor.statusError
         statusLabel.isHidden = true
+        onStarTap = nil
+        setStarVisible(false, isCover: false)
         setCellSelected(false, announced: false)
     }
 
@@ -79,7 +109,7 @@ final class AssetGridCell: UICollectionViewCell {
         cellSelected = selected
         contentView.layer.borderWidth = selected ? NavChromeMetrics.selectionIndicator : 0
         contentView.layer.borderColor = ThemeColor.accentAction.cgColor
-        badgeView.isHidden = !selected
+        badgeView.isHidden = !selected || starVisible
         if selected {
             accessibilityTraits.insert(.selected)
         } else {
@@ -88,6 +118,19 @@ final class AssetGridCell: UICollectionViewCell {
         if announced {
             accessibilityValue = L10n.string(selected ? "a11y.photo_selected" : "a11y.photo_not_selected")
         }
+    }
+
+    func setStarVisible(_ visible: Bool, isCover: Bool) {
+        starVisible = visible
+        starButton.isHidden = !visible
+        badgeView.isHidden = !cellSelected || visible
+        let symbol = isCover ? "star.fill" : "star"
+        let configuration = UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
+        starButton.setImage(UIImage(systemName: symbol, withConfiguration: configuration), for: .normal)
+    }
+
+    @objc private func handleStarTap() {
+        onStarTap?()
     }
 
     func showImage(_ image: UIImage) {

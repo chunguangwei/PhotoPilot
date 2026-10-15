@@ -590,7 +590,7 @@
     <string name="playback.brightness_restore_help">Original brightness is restored when playback ends or the app enters the background. System brightness is not permanently changed.</string>
     <string name="library.selection_unsaved">Display selection has not been saved</string>
     <string name="frames.set_cover">Set as cover</string>
-    <string name="frames.cover_hint">Long-press a photo to set it as the cover</string>
+    <string name="frames.cover_hint">Tap the star on a photo to set it as the cover</string>
     <string name="frames.cover_set">Cover updated</string>
     <string name="order.excluded_order_preserved">This photo was excluded. The relative order of the remaining photos is unchanged.</string>
     <string name="settings.storage_threshold_help">Reserve at least 1 GB or 5% of total capacity, whichever is larger. Imports pause below this limit; photos are not deleted automatically.</string>

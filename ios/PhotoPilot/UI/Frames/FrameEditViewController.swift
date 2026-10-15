@@ -13,6 +13,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
     private var dynamicRules: [String: SaveRuleRow] = [:]
     private var recursiveFlags: [String: Bool] = [:]
     private var pendingManualOrder: [String]?
+    private var pendingCoverAssetID: String?
     private var dirty = false
 
     private let nameField = UITextField()
@@ -177,13 +178,18 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         grid.onSelectionChange = { [weak self] ids in
             self?.selectedAssetIDs = ids
             self?.dirty = true
+            if let cover = self?.pendingCoverAssetID, !ids.contains(cover) {
+                self?.pendingCoverAssetID = nil
+                self?.gridChild?.coverAssetID = nil
+            }
             self?.updateSummary()
             self?.directoriesTable.reloadData()
         }
-        if frameID != nil {
-            grid.onLongPressAsset = { [weak self] assetID, cell in
-                self?.presentCoverOptions(assetID: assetID, anchor: cell)
-            }
+        grid.onLongPressAsset = { [weak self] assetID, cell in
+            self?.presentCoverOptions(assetID: assetID, anchor: cell)
+        }
+        grid.onCoverStarTap = { [weak self] assetID in
+            self?.presentCoverPreview(assetID: assetID)
         }
         addChild(grid)
         grid.view.translatesAutoresizingMaskIntoConstraints = false
@@ -206,25 +212,36 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             title: L10n.string("frames.set_cover"),
             style: .default,
             handler: { [weak self] _ in
-                self?.applyCover(assetID: assetID)
+                self?.presentCoverPreview(assetID: assetID)
             }
         ))
         alert.addAction(UIAlertAction(title: L10n.string("common.cancel"), style: .cancel))
         present(alert, animated: true)
     }
 
-    private func applyCover(assetID: String) {
-        guard let frameID else { return }
-        Task { [weak self] in
-            guard let self else { return }
-            guard (try? await environment.frameManager.setCover(frameID: frameID, assetID: assetID)) != nil else {
-                return
-            }
-            UIAccessibility.post(
-                notification: .announcement,
-                argument: L10n.string("frames.cover_set")
-            )
+    private func presentCoverPreview(assetID: String) {
+        let trimmed = nameField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let preview = CoverPreviewViewController(
+            environment: environment,
+            relPath: gridChild?.relPath(for: assetID),
+            frameName: trimmed.isEmpty ? L10n.string("frames.name_default") : trimmed,
+            photoCount: selectedAssetIDs.count
+        ) { [weak self] in
+            self?.setPendingCover(assetID)
         }
+        preview.modalPresentationStyle = .overFullScreen
+        preview.modalTransitionStyle = .crossDissolve
+        present(preview, animated: true)
+    }
+
+    private func setPendingCover(_ assetID: String) {
+        pendingCoverAssetID = assetID
+        dirty = true
+        gridChild?.coverAssetID = assetID
+        UIAccessibility.post(
+            notification: .announcement,
+            argument: L10n.string("frames.cover_set")
+        )
     }
 
     private func reload() {
@@ -244,6 +261,8 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             recursiveFlags = Dictionary(uniqueKeysWithValues: fetched.rules.map { ($0.collectionId, $0.recursive) })
             dirty = false
             pendingManualOrder = nil
+            pendingCoverAssetID = fetched.coverAssetId
+            gridChild?.coverAssetID = pendingCoverAssetID
             gridChild?.applySelection(selectedAssetIDs)
             collections = (try? await environment.assets.collections()) ?? []
             memberCache = [:]
@@ -387,6 +406,9 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             )
             switch result {
             case .ok:
+                if let pendingCoverAssetID, pendingCoverAssetID != detail.coverAssetId {
+                    try? await environment.frameManager.setCover(frameID: frameID, assetID: pendingCoverAssetID)
+                }
                 finishAfterSave()
             default:
                 showConflict()

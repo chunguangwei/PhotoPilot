@@ -21,6 +21,7 @@ struct FrameDetailDTO: Sendable {
     let rules: [SaveRuleRow]
     let manualOrderedRefs: [String]
     let newRefs: [String]
+    let coverAssetId: String?
 }
 
 struct PlaybackSnapshotDTO: Sendable {
@@ -289,7 +290,8 @@ actor FrameManager {
                 excludeRefs: excludes.sorted(),
                 rules: rules,
                 manualOrderedRefs: ordered.map(\.ref),
-                newRefs: newRefs.sorted()
+                newRefs: newRefs.sorted(),
+                coverAssetId: frame.value(forKeyPath: "coverAsset.id") as? String
             )
         }
     }
