@@ -21,27 +21,20 @@ class MediaStoreSourceAdapter(
 
     fun readAccessGranted(): Boolean {
         if (Build.VERSION.SDK_INT >= 33) {
-            val images = context.checkSelfPermission(
+            return context.checkSelfPermission(
                 "android.permission.READ_MEDIA_IMAGES",
             ) == PackageManager.PERMISSION_GRANTED
-            val videos = context.checkSelfPermission(
-                "android.permission.READ_MEDIA_VIDEO",
-            ) == PackageManager.PERMISSION_GRANTED
-            return images && videos
         }
         return context.checkSelfPermission("android.permission.READ_EXTERNAL_STORAGE") ==
             PackageManager.PERMISSION_GRANTED
     }
 
     override suspend fun enumerate(scopeJson: String, cursor: String?): EnumerationPage {
-        if (cursor?.startsWith(VIDEO_CURSOR_PREFIX) == true) {
-            return enumerateVideo(cursor.removePrefix(VIDEO_CURSOR_PREFIX).toLongOrNull() ?: -1L)
-        }
         val lastId = MediaStoreCursor.parseLastId(cursor)
         val items = mutableListOf<EnumeratedAsset>()
         val pageCursor = queryPage(lastId) ?: return EnumerationPage(
             items = emptyList(),
-            nextCursor = VIDEO_CURSOR_PREFIX + "-1",
+            nextCursor = null,
             totalKnown = if (lastId == MediaStoreCursor.START_LAST_ID) queryTotalCount() else null,
         )
         pageCursor.use { result ->
@@ -65,7 +58,7 @@ class MediaStoreSourceAdapter(
         val nextCursor = if (items.size == pageSize) {
             MediaStoreCursor.format(items.last().remoteKey.toLong())
         } else {
-            VIDEO_CURSOR_PREFIX + "-1"
+            null
         }
         return EnumerationPage(
             items = items,
@@ -74,45 +67,7 @@ class MediaStoreSourceAdapter(
         )
     }
 
-    private fun enumerateVideo(lastId: Long): EnumerationPage {
-        val items = mutableListOf<EnumeratedAsset>()
-        val cursor = queryVideoPage(lastId) ?: return EnumerationPage(emptyList(), null, null)
-        cursor.use { result ->
-            val idColumn = result.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
-            val modifiedColumn = result.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_MODIFIED)
-            val sizeColumn = result.getColumnIndexOrThrow(MediaStore.Video.Media.SIZE)
-            val takenColumn = result.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_TAKEN)
-            val durationColumn = result.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION)
-            while (items.size < pageSize && result.moveToNext()) {
-                val takenAt = if (result.isNull(takenColumn)) null else result.getLong(takenColumn)
-                val size = if (result.isNull(sizeColumn)) null else result.getLong(sizeColumn)
-                items.add(
-                    EnumeratedAsset(
-                        remoteKey = VIDEO_REMOTE_PREFIX + result.getLong(idColumn).toString(),
-                        stableId = null,
-                        revision = "${result.getLong(modifiedColumn)}:${size ?: 0L}",
-                        byteSize = size,
-                        takenAt = takenAt?.takeIf { it > 0L },
-                    ),
-                )
-            }
-        }
-        val nextCursor = if (items.size == pageSize) {
-            VIDEO_CURSOR_PREFIX + items.last().remoteKey.removePrefix(VIDEO_REMOTE_PREFIX)
-        } else {
-            null
-        }
-        return EnumerationPage(items, nextCursor, null)
-    }
-
     override fun openAsset(remoteKey: String): InputStream {
-        if (remoteKey.startsWith(VIDEO_REMOTE_PREFIX)) {
-            val id = remoteKey.removePrefix(VIDEO_REMOTE_PREFIX).toLongOrNull()
-                ?: throw IllegalArgumentException("invalid remoteKey: $remoteKey")
-            val uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id)
-            return context.contentResolver.openInputStream(uri)
-                ?: throw java.io.FileNotFoundException("mediastore video unavailable: $remoteKey")
-        }
         val id = remoteKey.toLongOrNull()
             ?: throw IllegalArgumentException("invalid remoteKey: $remoteKey")
         val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
@@ -156,21 +111,6 @@ class MediaStoreSourceAdapter(
         }
     }
 
-    private fun queryVideoPage(lastId: Long): android.database.Cursor? =
-        context.contentResolver.query(
-            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-            arrayOf(
-                MediaStore.Video.Media._ID,
-                MediaStore.Video.Media.DATE_MODIFIED,
-                MediaStore.Video.Media.SIZE,
-                MediaStore.Video.Media.DATE_TAKEN,
-                MediaStore.Video.Media.DURATION,
-            ),
-            "${MediaStore.Video.Media._ID} > ?",
-            arrayOf(lastId.toString()),
-            "${MediaStore.Video.Media._ID} ASC",
-        )
-
     private fun queryTotalCount(): Long {
         val cursor = context.contentResolver.query(
             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
@@ -189,7 +129,5 @@ class MediaStoreSourceAdapter(
     companion object {
         const val FINGERPRINT = "android.mediastore.images:v1"
         const val CURSOR_PREFIX = "offset:"
-        const val VIDEO_CURSOR_PREFIX = "video:"
-        const val VIDEO_REMOTE_PREFIX = "video:"
     }
 }

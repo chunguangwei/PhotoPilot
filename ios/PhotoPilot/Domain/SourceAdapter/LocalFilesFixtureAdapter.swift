@@ -3,7 +3,6 @@ import Foundation
 final class LocalFilesFixtureAdapter: SourceAdapter {
     static let mediaExtensions: Set<String> = [
         "jpg", "jpeg", "png", "gif", "heic", "heif", "webp", "bmp", "tif", "tiff",
-        "mp4", "mov",
         "dng", "cr2", "nef", "arw", "raf", "orf", "rw2",
     ]
 

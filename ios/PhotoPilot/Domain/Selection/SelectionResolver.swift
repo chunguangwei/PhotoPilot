@@ -18,6 +18,7 @@ struct ResolvableAsset: Sendable {
     let deleted: Bool
     let fileExists: Bool
     let policyAllowed: Bool
+    var mediaKind: String = "image"
 }
 
 struct SelectionResolveInput: Sendable {
@@ -81,6 +82,7 @@ enum SelectionResolver {
         let playable = allowed.filter { id in
             guard let asset = input.assets[id] else { return false }
             return asset.readiness == readinessReady && asset.fileExists && asset.policyAllowed
+                && asset.mediaKind != "video"
         }
 
         return SelectionResolution(candidates: candidates, pending: pending, allowed: allowed, playable: playable)

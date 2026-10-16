@@ -1,4 +1,3 @@
-import AVFoundation
 import CryptoKit
 import Foundation
 import ImageIO
@@ -46,15 +45,6 @@ enum AssetFileProber {
         "dng", "cr2", "nef", "arw", "raf", "orf", "rw2",
     ]
     static let videoTruncationMillis = 600_000
-
-    static func rotationToExifOrientation(degrees: Int) -> Int {
-        switch ((degrees % 360) + 360) % 360 {
-        case 90: return 6
-        case 180: return 3
-        case 270: return 8
-        default: return 1
-        }
-    }
 
     private static let head64kLength = 64 * 1024
 
@@ -120,49 +110,11 @@ enum AssetFileProber {
                 capturedAtSource: capturedAtMillis != nil ? CapturedAtSource.exif.rawValue : CapturedAtSource.unknown.rawValue
             )
         } catch ProbeError.unsupportedFormat {
-            if videoExtensions.contains(ext) {
-                return try probeVideo(url)
-            }
             if rawExtensions.contains(ext) {
                 return try probeRaw(url)
             }
             throw ProbeError.unsupportedFormat
         }
-    }
-
-    static func probeVideo(_ url: URL) throws -> ProbedImage {
-        let asset = AVURLAsset(url: url)
-        guard let track = asset.tracks(withMediaType: .video).first else {
-            throw ProbeError.unsupportedFormat
-        }
-        let bounds = track.naturalSize.applying(track.preferredTransform)
-        let width = Int(abs(bounds.width).rounded())
-        let height = Int(abs(bounds.height).rounded())
-        guard width > 0, height > 0 else {
-            throw ProbeError.decodeFailed
-        }
-        let transform = track.preferredTransform
-        let degrees = Int((atan2(transform.b, transform.a) * 180 / Double.pi).rounded())
-        let orientation = rotationToExifOrientation(degrees: degrees)
-        let durationMillis = Int((CMTimeGetSeconds(asset.duration) * 1000).rounded())
-        var capturedAtMillis: Int?
-        if let creationItem = asset.creationDate,
-           let text = creationItem.value as? String {
-            capturedAtMillis = parseISODateTime(text)
-        }
-        let ext = url.pathExtension.lowercased()
-        return ProbedImage(
-            format: ext == AssetFormat.mov.rawValue ? AssetFormat.mov.rawValue : AssetFormat.mp4.rawValue,
-            pixelWidth: width,
-            pixelHeight: height,
-            exifOrientation: orientation,
-            capturedAtMillis: capturedAtMillis,
-            mediaKind: "video",
-            durationMillis: durationMillis,
-            capturedAtSource: capturedAtMillis != nil
-                ? CapturedAtSource.container.rawValue
-                : CapturedAtSource.unknown.rawValue
-        )
     }
 
     static func probeRaw(_ url: URL) throws -> ProbedImage {
@@ -191,17 +143,6 @@ enum AssetFileProber {
             capturedAtMillis: capturedAtMillis,
             capturedAtSource: capturedAtMillis != nil ? CapturedAtSource.exif.rawValue : CapturedAtSource.unknown.rawValue
         )
-    }
-
-    static func parseISODateTime(_ text: String) -> Int? {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = formatter.date(from: text) {
-            return Int(date.timeIntervalSince1970 * 1000)
-        }
-        let plain = ISO8601DateFormatter()
-        plain.formatOptions = [.withInternetDateTime]
-        return plain.date(from: text).map { Int($0.timeIntervalSince1970 * 1000) }
     }
 
     private static func parseExifDateTime(_ raw: String) -> Int? {

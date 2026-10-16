@@ -359,7 +359,8 @@ actor FrameRepository {
                 privacyExcluded: entity.value(forKey: "privacy_excluded") as? Bool ?? false,
                 deleted: entity.value(forKey: "deleted_at") != nil,
                 fileExists: FileManager.default.fileExists(atPath: originalsFileURL(relPath: relPath).path),
-                policyAllowed: allowedIds.contains(id)
+                policyAllowed: allowedIds.contains(id),
+                mediaKind: entity.value(forKey: "media_kind") as? String ?? "image"
             )
         }
         return result

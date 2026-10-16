@@ -189,7 +189,6 @@ class AppEnvironment private constructor(
                     database,
                     coordinator,
                     adapterResolver,
-                    File(appContext.cacheDir, "video-probe"),
                 ),
                 frames = FrameRepository(
                     database,

@@ -99,7 +99,7 @@ interface AssetDao {
 
     @Query(
         "SELECT * FROM asset WHERE readiness != 'deleted' AND deleted_at IS NULL " +
-            "AND privacy_excluded = 0 " +
+            "AND privacy_excluded = 0 AND media_kind != 'video' " +
             "ORDER BY COALESCE(captured_at, imported_at) DESC, id LIMIT :limit OFFSET :offset",
     )
     suspend fun browsePage(limit: Int, offset: Int): List<AssetEntity>
@@ -107,7 +107,7 @@ interface AssetDao {
     @Query(
         "SELECT a.* FROM asset a INNER JOIN collection_asset ca ON a.id = ca.asset_id " +
             "WHERE ca.collection_id = :collectionId AND a.readiness != 'deleted' " +
-            "AND a.deleted_at IS NULL AND a.privacy_excluded = 0 " +
+            "AND a.deleted_at IS NULL AND a.privacy_excluded = 0 AND a.media_kind != 'video' " +
             "ORDER BY COALESCE(a.captured_at, a.imported_at) DESC, a.id LIMIT :limit OFFSET :offset",
     )
     suspend fun browseCollectionPage(collectionId: String, limit: Int, offset: Int): List<AssetEntity>
@@ -255,6 +255,7 @@ interface FrameSelectionDao {
         "SELECT a.* FROM asset a INNER JOIN frame_selection fs ON a.id = fs.asset_id " +
             "WHERE fs.frame_id = :frameId AND fs.mode = 'include' " +
             "AND a.readiness != 'deleted' AND a.deleted_at IS NULL AND a.privacy_excluded = 0 " +
+            "AND a.media_kind != 'video' " +
             "AND a.id NOT IN (" +
             "SELECT asset_id FROM frame_selection " +
             "WHERE frame_id = :frameId AND mode = 'exclude' AND asset_id IS NOT NULL" +
@@ -269,6 +270,7 @@ interface FrameSelectionDao {
         "SELECT a.* FROM asset a INNER JOIN frame_selection fs ON a.id = fs.asset_id " +
             "WHERE fs.frame_id = :frameId AND fs.mode = 'include' " +
             "AND a.readiness = 'ready' AND a.deleted_at IS NULL AND a.privacy_excluded = 0 " +
+            "AND a.media_kind != 'video' " +
             "AND a.id NOT IN (" +
             "SELECT asset_id FROM frame_selection " +
             "WHERE frame_id = :frameId AND mode = 'exclude' AND asset_id IS NOT NULL" +

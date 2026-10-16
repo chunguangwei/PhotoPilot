@@ -2791,7 +2791,7 @@ class MainActivity : Activity() {
             addCategory(Intent.CATEGORY_OPENABLE)
             putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             type = "*/*"
-            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "video/*"))
+            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*"))
         }
         startActivityForResult(intent, REQUEST_PICK_FILES)
     }

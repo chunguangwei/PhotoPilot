@@ -1,4 +1,3 @@
-import AVFoundation
 import Foundation
 import Photos
 
@@ -67,7 +66,7 @@ final class PhotoLibrarySourceAdapter: SourceAdapter {
             throw AssetFileProber.ProbeError.unreadable
         }
         if asset.mediaType == .video {
-            return try await videoPayload(asset: asset)
+            throw AssetFileProber.ProbeError.unsupportedFormat
         }
         let fileURL = tempDirectory.appendingPathComponent(Self.tempFileName(for: remoteID))
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
@@ -94,45 +93,6 @@ final class PhotoLibrarySourceAdapter: SourceAdapter {
     func purgePayloads() throws {
         guard FileManager.default.fileExists(atPath: tempDirectory.path) else { return }
         try FileManager.default.removeItem(at: tempDirectory)
-    }
-
-    private func videoPayload(asset: PHAsset) async throws -> LocalAssetPayload {
-        let fileURL: URL = try await withCheckedThrowingContinuation { continuation in
-            let options = PHVideoRequestOptions()
-            options.isNetworkAccessAllowed = true
-            PHImageManager.default().requestAVAsset(
-                forVideo: asset,
-                options: options
-            ) { avAsset, _, info in
-                if let error = info?[PHImageErrorKey] as? Error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                guard let urlAsset = avAsset as? AVURLAsset else {
-                    continuation.resume(throwing: AssetFileProber.ProbeError.unreadable)
-                    return
-                }
-                continuation.resume(returning: urlAsset.url)
-            }
-        }
-        let probed = try AssetFileProber.probeVideo(fileURL)
-        let byteSize = Self.byteSize(of: asset)
-            ?? (try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize)
-            ?? 0
-        return LocalAssetPayload(
-            localFileURL: fileURL,
-            byteSize: byteSize,
-            contentHash: try AssetFileProber.contentHash(of: fileURL),
-            head64kHash: try AssetFileProber.head64kHash(of: fileURL),
-            format: probed.format,
-            pixelWidth: probed.pixelWidth,
-            pixelHeight: probed.pixelHeight,
-            exifOrientation: probed.exifOrientation,
-            capturedAtMillis: probed.capturedAtMillis,
-            mediaKind: "video",
-            durationMillis: probed.durationMillis,
-            capturedAtSource: probed.capturedAtSource
-        )
     }
 
     private func exportOriginal(asset: PHAsset, to fileURL: URL) async throws {        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -164,9 +124,8 @@ final class PhotoLibrarySourceAdapter: SourceAdapter {
         options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]
         options.includeHiddenAssets = false
         options.predicate = NSPredicate(
-            format: "mediaType == %d OR mediaType == %d",
-            PHAssetMediaType.image.rawValue,
-            PHAssetMediaType.video.rawValue
+            format: "mediaType == %d",
+            PHAssetMediaType.image.rawValue
         )
         return options
     }

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "truth": "夹具适配器枚举口径（2026-10-04 裁决，2026-10-08 扩展）：只枚举媒体扩展名文件（含视频 mp4/mov 与 RAW 扩展，由探测阶段决定可解性），工具元数据（manifest.json 等）不是照片，不进入导入候选",
+  "truth": "夹具适配器枚举口径（2026-10-04 裁决，2026-10-08 扩展，2026-10-16 用户裁决移除视频：产品不处理视频，mp4/mov 移出白名单，导入即跳过、不进入播放）：只枚举媒体扩展名文件（仅图片与 RAW 扩展，由探测阶段决定可解性），工具元数据（manifest.json 等）不是照片，不进入导入候选",
   "note": "双端 LocalFiles 夹具适配器与测试必须消费本文件，禁止各自写常数。expected_count 以 tests/fixtures/smoke-v1 下符合 media_extensions 的文件实际数为准（当前 120，manifest.json 不计入）。",
   "cursor_prefix": "offset:",
   "done_sentinel": "__done__",
@@ -17,8 +17,6 @@
   "bmp",
   "tif",
   "tiff",
-  "mp4",
-  "mov",
   "dng",
   "cr2",
   "nef",

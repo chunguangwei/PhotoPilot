@@ -6,7 +6,7 @@
 
 2026-10-14 收尾授权（已执行完毕）：review 代码与 UI 设计；iOS 打包并覆盖升级安装到当前接入的 iPhone（v1.0.0，截图实证）；**Git 提交并上传 GitHub 公开仓库 `github.com/chunguangwei/PhotoPilot`**（含 v1.0.0 Release 与签名 APK 资产）；双端打包；**Android 应用内 GitHub 更新器已实现**（检查更新→断点续传→前台保活→安装）；本机 release keystore 已生成（`android/photopilot-release.keystore`+`keystore.properties`，仅本机不入 Git，丢失即无法覆盖更新）；商业授权联系邮箱确认为 **chunguangwee@gmail.com**（双 e，全仓同步）。后续 Git 提交/推送/Release 发布在既有仓库范围内视为已授权；新增仓库、商店上架、Google/Live Photo 仍需单独授权。
 
-用户已授权正式开发并已完成多轮切片：**M1**（本地导入→二次选片→播放，双端原生、数据层、夹具驱动测试）、**NAS 来源**（N1–N8：阶段守卫/WebDAV/TLS-TOFU/凭证安全存储/增量同步；SMB 库经用户 2026-10-08 批准已安装集成）、**天气**（M2-W1：Open-Meteo 客户端直连，供应商决议见 08 §8）、**视频/RAW P1**（2026-10-08 冻结：mp4/mov 完整播放、默认静音、单视频 10 分钟上限——超限语义已归一为双端截断播；RAW 按系统解码运行时探测）、**休息屏**与多轮 review 清偿。R01–R19 已闭环并经用户确认，contracts/ 与设计包 v1.1 已交付，禁止重建或重开。**仍未授权**：Google（M0-22 书面结论未出）、Live Photo 实装；需账号、签名、真机或外部服务的 M0 实测；商店上架（App Store/应用市场）；大型 SDK 安装。`contracts/scaffold.json` 现为 stage=`m2_services_development`、networkEnabled=true、thirdPartyServicesEnabled=true。
+用户已授权正式开发并已完成多轮切片：**M1**（本地导入→二次选片→播放，双端原生、数据层、夹具驱动测试）、**NAS 来源**（N1–N8：阶段守卫/WebDAV/TLS-TOFU/凭证安全存储/增量同步；SMB 库经用户 2026-10-08 批准已安装集成）、**天气**（M2-W1：Open-Meteo 客户端直连，供应商决议见 08 §8）、**RAW**（按系统解码运行时探测；**视频支持 2026-10-16 用户裁决移除**：mp4/mov 移出导入白名单、双端播放/浏览按 media_kind 过滤存量、Android READ_MEDIA_VIDEO 权限撤销，播放器视频渲染代码休眠保留待清理切片）、**休息屏**与多轮 review 清偿。R01–R19 已闭环并经用户确认，contracts/ 与设计包 v1.1 已交付，禁止重建或重开。**仍未授权**：Google（M0-22 书面结论未出）、Live Photo 实装；需账号、签名、真机或外部服务的 M0 实测；商店上架（App Store/应用市场）；大型 SDK 安装。`contracts/scaffold.json` 现为 stage=`m2_services_development`、networkEnabled=true、thirdPartyServicesEnabled=true。
 
 ## 先读
 

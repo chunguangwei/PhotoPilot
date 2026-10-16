@@ -188,9 +188,10 @@ actor FrameManager {
             if !assetRefs.isEmpty {
                 let assets = NSFetchRequest<NSManagedObject>(entityName: "Asset")
                 assets.predicate = NSPredicate(
-                    format: "id IN %@ AND readiness == %@ AND privacy_excluded == NO AND deleted_at == nil",
+                    format: "id IN %@ AND readiness == %@ AND privacy_excluded == NO AND deleted_at == nil AND media_kind != %@",
                     assetRefs,
-                    SelectionResolver.readinessReady
+                    SelectionResolver.readinessReady,
+                    "video"
                 )
                 playable = try context.count(for: assets)
             }

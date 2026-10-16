@@ -82,6 +82,7 @@ class FrameRepository(
                         deleted = entity.deletedAt != null,
                         fileExists = File(originalsDir, entity.originalRelPath).isFile,
                         policyAllowed = id in allowedIds,
+                        mediaKind = entity.mediaKind.wire,
                     )
                 }
             }.toMap()

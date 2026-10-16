@@ -146,6 +146,7 @@ actor AssetRepository {
                 NSPredicate(format: "id IN %@", assetIds),
                 NSPredicate(format: "readiness != %@", Readiness.deleted.rawValue),
                 NSPredicate(format: "deleted_at == nil"),
+                NSPredicate(format: "media_kind != %@", "video"),
             ]
             if privacyHidden {
                 clauses.append(NSPredicate(format: "privacy_excluded == NO"))
@@ -503,6 +504,7 @@ actor AssetRepository {
             var predicates = [
                 NSPredicate(format: "readiness == %@", readiness),
                 NSPredicate(format: "privacy_excluded == NO"),
+                NSPredicate(format: "media_kind != %@", "video"),
             ]
             if let collectionID {
                 predicates.append(NSPredicate(

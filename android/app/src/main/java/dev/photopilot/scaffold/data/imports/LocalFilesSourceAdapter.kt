@@ -80,7 +80,7 @@ class LocalFilesSourceAdapter(
         const val CURSOR_PREFIX = "offset:"
         val MEDIA_EXTENSIONS = setOf(
             "jpg", "jpeg", "png", "gif", "heic", "heif", "webp", "bmp", "tif", "tiff",
-            "mp4", "mov", "dng", "cr2", "nef", "arw", "raf", "orf", "rw2",
+            "dng", "cr2", "nef", "arw", "raf", "orf", "rw2",
         )
     }
 }

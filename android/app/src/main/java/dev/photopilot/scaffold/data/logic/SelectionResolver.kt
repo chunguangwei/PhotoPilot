@@ -11,6 +11,7 @@ data class ResolvableAsset(
     val deleted: Boolean,
     val fileExists: Boolean,
     val policyAllowed: Boolean,
+    val mediaKind: String = "image",
 )
 
 data class SelectionResolveInput(
@@ -76,7 +77,8 @@ object SelectionResolver {
             asset != null &&
                 asset.readiness == READINESS_READY &&
                 asset.fileExists &&
-                asset.policyAllowed
+                asset.policyAllowed &&
+                asset.mediaKind != "video"
         }
 
         return SelectionResolution(

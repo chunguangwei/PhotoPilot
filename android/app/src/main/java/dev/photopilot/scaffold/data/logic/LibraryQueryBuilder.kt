@@ -20,7 +20,8 @@ object LibraryQueryBuilder {
     fun build(criteria: LibraryCriteria, limit: Int, offset: Int): Pair<String, Array<Any>> {
         val args = mutableListOf<Any>()
         val where = StringBuilder(
-            " WHERE a.readiness != 'deleted' AND a.deleted_at IS NULL AND a.privacy_excluded = 0",
+            " WHERE a.readiness != 'deleted' AND a.deleted_at IS NULL AND a.privacy_excluded = 0" +
+                " AND a.media_kind != 'video'",
         )
         val search = criteria.search?.takeIf { it.isNotBlank() }
         if (search != null) {

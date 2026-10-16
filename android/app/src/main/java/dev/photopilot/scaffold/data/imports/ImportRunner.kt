@@ -7,7 +7,6 @@ import dev.photopilot.scaffold.data.db.CapturedAtSource
 import dev.photopilot.scaffold.data.db.ImportItemEntity
 import dev.photopilot.scaffold.data.db.ImportItemState
 import dev.photopilot.scaffold.data.db.ImportJobState
-import dev.photopilot.scaffold.data.db.MediaKind
 import dev.photopilot.scaffold.data.db.PhotoPilotDatabase
 import dev.photopilot.scaffold.data.db.SettingsKvEntity
 import dev.photopilot.scaffold.data.db.SourceAssetEntity
@@ -32,7 +31,6 @@ class ImportRunner(
     private val db: PhotoPilotDatabase,
     private val coordinator: ImportCoordinator,
     private val adapterResolver: suspend (String) -> SourceAdapter,
-    private val probeCacheDir: java.io.File,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
@@ -218,9 +216,6 @@ class ImportRunner(
         sourceAsset: SourceAssetEntity,
     ): ImportCoordinator.AssetCommitMetadata {
         val extension = sourceAsset.remoteKey.substringAfterLast('.', "").lowercase()
-        if (sourceAsset.remoteKey.startsWith("video:") || VideoProbe.isVideoExtension(extension)) {
-            return resolveVideoMetadata(adapter, sourceAsset, extension)
-        }
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         adapter.openAsset(sourceAsset.remoteKey).use { stream ->
             BitmapFactory.decodeStream(stream, null, bounds)
@@ -259,65 +254,6 @@ class ImportRunner(
         )
     }
 
-    private fun resolveVideoMetadata(
-        adapter: SourceAdapter,
-        sourceAsset: SourceAssetEntity,
-        extension: String,
-    ): ImportCoordinator.AssetCommitMetadata {
-        val probeFile = java.io.File(probeCacheDir, sourceAsset.id.replace("/", "_"))
-        probeFile.parentFile?.mkdirs()
-        try {
-            adapter.openAsset(sourceAsset.remoteKey).use { input ->
-                probeFile.outputStream().use { output -> input.copyTo(output) }
-            }
-            val retriever = android.media.MediaMetadataRetriever()
-            try {
-                retriever.setDataSource(probeFile.absolutePath)
-                val width = retriever.extractMetadata(
-                    android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH,
-                )?.toLongOrNull()
-                val height = retriever.extractMetadata(
-                    android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT,
-                )?.toLongOrNull()
-                if (width == null || height == null || width <= 0L || height <= 0L) {
-                    throw UnsupportedFormatException()
-                }
-                val rotation = retriever.extractMetadata(
-                    android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION,
-                )?.toLongOrNull() ?: 0L
-                val durationMs = retriever.extractMetadata(
-                    android.media.MediaMetadataRetriever.METADATA_KEY_DURATION,
-                )?.toLongOrNull()
-                val firstFrame = runCatching {
-                    retriever.getFrameAtTime(FIRST_FRAME_TIME_US)
-                }.getOrNull() ?: throw UnsupportedFormatException()
-                if (firstFrame == null) throw UnsupportedFormatException()
-                val capturedAt = VideoProbe.parseContainerDate(
-                    retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DATE),
-                )
-                return ImportCoordinator.AssetCommitMetadata(
-                    format = if (extension == "mov") AssetFormat.MOV else AssetFormat.MP4,
-                    pixelWidth = width,
-                    pixelHeight = height,
-                    exifOrientation = VideoProbe.rotationToExif(rotation),
-                    capturedAt = capturedAt,
-                    capturedAtSource = if (capturedAt != null) {
-                        CapturedAtSource.CONTAINER
-                    } else {
-                        CapturedAtSource.UNKNOWN
-                    },
-                    originalFileName = null,
-                    mediaKind = MediaKind.VIDEO,
-                    durationMs = durationMs,
-                )
-            } finally {
-                retriever.release()
-            }
-        } finally {
-            probeFile.delete()
-        }
-    }
-
     private class DecodeFailedException : Exception()
 
     private class UnsupportedFormatException : Exception()
@@ -343,6 +279,5 @@ class ImportRunner(
         const val ERR_STORE_LOW_SPACE = "STORE_LOW_SPACE"
         const val ERR_SRC_UNAVAILABLE = "SRC_UNAVAILABLE"
         const val ERR_DB_CONSTRAINT_VIOLATION = "DB_CONSTRAINT_VIOLATION"
-        const val FIRST_FRAME_TIME_US = 500_000L
     }
 }
