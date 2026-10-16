@@ -13,10 +13,10 @@ import dev.photopilot.scaffold.R
 import dev.photopilot.scaffold.ui.widget.primaryButton
 import dev.photopilot.scaffold.ui.widget.screenHeader
 
-class NasDirectoryPickerView(context: Context) : ScrollView(context) {
+class NasDirectoryPickerView(context: Context) : LinearLayout(context) {
 
     var onBack: (() -> Unit)? = null
-    var onLoadDirectory: ((String, (List<String>) -> Unit) -> Unit)? = null
+    var onLoadDirectory: ((String, (List<String>?) -> Unit) -> Unit)? = null
     var onConfirm: ((Set<String>, Boolean) -> Unit)? = null
     var rootPath: String = ""
 
@@ -28,23 +28,26 @@ class NasDirectoryPickerView(context: Context) : ScrollView(context) {
     private val listColumn: LinearLayout
     private val countLine: TextView
     private val confirmButton: View
+    private val recursiveToggle: CheckBox
 
     init {
+        orientation = VERTICAL
         setBackgroundColor(context.getColor(R.color.pp_surface_canvas))
         isClickable = true
         val res = resources
         val inset = res.getDimensionPixelSize(R.dimen.pp_content_inset)
-        val column = LinearLayout(context).apply {
+
+        val fixedTop = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, inset)
+            setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
         }
         val headerRow = screenHeader(context, R.string.source_nas_choose_folders) { onBack?.invoke() }
-        column.addView(headerRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        fixedTop.addView(headerRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         pathLine = TextView(context).apply {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_meta))
             setTextColor(context.getColor(R.color.pp_text_secondary))
         }
-        column.addView(
+        fixedTop.addView(
             pathLine,
             LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_8)
@@ -61,14 +64,17 @@ class NasDirectoryPickerView(context: Context) : ScrollView(context) {
             isFocusable = true
             setOnClickListener { ascend() }
         }
-        column.addView(parentRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-        listColumn = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
-        column.addView(
-            listColumn,
-            LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = res.getDimensionPixelSize(R.dimen.pp_space_8)
-            },
-        )
+        fixedTop.addView(parentRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        addView(fixedTop, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+
+        val scroll = ScrollView(context)
+        listColumn = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
+        }
+        scroll.addView(listColumn)
+        addView(scroll, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
+
         val bottomBar = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(context.getColor(R.color.pp_surface_panel))
@@ -87,7 +93,7 @@ class NasDirectoryPickerView(context: Context) : ScrollView(context) {
             setOnClickListener { if (selected.isNotEmpty()) onConfirm?.invoke(selected.toSet(), recursive) }
         }
         bottomBar.addView(countLine, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-        val recursiveToggle = android.widget.CheckBox(context).apply {
+        recursiveToggle = CheckBox(context).apply {
             text = res.getString(R.string.rule_recursive_toggle)
             contentDescription = text
             isChecked = false
@@ -108,13 +114,14 @@ class NasDirectoryPickerView(context: Context) : ScrollView(context) {
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_8)
             },
         )
-        column.addView(
+        addView(
             bottomBar,
-            LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = res.getDimensionPixelSize(R.dimen.pp_space_16)
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                marginStart = inset
+                marginEnd = inset
+                bottomMargin = inset
             },
         )
-        addView(column, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         refreshCount()
     }
 
@@ -131,15 +138,77 @@ class NasDirectoryPickerView(context: Context) : ScrollView(context) {
         val atRoot = dir == rootPath
         parentRow.isEnabled = !atRoot
         parentRow.alpha = if (atRoot) DISABLED_ALPHA else 1f
-        listColumn.removeAllViews()
+        renderMessage(resources.getString(R.string.common_loading))
         onLoadDirectory?.invoke(dir) { children ->
-            renderChildren(children)
+            if (dir != currentDir) return@invoke
+            when {
+                children == null -> renderMessage(resources.getString(R.string.source_nas_picker_error))
+                else -> renderChildren(children)
+            }
         }
+    }
+
+    private fun renderMessage(text: String) {
+        val res = resources
+        listColumn.removeAllViews()
+        val message = TextView(context).apply {
+            this.text = text
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
+            setTextColor(context.getColor(R.color.pp_text_secondary))
+            minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        listColumn.addView(message, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
     }
 
     private fun renderChildren(children: List<String>) {
         val res = resources
         listColumn.removeAllViews()
+        val wholeRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+            isClickable = true
+            isFocusable = true
+        }
+        val wholeToggle = CheckBox(context).apply {
+            isChecked = selected.contains(currentDir)
+            minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+            contentDescription = res.getString(R.string.source_nas_picker_whole)
+            setOnCheckedChangeListener { _, checked ->
+                if (checked) {
+                    selected.add(currentDir)
+                    recursive = true
+                    recursiveToggle.isChecked = true
+                } else {
+                    selected.remove(currentDir)
+                }
+                refreshCount()
+            }
+        }
+        val wholeLabel = TextView(context).apply {
+            text = res.getString(R.string.source_nas_picker_whole)
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
+            setTextColor(context.getColor(R.color.pp_text_primary))
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+        }
+        wholeRow.addView(wholeToggle, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
+        wholeRow.addView(wholeLabel, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
+        wholeRow.setOnClickListener { wholeToggle.toggle() }
+        listColumn.addView(wholeRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        if (children.isEmpty()) {
+            listColumn.addView(
+                TextView(context).apply {
+                    text = res.getString(R.string.source_nas_picker_empty)
+                    setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_meta))
+                    setTextColor(context.getColor(R.color.pp_text_secondary))
+                    minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+                    gravity = Gravity.CENTER_VERTICAL
+                },
+                LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
+            )
+        }
         children.forEach { child ->
             val full = if (currentDir.isEmpty()) child else "$currentDir/$child"
             val row = LinearLayout(context).apply {

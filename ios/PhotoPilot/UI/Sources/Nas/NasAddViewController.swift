@@ -15,16 +15,19 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
     private let passwordField = UITextField()
     private let testButton = ActionButton(titleKey: "source.nas.test_connection", style: .secondary)
     private let statusLabel = UILabel()
-    private let saveButton = ActionButton(titleKey: "common.save", style: .primary)
+    private let saveButton = ActionButton(titleKey: "common.next", style: .primary)
 
     private var testing = false
+    private var pendingContinue = false
     private var testedClient: WebDavClient?
     private var testedSmbAdapter: SmbSourceAdapter?
     private var testedEndpoint: NasEndpoint?
     private var testedCredential: NasCredential?
+    private let prefillEndpoint: NasEndpoint?
 
-    init(environment: AppEnvironment) {
+    init(environment: AppEnvironment, prefillEndpoint: NasEndpoint? = nil) {
         self.environment = environment
+        self.prefillEndpoint = prefillEndpoint
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -89,7 +92,9 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         configure(field: portField, labelKey: "source.nas.port", keyboard: .numberPad)
         portField.text = "443"
         configure(field: pathField, labelKey: "source.nas.path", keyboard: .default)
+        pathField.placeholder = L10n.string("source.nas.path_optional_hint")
         configure(field: shareField, labelKey: "source.nas.share", keyboard: .default)
+        shareField.placeholder = L10n.string("source.nas.share_optional_hint")
         shareField.addTarget(self, action: #selector(handleFieldChanged), for: .editingChanged)
         shareRow = makeRow(labelKey: "source.nas.share", control: shareField)
         shareRow?.isHidden = true
@@ -118,13 +123,18 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
 
         testButton.addTarget(self, action: #selector(handleTest), for: .touchUpInside)
         saveButton.addTarget(self, action: #selector(handleSave), for: .touchUpInside)
-        saveButton.isEnabled = false
-        saveButton.alpha = ThemeMetrics.controlOpacity
 
         statusLabel.font = ThemeFont.meta()
         statusLabel.adjustsFontForContentSizeCategory = true
         statusLabel.numberOfLines = 0
         statusLabel.textAlignment = .center
+
+        let guestHint = UILabel()
+        guestHint.text = L10n.string("source.nas.guest_hint")
+        guestHint.font = ThemeFont.meta()
+        guestHint.adjustsFontForContentSizeCategory = true
+        guestHint.textColor = ThemeColor.textSecondary
+        guestHint.numberOfLines = 0
 
         let form = UIStackView(arrangedSubviews: [
             makeRow(labelKey: "source.nas.protocol", control: schemeSegmented),
@@ -135,6 +145,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
             shareRow ?? UIView(),
             makeRow(labelKey: "source.nas.username", control: usernameField),
             makeRow(labelKey: "source.nas.password", control: passwordField),
+            guestHint,
             testButton,
             statusLabel,
             saveButton,
@@ -187,6 +198,24 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
             readable,
         ])
         enableKeyboardDismissal()
+        applyPrefill()
+    }
+
+    private func applyPrefill() {
+        guard let endpoint = prefillEndpoint else { return }
+        schemeSegmented.selectedSegmentIndex = endpoint.scheme == "smb" ? 1 : 0
+        transportSegmented.selectedSegmentIndex = endpoint.scheme == "webdav_http" ? 1 : 0
+        shareRow?.isHidden = !isSmbSelected
+        transportRow?.isHidden = isSmbSelected
+        hostField.text = endpoint.host
+        portField.text = "\(endpoint.port)"
+        if isSmbSelected {
+            let split = NasPath.splitShare(endpoint.path)
+            shareField.text = split.share
+            pathField.text = split.subpath
+        } else {
+            pathField.text = endpoint.path
+        }
     }
 
     private func configure(field: UITextField, labelKey: String, keyboard: UIKeyboardType) {
@@ -234,16 +263,17 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         guard let resolvedPort = port else { return nil }
         guard let path = NasPath.normalize(pathField.text ?? "") else { return nil }
         if isSmbSelected {
-            guard let shareInput = NasPath.normalize(shareField.text ?? ""), !shareInput.isEmpty else {
+            guard let shareInput = NasPath.normalize(shareField.text ?? "") else {
                 return nil
             }
             let split = NasPath.splitShare(shareInput)
             let subpath = [split.subpath, path].filter { !$0.isEmpty }.joined(separator: "/")
+            let combined = [split.share, subpath].filter { !$0.isEmpty }.joined(separator: "/")
             return NasEndpoint(
                 scheme: scheme,
                 host: hostInput.host,
                 port: resolvedPort,
-                path: subpath.isEmpty ? split.share : "\(split.share)/\(subpath)"
+                path: combined
             )
         }
         return NasEndpoint(
@@ -309,8 +339,6 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         testedClient = nil
         testedSmbAdapter = nil
         testedEndpoint = nil
-        saveButton.isEnabled = false
-        saveButton.alpha = ThemeMetrics.controlOpacity
     }
 
     @objc private func handleRevealPassword() {
@@ -320,9 +348,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
     @objc private func handleTest() {
         guard !testing else { return }
         guard let endpoint = buildEndpoint() else {
-            if isSmbSelected, (NasPath.normalize(shareField.text ?? "") ?? "").isEmpty {
-                showError(key: "source.nas.share_required")
-            }
+            pendingContinue = false
             return
         }
         if isSmbSelected {
@@ -354,8 +380,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
                     + " · "
                     + L10n.string(secure ? "source.nas.security_encrypted" : "source.nas.security_plain")
                 statusLabel.textColor = ThemeColor.statusSuccess
-                saveButton.isEnabled = true
-                saveButton.alpha = 1
+                continueAfterTestIfNeeded(endpoint: endpoint)
             } catch let error as NasTransportError {
                 handleTestError(error, endpoint: endpoint, credential: credential)
             } catch {
@@ -408,9 +433,13 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
             guard let self else { return }
             defer { testing = false }
             do {
-                _ = try await adapter.enumerateAssets(cursor: nil)
-                if !split.subpath.isEmpty {
-                    _ = try await adapter.listSubdirectories(path: split.subpath)
+                if split.share.isEmpty {
+                    _ = try await adapter.listShares()
+                } else {
+                    _ = try await adapter.enumerateAssets(cursor: nil)
+                    if !split.subpath.isEmpty {
+                        _ = try await adapter.listSubdirectories(path: split.subpath)
+                    }
                 }
                 testedSmbAdapter = adapter
                 testedEndpoint = endpoint
@@ -420,8 +449,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
                     + L10n.string(adapter.sessionEncrypted
                             ? "source.nas.security_encrypted" : "source.nas.security_plain")
                 statusLabel.textColor = ThemeColor.statusSuccess
-                saveButton.isEnabled = true
-                saveButton.alpha = 1
+                continueAfterTestIfNeeded(endpoint: endpoint)
             } catch let error as NasTransportError {
                 handleTestError(error, endpoint: endpoint, credential: credential)
             } catch {
@@ -438,6 +466,10 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         let hostPort = "\(endpoint.host):\(endpoint.port)"
         switch error {
         case .certUntrusted(let fingerprint, let subject, _, _):
+            guard !fingerprint.isEmpty else {
+                showError(key: "error.src_unavailable.body")
+                return
+            }
             present(NasCertTrustViewController(
                 mode: .untrusted(fingerprint: fingerprint, subject: subject)
             ) { [weak self] in
@@ -449,6 +481,10 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
                 self?.handleTest()
             }, animated: true)
         case .certHostnameMismatch(let fingerprint):
+            guard !fingerprint.isEmpty else {
+                showError(key: "error.src_unavailable.body")
+                return
+            }
             present(NasCertTrustViewController(
                 mode: .hostnameMismatch(fingerprint: fingerprint)
             ) { [weak self] in
@@ -460,6 +496,10 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
                 self?.handleTest()
             }, animated: true)
         case .fingerprintChanged(let fingerprint):
+            guard !fingerprint.isEmpty else {
+                showError(key: "error.src_unavailable.body")
+                return
+            }
             present(NasCertTrustViewController(
                 mode: .changed(fingerprint: fingerprint)
             ) { [weak self] in
@@ -484,6 +524,18 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
             showError(key: "error.src_auth_failed.body")
         case .pathNotFound:
             showError(key: "error.src_path_not_found.body")
+        case .shareNotFound:
+            showError(key: "source.nas.share_not_found")
+        case .unreachable:
+            showError(key: "error.src_unreachable.body")
+        case .hostUnknown:
+            showError(key: "error.src_host_unknown.body")
+        case .timeout:
+            showError(key: "error.net_timeout.body")
+        case .protocolMismatch:
+            showError(key: "error.src_protocol_mismatch.body")
+        case .notWebDav:
+            showError(key: "error.src_not_webdav.body")
         case .localNetworkDenied:
             showError(key: "permission.local_network.denied_body")
             statusLabel.textColor = ThemeColor.statusError
@@ -493,18 +545,35 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
     }
 
     private func showError(key: String) {
+        pendingContinue = false
         statusLabel.text = L10n.string(key)
         statusLabel.textColor = ThemeColor.statusError
     }
 
     @objc private func handleSave() {
-        guard let endpoint = testedEndpoint else { return }
+        guard let endpoint = testedEndpoint else {
+            pendingContinue = true
+            handleTest()
+            return
+        }
+        pendingContinue = false
+        openFolderPicker(endpoint: endpoint)
+    }
+
+    private func continueAfterTestIfNeeded(endpoint: NasEndpoint) {
+        guard pendingContinue else { return }
+        pendingContinue = false
+        openFolderPicker(endpoint: endpoint)
+    }
+
+    private func openFolderPicker(endpoint: NasEndpoint) {
         let listFolders: @Sendable (String) async throws -> [String]
         var rootPath = ""
         if isSmbSelected, let adapter = testedSmbAdapter {
-            rootPath = NasPath.splitShare(endpoint.path).subpath
+            let split = NasPath.splitShare(endpoint.path)
+            rootPath = split.share.isEmpty ? "" : split.subpath
             listFolders = { path in
-                try await adapter.listSubdirectories(path: path)
+                try await adapter.listFolders(path: path)
             }
         } else if let client = testedClient {
             listFolders = { path in

@@ -8,6 +8,11 @@ final class NasFolderPickerViewController: UIViewController, UITableViewDataSour
 
     private let table = UITableView(frame: .zero, style: .plain)
     private var folders: [String] = []
+    private var loadFailed = false
+    private var loading = true
+    private let statusLabel = UILabel()
+    private let wholeControl = UIControl()
+    private let wholeIcon = UIImageView()
     private let countLabel = UILabel()
     private let recursiveSwitch = UISwitch()
     private let confirmButton = ActionButton(titleKey: "common.done", style: .primary)
@@ -58,6 +63,45 @@ final class NasFolderPickerViewController: UIViewController, UITableViewDataSour
         header.spacing = ThemeMetrics.space4
         header.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(header)
+
+        wholeIcon.contentMode = .scaleAspectFit
+        wholeIcon.widthAnchor.constraint(equalToConstant: ThemeMetrics.space24).isActive = true
+        wholeIcon.heightAnchor.constraint(equalToConstant: ThemeMetrics.space24).isActive = true
+        let wholeLabel = UILabel()
+        wholeLabel.text = L10n.string("source.nas.picker_whole")
+        wholeLabel.font = ThemeFont.body()
+        wholeLabel.adjustsFontForContentSizeCategory = true
+        wholeLabel.textColor = ThemeColor.textPrimary
+        wholeLabel.numberOfLines = 0
+        let wholeRow = UIStackView(arrangedSubviews: [wholeIcon, wholeLabel, UIView()])
+        wholeRow.axis = .horizontal
+        wholeRow.alignment = .center
+        wholeRow.spacing = ThemeMetrics.space12
+        wholeRow.isUserInteractionEnabled = false
+        wholeControl.addSubview(wholeRow)
+        wholeRow.translatesAutoresizingMaskIntoConstraints = false
+        wholeControl.translatesAutoresizingMaskIntoConstraints = false
+        wholeControl.addTarget(self, action: #selector(handleWholeToggle), for: .touchUpInside)
+        wholeControl.accessibilityLabel = L10n.string("source.nas.picker_whole")
+        wholeControl.accessibilityTraits = [.button]
+        wholeControl.heightAnchor.constraint(
+            greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
+        ).isActive = true
+        NSLayoutConstraint.activate([
+            wholeRow.topAnchor.constraint(equalTo: wholeControl.topAnchor),
+            wholeRow.bottomAnchor.constraint(equalTo: wholeControl.bottomAnchor),
+            wholeRow.leadingAnchor.constraint(equalTo: wholeControl.leadingAnchor),
+            wholeRow.trailingAnchor.constraint(equalTo: wholeControl.trailingAnchor),
+        ])
+        view.addSubview(wholeControl)
+
+        statusLabel.font = ThemeFont.body()
+        statusLabel.adjustsFontForContentSizeCategory = true
+        statusLabel.textColor = ThemeColor.textSecondary
+        statusLabel.textAlignment = .center
+        statusLabel.numberOfLines = 0
+        statusLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(statusLabel)
 
         table.dataSource = self
         table.delegate = self
@@ -112,10 +156,16 @@ final class NasFolderPickerViewController: UIViewController, UITableViewDataSour
                 constant: -ThemeMetrics.contentInset
             ),
             readable,
-            table.topAnchor.constraint(equalTo: header.bottomAnchor, constant: ThemeMetrics.space8),
+            wholeControl.topAnchor.constraint(equalTo: header.bottomAnchor, constant: ThemeMetrics.space8),
+            wholeControl.leadingAnchor.constraint(equalTo: header.leadingAnchor),
+            wholeControl.trailingAnchor.constraint(equalTo: header.trailingAnchor),
+            table.topAnchor.constraint(equalTo: wholeControl.bottomAnchor),
             table.leadingAnchor.constraint(equalTo: header.leadingAnchor),
             table.trailingAnchor.constraint(equalTo: header.trailingAnchor),
             table.bottomAnchor.constraint(equalTo: bottomBar.topAnchor),
+            statusLabel.leadingAnchor.constraint(equalTo: table.leadingAnchor),
+            statusLabel.trailingAnchor.constraint(equalTo: table.trailingAnchor),
+            statusLabel.centerYAnchor.constraint(equalTo: table.centerYAnchor),
             bottomBar.leadingAnchor.constraint(equalTo: header.leadingAnchor),
             bottomBar.trailingAnchor.constraint(equalTo: header.trailingAnchor),
             bottomBar.bottomAnchor.constraint(
@@ -124,21 +174,70 @@ final class NasFolderPickerViewController: UIViewController, UITableViewDataSour
             ),
         ])
 
+        updateWholeRow()
+        updateStatus()
         updateBottomBar()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        recursiveSwitch.isOn = selection.recursive
+        updateWholeRow()
         reloadFolders()
     }
 
     private func reloadFolders() {
+        loading = true
+        loadFailed = false
+        updateStatus()
         Task { [weak self] in
             guard let self else { return }
-            folders = ((try? await listFolders(path)) ?? []).sorted()
+            do {
+                folders = try await listFolders(path).sorted()
+            } catch {
+                folders = []
+                loadFailed = true
+            }
+            loading = false
             table.reloadData()
+            updateStatus()
             updateBottomBar()
         }
+    }
+
+    private func updateStatus() {
+        if loading {
+            statusLabel.text = L10n.string("common.loading")
+        } else if loadFailed {
+            statusLabel.text = L10n.string("source.nas.picker_error")
+        } else if folders.isEmpty {
+            statusLabel.text = L10n.string("source.nas.picker_empty")
+        } else {
+            statusLabel.text = nil
+        }
+    }
+
+    private func updateWholeRow() {
+        let selected = selection.paths.contains(path)
+        wholeIcon.image = UIImage(systemName: selected ? "checkmark.circle.fill" : "circle")
+        wholeIcon.tintColor = selected ? ThemeColor.accentAction : ThemeColor.textSecondary
+        if selected {
+            wholeControl.accessibilityTraits.insert(.selected)
+        } else {
+            wholeControl.accessibilityTraits.remove(.selected)
+        }
+    }
+
+    @objc private func handleWholeToggle() {
+        if selection.paths.contains(path) {
+            selection.paths.remove(path)
+        } else {
+            selection.paths.insert(path)
+            selection.recursive = true
+            recursiveSwitch.isOn = true
+        }
+        updateWholeRow()
+        updateBottomBar()
     }
 
     private func updateBottomBar() {

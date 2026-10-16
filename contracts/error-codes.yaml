@@ -3,13 +3,13 @@
 # user_facing 依 11-双语词条表.md §10：除 CANCELLED_BY_USER / CANCELLED_BY_EPOCH 外均有用户文案。
 # 由 tools/check_contracts.py 校验；改动须同步更新 meta.expected 并复审。
 meta:
-  checksum: "57fe444600dda895ea33921f1984b00d921578c994319115fcdd0ed3daeb9f72"
+  checksum: "d24683904336375848432e89a5b125479e1dae9fb6c5285e5071dc5d7c73274e"
   source: "04-工程规格书.md §10"
   rulings: ["R05"]
   format: "DOMAIN_REASON"
   user_facing_source: "11-双语词条表.md §10"
   expected:
-    code_count: 43
+    code_count: 48
 error_codes:
   - code: AUTH_CANCELLED
     domain: 授权
@@ -107,6 +107,26 @@ error_codes:
     domain: 来源
     user_action: "测试连接"
     auto_retry: true
+  - code: SRC_UNREACHABLE
+    domain: 来源
+    user_action: "检查主机地址与端口"
+    auto_retry: true
+  - code: SRC_HOST_UNKNOWN
+    domain: 来源
+    user_action: "检查主机地址"
+    auto_retry: false
+  - code: SRC_PROTOCOL_MISMATCH
+    domain: 来源
+    user_action: "检查端口与传输方式"
+    auto_retry: false
+  - code: SRC_NOT_WEBDAV
+    domain: 来源
+    user_action: "确认服务类型与端口"
+    auto_retry: false
+  - code: SRC_SHARE_NOT_FOUND
+    domain: 来源
+    user_action: "检查共享名"
+    auto_retry: false
   - code: SRC_SESSION_EXPIRED
     domain: 来源
     user_action: "重新选择照片"

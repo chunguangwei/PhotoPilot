@@ -156,7 +156,6 @@
     <string name="source.nas.path">Path</string>
     <string name="source.nas.username">Username</string>
     <string name="source.nas.password">Password</string>
-    <string name="source.nas.guest">Connect as guest</string>
     <string name="source.nas.test_connection">Test connection</string>
     <string name="source.nas.testing">Connecting</string>
     <string name="source.nas.test_ok">Connected</string>
@@ -173,6 +172,13 @@
         <item quantity="other">%1$d photos will be deleted from this device</item>
     </plurals>
     <string name="source.nas.source_removed">Removed at source</string>
+    <string name="source.nas.share_not_found">Can’t find that share. Check the share name.</string>
+    <string name="source.nas.path_optional_hint">Optional — empty means the root folder</string>
+    <string name="source.nas.picker_empty">No subfolders here</string>
+    <string name="source.nas.picker_error">Couldn’t load folders. Check the connection and try again.</string>
+    <string name="source.nas.picker_whole">Choose everything in this folder</string>
+    <string name="source.nas.show_password">Show password</string>
+    <string name="source.nas.guest_hint">If the server allows it, leave username and password empty to connect as guest.</string>
     <string name="permission.local_network.title">Local network access needed</string>
     <string name="permission.local_network.body">To reach your home NAS, PhotoPilot needs to find devices on your network. Photos stay on this device.</string>
     <string name="permission.local_network.continue">Continue</string>
@@ -537,6 +543,10 @@
     <string name="error.weather_unavailable.body">Weather unavailable.</string>
     <string name="error.weather_stale.body">Weather update delayed.</string>
     <string name="error.skipped_by_tombstone.body">Skipped a photo you deleted earlier.</string>
+    <string name="error.src_unreachable.body">Can’t reach the server. Check the host address and port.</string>
+    <string name="error.src_host_unknown.body">Can’t find that host. Check the host address.</string>
+    <string name="error.src_protocol_mismatch.body">The port doesn’t match the connection type. Check the port or switch HTTP/HTTPS.</string>
+    <string name="error.src_not_webdav.body">The server didn’t respond as WebDAV. Check the service type and port.</string>
     <string name="a11y.logo">PhotoPilot logo</string>
     <string name="a11y.photo_cell">Photo, %1$s</string>
     <string name="a11y.photo_cell_no_date">Photo, no date</string>

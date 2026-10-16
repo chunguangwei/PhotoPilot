@@ -145,9 +145,44 @@ final class PhotoPilotNasDisconnectTests: XCTestCase {
         let coordinator = ImportCoordinator(controller: controller, adapter: adapter)
         let first = try await coordinator.createJob(sourceID: "sw1", scopeJSON: "{}")
         _ = try await coordinator.enqueueItems(jobID: first.id)
+
+        let context = controller.container.viewContext
+        context.refreshAllObjects()
+        let allSourceAssets = try context.fetch(
+            NSFetchRequest<NSManagedObject>(entityName: "SourceAsset")
+        )
+        for (index, sourceAsset) in allSourceAssets.enumerated() {
+            let asset = insert("Asset", [
+                "id": "committed-\(index)",
+                "content_hash": "sha256:committed-\(index)",
+                "byte_size": 5,
+                "format": "jpeg",
+                "pixel_width": 1,
+                "pixel_height": 1,
+                "exif_orientation": 1,
+                "orientation_class": "square",
+                "captured_at_source": "unknown",
+                "imported_at": 0,
+                "original_rel_path": "committed-\(index).jpg",
+                "readiness": "ready",
+                "privacy_excluded": false,
+                "created_at": 0,
+                "updated_at": 0,
+            ])
+            let origin = insert("AssetOrigin", [
+                "imported_at": 0,
+                "policy_state": "allowed",
+                "origin_state": "active",
+                "created_at": 0,
+                "updated_at": 0,
+            ])
+            origin.setValue(asset, forKey: "asset")
+            origin.setValue(sourceAsset, forKey: "sourceAsset")
+        }
+        try context.save()
+
         let second = try await coordinator.createJob(sourceID: "sw1", scopeJSON: "{}")
         _ = try await coordinator.enqueueItems(jobID: second.id)
-        let context = controller.container.viewContext
         context.refreshAllObjects()
         let request = NSFetchRequest<NSManagedObject>(entityName: "ImportItem")
         request.predicate = NSPredicate(format: "job.id == %@", second.id)

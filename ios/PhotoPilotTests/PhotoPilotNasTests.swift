@@ -213,4 +213,120 @@ final class PhotoPilotNasTests: XCTestCase {
         }
         return map
     }
+
+    private func posixUnderlying(_ code: Int32) -> [String: Any] {
+        [NSUnderlyingErrorKey: NSError(domain: NSPOSIXErrorDomain, code: Int(code))]
+    }
+
+    func testWebDavUrlErrorMapping() {
+        XCTAssertEqual(
+            WebDavClient.map(urlError: URLError(.cannotConnectToHost), policyError: nil),
+            .unreachable
+        )
+        XCTAssertEqual(
+            WebDavClient.map(
+                urlError: URLError(.cannotConnectToHost, userInfo: posixUnderlying(EPERM)),
+                policyError: nil
+            ),
+            .localNetworkDenied
+        )
+        XCTAssertEqual(
+            WebDavClient.map(
+                urlError: URLError(.cannotConnectToHost, userInfo: posixUnderlying(ETIMEDOUT)),
+                policyError: nil
+            ),
+            .timeout
+        )
+        XCTAssertEqual(
+            WebDavClient.map(
+                urlError: URLError(.cannotConnectToHost, userInfo: posixUnderlying(ECONNREFUSED)),
+                policyError: nil
+            ),
+            .unreachable
+        )
+        XCTAssertEqual(
+            WebDavClient.map(urlError: URLError(.timedOut), policyError: nil),
+            .timeout
+        )
+        XCTAssertEqual(
+            WebDavClient.map(urlError: URLError(.cannotFindHost), policyError: nil),
+            .hostUnknown
+        )
+        XCTAssertEqual(
+            WebDavClient.map(urlError: URLError(.dnsLookupFailed), policyError: nil),
+            .hostUnknown
+        )
+        XCTAssertEqual(
+            WebDavClient.map(urlError: URLError(.secureConnectionFailed), policyError: nil),
+            .protocolMismatch
+        )
+        XCTAssertEqual(
+            WebDavClient.map(urlError: URLError(.serverCertificateHasBadDate), policyError: nil),
+            .certificateExpired
+        )
+        XCTAssertEqual(
+            WebDavClient.map(urlError: URLError(.networkConnectionLost), policyError: nil),
+            .unavailable
+        )
+        let tlsRejection = NasTransportError.certUntrusted(
+            fingerprint: "aa",
+            subject: nil,
+            validFrom: nil,
+            validTo: nil
+        )
+        XCTAssertEqual(
+            WebDavClient.map(
+                urlError: URLError(.secureConnectionFailed),
+                policyError: tlsRejection
+            ),
+            tlsRejection
+        )
+    }
+
+    func testSmbErrorMappingByPhase() {
+        XCTAssertEqual(
+            SmbSourceAdapter.mapError(POSIXError(.ECONNREFUSED), phase: .connect),
+            .authFailed
+        )
+        XCTAssertEqual(
+            SmbSourceAdapter.mapError(POSIXError(.ENOENT), phase: .connect),
+            .shareNotFound
+        )
+        XCTAssertEqual(
+            SmbSourceAdapter.mapError(POSIXError(.EACCES), phase: .connect),
+            .shareNotFound
+        )
+        XCTAssertEqual(
+            SmbSourceAdapter.mapError(POSIXError(.EPERM), phase: .connect),
+            .authFailed
+        )
+        XCTAssertEqual(
+            SmbSourceAdapter.mapError(POSIXError(.EACCES), phase: .read),
+            .permissionDenied
+        )
+        XCTAssertEqual(
+            SmbSourceAdapter.mapError(POSIXError(.EPERM), phase: .read),
+            .permissionDenied
+        )
+        XCTAssertEqual(
+            SmbSourceAdapter.mapError(POSIXError(.ENOENT), phase: .read),
+            .pathNotFound
+        )
+        XCTAssertEqual(
+            SmbSourceAdapter.mapError(POSIXError(.EOPNOTSUPP), phase: .connect),
+            .protocolUnsupported
+        )
+        XCTAssertEqual(
+            SmbSourceAdapter.mapError(POSIXError(.ETIMEDOUT), phase: .connect),
+            .timeout
+        )
+        XCTAssertEqual(
+            SmbSourceAdapter.mapError(POSIXError(.EHOSTUNREACH), phase: .connect),
+            .unreachable
+        )
+        XCTAssertEqual(
+            SmbSourceAdapter.mapError(POSIXError(.EIO), phase: .read),
+            .unavailable
+        )
+    }
 }

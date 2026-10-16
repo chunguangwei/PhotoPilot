@@ -113,6 +113,24 @@ final class OpenMeteoProvider: WeatherProvider {
     }
 
     func searchPlaces(query: String, language: String) async throws -> [WeatherPlaceCandidate] {
+        let results = try await searchPlacesOnce(query: query.trimmingCharacters(in: .whitespaces), language: language)
+        if !results.isEmpty { return results }
+        guard let fallback = Self.searchFallbackQuery(query) else { return results }
+        return try await searchPlacesOnce(query: fallback, language: language)
+    }
+
+    static func searchFallbackQuery(_ query: String) -> String? {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        var stripped = trimmed
+        if let last = stripped.last, "区县市旗".contains(last) {
+            stripped = String(stripped.dropLast())
+        } else if let range = stripped.range(of: "\\s+(district|county)$", options: [.regularExpression, .caseInsensitive]) {
+            stripped = String(stripped[..<range.lowerBound])
+        }
+        return stripped.isEmpty || stripped == trimmed ? nil : stripped
+    }
+
+    private func searchPlacesOnce(query: String, language: String) async throws -> [WeatherPlaceCandidate] {
         var components = URLComponents(string: geocodingBaseURL)
         components?.queryItems = [
             URLQueryItem(name: "name", value: query),
@@ -139,8 +157,11 @@ final class OpenMeteoProvider: WeatherProvider {
                   let lon = (entry["longitude"] as? NSNumber)?.doubleValue else {
                 return nil
             }
+            let admin1 = entry["admin1"] as? String
+            let admin2 = (entry["admin2"] as? String).flatMap { $0 == admin1 ? nil : $0 }
             let region = [
-                entry["admin1"] as? String,
+                admin2,
+                admin1,
                 entry["country"] as? String,
             ]
             .compactMap { $0 }

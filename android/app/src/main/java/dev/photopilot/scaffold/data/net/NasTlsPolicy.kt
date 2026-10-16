@@ -71,7 +71,7 @@ class NasTlsPolicy(
         if (error is SSLPeerUnverifiedException || causes.any { it is SSLPeerUnverifiedException }) {
             return TlsError(ERR_HOSTNAME_MISMATCH, null, null, tofuEligible = true)
         }
-        return TlsError(ERR_CERT_UNTRUSTED, null, null, tofuEligible = true)
+        return TlsError(ERR_PROTOCOL_MISMATCH, null, null, tofuEligible = false)
     }
 
     fun fingerprintOf(cert: X509Certificate): String =
@@ -176,6 +176,7 @@ class NasTlsPolicy(
         const val ERR_HOSTNAME_MISMATCH = "SOURCE_CERT_HOSTNAME_MISMATCH"
         const val ERR_FINGERPRINT_CHANGED = "TLS_FINGERPRINT_CHANGED"
         const val ERR_CLEARTEXT_BLOCKED = "TLS_CLEARTEXT_BLOCKED"
+        const val ERR_PROTOCOL_MISMATCH = "SRC_PROTOCOL_MISMATCH"
 
         fun hostPortKey(host: String, port: Int): String = "${host.lowercase()}:$port"
 

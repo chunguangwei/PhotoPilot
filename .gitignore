@@ -131,3 +131,7 @@ __pycache__/
 *.db-shm
 *.db-wal
 !android/gradle/wrapper/gradle-wrapper.jar
+
+# release artifacts & screenshot working dir
+PhotoPilot-v*.apk
+store/appstore/raw/

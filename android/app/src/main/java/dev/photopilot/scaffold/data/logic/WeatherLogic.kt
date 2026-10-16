@@ -32,6 +32,14 @@ object WeatherLogic {
 
     fun coarsen(value: Double): Double = Math.round(value * 10.0) / 10.0
 
+    fun searchFallbackQuery(query: String): String? {
+        val trimmed = query.trim()
+        val stripped = trimmed
+            .replace(Regex("[区县市旗]$"), "")
+            .replace(Regex("(?i)\\s+(district|county)$"), "")
+        return stripped.takeIf { it.isNotEmpty() && it != trimmed }
+    }
+
     fun wmoToConditionCode(wmoCode: Long): String = when (wmoCode) {
         0L -> "clear"
         1L, 2L -> "partly_cloudy"

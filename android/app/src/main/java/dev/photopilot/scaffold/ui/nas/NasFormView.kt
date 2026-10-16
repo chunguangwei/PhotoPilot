@@ -16,7 +16,7 @@ import dev.photopilot.scaffold.ui.widget.primaryButton
 import dev.photopilot.scaffold.ui.widget.screenHeader
 import dev.photopilot.scaffold.ui.widget.secondaryButton
 
-class NasFormView(context: Context) : ScrollView(context) {
+class NasFormView(context: Context) : LinearLayout(context) {
 
     data class Form(
         val protocol: String,
@@ -25,7 +25,6 @@ class NasFormView(context: Context) : ScrollView(context) {
         val path: String,
         val username: String,
         val password: String,
-        val guest: Boolean,
     )
 
     var onBack: (() -> Unit)? = null
@@ -39,7 +38,6 @@ class NasFormView(context: Context) : ScrollView(context) {
     private val pathInput: EditText
     private val usernameInput: EditText
     private val passwordInput: EditText
-    private val guestToggle: CheckBox
     private val passwordVisibleToggle: CheckBox
     private val statusLine: TextView
     private val securityLine: TextView
@@ -47,6 +45,8 @@ class NasFormView(context: Context) : ScrollView(context) {
     private val testButton: View
     private val saveButton: View
     private var testPassed = false
+    private var pendingSave = false
+    private var pathLabel: TextView? = null
 
     private var protocolButtons: List<TextView> = emptyList()
     private var transportButtons: List<TextView> = emptyList()
@@ -54,6 +54,7 @@ class NasFormView(context: Context) : ScrollView(context) {
 
     private fun paintProtocol() {
         paintOptions(protocolButtons) { tag -> (tag == PROTOCOL_SMB) == (protocol == PROTOCOL_SMB) }
+        pathLabel?.setText(if (protocol == PROTOCOL_SMB) R.string.source_nas_share else R.string.source_nas_path)
     }
 
     private fun paintTransport() {
@@ -89,17 +90,21 @@ class NasFormView(context: Context) : ScrollView(context) {
     }
 
     init {
+        orientation = VERTICAL
         setBackgroundColor(context.getColor(R.color.pp_surface_canvas))
         isClickable = true
         val res = resources
         val inset = res.getDimensionPixelSize(R.dimen.pp_content_inset)
+
+        val headerRow = screenHeader(context, R.string.source_nas_title) { onBack?.invoke() }
+        headerRow.setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
+        addView(headerRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+
+        val scroll = ScrollView(context)
         val column = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, inset)
         }
-
-        val headerRow = screenHeader(context, R.string.source_nas_title) { onBack?.invoke() }
-        column.addView(headerRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
         addLabel(column, R.string.source_nas_protocol)
         val protocolRow = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
@@ -144,7 +149,7 @@ class NasFormView(context: Context) : ScrollView(context) {
             res.getString(R.string.source_nas_transport_http) to TRANSPORT_HTTP,
         )
             .forEachIndexed { index, (label, value) ->
-            val button = optionButton(label, value) {
+            val button = optionButton(label, value, R.dimen.pp_text_meta) {
                 transport = value
                 protocol = if (value == TRANSPORT_HTTP) PROTOCOL_WEBDAV_HTTP else PROTOCOL_WEBDAV
                 portInput.setText(if (value == TRANSPORT_HTTP) "80" else "443")
@@ -176,24 +181,18 @@ class NasFormView(context: Context) : ScrollView(context) {
         portInput = addInput(column, number = true)
         portInput.setText("443")
         portError = addError(column)
-        addLabel(column, R.string.source_nas_share)
+        pathLabel = addLabel(column, R.string.source_nas_path)
         pathInput = addInput(column, number = false)
         addLabel(column, R.string.source_nas_username)
         usernameInput = addInput(column, number = false)
         addLabel(column, R.string.source_nas_password)
         passwordInput = addInput(column, number = false)
         passwordInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        guestToggle = CheckBox(context).apply {
-            text = res.getString(R.string.source_nas_guest)
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
-            minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-        }
-        column.addView(guestToggle, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         passwordVisibleToggle = CheckBox(context).apply {
             KeyboardDismiss.keepInputOnTouch(this)
-            text = res.getString(R.string.common_off)
-            contentDescription = res.getString(R.string.source_nas_password)
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_meta))
+            text = res.getString(R.string.source_nas_show_password)
+            contentDescription = text
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
             minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
             setOnCheckedChangeListener { _, checked ->
                 passwordInput.inputType = if (checked) {
@@ -201,11 +200,18 @@ class NasFormView(context: Context) : ScrollView(context) {
                 } else {
                     InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 }
-                text = res.getString(if (checked) R.string.common_on else R.string.common_off)
             }
         }
         column.addView(
             passwordVisibleToggle,
+            LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
+        )
+        column.addView(
+            TextView(context).apply {
+                text = res.getString(R.string.source_nas_guest_hint)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_meta))
+                setTextColor(context.getColor(R.color.pp_text_secondary))
+            },
             LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
         )
 
@@ -233,12 +239,18 @@ class NasFormView(context: Context) : ScrollView(context) {
         )
 
         testButton = secondaryButton(context, R.string.source_nas_test_connection).apply {
-            setOnClickListener { currentForm()?.let { markDirty(); onTest?.invoke(it) } }
+            setOnClickListener { currentForm()?.let { pendingSave = false; markDirty(); onTest?.invoke(it) } }
         }
-        saveButton = primaryButton(context, R.string.common_save).apply {
-            isEnabled = false
-            alpha = DISABLED_ALPHA
-            setOnClickListener { if (testPassed) currentForm()?.let { onSave?.invoke(it) } }
+        saveButton = primaryButton(context, R.string.common_next).apply {
+            setOnClickListener {
+                val form = currentForm() ?: return@setOnClickListener
+                if (testPassed) {
+                    onSave?.invoke(form)
+                } else {
+                    pendingSave = true
+                    onTest?.invoke(form)
+                }
+            }
         }
         column.addView(
             testButton,
@@ -252,7 +264,8 @@ class NasFormView(context: Context) : ScrollView(context) {
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_12)
             },
         )
-        addView(column, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        scroll.addView(column)
+        addView(scroll, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
     }
 
     fun currentForm(): Form? {
@@ -276,7 +289,6 @@ class NasFormView(context: Context) : ScrollView(context) {
             path = pathInput.text.toString(),
             username = usernameInput.text.toString(),
             password = passwordInput.text.toString(),
-            guest = guestToggle.isChecked,
         )
     }
 
@@ -288,11 +300,13 @@ class NasFormView(context: Context) : ScrollView(context) {
 
     fun showTestOk() {
         testPassed = true
-        saveButton.isEnabled = true
-        saveButton.alpha = 1f
         statusLine.visibility = View.VISIBLE
         statusLine.setTextColor(context.getColor(R.color.pp_status_success))
         statusLine.text = resources.getString(R.string.source_nas_test_ok)
+        if (pendingSave) {
+            pendingSave = false
+            currentForm()?.let { onSave?.invoke(it) }
+        }
     }
 
     fun setSecurityText(text: String) {
@@ -302,8 +316,7 @@ class NasFormView(context: Context) : ScrollView(context) {
 
     fun showTestError(textRes: Int) {
         testPassed = false
-        saveButton.isEnabled = false
-        saveButton.alpha = DISABLED_ALPHA
+        pendingSave = false
         statusLine.visibility = View.VISIBLE
         statusLine.setTextColor(context.getColor(R.color.pp_status_error))
         statusLine.text = resources.getString(textRes)
@@ -312,16 +325,18 @@ class NasFormView(context: Context) : ScrollView(context) {
 
     fun markDirty() {
         testPassed = false
-        saveButton.isEnabled = false
-        saveButton.alpha = DISABLED_ALPHA
+        pendingSave = false
     }
 
     private fun optionButton(label: String, value: String, onSelect: () -> Unit): TextView =
+        optionButton(label, value, R.dimen.pp_text_body, onSelect)
+
+    private fun optionButton(label: String, value: String, textRes: Int, onSelect: () -> Unit): TextView =
         TextView(context).apply {
             text = label
             contentDescription = label
             tag = value
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.pp_text_body))
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(textRes))
             gravity = Gravity.CENTER
             minimumHeight = resources.getDimensionPixelSize(R.dimen.pp_touch_target)
             isClickable = true
@@ -329,7 +344,7 @@ class NasFormView(context: Context) : ScrollView(context) {
             setOnClickListener { onSelect() }
         }
 
-    private fun addLabel(parent: LinearLayout, textRes: Int) {
+    private fun addLabel(parent: LinearLayout, textRes: Int): TextView {
         val res = resources
         val label = TextView(context).apply {
             text = res.getString(textRes)
@@ -342,6 +357,7 @@ class NasFormView(context: Context) : ScrollView(context) {
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_12)
             },
         )
+        return label
     }
 
     private fun addInput(parent: LinearLayout, number: Boolean): EditText {
@@ -352,6 +368,13 @@ class NasFormView(context: Context) : ScrollView(context) {
             setTextColor(context.getColor(R.color.pp_text_primary))
             setSingleLine(true)
             KeyboardDismiss.configureDone(this)
+            addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+                override fun afterTextChanged(s: android.text.Editable?) {
+                    markDirty()
+                }
+            })
         }
         parent.addView(input, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         return input
@@ -369,7 +392,6 @@ class NasFormView(context: Context) : ScrollView(context) {
     }
 
     private companion object {
-        const val DISABLED_ALPHA = 0.5f
         const val PROTOCOL_WEBDAV = "webdav"
         const val PROTOCOL_WEBDAV_HTTP = "webdav_http"
         const val PROTOCOL_SMB = "smb"

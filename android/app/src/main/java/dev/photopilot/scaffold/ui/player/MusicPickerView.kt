@@ -13,7 +13,7 @@ import dev.photopilot.scaffold.data.logic.FramePlaybackSettings
 import dev.photopilot.scaffold.data.logic.MusicCatalog
 import dev.photopilot.scaffold.ui.widget.screenHeader
 
-class MusicPickerView(context: Context) : ScrollView(context) {
+class MusicPickerView(context: Context) : LinearLayout(context) {
 
     var onBack: (() -> Unit)? = null
     var onSelect: ((MusicCatalog.Selection) -> Unit)? = null
@@ -31,16 +31,19 @@ class MusicPickerView(context: Context) : ScrollView(context) {
     private val rowsColumn: LinearLayout
 
     init {
+        orientation = VERTICAL
         setBackgroundColor(context.getColor(R.color.pp_surface_canvas))
         isClickable = true
         val res = resources
         val inset = res.getDimensionPixelSize(R.dimen.pp_content_inset)
+        val headerRow = screenHeader(context, R.string.playback_music_picker_title) { onBack?.invoke() }
+        headerRow.setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
+        addView(headerRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        val scroll = ScrollView(context)
         val column = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, inset)
         }
-        val headerRow = screenHeader(context, R.string.playback_music_picker_title) { onBack?.invoke() }
-        column.addView(headerRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         rowsColumn = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
         }
@@ -50,7 +53,8 @@ class MusicPickerView(context: Context) : ScrollView(context) {
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_8)
             },
         )
-        addView(column, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        scroll.addView(column)
+        addView(scroll, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
         rebuildRows()
     }
 

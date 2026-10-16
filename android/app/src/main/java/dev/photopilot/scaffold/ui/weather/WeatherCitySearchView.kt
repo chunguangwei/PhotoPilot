@@ -14,7 +14,7 @@ import dev.photopilot.scaffold.data.net.PlaceResult
 import dev.photopilot.scaffold.ui.widget.primaryButton
 import dev.photopilot.scaffold.ui.widget.screenHeader
 
-class WeatherCitySearchView(context: Context) : ScrollView(context) {
+class WeatherCitySearchView(context: Context) : LinearLayout(context) {
 
     var onBack: (() -> Unit)? = null
     var onSearch: ((String) -> Unit)? = null
@@ -26,16 +26,19 @@ class WeatherCitySearchView(context: Context) : ScrollView(context) {
     private val queryInput: EditText
 
     init {
+        orientation = VERTICAL
         setBackgroundColor(context.getColor(R.color.pp_surface_canvas))
         isClickable = true
         val res = resources
         val inset = res.getDimensionPixelSize(R.dimen.pp_content_inset)
+        val headerRow = screenHeader(context, R.string.weather_choose_city) { onBack?.invoke() }
+        headerRow.setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
+        addView(headerRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        val scroll = ScrollView(context)
         val column = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, inset)
         }
-        val headerRow = screenHeader(context, R.string.weather_choose_city) { onBack?.invoke() }
-        column.addView(headerRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
         queryInput = EditText(context).apply {
             hint = res.getString(R.string.weather_search_city)
@@ -96,7 +99,8 @@ class WeatherCitySearchView(context: Context) : ScrollView(context) {
             orientation = LinearLayout.VERTICAL
         }
         column.addView(resultsColumn, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-        addView(column, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        scroll.addView(column)
+        addView(scroll, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
     }
 
     fun showSearching() {

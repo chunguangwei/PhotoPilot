@@ -1241,7 +1241,10 @@ actor ImportCoordinator {
                 return (.srcPermissionDenied, false)
             case .localNetworkDenied:
                 return (.permLocalNetworkDenied, false)
-            case .unavailable, .protocolUnsupported:
+            case .shareNotFound:
+                return (.srcPathNotFound, false)
+            case .unavailable, .protocolUnsupported,
+                 .unreachable, .hostUnknown, .timeout, .protocolMismatch, .notWebDav:
                 return (.srcUnavailable, true)
             }
         }

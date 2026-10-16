@@ -337,4 +337,14 @@ final class PhotoPilotDataTests: XCTestCase {
         XCTAssertTrue(names.contains("Source"))
         XCTAssertTrue(names.contains("SchemaMeta"))
     }
+
+    func testWeatherSearchFallbackStripsAdminSuffixes() {
+        XCTAssertEqual(OpenMeteoProvider.searchFallbackQuery("朝阳区"), "朝阳")
+        XCTAssertEqual(OpenMeteoProvider.searchFallbackQuery("海淀区"), "海淀")
+        XCTAssertEqual(OpenMeteoProvider.searchFallbackQuery("Fulton County"), "Fulton")
+        XCTAssertEqual(OpenMeteoProvider.searchFallbackQuery(" 朝阳区"), "朝阳")
+        XCTAssertNil(OpenMeteoProvider.searchFallbackQuery("海淀"))
+        XCTAssertNil(OpenMeteoProvider.searchFallbackQuery("海淀 "))
+        XCTAssertNil(OpenMeteoProvider.searchFallbackQuery("区"))
+    }
 }

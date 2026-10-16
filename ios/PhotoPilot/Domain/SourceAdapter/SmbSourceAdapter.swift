@@ -1,5 +1,6 @@
 import AMSMB2
 import Foundation
+import Network
 
 struct SmbConfig: Sendable {
     let host: String
@@ -48,14 +49,81 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
             return .unavailable
         }
         switch posix.code {
-        case .EACCES, .EPERM:
+        case .EACCES:
+            return phase == .connect ? .shareNotFound : .permissionDenied
+        case .EPERM:
             return phase == .connect ? .authFailed : .permissionDenied
         case .ENOENT:
-            return .pathNotFound
+            return phase == .connect ? .shareNotFound : .pathNotFound
+        case .ECONNREFUSED:
+            return phase == .connect ? .authFailed : .unavailable
+        case .EHOSTUNREACH, .EHOSTDOWN, .ENETUNREACH:
+            return .unreachable
+        case .ETIMEDOUT:
+            return .timeout
         case .EOPNOTSUPP:
             return .protocolUnsupported
         default:
             return .unavailable
+        }
+    }
+
+    static func mapConnectError(_ error: Error, host: String, port: Int) async -> NasTransportError {
+        guard let posix = error as? POSIXError, posix.code == .ECONNREFUSED else {
+            return mapError(error, phase: .connect)
+        }
+        return await probeTcp(host: host, port: port) ?? .authFailed
+    }
+
+    private static func probeTcp(host: String, port: Int) async -> NasTransportError? {
+        guard let endpointPort = NWEndpoint.Port(rawValue: UInt16(clamping: port)) else {
+            return nil
+        }
+        return await withCheckedContinuation { continuation in
+            final class ResumeBox: @unchecked Sendable {
+                let lock = NSLock()
+                var resumed = false
+            }
+            let box = ResumeBox()
+            let resume: @Sendable (NasTransportError?) -> Void = { result in
+                box.lock.lock()
+                guard !box.resumed else {
+                    box.lock.unlock()
+                    return
+                }
+                box.resumed = true
+                box.lock.unlock()
+                continuation.resume(returning: result)
+            }
+            let connection = NWConnection(
+                host: NWEndpoint.Host(host),
+                port: endpointPort,
+                using: .tcp
+            )
+            connection.stateUpdateHandler = { state in
+                switch state {
+                case .ready:
+                    resume(nil)
+                    connection.cancel()
+                case .failed(let error):
+                    switch error {
+                    case .posix(let code):
+                        resume(code == .ETIMEDOUT ? .timeout : .unreachable)
+                    case .dns:
+                        resume(.hostUnknown)
+                    default:
+                        resume(.unreachable)
+                    }
+                    connection.cancel()
+                default:
+                    break
+                }
+            }
+            connection.start(queue: .global(qos: .utility))
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 5) {
+                resume(.timeout)
+                connection.cancel()
+            }
         }
     }
 
@@ -75,12 +143,12 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
         return SMB2Manager(url: url, credential: credential)
     }
 
-    private func connectedClient() async throws -> SMB2Manager {
+    private func connectedClient(share: String) async throws -> SMB2Manager {
         guard let preferred = makeManager() else {
             throw NasTransportError.unavailable
         }
         do {
-            try await preferred.connectShare(name: config.share, encrypted: true)
+            try await preferred.connectShare(name: share, encrypted: true)
             sessionEncrypted = true
             return preferred
         } catch {
@@ -90,11 +158,34 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
             throw NasTransportError.unavailable
         }
         do {
-            try await fallback.connectShare(name: config.share, encrypted: false)
+            try await fallback.connectShare(name: share, encrypted: false)
             return fallback
         } catch {
-            throw Self.mapError(error, phase: .connect)
+            throw await Self.mapConnectError(error, host: config.host, port: config.port)
         }
+    }
+
+    private func connectedClient() async throws -> SMB2Manager {
+        try await connectedClient(share: config.share)
+    }
+
+    func listShares() async throws -> [String] {
+        guard let manager = makeManager() else {
+            throw NasTransportError.unavailable
+        }
+        do {
+            let shares = try await manager.listShares(enumerateHidden: false)
+            return shares.map(\.name).sorted()
+        } catch {
+            throw await Self.mapConnectError(error, host: config.host, port: config.port)
+        }
+    }
+
+    private func resolveDirectory(_ directory: String) -> (share: String, subpath: String) {
+        if config.share.isEmpty {
+            return NasPath.splitShare(directory)
+        }
+        return (config.share, directory)
     }
 
     func enumerateAssets(cursor: String?) async throws -> SourceAssetPage {
@@ -106,24 +197,41 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
             state = WebDavSourceAdapter.EnumState(dirs: directories, skip: 0)
         }
         var client: SMB2Manager?
-        do {
-            client = try await connectedClient()
-        } catch let error as NasTransportError {
-            throw error
-        }
-        guard let client else {
-            throw NasTransportError.unavailable
+        var clientShare: String?
+        if !config.share.isEmpty {
+            client = try await connectedClient(share: config.share)
+            clientShare = config.share
         }
         var assets: [SourceAssetDescriptor] = []
         defer {
-            Task { try? await client.disconnectShare() }
+            let current = client
+            Task { try? await current?.disconnectShare() }
         }
         while !state.dirs.isEmpty, assets.count < pageSize {
             let directory = state.dirs[0]
+            let resolved = resolveDirectory(directory)
+            if resolved.share.isEmpty {
+                let shares = try await listShares()
+                state = WebDavSourceAdapter.EnumState(
+                    dirs: Array(state.dirs.dropFirst()) + shares,
+                    skip: 0
+                )
+                continue
+            }
+            if clientShare != resolved.share {
+                if let client {
+                    try? await client.disconnectShare()
+                }
+                client = try await connectedClient(share: resolved.share)
+                clientShare = resolved.share
+            }
+            guard let active = client else {
+                throw NasTransportError.unavailable
+            }
             let entries: [[URLResourceKey: Any]]
             do {
-                entries = try await client.contentsOfDirectory(
-                    atPath: directory.isEmpty ? "/" : directory,
+                entries = try await active.contentsOfDirectory(
+                    atPath: resolved.subpath.isEmpty ? "/" : resolved.subpath,
                     recursive: false
                 )
             } catch {
@@ -199,8 +307,38 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
         .sorted()
     }
 
+    func listFolders(path: String) async throws -> [String] {
+        if !config.share.isEmpty {
+            return try await listSubdirectories(path: path)
+        }
+        if path.isEmpty {
+            return try await listShares()
+        }
+        let resolved = NasPath.splitShare(path)
+        let client = try await connectedClient(share: resolved.share)
+        defer { Task { try? await client.disconnectShare() } }
+        let entries: [[URLResourceKey: Any]]
+        do {
+            entries = try await client.contentsOfDirectory(
+                atPath: resolved.subpath.isEmpty ? "/" : resolved.subpath,
+                recursive: false
+            )
+        } catch {
+            throw Self.mapError(error, phase: .read)
+        }
+        return entries.compactMap { entry -> String? in
+            guard let name = entry[.nameKey] as? String,
+                  name != ".",
+                  name != "..",
+                  (entry[.isDirectoryKey] as? Bool) == true else { return nil }
+            return "\(path)/\(name)"
+        }
+        .sorted()
+    }
+
     func assetPayload(remoteID: String) async throws -> LocalAssetPayload {
-        let client = try await connectedClient()
+        let resolved = resolveDirectory(remoteID)
+        let client = try await connectedClient(share: resolved.share)
         let fileURL = tempDirectory
             .appendingPathComponent(SHA256Hex.digest(data: Data(remoteID.utf8)))
             .appendingPathExtension("payload")
@@ -209,7 +347,7 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
                 at: tempDirectory,
                 withIntermediateDirectories: true
             )
-            try await client.downloadItem(atPath: remoteID, to: fileURL) { _, _ in true }
+            try await client.downloadItem(atPath: resolved.subpath, to: fileURL) { _, _ in true }
         } catch {
             throw Self.mapError(error, phase: .read)
         }

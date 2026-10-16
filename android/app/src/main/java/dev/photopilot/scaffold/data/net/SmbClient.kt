@@ -149,20 +149,33 @@ class SmbClient(
     private fun openWith(config: SmbConfig) {
         val candidate = SMBClient(config)
         try {
-            val conn = candidate.connect(host, port)
+            val conn = try {
+                candidate.connect(host, port)
+            } catch (e: Throwable) {
+                throw mapConnectError(e)
+            }
             val auth = if (username.isEmpty() && password.isEmpty()) {
                 AuthenticationContext.guest()
             } else {
                 AuthenticationContext(username, password.toCharArray(), null)
             }
-            val session = conn.authenticate(auth)
-            val diskShare = session.connectShare(shareName) as DiskShare
+            val session = try {
+                conn.authenticate(auth)
+            } catch (e: Throwable) {
+                throw mapAuthError(e)
+            }
+            val diskShare = try {
+                session.connectShare(shareName) as DiskShare
+            } catch (e: Throwable) {
+                throw mapShareError(e)
+            }
             client = candidate
             connection = conn
             this.session = session
             share = diskShare
         } catch (e: Throwable) {
             runCatching { candidate.close() }
+            if (e is SmbException) throw e
             throw mapError(e)
         }
     }
@@ -172,12 +185,16 @@ class SmbClient(
         const val ERR_SRC_PATH_NOT_FOUND = "SRC_PATH_NOT_FOUND"
         const val ERR_SRC_PERMISSION_DENIED = "SRC_PERMISSION_DENIED"
         const val ERR_SRC_UNAVAILABLE = "SRC_UNAVAILABLE"
+        const val ERR_SRC_SHARE_NOT_FOUND = "SRC_SHARE_NOT_FOUND"
         const val ERR_SMB_PROTOCOL_UNSUPPORTED = "SMB_PROTOCOL_UNSUPPORTED"
 
         private const val FILE_ATTRIBUTE_DIRECTORY = 0x10L
 
         fun mapError(error: Throwable): SmbException {
-            val status = (error as? SMBApiException)?.statusCode
+            val status = generateSequence(error) { it.cause }
+                .filterIsInstance<SMBApiException>()
+                .firstOrNull()
+                ?.statusCode
             val code = mapStatusCode(status)
                 ?: if (isDialectFailure(error)) {
                     ERR_SMB_PROTOCOL_UNSUPPORTED
@@ -185,6 +202,49 @@ class SmbClient(
                     ERR_SRC_UNAVAILABLE
                 }
             return SmbException(code, error)
+        }
+
+        fun mapConnectError(error: Throwable): SmbException {
+            val causes = generateSequence(error) { it.cause }
+            val code = when {
+                causes.filterIsInstance<java.net.UnknownHostException>().any() ->
+                    WebDavClient.ERR_SRC_HOST_UNKNOWN
+                causes.filterIsInstance<java.net.ConnectException>().any() ->
+                    WebDavClient.ERR_SRC_UNREACHABLE
+                causes.filterIsInstance<java.net.SocketTimeoutException>().any() ->
+                    WebDavClient.ERR_NET_TIMEOUT
+                else -> null
+            }
+            return if (code != null) SmbException(code, error) else mapError(error)
+        }
+
+        fun mapAuthError(error: Throwable): SmbException {
+            val status = generateSequence(error) { it.cause }
+                .filterIsInstance<SMBApiException>()
+                .firstOrNull()
+                ?.statusCode
+            if (status == NtStatus.STATUS_LOGON_FAILURE.value ||
+                status == NtStatus.STATUS_ACCESS_DENIED.value
+            ) {
+                return SmbException(ERR_SRC_AUTH_FAILED, error)
+            }
+            return mapConnectError(error)
+        }
+
+        fun mapShareError(error: Throwable): SmbException {
+            val status = generateSequence(error) { it.cause }
+                .filterIsInstance<SMBApiException>()
+                .firstOrNull()
+                ?.statusCode
+            val code = when (status) {
+                NtStatus.STATUS_BAD_NETWORK_NAME.value,
+                NtStatus.STATUS_OBJECT_NAME_NOT_FOUND.value,
+                -> ERR_SRC_SHARE_NOT_FOUND
+                NtStatus.STATUS_ACCESS_DENIED.value -> ERR_SRC_PERMISSION_DENIED
+                NtStatus.STATUS_OBJECT_PATH_NOT_FOUND.value -> ERR_SRC_PATH_NOT_FOUND
+                else -> null
+            }
+            return if (code != null) SmbException(code, error) else mapError(error)
         }
 
         fun mapStatusCode(status: Long?): String? = when (status) {

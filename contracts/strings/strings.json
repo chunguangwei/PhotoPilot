@@ -776,6 +776,13 @@
       "plural_variable": "count"
     },
     {
+      "key": "sources.reconfigure",
+      "section": "4.1 来源列表与通用",
+      "platform": "ios",
+      "zh": "重新配置",
+      "en": "Reconfigure"
+    },
+    {
       "key": "source.local_photos.title",
       "section": "4.2 本地与苹果端图库",
       "platform": "all",
@@ -1062,13 +1069,6 @@
       "en": "Password"
     },
     {
-      "key": "source.nas.guest",
-      "section": "4.4 NAS",
-      "platform": "all",
-      "zh": "以访客身份连接",
-      "en": "Connect as guest"
-    },
-    {
       "key": "source.nas.share_required",
       "section": "4.4 NAS",
       "platform": "ios",
@@ -1173,6 +1173,62 @@
       "platform": "all",
       "zh": "源已移除",
       "en": "Removed at source"
+    },
+    {
+      "key": "source.nas.share_not_found",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "找不到该共享，请检查共享名。",
+      "en": "Can’t find that share. Check the share name."
+    },
+    {
+      "key": "source.nas.share_optional_hint",
+      "section": "4.4 NAS",
+      "platform": "ios",
+      "zh": "留空列出所有共享",
+      "en": "Leave empty to list all shares"
+    },
+    {
+      "key": "source.nas.path_optional_hint",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "可选，留空为根目录",
+      "en": "Optional — empty means the root folder"
+    },
+    {
+      "key": "source.nas.picker_empty",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "此目录下没有子文件夹",
+      "en": "No subfolders here"
+    },
+    {
+      "key": "source.nas.picker_error",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "目录载入失败，请检查连接后重试",
+      "en": "Couldn’t load folders. Check the connection and try again."
+    },
+    {
+      "key": "source.nas.picker_whole",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "选择此目录的全部内容",
+      "en": "Choose everything in this folder"
+    },
+    {
+      "key": "source.nas.show_password",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "显示密码",
+      "en": "Show password"
+    },
+    {
+      "key": "source.nas.guest_hint",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "如服务器允许，用户名和密码可留空，以访客身份连接。",
+      "en": "If the server allows it, leave username and password empty to connect as guest."
     },
     {
       "key": "permission.local_network.title",
@@ -3724,6 +3780,34 @@
       "platform": "all",
       "zh": "已跳过你之前删除的照片。",
       "en": "Skipped a photo you deleted earlier."
+    },
+    {
+      "key": "error.src_unreachable.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "无法连接到服务器，请检查主机地址和端口。",
+      "en": "Can’t reach the server. Check the host address and port."
+    },
+    {
+      "key": "error.src_host_unknown.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "找不到该主机，请检查主机地址。",
+      "en": "Can’t find that host. Check the host address."
+    },
+    {
+      "key": "error.src_protocol_mismatch.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "端口与传输方式不匹配，请检查端口或切换 HTTP/HTTPS。",
+      "en": "The port doesn’t match the connection type. Check the port or switch HTTP/HTTPS."
+    },
+    {
+      "key": "error.src_not_webdav.body",
+      "section": "10. 错误码文案",
+      "platform": "all",
+      "zh": "服务器没有按 WebDAV 响应，请确认服务类型和端口。",
+      "en": "The server didn’t respond as WebDAV. Check the service type and port."
     },
     {
       "key": "a11y.logo",

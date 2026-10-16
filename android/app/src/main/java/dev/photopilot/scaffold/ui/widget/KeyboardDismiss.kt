@@ -86,6 +86,9 @@ class KeyboardDismiss(private val root: ViewGroup) {
                 bars.bottom,
             )
             root.setPadding(left + bars.left, top + bars.top, right + bars.right, bottom + bars.bottom + extra)
+            if (extra > 0) {
+                root.post { revealFocusedInput(root) }
+            }
             insets
         }
         root.requestApplyInsets()
@@ -192,6 +195,12 @@ class KeyboardDismiss(private val root: ViewGroup) {
             } finally {
                 root.descendantFocusability = focusability
             }
+        }
+
+        private fun revealFocusedInput(root: ViewGroup) {
+            val focused = root.findFocus() as? EditText ?: return
+            if (!focused.isShown) return
+            focused.requestRectangleOnScreen(Rect(0, 0, focused.width, focused.height), false)
         }
 
         private fun imeVisible(root: View): Boolean {

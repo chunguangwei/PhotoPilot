@@ -64,26 +64,36 @@ class OpenMeteoProvider(
 
     override suspend fun search(query: String, language: String): List<PlaceResult> =
         withContext(Dispatchers.IO) {
-            val encoded = query.toByteArray(Charsets.UTF_8).joinToString("") { byte ->
-                val c = (byte.toInt() and 0xFF).toChar()
-                if (c in 'A'..'Z' || c in 'a'..'z' || c in '0'..'9' || c in "-._~") {
-                    c.toString()
-                } else {
-                    "%%%02X".format(byte.toInt() and 0xFF)
-                }
-            }
-            val url = "$geocodingBaseUrl/v1/search?name=$encoded&count=$SEARCH_COUNT&language=$language"
-            val response = SimpleHttpsGet.get(url)
-            when (response.status) {
-                200 -> parsePlaces(String(response.body, Charsets.UTF_8))
-                429 -> throw WeatherException(
-                    WeatherException.ERR_UNAVAILABLE,
-                    retryAfterMs = retryAfterMs(response.headers),
-                )
-                in 500..599 -> throw WeatherException(WeatherException.ERR_STALE)
-                else -> throw WeatherException(WeatherException.ERR_UNAVAILABLE)
+            val results = searchOnce(query, language)
+            if (results.isNotEmpty()) {
+                results
+            } else {
+                val fallback = WeatherLogic.searchFallbackQuery(query)
+                if (fallback == null) results else searchOnce(fallback, language)
             }
         }
+
+    private fun searchOnce(query: String, language: String): List<PlaceResult> {
+        val encoded = query.trim().toByteArray(Charsets.UTF_8).joinToString("") { byte ->
+            val c = (byte.toInt() and 0xFF).toChar()
+            if (c in 'A'..'Z' || c in 'a'..'z' || c in '0'..'9' || c in "-._~") {
+                c.toString()
+            } else {
+                "%%%02X".format(byte.toInt() and 0xFF)
+            }
+        }
+        val url = "$geocodingBaseUrl/v1/search?name=$encoded&count=$SEARCH_COUNT&language=$language"
+        val response = SimpleHttpsGet.get(url)
+        return when (response.status) {
+            200 -> parsePlaces(String(response.body, Charsets.UTF_8))
+            429 -> throw WeatherException(
+                WeatherException.ERR_UNAVAILABLE,
+                retryAfterMs = retryAfterMs(response.headers),
+            )
+            in 500..599 -> throw WeatherException(WeatherException.ERR_STALE)
+            else -> throw WeatherException(WeatherException.ERR_UNAVAILABLE)
+        }
+    }
 
     private fun retryAfterMs(headers: Map<String, String>): Long? =
         headers.entries
@@ -120,8 +130,11 @@ class OpenMeteoProvider(
             val name = map["name"] as? String ?: return@mapNotNull null
             val lat = (map["latitude"] as? Double) ?: return@mapNotNull null
             val lon = (map["longitude"] as? Double) ?: return@mapNotNull null
+            val admin1 = map["admin1"] as? String
+            val admin2 = (map["admin2"] as? String)?.takeIf { it != admin1 }
             val region = listOfNotNull(
-                map["admin1"] as? String,
+                admin2,
+                admin1,
                 map["country"] as? String,
             ).joinToString(", ")
             PlaceResult(

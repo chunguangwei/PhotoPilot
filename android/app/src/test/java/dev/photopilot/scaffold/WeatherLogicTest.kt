@@ -102,4 +102,16 @@ class WeatherLogicTest {
         assertEquals(emptyMap<String, WeatherLogic.StoredPlace>(), WeatherLogic.decodePlaces("bad"))
         assertNull(WeatherLogic.decodePlaces("{\"a\":{\"nameZh\":\"x\"}}")["a"])
     }
+
+    @Test
+    fun searchFallbackStripsAdminSuffixes() {
+        assertEquals("朝阳", WeatherLogic.searchFallbackQuery("朝阳区"))
+        assertEquals("海淀", WeatherLogic.searchFallbackQuery("海淀区"))
+        assertEquals("Fulton", WeatherLogic.searchFallbackQuery("Fulton County"))
+        assertEquals("朝阳", WeatherLogic.searchFallbackQuery(" 朝阳区"))
+        assertNull(WeatherLogic.searchFallbackQuery("海淀"))
+        assertNull(WeatherLogic.searchFallbackQuery("海淀 "))
+        assertNull(WeatherLogic.searchFallbackQuery("区"))
+        assertNull(WeatherLogic.searchFallbackQuery("北京"))
+    }
 }

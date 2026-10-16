@@ -143,6 +143,19 @@ class NasTlsPolicyTest {
     }
 
     @Test
+    fun genericHandshakeFailureIsProtocolMismatchNotCert() {
+        val policy = policyWith(emptyMap())
+        val classified = policy.classify(
+            javax.net.ssl.SSLHandshakeException("no cipher suites in common"),
+            "nas.local",
+            443,
+        )
+        assertEquals(NasTlsPolicy.ERR_PROTOCOL_MISMATCH, classified.code)
+        assertNull(classified.fingerprint)
+        assertFalse(classified.tofuEligible)
+    }
+
+    @Test
     fun cleartextGateRequiresPrivateEligibleAndListed() {
         val host = "10.0.0.9"
         val key = NasTlsPolicy.hostPortKey(host, 80)

@@ -151,7 +151,6 @@
     <string name="source.nas.path">路径</string>
     <string name="source.nas.username">用户名</string>
     <string name="source.nas.password">密码</string>
-    <string name="source.nas.guest">以访客身份连接</string>
     <string name="source.nas.test_connection">测试连接</string>
     <string name="source.nas.testing">正在连接</string>
     <string name="source.nas.test_ok">连接成功</string>
@@ -167,6 +166,13 @@
         <item quantity="other">即将删除本机 %1$d 张照片</item>
     </plurals>
     <string name="source.nas.source_removed">源已移除</string>
+    <string name="source.nas.share_not_found">找不到该共享，请检查共享名。</string>
+    <string name="source.nas.path_optional_hint">可选，留空为根目录</string>
+    <string name="source.nas.picker_empty">此目录下没有子文件夹</string>
+    <string name="source.nas.picker_error">目录载入失败，请检查连接后重试</string>
+    <string name="source.nas.picker_whole">选择此目录的全部内容</string>
+    <string name="source.nas.show_password">显示密码</string>
+    <string name="source.nas.guest_hint">如服务器允许，用户名和密码可留空，以访客身份连接。</string>
     <string name="permission.local_network.title">需要访问局域网</string>
     <string name="permission.local_network.body">为了连接家里的 NAS，PhotoPilot 需要访问同一网络中的设备。照片只在本机处理。</string>
     <string name="permission.local_network.continue">继续</string>
@@ -525,6 +531,10 @@
     <string name="error.weather_unavailable.body">天气暂不可用。</string>
     <string name="error.weather_stale.body">天气更新延迟。</string>
     <string name="error.skipped_by_tombstone.body">已跳过你之前删除的照片。</string>
+    <string name="error.src_unreachable.body">无法连接到服务器，请检查主机地址和端口。</string>
+    <string name="error.src_host_unknown.body">找不到该主机，请检查主机地址。</string>
+    <string name="error.src_protocol_mismatch.body">端口与传输方式不匹配，请检查端口或切换 HTTP/HTTPS。</string>
+    <string name="error.src_not_webdav.body">服务器没有按 WebDAV 响应，请确认服务类型和端口。</string>
     <string name="a11y.logo">PhotoPilot 标志</string>
     <string name="a11y.photo_cell">照片，%1$s</string>
     <string name="a11y.photo_cell_no_date">照片，无拍摄时间</string>

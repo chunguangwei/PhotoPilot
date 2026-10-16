@@ -891,10 +891,10 @@ class MainActivity : Activity() {
         val parsed = NasAddress.parseHostInput(form.host) ?: return null
         val host = parsed.host
         val path = NasPath.normalize(form.path) ?: return null
-        val username = if (form.guest) "" else form.username.trim()
-        val password = if (form.guest) "" else form.password
+        val username = form.username.trim()
+        val password = form.password
         if (form.protocol == "smb") {
-            val port = form.port ?: parsed.port ?: 445
+            val port = parsed.port ?: form.port ?: 445
             val shareName = path.substringBefore('/').ifEmpty { return null }
             val pathInShare = path.substringAfter('/', "")
             val fingerprint = NasAddress.sourceFingerprint("smb", host, port, path)
@@ -958,7 +958,7 @@ class MainActivity : Activity() {
                 },
             )
         }
-        val port = form.port ?: parsed.port ?: if (form.protocol == "webdav_http") 80 else 443
+        val port = parsed.port ?: form.port ?: if (form.protocol == "webdav_http") 80 else 443
         val protocol = form.protocol
         val scheme = if (protocol == "webdav_http") "http" else "https"
         val fingerprint = NasAddress.sourceFingerprint(protocol, host, port, path)
@@ -1046,9 +1046,30 @@ class MainActivity : Activity() {
                 }
                 NasTlsPolicy.ERR_CERT_UNTRUSTED,
                 NasTlsPolicy.ERR_HOSTNAME_MISMATCH,
-                -> openNasCert(view, conn, changed = false)
-                NasTlsPolicy.ERR_FINGERPRINT_CHANGED -> openNasCert(view, conn, changed = true)
+                -> {
+                    if (conn.tlsContext?.lastError?.fingerprint != null) {
+                        openNasCert(view, conn, changed = false)
+                    } else {
+                        view.showTestError(R.string.error_src_unavailable_body)
+                    }
+                }
+                NasTlsPolicy.ERR_FINGERPRINT_CHANGED -> {
+                    if (conn.tlsContext?.lastError?.fingerprint != null) {
+                        openNasCert(view, conn, changed = true)
+                    } else {
+                        view.showTestError(R.string.error_src_unavailable_body)
+                    }
+                }
                 NasTlsPolicy.ERR_CLEARTEXT_BLOCKED -> openNasCleartext(view, conn)
+                NasTlsPolicy.ERR_PROTOCOL_MISMATCH ->
+                    view.showTestError(R.string.error_src_protocol_mismatch_body)
+                WebDavClient.ERR_SRC_UNREACHABLE -> view.showTestError(R.string.error_src_unreachable_body)
+                WebDavClient.ERR_SRC_HOST_UNKNOWN -> view.showTestError(R.string.error_src_host_unknown_body)
+                WebDavClient.ERR_NET_TIMEOUT -> view.showTestError(R.string.error_net_timeout_body)
+                WebDavClient.ERR_SRC_NOT_WEBDAV -> view.showTestError(R.string.error_src_not_webdav_body)
+                SmbClient.ERR_SRC_SHARE_NOT_FOUND -> view.showTestError(R.string.source_nas_share_not_found)
+                SmbClient.ERR_SRC_PERMISSION_DENIED ->
+                    view.showTestError(R.string.error_src_permission_denied_body)
                 WebDavClient.ERR_SRC_AUTH_FAILED -> view.showTestError(R.string.error_src_auth_failed_body)
                 WebDavClient.ERR_SRC_PATH_NOT_FOUND -> view.showTestError(R.string.error_src_path_not_found_body)
                 else -> view.showTestError(R.string.error_src_unavailable_body)
@@ -1063,6 +1084,10 @@ class MainActivity : Activity() {
     ) {
         val env = environment ?: return
         val error = conn.tlsContext?.lastError
+        if (error?.fingerprint == null) {
+            formView.showTestError(R.string.error_src_unavailable_body)
+            return
+        }
         val view = NasCertView(this).apply {
             onTrust = trust@{
                 val fingerprint = error?.fingerprint ?: return@trust
@@ -1110,7 +1135,7 @@ class MainActivity : Activity() {
         view.onLoadDirectory = { dir, callback ->
             scope.launch {
                 val children = withContext(Dispatchers.IO) {
-                    runCatching { conn.listChildDirs(dir) }.getOrDefault(emptyList())
+                    runCatching { conn.listChildDirs(dir) }.getOrNull()
                 }
                 callback(children)
             }

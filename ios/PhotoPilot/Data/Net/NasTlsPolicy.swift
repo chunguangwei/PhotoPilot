@@ -14,6 +14,12 @@ enum NasTransportError: Error, Equatable {
     case unavailable
     case localNetworkDenied
     case protocolUnsupported
+    case unreachable
+    case hostUnknown
+    case timeout
+    case protocolMismatch
+    case notWebDav
+    case shareNotFound
 }
 
 final class NasTlsPolicy: NSObject, URLSessionDelegate {

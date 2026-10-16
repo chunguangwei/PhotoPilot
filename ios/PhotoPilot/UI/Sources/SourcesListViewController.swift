@@ -139,6 +139,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
     private func refreshNasSources() {
         nasStatusViews.forEach { $0.removeFromSuperview() }
         nasStatusViews = []
+        nasEndpointKeys = [:]
         let sources = (try? environment.sources.webdavSources()) ?? []
         for source in sources {
             rowsStack.addArrangedSubview(makeNasStatusRow(source))
@@ -239,6 +240,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
     }
 
     private var nasStatusViews: [UIView] = []
+    private var nasEndpointKeys: [ObjectIdentifier: String] = [:]
 
     private func makeNasStatusRow(_ source: SourceInfoDTO) -> UIControl {
         let statusKey: String
@@ -292,6 +294,18 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         syncButton.isHidden = source.status == "disconnected"
         disconnectButton.isHidden = source.status == "disconnected"
 
+        let reconfigureButton = ActionButton(titleKey: "sources.reconfigure", style: .secondary)
+        reconfigureButton.addTarget(
+            self,
+            action: #selector(handleNasReconfigure(_:)),
+            for: .touchUpInside
+        )
+        reconfigureButton.setContentHuggingPriority(.required, for: .horizontal)
+        reconfigureButton.isHidden = source.status != "needs_auth"
+        if let endpointKey = source.endpointKey {
+            nasEndpointKeys[ObjectIdentifier(reconfigureButton)] = endpointKey
+        }
+
         let mirrorSwitch = UISwitch()
         mirrorSwitch.isOn = source.mirrorDelete
         mirrorSwitch.onTintColor = ThemeColor.accentAction
@@ -312,7 +326,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
             greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
         ).isActive = true
 
-        let actions = UIStackView(arrangedSubviews: [syncButton, disconnectButton, mirrorRow])
+        let actions = UIStackView(arrangedSubviews: [syncButton, reconfigureButton, disconnectButton, mirrorRow])
         actions.axis = .vertical
         actions.spacing = ThemeMetrics.space4
 
@@ -352,6 +366,15 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
             ? NasAddViewController(environment: environment)
             : NasLanNoticeViewController(environment: environment)
         let navigation = UINavigationController(rootViewController: root)
+        navigation.modalPresentationStyle = .fullScreen
+        present(navigation, animated: true)
+    }
+
+    @objc private func handleNasReconfigure(_ sender: ActionButton) {
+        guard let endpointKey = nasEndpointKeys[ObjectIdentifier(sender)],
+              let endpoint = NasAddress.parseFingerprint(endpointKey) else { return }
+        let controller = NasAddViewController(environment: environment, prefillEndpoint: endpoint)
+        let navigation = UINavigationController(rootViewController: controller)
         navigation.modalPresentationStyle = .fullScreen
         present(navigation, animated: true)
     }

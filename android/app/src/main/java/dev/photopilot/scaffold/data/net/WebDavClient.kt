@@ -105,7 +105,7 @@ class WebDavClient(
         } catch (e: SSLException) {
             throw sslFailure(e, host, port)
         } catch (e: IOException) {
-            throw DavException(ERR_SRC_UNAVAILABLE, e)
+            throw DavException(ioErrorCode(e), e)
         }
         val request = buildString {
             val target = if (url.path.isEmpty()) "/" else encodePath(decodeHref(url.path))
@@ -137,7 +137,17 @@ class WebDavClient(
             throw sslFailure(e, host, port)
         } catch (e: IOException) {
             socket.close()
-            throw DavException(ERR_SRC_UNAVAILABLE, e)
+            throw DavException(ioErrorCode(e), e)
+        }
+    }
+
+    private fun ioErrorCode(error: IOException): String {
+        val causes = generateSequence(error as Throwable) { it.cause }
+        return when {
+            causes.filterIsInstance<java.net.UnknownHostException>().any() -> ERR_SRC_HOST_UNKNOWN
+            causes.filterIsInstance<java.net.ConnectException>().any() -> ERR_SRC_UNREACHABLE
+            causes.filterIsInstance<java.net.SocketTimeoutException>().any() -> ERR_NET_TIMEOUT
+            else -> ERR_SRC_UNAVAILABLE
         }
     }
 
@@ -172,9 +182,9 @@ class WebDavClient(
 
     private fun readChannel(socket: Socket): Channel {
         val input = BufferedInputStream(socket.getInputStream())
-        val statusLine = readLine(input) ?: throw DavException(ERR_SRC_UNAVAILABLE)
+        val statusLine = readLine(input) ?: throw DavException(ERR_SRC_PROTOCOL_MISMATCH)
         val status = statusLine.split(' ').getOrNull(1)?.toIntOrNull()
-            ?: throw DavException(ERR_SRC_UNAVAILABLE)
+            ?: throw DavException(ERR_SRC_NOT_WEBDAV)
         val headers = LinkedHashMap<String, String>()
         while (true) {
             val line = readLine(input) ?: break
@@ -249,6 +259,8 @@ class WebDavClient(
     private fun statusToCode(status: Int, pathLevel: Boolean): String = when (status) {
         HTTP_UNAUTHORIZED, HTTP_FORBIDDEN -> ERR_SRC_AUTH_FAILED
         HTTP_NOT_FOUND -> if (pathLevel) ERR_SRC_PATH_NOT_FOUND else ERR_SRC_ASSET_GONE
+        HTTP_OK, HTTP_BAD_REQUEST, HTTP_METHOD_NOT_ALLOWED, HTTP_NOT_IMPLEMENTED ->
+            if (pathLevel) ERR_SRC_NOT_WEBDAV else ERR_SRC_UNAVAILABLE
         else -> ERR_SRC_UNAVAILABLE
     }
 
@@ -288,9 +300,12 @@ class WebDavClient(
     companion object {
         const val HTTP_MULTISTATUS = 207
         const val HTTP_OK = 200
+        const val HTTP_BAD_REQUEST = 400
         const val HTTP_UNAUTHORIZED = 401
         const val HTTP_FORBIDDEN = 403
         const val HTTP_NOT_FOUND = 404
+        const val HTTP_METHOD_NOT_ALLOWED = 405
+        const val HTTP_NOT_IMPLEMENTED = 501
         const val CONNECT_TIMEOUT_MS = 15_000
         const val READ_TIMEOUT_MS = 30_000
         const val DAV_NS = "DAV:"
@@ -299,6 +314,11 @@ class WebDavClient(
         const val ERR_SRC_PATH_NOT_FOUND = "SRC_PATH_NOT_FOUND"
         const val ERR_SRC_ASSET_GONE = "SRC_ASSET_GONE"
         const val ERR_SRC_UNAVAILABLE = "SRC_UNAVAILABLE"
+        const val ERR_SRC_UNREACHABLE = "SRC_UNREACHABLE"
+        const val ERR_SRC_HOST_UNKNOWN = "SRC_HOST_UNKNOWN"
+        const val ERR_SRC_PROTOCOL_MISMATCH = "SRC_PROTOCOL_MISMATCH"
+        const val ERR_SRC_NOT_WEBDAV = "SRC_NOT_WEBDAV"
+        const val ERR_NET_TIMEOUT = "NET_TIMEOUT"
 
         const val PROPFIND_BODY =
             "<?xml version=\"1.0\" encoding=\"utf-8\"?>" +

@@ -149,7 +149,7 @@ final class WebDavClient: @unchecked Sendable {
             body: Self.propfindBody
         )
         let (data, response) = try await perform(request)
-        try validate(response: response, isDownload: false)
+        try validatePropfind(response: response)
         return WebDavMultistatusParser.parse(
             data: data,
             basePath: config.baseURL.path
@@ -234,14 +234,64 @@ final class WebDavClient: @unchecked Sendable {
     }
 
     private func map(urlError: URLError, url: URL?) -> Error {
-        if let url, let host = url.host,
-           let policyError = tlsPolicy?.lastError(host: host, port: url.port ?? Self.defaultPort(url)) {
+        var policyError: NasTransportError?
+        if let url, let host = url.host {
+            policyError = tlsPolicy?.lastError(host: host, port: url.port ?? Self.defaultPort(url))
+        }
+        return Self.map(urlError: urlError, policyError: policyError)
+    }
+
+    static func map(urlError: URLError, policyError: NasTransportError?) -> NasTransportError {
+        if let policyError {
             return policyError
         }
-        if urlError.code == .cannotConnectToHost {
-            return NasTransportError.localNetworkDenied
+        var underlying = urlError.userInfo[NSUnderlyingErrorKey] as? NSError
+        while let current = underlying {
+            if current.domain == NSPOSIXErrorDomain {
+                switch Int32(current.code) {
+                case EPERM:
+                    return .localNetworkDenied
+                case ETIMEDOUT:
+                    return .timeout
+                case ECONNREFUSED:
+                    return .unreachable
+                default:
+                    break
+                }
+            }
+            underlying = current.userInfo[NSUnderlyingErrorKey] as? NSError
         }
-        return NasTransportError.unavailable
+        switch urlError.code {
+        case .cannotFindHost, .dnsLookupFailed:
+            return .hostUnknown
+        case .timedOut:
+            return .timeout
+        case .cannotConnectToHost:
+            return .unreachable
+        case .serverCertificateHasBadDate:
+            return .certificateExpired
+        case .secureConnectionFailed, .serverCertificateUntrusted,
+             .serverCertificateHasUnknownRoot, .serverCertificateNotYetValid,
+             .clientCertificateRejected, .clientCertificateRequired:
+            return .protocolMismatch
+        default:
+            return .unavailable
+        }
+    }
+
+    private func validatePropfind(response: HTTPURLResponse) throws {
+        switch response.statusCode {
+        case 207:
+            return
+        case 200, 400, 405, 501:
+            throw NasTransportError.notWebDav
+        case 401, 403:
+            throw NasTransportError.authFailed
+        case 404:
+            throw NasTransportError.pathNotFound
+        default:
+            throw NasTransportError.unavailable
+        }
     }
 
     private func validate(response: HTTPURLResponse, isDownload: Bool) throws {

@@ -95,6 +95,7 @@
 "sources.disconnect_confirm_title" = "Disconnect “%1$@”?";
 "sources.disconnect_keep_copies" = "Keep imported photos on this device";
 "sources.disconnect_body" = "Syncing stops and saved connection details are removed.";
+"sources.reconfigure" = "Reconfigure";
 "source.local_photos.title" = "Photos on this device";
 "source.local_photos.body" = "Choose photos from the photo library, or import images from Files.";
 "source.local_files.title" = "Files";
@@ -134,7 +135,6 @@
 "source.nas.path" = "Path";
 "source.nas.username" = "Username";
 "source.nas.password" = "Password";
-"source.nas.guest" = "Connect as guest";
 "source.nas.share_required" = "Enter the share name";
 "source.nas.test_connection" = "Test connection";
 "source.nas.testing" = "Connecting";
@@ -148,6 +148,14 @@
 "source.nas.mirror_delete" = "Mirror deletions from the source";
 "source.nas.mirror_delete_body" = "When a file is deleted at the source, its copy here is deleted too, including photos used in frames.";
 "source.nas.source_removed" = "Removed at source";
+"source.nas.share_not_found" = "Can’t find that share. Check the share name.";
+"source.nas.share_optional_hint" = "Leave empty to list all shares";
+"source.nas.path_optional_hint" = "Optional — empty means the root folder";
+"source.nas.picker_empty" = "No subfolders here";
+"source.nas.picker_error" = "Couldn’t load folders. Check the connection and try again.";
+"source.nas.picker_whole" = "Choose everything in this folder";
+"source.nas.show_password" = "Show password";
+"source.nas.guest_hint" = "If the server allows it, leave username and password empty to connect as guest.";
 "permission.local_network.title" = "Local network access needed";
 "permission.local_network.body" = "To reach your home NAS, PhotoPilot needs to find devices on your network. Photos stay on this device.";
 "permission.local_network.continue" = "Continue";
@@ -475,6 +483,10 @@
 "error.weather_unavailable.body" = "Weather unavailable.";
 "error.weather_stale.body" = "Weather update delayed.";
 "error.skipped_by_tombstone.body" = "Skipped a photo you deleted earlier.";
+"error.src_unreachable.body" = "Can’t reach the server. Check the host address and port.";
+"error.src_host_unknown.body" = "Can’t find that host. Check the host address.";
+"error.src_protocol_mismatch.body" = "The port doesn’t match the connection type. Check the port or switch HTTP/HTTPS.";
+"error.src_not_webdav.body" = "The server didn’t respond as WebDAV. Check the service type and port.";
 "a11y.logo" = "PhotoPilot logo";
 "a11y.photo_cell" = "Photo, %1$@";
 "a11y.photo_cell_no_date" = "Photo, no date";
