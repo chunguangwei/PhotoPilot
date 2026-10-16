@@ -16,14 +16,15 @@ import dev.photopilot.scaffold.ui.widget.screenHeader
 class NasDirectoryPickerView(context: Context) : ScrollView(context) {
 
     var onBack: (() -> Unit)? = null
-    var onEnterDirectory: ((String) -> Unit)? = null
     var onLoadDirectory: ((String, (List<String>) -> Unit) -> Unit)? = null
     var onConfirm: ((Set<String>, Boolean) -> Unit)? = null
+    var rootPath: String = ""
 
     private val selected = mutableSetOf<String>()
     private var recursive = false
     private var currentDir = ""
     private val pathLine: TextView
+    private val parentRow: TextView
     private val listColumn: LinearLayout
     private val countLine: TextView
     private val confirmButton: View
@@ -49,7 +50,7 @@ class NasDirectoryPickerView(context: Context) : ScrollView(context) {
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_8)
             },
         )
-        val parentRow = TextView(context).apply {
+        parentRow = TextView(context).apply {
             text = res.getString(R.string.common_back)
             contentDescription = text
             setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
@@ -120,13 +121,16 @@ class NasDirectoryPickerView(context: Context) : ScrollView(context) {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         if (listColumn.childCount == 0) {
-            load("")
+            load(rootPath)
         }
     }
 
     private fun load(dir: String) {
         currentDir = dir
         pathLine.text = if (dir.isEmpty()) "/" else "/$dir"
+        val atRoot = dir == rootPath
+        parentRow.isEnabled = !atRoot
+        parentRow.alpha = if (atRoot) DISABLED_ALPHA else 1f
         listColumn.removeAllViews()
         onLoadDirectory?.invoke(dir) { children ->
             renderChildren(children)
@@ -142,6 +146,9 @@ class NasDirectoryPickerView(context: Context) : ScrollView(context) {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
                 minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { load(full) }
             }
             val toggle = CheckBox(context).apply {
                 isChecked = selected.contains(full)
@@ -158,21 +165,25 @@ class NasDirectoryPickerView(context: Context) : ScrollView(context) {
                 setTextColor(context.getColor(R.color.pp_text_primary))
                 gravity = Gravity.CENTER_VERTICAL
                 minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-                isClickable = true
-                isFocusable = true
-                setOnClickListener {
-                    onEnterDirectory?.invoke(full)
-                    load(full)
-                }
+            }
+            val chevron = TextView(context).apply {
+                text = "›"
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
+                setTextColor(context.getColor(R.color.pp_text_secondary))
+                gravity = Gravity.CENTER
+                minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+                minimumWidth = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+                importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
             }
             row.addView(toggle, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
             row.addView(name, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
+            row.addView(chevron, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
             listColumn.addView(row, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         }
     }
 
     private fun ascend() {
-        if (currentDir.isEmpty()) return
+        if (currentDir == rootPath) return
         load(currentDir.substringBeforeLast('/', ""))
     }
 

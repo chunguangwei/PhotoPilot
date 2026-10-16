@@ -134,7 +134,7 @@ class FrameManager(
                 "\"date\":{\"enabled\":true}," +
                 "\"weather\":{\"enabled\":false,\"placeId\":null,\"units\":null}," +
                 "\"keepAwakeWhenPaused\":true," +
-                "\"rest\":{\"enabled\":false,\"startMinute\":null,\"endMinute\":null}," +
+                "\"rest\":{\"enabled\":false,\"startMinute\":null,\"endMinute\":null,\"display\":\"clock\"}," +
                 "\"music\":{\"enabled\":false,\"source\":\"builtin\"," +
                 "\"trackId\":null,\"localPath\":null,\"localTitle\":null}," +
                 "\"brightness\":null,\"qualityLevel\":\"auto\"}"

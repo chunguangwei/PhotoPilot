@@ -879,6 +879,7 @@ class MainActivity : Activity() {
         val password: String,
         val fingerprint: String,
         val tlsContext: dev.photopilot.scaffold.data.net.NasTlsPolicy.ConnectionContext?,
+        val browseRoot: String,
         val testConnection: suspend () -> String?,
         val securityText: suspend () -> String?,
         val listChildDirs: suspend (String) -> List<String>,
@@ -909,9 +910,13 @@ class MainActivity : Activity() {
                 password = password,
                 fingerprint = fingerprint,
                 tlsContext = null,
+                browseRoot = pathInShare,
                 testConnection = {
                     policy.cleartextError(host, port) ?: runCatching {
                         smbClient.security()
+                        if (pathInShare.isNotEmpty()) {
+                            smbClient.list(pathInShare)
+                        }
                         null
                     }.getOrElse {
                         (it as? SmbClient.SmbException)?.code ?: WebDavClient.ERR_SRC_UNAVAILABLE
@@ -947,7 +952,6 @@ class MainActivity : Activity() {
                 adapterFor = { recursive ->
                     SmbSourceAdapter(
                         share = smbClient,
-                        rootPath = pathInShare,
                         sourceFingerprint = fingerprint,
                         recursive = recursive,
                     )
@@ -977,6 +981,7 @@ class MainActivity : Activity() {
             password = password,
             fingerprint = fingerprint,
             tlsContext = context,
+            browseRoot = "",
             testConnection = {
                 try {
                     client.propfind("", 0)
@@ -1100,6 +1105,7 @@ class MainActivity : Activity() {
 
     private fun openNasDirectoryPicker(conn: NasConnection) {
         val view = NasDirectoryPickerView(this)
+        view.rootPath = conn.browseRoot
         view.onBack = { popOverlayTracked() }
         view.onLoadDirectory = { dir, callback ->
             scope.launch {

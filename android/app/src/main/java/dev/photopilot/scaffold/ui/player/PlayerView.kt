@@ -66,6 +66,7 @@ class PlayerView(
     private val clockLine: TextView
     private val dateLine: TextView
     private lateinit var restingClock: TextView
+    private lateinit var restingWeather: TextView
     private lateinit var weatherLine: TextView
     private val overlayColumn: LinearLayout
     private val controlsBar: HorizontalScrollView
@@ -256,6 +257,9 @@ class PlayerView(
     override fun onStateChanged(state: String) {
         emptyOverlay.visibility = if (state == PlaybackController.EMPTY) View.VISIBLE else View.GONE
         restingOverlay.visibility = if (state == PlaybackController.RESTING) View.VISIBLE else View.GONE
+        if (state == PlaybackController.RESTING) {
+            applyRestDisplayMode()
+        }
         failedOverlay.visibility = if (state == PlaybackController.FAILED) View.VISIBLE else View.GONE
         val isPlaying = state != PlaybackController.PAUSED
         pauseButton.setImageResource(if (isPlaying) R.drawable.ic_player_pause_24 else R.drawable.ic_player_play_24)
@@ -718,6 +722,9 @@ class PlayerView(
         dateLine.visibility = if (settings.dateEnabled) View.VISIBLE else View.GONE
         (context as? android.app.Activity)?.let { applyBrightnessIfNeeded(it) }
         applyClockPosition()
+        if (restingOverlay.visibility == View.VISIBLE) {
+            applyRestDisplayMode()
+        }
         updateClock()
         engine?.currentState()?.let { syncMusic(it) }
     }
@@ -771,6 +778,17 @@ class PlayerView(
         clockLine.contentDescription = resources.getString(R.string.a11y_clock_overlay, timeText)
         dateLine.text = DateFormat.getDateFormat(context).format(now)
         restingClock.text = timeText
+        val restWeatherText = if (settings.restDisplay == FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER) {
+            weatherTextProvider?.invoke()
+        } else {
+            null
+        }
+        if (restWeatherText != null) {
+            restingWeather.text = restWeatherText
+            restingWeather.visibility = View.VISIBLE
+        } else {
+            restingWeather.visibility = View.GONE
+        }
         val weatherText = weatherTextProvider?.invoke()
         if (weatherText != null) {
             weatherLine.text = weatherText
@@ -886,6 +904,11 @@ class PlayerView(
             gravity = Gravity.CENTER
             importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
         }
+        restingWeather = overlayText(R.dimen.pp_text_meta).apply {
+            gravity = Gravity.CENTER
+            visibility = View.GONE
+            importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
         restingOverlay.isClickable = true
         restingOverlay.isFocusable = true
         restingOverlay.contentDescription =
@@ -894,6 +917,29 @@ class PlayerView(
         restingOverlay.addView(
             centered(restingClock),
         )
+        restingOverlay.addView(
+            centered(restingWeather, R.dimen.pp_space_8),
+        )
+    }
+
+    private fun applyRestDisplayMode() {
+        when (settings.restDisplay) {
+            FramePlaybackSettings.REST_DISPLAY_DIM -> {
+                restingOverlay.setBackgroundColor(Color.argb(REST_DIM_ALPHA, 0, 0, 0))
+                restingClock.visibility = View.GONE
+                restingWeather.visibility = View.GONE
+            }
+            FramePlaybackSettings.REST_DISPLAY_BLACK -> {
+                restingOverlay.setBackgroundColor(context.getColor(R.color.pp_surface_rest))
+                restingClock.visibility = View.GONE
+                restingWeather.visibility = View.GONE
+            }
+            else -> {
+                restingOverlay.setBackgroundColor(context.getColor(R.color.pp_surface_rest))
+                restingClock.visibility = View.VISIBLE
+            }
+        }
+        updateClock()
     }
 
     private fun buildSafeOverlay() {
@@ -945,6 +991,7 @@ class PlayerView(
         const val CLOCK_TICK_MS = 30_000L
         const val CONTROLS_ALPHA = 0.94f
         const val SCRIM_ALPHA = 0.35f
+        const val REST_DIM_ALPHA = 191
         const val VIDEO_FADE_MS = 800L
     }
 }

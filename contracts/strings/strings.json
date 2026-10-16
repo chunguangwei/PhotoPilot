@@ -1069,6 +1069,13 @@
       "en": "Connect as guest"
     },
     {
+      "key": "source.nas.share_required",
+      "section": "4.4 NAS",
+      "platform": "ios",
+      "zh": "请填写共享名",
+      "en": "Enter the share name"
+    },
+    {
       "key": "source.nas.test_connection",
       "section": "4.4 NAS",
       "platform": "all",
@@ -3152,6 +3159,41 @@
       "platform": "all",
       "zh": "开始与结束时间不能相同",
       "en": "Start and end times must be different"
+    },
+    {
+      "key": "settings.rest_display",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "休息显示",
+      "en": "Rest display"
+    },
+    {
+      "key": "settings.rest_display_dim",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "调暗屏幕",
+      "en": "Dim the screen"
+    },
+    {
+      "key": "settings.rest_display_clock",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "仅显示时间",
+      "en": "Time only"
+    },
+    {
+      "key": "settings.rest_display_clock_weather",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "显示时间与天气",
+      "en": "Time and weather"
+    },
+    {
+      "key": "settings.rest_display_black",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "全黑屏",
+      "en": "Black screen"
     },
     {
       "key": "settings.privacy",

@@ -31,6 +31,13 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         PlaybackQueue.orderManual,
     ]
     private static let qualityWireValues = ["auto", "balanced", "low"]
+    private static let restDisplayWireValues = ["dim", "clock", "clock_weather", "black"]
+    private static let restDisplayTitleKeys = [
+        "settings.rest_display_dim",
+        "settings.rest_display_clock",
+        "settings.rest_display_clock_weather",
+        "settings.rest_display_black",
+    ]
 
     private let environment: AppEnvironment
     private let frameID: String
@@ -90,6 +97,9 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     private let restErrorLabel = UILabel()
     private var restStartRow = UIView()
     private var restEndRow = UIView()
+    private var restDisplayIndex = 1
+    private let restDisplayMenuButton = UIButton(type: .system)
+    private var restDisplayRow = UIView()
     private let qualitySegmented = UISegmentedControl()
     private var musicSelection = MusicSelection()
     private let musicButton = UIButton(type: .system)
@@ -388,6 +398,8 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         restEndRow = makePickerRow(labelKey: "settings.rest_end", picker: restEndPicker)
         formStack.addArrangedSubview(restStartRow)
         formStack.addArrangedSubview(restEndRow)
+        restDisplayRow = makeRestDisplayRow()
+        formStack.addArrangedSubview(restDisplayRow)
         configureErrorLabel(restErrorLabel)
         formStack.addArrangedSubview(restErrorLabel)
 
@@ -453,6 +465,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
             restSwitch.isOn = parsed.restEnabled
             restStartPicker.date = Self.date(fromMinute: parsed.restStartMinute)
             restEndPicker.date = Self.date(fromMinute: parsed.restEndMinute)
+            applyRestDisplayIndex(Self.restDisplayWireValues.firstIndex(of: parsed.restDisplay) ?? 1)
             qualitySegmented.selectedSegmentIndex = Self.qualityWireValues
                 .firstIndex(of: parsed.qualityLevel) ?? 0
             musicSelection = parsed.music
@@ -559,6 +572,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         restErrorLabel.isHidden = true
         restStartRow.isHidden = !restSwitch.isOn
         restEndRow.isHidden = !restSwitch.isOn
+        restDisplayRow.isHidden = !restSwitch.isOn
     }
 
     private func applyPositionIndex(_ index: Int) {
@@ -618,6 +632,69 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         dirty = true
         refreshDependentUI()
         playTransitionDemoOnce()
+    }
+
+    private func applyRestDisplayIndex(_ index: Int) {
+        restDisplayIndex = index
+        var configuration = UIButton.Configuration.plain()
+        configuration.title = L10n.string(Self.restDisplayTitleKeys[safe: index]
+            ?? Self.restDisplayTitleKeys[1])
+        configuration.image = UIImage(systemName: "chevron.down")
+        configuration.imagePlacement = .trailing
+        configuration.imagePadding = ThemeMetrics.space12
+        configuration.contentInsets = NSDirectionalEdgeInsets(
+            top: ThemeMetrics.space12, leading: ThemeMetrics.space16,
+            bottom: ThemeMetrics.space12, trailing: ThemeMetrics.space16
+        )
+        configuration.titleAlignment = .leading
+        configuration.baseForegroundColor = ThemeColor.textPrimary
+        configuration.background.backgroundColor = ThemeColor.panel
+        configuration.background.cornerRadius = ThemeMetrics.radiusGroup
+        configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer {
+            var attributes = $0
+            attributes.font = ThemeFont.body()
+            return attributes
+        }
+        restDisplayMenuButton.configuration = configuration
+        restDisplayMenuButton.menu = UIMenu(children: Self.restDisplayTitleKeys.enumerated().map {
+            (index, key) in
+            UIAction(
+                title: L10n.string(key),
+                state: index == restDisplayIndex ? .on : .off
+            ) { [weak self] _ in
+                self?.handleRestDisplaySelection(index)
+            }
+        })
+        restDisplayMenuButton.accessibilityLabel = L10n.string("settings.rest_display")
+    }
+
+    private func handleRestDisplaySelection(_ index: Int) {
+        guard index != restDisplayIndex else { return }
+        applyRestDisplayIndex(index)
+        dirty = true
+    }
+
+    private func makeRestDisplayRow() -> UIView {
+        let label = UILabel()
+        label.text = L10n.string("settings.rest_display")
+        label.font = ThemeFont.body()
+        label.adjustsFontForContentSizeCategory = true
+        label.textColor = ThemeColor.textPrimary
+        label.numberOfLines = 0
+        restDisplayMenuButton.contentHorizontalAlignment = .fill
+        restDisplayMenuButton.showsMenuAsPrimaryAction = true
+        restDisplayMenuButton.heightAnchor.constraint(
+            greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
+        ).isActive = true
+        applyRestDisplayIndex(restDisplayIndex)
+        let row = UIStackView(arrangedSubviews: [label, restDisplayMenuButton])
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = ThemeMetrics.space12
+        row.heightAnchor.constraint(
+            greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
+        ).isActive = true
+        return row
     }
 
     private func demoDuration() -> TimeInterval {
@@ -855,6 +932,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         rest["enabled"] = restSwitch.isOn
         rest["startMinute"] = Self.minute(from: restStartPicker.date)
         rest["endMinute"] = Self.minute(from: restEndPicker.date)
+        rest["display"] = Self.restDisplayWireValues[safe: restDisplayIndex] ?? "clock"
         settings["rest"] = rest
         if brightnessSegmented.selectedSegmentIndex == 1 {
             settings["brightness"] = Double(brightnessSlider.value)

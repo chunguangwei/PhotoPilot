@@ -458,6 +458,11 @@
     <string name="settings.rest_end">Ends</string>
     <string name="settings.rest_help">Pauses the slideshow and dims the screen during these hours.</string>
     <string name="settings.rest_invalid">Start and end times must be different</string>
+    <string name="settings.rest_display">Rest display</string>
+    <string name="settings.rest_display_dim">Dim the screen</string>
+    <string name="settings.rest_display_clock">Time only</string>
+    <string name="settings.rest_display_clock_weather">Time and weather</string>
+    <string name="settings.rest_display_black">Black screen</string>
     <string name="settings.privacy">Privacy</string>
     <string name="settings.privacy_summary">Photos are processed on this device and never uploaded.</string>
     <string name="settings.diagnostics">Diagnostics</string>

@@ -126,4 +126,61 @@ final class PhotoPilotPlaybackTests: XCTestCase {
             }
         }
     }
+
+    func testRestDisplayDefaultsToClockWhenMissing() {
+        let parsed = PlayerSettings.parse(
+            json: #"{"rest":{"enabled":true,"startMinute":120,"endMinute":360}}"#
+        )
+        XCTAssertEqual("clock", parsed.restDisplay)
+        XCTAssertTrue(parsed.restEnabled)
+        XCTAssertEqual(120, parsed.restStartMinute)
+    }
+
+    func testRestDisplayAcceptsAllModes() {
+        for mode in ["dim", "clock", "clock_weather", "black"] {
+            let parsed = PlayerSettings.parse(json: "{\"rest\":{\"display\":\"\(mode)\"}}")
+            XCTAssertEqual(mode, parsed.restDisplay)
+        }
+    }
+
+    func testRestDisplayFallsBackToClockForUnknownValue() {
+        let unknown = PlayerSettings.parse(json: #"{"rest":{"display":"rainbow"}}"#)
+        XCTAssertEqual("clock", unknown.restDisplay)
+        let nonString = PlayerSettings.parse(json: #"{"rest":{"display":3}}"#)
+        XCTAssertEqual("clock", nonString.restDisplay)
+        let legacy = PlayerSettings.parse(json: #"{"holdSeconds":10}"#)
+        XCTAssertEqual("clock", legacy.restDisplay)
+    }
+
+    func testDefaultSettingsJSONRestDisplayIsClock() throws {
+        let json = FrameManager.defaultSettingsJSON()
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(
+            with: Data(json.utf8)
+        ) as? [String: Any])
+        let rest = try XCTUnwrap(object["rest"] as? [String: Any])
+        XCTAssertEqual("clock", rest["display"] as? String)
+        XCTAssertEqual("clock", PlayerSettings.parse(json: json).restDisplay)
+    }
+
+    func testRestMergePreservesUnknownKeys() throws {
+        let original = #"{"rest":{"enabled":true,"display":"dim","futureKey":{"nested":1}},"futureTop":"keep"}"#
+        var settings = try XCTUnwrap(JSONSerialization.jsonObject(
+            with: Data(original.utf8)
+        ) as? [String: Any])
+        var rest = settings["rest"] as? [String: Any] ?? [:]
+        rest["enabled"] = false
+        rest["startMinute"] = 0
+        rest["endMinute"] = 60
+        rest["display"] = "black"
+        settings["rest"] = rest
+        let data = try JSONSerialization.data(withJSONObject: settings, options: [.sortedKeys])
+        let roundTrip = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let restOut = try XCTUnwrap(roundTrip["rest"] as? [String: Any])
+        XCTAssertEqual("black", restOut["display"] as? String)
+        XCTAssertEqual(["nested": 1], restOut["futureKey"] as? [String: Int])
+        XCTAssertEqual("keep", roundTrip["futureTop"] as? String)
+        XCTAssertEqual("black", PlayerSettings.parse(
+            json: String(decoding: data, as: UTF8.self)
+        ).restDisplay)
+    }
 }

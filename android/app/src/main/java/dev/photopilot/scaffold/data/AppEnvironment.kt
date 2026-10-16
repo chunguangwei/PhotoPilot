@@ -106,10 +106,8 @@ class AppEnvironment private constructor(
             val scheme = if (protocol == "webdav") "https" else "http"
             if (protocol == "smb") {
                 val shareName = path.substringBefore('/').ifEmpty { return null }
-                val pathInShare = path.substringAfter('/', "")
                 return SmbSourceAdapter(
                     share = SmbClient(host, port, shareName, username, password),
-                    rootPath = pathInShare,
                     sourceFingerprint = endpointKey,
                     recursive = dev.photopilot.scaffold.data.logic.NasSourceLifecycle
                         .recursiveFromSettings(source.settingsJson),

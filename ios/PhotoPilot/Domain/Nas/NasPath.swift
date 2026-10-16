@@ -26,4 +26,9 @@ enum NasPath {
         }
         return segments.joined(separator: "/")
     }
+
+    static func splitShare(_ path: String) -> (share: String, subpath: String) {
+        guard let index = path.firstIndex(of: "/") else { return (path, "") }
+        return (String(path[..<index]), String(path[path.index(after: index)...]))
+    }
 }

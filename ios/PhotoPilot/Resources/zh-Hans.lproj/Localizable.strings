@@ -135,6 +135,7 @@
 "source.nas.username" = "用户名";
 "source.nas.password" = "密码";
 "source.nas.guest" = "以访客身份连接";
+"source.nas.share_required" = "请填写共享名";
 "source.nas.test_connection" = "测试连接";
 "source.nas.testing" = "正在连接";
 "source.nas.test_ok" = "连接成功";
@@ -409,6 +410,11 @@
 "settings.rest_end" = "结束时间";
 "settings.rest_help" = "这段时间内暂停播放并调暗屏幕。";
 "settings.rest_invalid" = "开始与结束时间不能相同";
+"settings.rest_display" = "休息显示";
+"settings.rest_display_dim" = "调暗屏幕";
+"settings.rest_display_clock" = "仅显示时间";
+"settings.rest_display_clock_weather" = "显示时间与天气";
+"settings.rest_display_black" = "全黑屏";
 "settings.privacy" = "隐私";
 "settings.privacy_summary" = "照片只在这台设备上处理，不会上传。";
 "settings.diagnostics" = "诊断信息";

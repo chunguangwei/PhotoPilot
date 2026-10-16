@@ -446,6 +446,11 @@
     <string name="settings.rest_end">结束时间</string>
     <string name="settings.rest_help">这段时间内暂停播放并调暗屏幕。</string>
     <string name="settings.rest_invalid">开始与结束时间不能相同</string>
+    <string name="settings.rest_display">休息显示</string>
+    <string name="settings.rest_display_dim">调暗屏幕</string>
+    <string name="settings.rest_display_clock">仅显示时间</string>
+    <string name="settings.rest_display_clock_weather">显示时间与天气</string>
+    <string name="settings.rest_display_black">全黑屏</string>
     <string name="settings.privacy">隐私</string>
     <string name="settings.privacy_summary">照片只在这台设备上处理，不会上传。</string>
     <string name="settings.diagnostics">诊断信息</string>

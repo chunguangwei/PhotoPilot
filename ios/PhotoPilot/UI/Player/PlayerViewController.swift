@@ -2,6 +2,8 @@ import AVFoundation
 import UIKit
 
 struct PlayerSettings: Sendable {
+    static let restDisplayValues = ["dim", "clock", "clock_weather", "black"]
+
     var holdSeconds = 10
     var transition = PlaybackTiming.transitionRandom
     var transitionSeconds = 0.8
@@ -16,6 +18,7 @@ struct PlayerSettings: Sendable {
     var restEnabled = false
     var restStartMinute = 0
     var restEndMinute = 0
+    var restDisplay = "clock"
     var brightness: Double?
     var music = MusicSelection()
 
@@ -60,6 +63,10 @@ struct PlayerSettings: Sendable {
             settings.restEnabled = rest["enabled"] as? Bool ?? false
             settings.restStartMinute = rest["startMinute"] as? Int ?? 0
             settings.restEndMinute = rest["endMinute"] as? Int ?? 0
+            if let display = rest["display"] as? String,
+               Self.restDisplayValues.contains(display) {
+                settings.restDisplay = display
+            }
         }
         settings.brightness = object["brightness"] as? Double
         if let solid = object["solidColor"] as? String,
@@ -235,6 +242,8 @@ final class PlayerViewController: UIViewController {
     private let emptyOverlay = UIStackView()
     private let restingScreen = UIView()
     private let restClockLabel = UILabel()
+    private let restWeatherLabel = UILabel()
+    private let restStack = UIStackView()
     private var videoPlayer: AVPlayer?
     private var videoLayer: AVPlayerLayer?
     private var lastRandomTransition: String?
@@ -1194,6 +1203,63 @@ final class PlayerViewController: UIViewController {
         restClockLabel.text = currentTimeText(Date())
     }
 
+    private func applyRestDisplayMode() {
+        switch settings.restDisplay {
+        case "dim":
+            restingScreen.backgroundColor = ThemeColor.restSurface.withAlphaComponent(0.75)
+            restClockLabel.isHidden = true
+            restWeatherLabel.isHidden = true
+        case "black":
+            restingScreen.backgroundColor = ThemeColor.restSurface
+            restClockLabel.isHidden = true
+            restWeatherLabel.isHidden = true
+        case "clock_weather":
+            restingScreen.backgroundColor = ThemeColor.restSurface
+            restClockLabel.isHidden = false
+            updateRestWeather()
+        default:
+            restingScreen.backgroundColor = ThemeColor.restSurface
+            restClockLabel.isHidden = false
+            restWeatherLabel.isHidden = true
+        }
+    }
+
+    private func updateRestWeather() {
+        guard settings.restDisplay == "clock_weather" else {
+            restWeatherLabel.isHidden = true
+            return
+        }
+        Task { [weak self] in
+            guard let self else { return }
+            let text = await currentWeatherDisplay()
+            guard settings.restDisplay == "clock_weather" else {
+                restWeatherLabel.isHidden = true
+                return
+            }
+            restWeatherLabel.text = text
+            restWeatherLabel.isHidden = text == nil
+        }
+    }
+
+    private func currentWeatherDisplay() async -> String? {
+        guard weatherGloballyEnabled else { return nil }
+        guard let place = await currentWeatherPlace() else { return nil }
+        guard let snapshot = try? await environment.weatherRepository.snapshot(placeId: place.placeId)
+        else { return nil }
+        let now = Int(Date().timeIntervalSince1970 * 1000)
+        if case .unavailable = WeatherRepository.freshness(
+            observedAtMillis: snapshot.observedAt,
+            nowMillis: now
+        ) {
+            return nil
+        }
+        let temperature = temperatureText(milliCelsius: snapshot.temperatureMilli)
+        let condition = conditionText(for: snapshot.conditionCode)
+        let placeName = AppLanguage.preferChinese ? place.nameZh : place.nameEn
+        let weatherText = condition.map { "\(temperature) \($0)" } ?? temperature
+        return placeName.isEmpty ? weatherText : "\(placeName) · \(weatherText)"
+    }
+
     private func currentTimeText(_ date: Date) -> String {
         let clockFormatter = DateFormatter()
         if let hour24 = settings.hour24 {
@@ -1211,6 +1277,10 @@ final class PlayerViewController: UIViewController {
     }
 
     private func startMusicIfNeeded() {
+        guard controllerState != PlaybackController.resting else {
+            musicPlayer.stop()
+            return
+        }
         guard settings.music.enabled, MusicCatalog.url(for: settings.music) != nil else {
             musicPlayer.stop()
             return
@@ -1220,6 +1290,7 @@ final class PlayerViewController: UIViewController {
 
     private func resumeOrStartMusic() {
         guard settings.music.enabled else { return }
+        guard controllerState != PlaybackController.resting else { return }
         if musicPlayer.hasPlayableContent {
             musicPlayer.resume()
         } else {
@@ -1291,10 +1362,12 @@ final class PlayerViewController: UIViewController {
         guard weatherGloballyEnabled else {
             weatherLabel.isHidden = true
             weatherNoteLabel.isHidden = true
+            updateRestWeather()
             return
         }
         Task { [weak self] in
             guard let self else { return }
+            defer { updateRestWeather() }
             guard let place = await currentWeatherPlace() else {
                 weatherLabel.isHidden = true
                 weatherNoteLabel.isHidden = true
@@ -1405,6 +1478,7 @@ final class PlayerViewController: UIViewController {
                   let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: frameID) else { return }
             settings = PlayerSettings.parse(json: bundle.settingsJSON)
             applyBrightness()
+            updateStateChrome()
         }
     }
 
@@ -1535,11 +1609,30 @@ final class PlayerViewController: UIViewController {
         restClockLabel.font = ThemeFont.clock()
         restClockLabel.textColor = ThemeColor.textOnPhoto
         restClockLabel.textAlignment = .center
-        restClockLabel.translatesAutoresizingMaskIntoConstraints = false
-        restingScreen.addSubview(restClockLabel)
+        restWeatherLabel.font = ThemeFont.meta()
+        restWeatherLabel.adjustsFontForContentSizeCategory = true
+        restWeatherLabel.textColor = ThemeColor.textOnPhoto
+        restWeatherLabel.textAlignment = .center
+        restWeatherLabel.numberOfLines = 0
+        restWeatherLabel.isHidden = true
+        restStack.axis = .vertical
+        restStack.alignment = .center
+        restStack.spacing = ThemeMetrics.space8
+        restStack.addArrangedSubview(restClockLabel)
+        restStack.addArrangedSubview(restWeatherLabel)
+        restStack.translatesAutoresizingMaskIntoConstraints = false
+        restingScreen.addSubview(restStack)
         NSLayoutConstraint.activate([
-            restClockLabel.centerXAnchor.constraint(equalTo: restingScreen.centerXAnchor),
-            restClockLabel.centerYAnchor.constraint(equalTo: restingScreen.centerYAnchor),
+            restStack.centerXAnchor.constraint(equalTo: restingScreen.centerXAnchor),
+            restStack.centerYAnchor.constraint(equalTo: restingScreen.centerYAnchor),
+            restStack.leadingAnchor.constraint(
+                greaterThanOrEqualTo: restingScreen.leadingAnchor,
+                constant: ThemeMetrics.contentInset
+            ),
+            restStack.trailingAnchor.constraint(
+                lessThanOrEqualTo: restingScreen.trailingAnchor,
+                constant: -ThemeMetrics.contentInset
+            ),
         ])
         view.addSubview(restingScreen)
         NSLayoutConstraint.activate([
@@ -1572,6 +1665,7 @@ final class PlayerViewController: UIViewController {
         restingScreen.isHidden = !isResting
         if isResting {
             updateRestClock()
+            applyRestDisplayMode()
         }
         emptyOverlay.isHidden = !isEmpty
         safeOverlay.isHidden = !safeImageShown

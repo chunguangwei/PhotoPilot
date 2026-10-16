@@ -234,10 +234,17 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         guard let resolvedPort = port else { return nil }
         guard let path = NasPath.normalize(pathField.text ?? "") else { return nil }
         if isSmbSelected {
-            guard let share = NasPath.normalize(shareField.text ?? ""), !share.isEmpty else {
+            guard let shareInput = NasPath.normalize(shareField.text ?? ""), !shareInput.isEmpty else {
                 return nil
             }
-            return NasEndpoint(scheme: scheme, host: hostInput.host, port: resolvedPort, path: share)
+            let split = NasPath.splitShare(shareInput)
+            let subpath = [split.subpath, path].filter { !$0.isEmpty }.joined(separator: "/")
+            return NasEndpoint(
+                scheme: scheme,
+                host: hostInput.host,
+                port: resolvedPort,
+                path: subpath.isEmpty ? split.share : "\(split.share)/\(subpath)"
+            )
         }
         return NasEndpoint(
             scheme: scheme,
@@ -311,7 +318,13 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
     }
 
     @objc private func handleTest() {
-        guard !testing, let endpoint = buildEndpoint() else { return }
+        guard !testing else { return }
+        guard let endpoint = buildEndpoint() else {
+            if isSmbSelected, (NasPath.normalize(shareField.text ?? "") ?? "").isEmpty {
+                showError(key: "source.nas.share_required")
+            }
+            return
+        }
         if isSmbSelected {
             handleSmbTest(endpoint: endpoint)
             return
@@ -332,7 +345,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
             guard let self else { return }
             defer { testing = false }
             do {
-                _ = try await client.propfind(path: endpoint.path, depth: 0)
+                _ = try await client.propfind(path: "", depth: 0)
                 testedClient = client
                 testedEndpoint = endpoint
                 testedCredential = credential
@@ -380,11 +393,12 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
             username: usernameField.text ?? "",
             password: passwordField.text ?? ""
         )
+        let split = NasPath.splitShare(endpoint.path)
         let adapter = SmbSourceAdapter(
             config: SmbConfig(
                 host: endpoint.host,
                 port: endpoint.port,
-                share: endpoint.path,
+                share: split.share,
                 username: credential.username,
                 password: credential.password
             ),
@@ -395,6 +409,9 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
             defer { testing = false }
             do {
                 _ = try await adapter.enumerateAssets(cursor: nil)
+                if !split.subpath.isEmpty {
+                    _ = try await adapter.listSubdirectories(path: split.subpath)
+                }
                 testedSmbAdapter = adapter
                 testedEndpoint = endpoint
                 testedCredential = credential
@@ -483,9 +500,9 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
     @objc private func handleSave() {
         guard let endpoint = testedEndpoint else { return }
         let listFolders: @Sendable (String) async throws -> [String]
-        var rootPath = endpoint.path
+        var rootPath = ""
         if isSmbSelected, let adapter = testedSmbAdapter {
-            rootPath = ""
+            rootPath = NasPath.splitShare(endpoint.path).subpath
             listFolders = { path in
                 try await adapter.listSubdirectories(path: path)
             }

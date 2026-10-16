@@ -12,6 +12,7 @@ data class FramePlaybackSettings(
     val restEnabled: Boolean = false,
     val restStartMinute: Int? = null,
     val restEndMinute: Int? = null,
+    val restDisplay: String = REST_DISPLAY_CLOCK,
     val brightness: Float? = null,
     val clockPosition: String = POSITION_BOTTOM_LEADING,
     val qualityLevel: String = QUALITY_AUTO,
@@ -50,6 +51,16 @@ data class FramePlaybackSettings(
         const val MUSIC_SOURCE_BUILTIN = "builtin"
         const val MUSIC_SOURCE_LOCAL = "local"
 
+        const val REST_DISPLAY_DIM = "dim"
+        const val REST_DISPLAY_CLOCK = "clock"
+        const val REST_DISPLAY_CLOCK_WEATHER = "clock_weather"
+        const val REST_DISPLAY_BLACK = "black"
+
+        fun parseRestDisplay(value: String?): String = when (value) {
+            REST_DISPLAY_DIM, REST_DISPLAY_CLOCK_WEATHER, REST_DISPLAY_BLACK -> value
+            else -> REST_DISPLAY_CLOCK
+        }
+
         fun parse(json: String?): FramePlaybackSettings {
             val root = JsonMini.parseObject(json)
             val clock = root["clock"] as? Map<*, *>
@@ -69,6 +80,7 @@ data class FramePlaybackSettings(
                 restEnabled = rest?.get("enabled") as? Boolean ?: false,
                 restStartMinute = (rest?.get("startMinute") as? Double)?.toInt(),
                 restEndMinute = (rest?.get("endMinute") as? Double)?.toInt(),
+                restDisplay = parseRestDisplay(rest?.get("display") as? String),
                 brightness = (root["brightness"] as? Double)?.toFloat(),
                 qualityLevel = root["qualityLevel"] as? String ?: QUALITY_AUTO,
                 solidColor = root["solidColor"] as? String,

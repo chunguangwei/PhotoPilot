@@ -59,6 +59,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private lateinit var restRow: LinearLayout
     private var restStartMinute: Int? = null
     private var restEndMinute: Int? = null
+    private var restDisplayIndex = 1
     private var qualityIndex = 0
     private var solidIndex = 0
     private var musicEnabled = false
@@ -80,6 +81,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private lateinit var brightnessSeek: SeekBar
     private lateinit var restStartButton: TextView
     private lateinit var restEndButton: TextView
+    private lateinit var restDisplayRow: LinearLayout
+    private lateinit var restDisplayButton: TextView
     private lateinit var restError: TextView
     private lateinit var solidRow: LinearLayout
     private lateinit var musicButton: TextView
@@ -173,6 +176,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         restEnabled = s.restEnabled
         restStartMinute = s.restStartMinute
         restEndMinute = s.restEndMinute
+        restDisplayIndex = REST_DISPLAYS.indexOf(s.restDisplay).coerceAtLeast(0)
         qualityIndex = when (s.qualityLevel) {
             FramePlaybackSettings.QUALITY_BALANCED -> 1
             FramePlaybackSettings.QUALITY_LOW -> 2
@@ -278,6 +282,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         restEnabled = restEnabled,
         restStartMinute = restStartMinute,
         restEndMinute = restEndMinute,
+        restDisplay = REST_DISPLAYS[restDisplayIndex],
         brightness = if (brightnessFollow) null else brightnessPercent / 100.0,
         qualityLevel = when (qualityIndex) {
             1 -> FramePlaybackSettings.QUALITY_BALANCED
@@ -584,6 +589,28 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             },
         )
         column.addView(restRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        restDisplayRow = LinearLayout(context).apply { orientation = VERTICAL }
+        val restDisplayLabel = TextView(context).apply {
+            text = resources.getString(R.string.settings_rest_display)
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.pp_text_body))
+            setTextColor(context.getColor(R.color.pp_text_primary))
+        }
+        restDisplayRow.addView(
+            restDisplayLabel,
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = resources.getDimensionPixelSize(R.dimen.pp_space_12)
+            },
+        )
+        restDisplayButton = secondaryButton(context, R.string.settings_rest_display).apply {
+            setOnClickListener { anchor -> showRestDisplayMenu(anchor) }
+        }
+        restDisplayRow.addView(
+            restDisplayButton,
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = resources.getDimensionPixelSize(R.dimen.pp_space_8)
+            },
+        )
+        column.addView(restDisplayRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         addHelp(column, R.string.settings_rest_help)
         restError = addError(column)
 
@@ -735,6 +762,23 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         restEndButton.isEnabled = enabled
         restStartButton.text = timeButtonText(R.string.settings_rest_start, restStartMinute)
         restEndButton.text = timeButtonText(R.string.settings_rest_end, restEndMinute)
+        restDisplayRow.visibility = if (enabled) VISIBLE else GONE
+        restDisplayButton.text = resources.getString(REST_DISPLAY_LABELS[restDisplayIndex]) + "  ⌄"
+    }
+
+    private fun showRestDisplayMenu(anchor: View) {
+        val menu = android.widget.PopupMenu(context, anchor)
+        REST_DISPLAY_LABELS.forEachIndexed { index, labelRes ->
+            menu.menu.add(0, index, index, resources.getString(labelRes))
+                .setOnMenuItemClickListener {
+                    if (index != restDisplayIndex) {
+                        restDisplayIndex = index
+                        refreshRestState()
+                    }
+                    true
+                }
+        }
+        menu.show()
     }
 
     private fun renderPreview() {
@@ -991,6 +1035,18 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             FramePlaybackSettings.POSITION_TOP_TRAILING,
             FramePlaybackSettings.POSITION_BOTTOM_LEADING,
             FramePlaybackSettings.POSITION_BOTTOM_TRAILING,
+        )
+        val REST_DISPLAYS = listOf(
+            FramePlaybackSettings.REST_DISPLAY_DIM,
+            FramePlaybackSettings.REST_DISPLAY_CLOCK,
+            FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER,
+            FramePlaybackSettings.REST_DISPLAY_BLACK,
+        )
+        val REST_DISPLAY_LABELS = listOf(
+            R.string.settings_rest_display_dim,
+            R.string.settings_rest_display_clock,
+            R.string.settings_rest_display_clock_weather,
+            R.string.settings_rest_display_black,
         )
         const val TRANSITION_TENTHS_MIN = 2
         const val TRANSITION_SEEK_MAX = 28

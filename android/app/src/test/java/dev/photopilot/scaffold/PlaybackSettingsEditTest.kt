@@ -49,6 +49,25 @@ class PlaybackSettingsEditTest {
     }
 
     @Test
+    fun mergePreservesUnknownRestFieldsAndWritesDisplay() {
+        val original = "{\"rest\":{\"enabled\":false,\"futureRestKey\":\"keep\",\"display\":\"dim\"}}"
+        val value = draft().copy(restDisplay = FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER)
+        val merged = JsonMini.parseObject(PlaybackSettingsEdit.merge(original, value))
+        val rest = merged["rest"] as Map<*, *>
+        assertEquals("keep", rest["futureRestKey"])
+        assertEquals(FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER, rest["display"])
+        val reparsed = FramePlaybackSettings.parse(PlaybackSettingsEdit.merge(original, value))
+        assertEquals(FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER, reparsed.restDisplay)
+    }
+
+    @Test
+    fun mergeDefaultsRestDisplayToClock() {
+        val merged = JsonMini.parseObject(PlaybackSettingsEdit.merge(null, draft()))
+        val rest = merged["rest"] as Map<*, *>
+        assertEquals(FramePlaybackSettings.REST_DISPLAY_CLOCK, rest["display"])
+    }
+
+    @Test
     fun mergeRoundTripsThroughParser() {
         val value = draft(restEnabled = true, restStart = 120, restEnd = 300)
         val parsed = FramePlaybackSettings.parse(

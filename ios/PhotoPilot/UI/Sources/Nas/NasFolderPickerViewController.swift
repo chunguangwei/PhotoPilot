@@ -165,14 +165,12 @@ final class NasFolderPickerViewController: UIViewController, UITableViewDataSour
         content.secondaryText = folder
         content.secondaryTextProperties.font = ThemeFont.meta()
         content.secondaryTextProperties.color = ThemeColor.textSecondary
+        let selected = selection.paths.contains(folder)
+        content.image = UIImage(systemName: selected ? "checkmark.circle.fill" : "circle")
+        content.imageProperties.tintColor = selected ? ThemeColor.accentAction : ThemeColor.textSecondary
         cell.contentConfiguration = content
         cell.backgroundColor = .clear
-        let selected = selection.paths.contains(folder)
-        cell.imageView?.image = UIImage(
-            systemName: selected ? "checkmark.circle.fill" : "circle"
-        )
-        cell.imageView?.tintColor = selected ? ThemeColor.accentAction : ThemeColor.textSecondary
-        cell.accessoryType = .disclosureIndicator
+        cell.accessoryType = .detailDisclosureButton
         cell.accessibilityTraits = [.button]
         return cell
     }

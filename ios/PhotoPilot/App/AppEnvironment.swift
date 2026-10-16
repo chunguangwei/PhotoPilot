@@ -139,15 +139,18 @@ final class AppEnvironment: @unchecked Sendable {
         guard permitted else {
             throw NasTransportError.cleartextBlocked
         }
+        let split = NasPath.splitShare(credential?.path ?? endpoint.path)
         let adapter = SmbSourceAdapter(
             config: SmbConfig(
                 host: endpoint.host,
                 port: endpoint.port,
-                share: credential?.path ?? endpoint.path,
+                share: split.share,
                 username: credential?.username ?? "",
                 password: credential?.password ?? ""
             ),
-            directories: info.directories,
+            directories: split.subpath.isEmpty
+                ? info.directories
+                : [split.subpath] + info.directories,
             recursive: info.recursive
         )
         guard let scopeJSON = NasScope.scopeJSON(info.directories) else {

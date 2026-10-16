@@ -135,6 +135,7 @@
 "source.nas.username" = "Username";
 "source.nas.password" = "Password";
 "source.nas.guest" = "Connect as guest";
+"source.nas.share_required" = "Enter the share name";
 "source.nas.test_connection" = "Test connection";
 "source.nas.testing" = "Connecting";
 "source.nas.test_ok" = "Connected";
@@ -409,6 +410,11 @@
 "settings.rest_end" = "Ends";
 "settings.rest_help" = "Pauses the slideshow and dims the screen during these hours.";
 "settings.rest_invalid" = "Start and end times must be different";
+"settings.rest_display" = "Rest display";
+"settings.rest_display_dim" = "Dim the screen";
+"settings.rest_display_clock" = "Time only";
+"settings.rest_display_clock_weather" = "Time and weather";
+"settings.rest_display_black" = "Black screen";
 "settings.privacy" = "Privacy";
 "settings.privacy_summary" = "Photos are processed on this device and never uploaded.";
 "settings.diagnostics" = "Diagnostics";

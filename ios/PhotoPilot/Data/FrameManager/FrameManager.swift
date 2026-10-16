@@ -410,7 +410,7 @@ actor FrameManager {
             "date": ["enabled": true],
             "weather": ["enabled": false, "placeId": NSNull(), "units": NSNull()],
             "keepAwakeWhenPaused": true,
-            "rest": ["enabled": false, "startMinute": NSNull(), "endMinute": NSNull()],
+            "rest": ["enabled": false, "startMinute": NSNull(), "endMinute": NSNull(), "display": "clock"],
             "brightness": NSNull(),
             "qualityLevel": "auto",
             "music": [

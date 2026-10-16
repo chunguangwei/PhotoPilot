@@ -48,7 +48,6 @@ class SmbSourceAdapterTest {
     fun recursiveEnumerateWalksTree() = runBlocking {
         val adapter = SmbSourceAdapter(
             share = fixtureShare(),
-            rootPath = "share",
             sourceFingerprint = "smb://nas.local:445/share",
             pageSize = 2,
             recursive = true,
@@ -68,7 +67,6 @@ class SmbSourceAdapterTest {
     fun nonRecursiveSkipsSubdirectories() = runBlocking {
         val adapter = SmbSourceAdapter(
             share = fixtureShare(),
-            rootPath = "share",
             sourceFingerprint = "smb://nas.local:445/share",
             pageSize = 10,
             recursive = false,
@@ -83,7 +81,6 @@ class SmbSourceAdapterTest {
     fun nonMediaExtensionsFiltered() = runBlocking {
         val adapter = SmbSourceAdapter(
             share = fixtureShare(),
-            rootPath = "share",
             sourceFingerprint = "smb://nas.local:445/share",
             recursive = true,
         )
@@ -96,7 +93,6 @@ class SmbSourceAdapterTest {
     fun openAssetStreamsBytes() = runBlocking {
         val adapter = SmbSourceAdapter(
             share = fixtureShare(),
-            rootPath = "share",
             sourceFingerprint = "smb://nas.local:445/share",
         )
         assertEquals(4, adapter.openAsset("sub/c.jpg").readBytes().size)

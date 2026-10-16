@@ -15,6 +15,7 @@ object PlaybackSettingsEdit {
         val restEnabled: Boolean,
         val restStartMinute: Int?,
         val restEndMinute: Int?,
+        val restDisplay: String = FramePlaybackSettings.REST_DISPLAY_CLOCK,
         val brightness: Double?,
         val qualityLevel: String,
         val solidColor: String? = null,
@@ -76,6 +77,7 @@ object PlaybackSettingsEdit {
         rest["enabled"] = draft.restEnabled
         rest["startMinute"] = draft.restStartMinute?.toDouble()
         rest["endMinute"] = draft.restEndMinute?.toDouble()
+        rest["display"] = draft.restDisplay
         root["rest"] = rest
         root["brightness"] = draft.brightness
         root["qualityLevel"] = draft.qualityLevel

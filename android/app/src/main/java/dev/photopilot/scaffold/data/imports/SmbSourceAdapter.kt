@@ -6,7 +6,6 @@ import java.io.InputStream
 
 class SmbSourceAdapter(
     private val share: SmbShare,
-    private val rootPath: String,
     override val sourceFingerprint: String,
     private val pageSize: Int = 100,
     private val recursive: Boolean = false,

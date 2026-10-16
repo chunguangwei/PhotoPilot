@@ -67,4 +67,27 @@ class FramePlaybackSettingsTest {
         assertEquals(300, settings.restEndMinute)
         assertEquals(0.5f, settings.brightness)
     }
+
+    @Test
+    fun restDisplayDefaultsToClockWhenMissingOrUnknown() {
+        val missing = FramePlaybackSettings.parse("{\"rest\":{\"enabled\":true}}")
+        assertEquals(FramePlaybackSettings.REST_DISPLAY_CLOCK, missing.restDisplay)
+        val noRest = FramePlaybackSettings.parse("{}")
+        assertEquals(FramePlaybackSettings.REST_DISPLAY_CLOCK, noRest.restDisplay)
+        val unknown = FramePlaybackSettings.parse("{\"rest\":{\"display\":\"surprise\"}}")
+        assertEquals(FramePlaybackSettings.REST_DISPLAY_CLOCK, unknown.restDisplay)
+    }
+
+    @Test
+    fun restDisplayParsesAllValidValues() {
+        listOf(
+            FramePlaybackSettings.REST_DISPLAY_DIM,
+            FramePlaybackSettings.REST_DISPLAY_CLOCK,
+            FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER,
+            FramePlaybackSettings.REST_DISPLAY_BLACK,
+        ).forEach { value ->
+            val parsed = FramePlaybackSettings.parse("{\"rest\":{\"display\":\"$value\"}}")
+            assertEquals(value, parsed.restDisplay)
+        }
+    }
 }
