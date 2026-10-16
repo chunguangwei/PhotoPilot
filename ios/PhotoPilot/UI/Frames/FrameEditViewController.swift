@@ -275,7 +275,8 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
     private func reload() {
         Task { [weak self] in
             guard let self else { return }
-            collections = (try? await environment.assets.collections()) ?? []
+            collections = ((try? await environment.assets.collections()) ?? [])
+                .filter { CollectionListing.visibleInFolderList(type: $0.type, memberCount: $0.memberCount) }
             memberCache = [:]
             directoriesTable.reloadData()
             guard let frameID, let fetched = try? await environment.frameManager.frameDetail(frameID: frameID) else {
@@ -296,7 +297,8 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
                 gridChild?.coverAssetID = (try? await environment.frames.buildPlayQueue(frameID: frameID))?.first
             }
             gridChild?.applySelection(selectedAssetIDs)
-            collections = (try? await environment.assets.collections()) ?? []
+            collections = ((try? await environment.assets.collections()) ?? [])
+                .filter { CollectionListing.visibleInFolderList(type: $0.type, memberCount: $0.memberCount) }
             memberCache = [:]
             directoriesTable.reloadData()
             manualButton.isHidden = fetched.orderMode != PlaybackQueue.orderManual

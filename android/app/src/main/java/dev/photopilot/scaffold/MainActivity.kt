@@ -282,6 +282,9 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            window.setDecorFitsSystemWindows(false)
+        }
         root = AppRootView(this)
         setContentView(root)
         root.fitsSystemWindows = true
@@ -1530,7 +1533,7 @@ class MainActivity : Activity() {
                     val collections = withContext(Dispatchers.IO) {
                         env.database.collectionDao().getAll().map {
                             it to env.database.collectionAssetDao().getByCollection(it.id).size.toLong()
-                        }
+                        }.filter { dev.photopilot.scaffold.data.logic.CollectionListing.visibleInFolderList(it.first.type, it.second) }
                     }
                     callback(collections)
                 }
@@ -2382,6 +2385,7 @@ class MainActivity : Activity() {
                                     it to env.database.collectionAssetDao()
                                         .getByCollection(it.id).size.toLong()
                                 }
+                                .filter { dev.photopilot.scaffold.data.logic.CollectionListing.visibleInFolderList(it.first.type, it.second) }
                         }
                         callback(collections)
                     }

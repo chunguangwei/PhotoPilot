@@ -9,6 +9,17 @@ class AppRootView(context: Context) : FrameLayout(context) {
     var baseView: View? = null
         private set
 
+    init {
+        setBackgroundColor(context.getColor(dev.photopilot.scaffold.R.color.pp_surface_canvas))
+    }
+
+    var fullBleedOverlay: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            requestApplyInsets()
+        }
+
     private val overlays = ArrayDeque<View>()
 
     fun setBase(view: View) {

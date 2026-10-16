@@ -137,7 +137,17 @@ class DemoPlayerView(context: Context) : FrameLayout(context) {
         }
     }
 
+    private var hostRoot: dev.photopilot.scaffold.ui.AppRootView? = null
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        hostRoot = parent as? dev.photopilot.scaffold.ui.AppRootView
+        hostRoot?.fullBleedOverlay = true
+    }
+
     override fun onDetachedFromWindow() {
+        hostRoot?.fullBleedOverlay = false
+        hostRoot = null
         running = false
         removeCallbacks(advanceRunnable)
         executor.shutdownNow()

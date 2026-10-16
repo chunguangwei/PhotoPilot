@@ -44,11 +44,17 @@ class UpdateDownloadService : Service() {
             return START_NOT_STICKY
         }
         publish(UpdateState.Downloading(0L, totalSize))
-        startForeground(
-            NOTIFICATION_ID,
-            progressNotification(0, totalSize),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
-        )
+        try {
+            startForeground(
+                NOTIFICATION_ID,
+                progressNotification(0, totalSize),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+            )
+        } catch (failure: RuntimeException) {
+            publish(UpdateState.Failed)
+            stopSelf()
+            return START_NOT_STICKY
+        }
         val lock = getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKELOCK_TAG)
         lock.acquire(WAKELOCK_TIMEOUT_MS)
@@ -56,6 +62,10 @@ class UpdateDownloadService : Service() {
         thread(name = "update-download") {
             try {
                 runDownload(url, versionName, totalSize)
+            } catch (cancelled: InterruptedException) {
+                publish(UpdateState.Failed)
+            } catch (failure: Throwable) {
+                publish(UpdateState.Failed)
             } finally {
                 runCatching { if (lock.isHeld) lock.release() }
                 wakeLock = null

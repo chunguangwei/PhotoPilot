@@ -544,12 +544,18 @@ class PlayerView(
         keepScreenOn = keep
     }
 
+    private var hostRoot: dev.photopilot.scaffold.ui.AppRootView? = null
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        hostRoot = parent as? dev.photopilot.scaffold.ui.AppRootView
+        hostRoot?.fullBleedOverlay = true
         setImmersive(true)
     }
 
     override fun onDetachedFromWindow() {
+        hostRoot?.fullBleedOverlay = false
+        hostRoot = null
         setImmersive(false)
         musicPlayer.release()
         musicStarted = null
@@ -561,6 +567,29 @@ class PlayerView(
 
     private fun setImmersive(immersive: Boolean) {
         val window = (context as? android.app.Activity)?.window ?: return
+        if (immersive) {
+            window.addFlags(
+                android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            )
+            if (android.os.Build.VERSION.SDK_INT >= 28) {
+                window.attributes = window.attributes.apply {
+                    layoutInDisplayCutoutMode =
+                        android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                }
+            }
+        } else {
+            window.clearFlags(
+                android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            )
+            if (android.os.Build.VERSION.SDK_INT >= 28) {
+                window.attributes = window.attributes.apply {
+                    layoutInDisplayCutoutMode =
+                        android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+                }
+            }
+        }
         if (android.os.Build.VERSION.SDK_INT >= 30) {
             val controller = window.insetsController ?: return
             if (immersive) {

@@ -129,7 +129,7 @@ class ScaffoldChecksTests(unittest.TestCase):
     def test_update_permissions_allowed_in_services_stage(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "AndroidManifest.xml"
-            path.write_text('<manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><application android:allowBackup="false" android:usesCleartextTraffic="false"/></manifest>')
+            path.write_text('<manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/><uses-permission android:name="android.permission.WAKE_LOCK"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><application android:allowBackup="false" android:usesCleartextTraffic="false"/></manifest>')
             self.assertEqual(manifest_issues(path, stage="m2_services_development"), [])
 
     def test_update_permissions_rejected_in_earlier_stages(self):

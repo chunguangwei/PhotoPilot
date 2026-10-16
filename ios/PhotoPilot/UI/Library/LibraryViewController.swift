@@ -274,7 +274,8 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
     private func refreshCollections() {
         Task { [weak self] in
             guard let self else { return }
-            collections = (try? await environment.assets.collections()) ?? []
+            collections = ((try? await environment.assets.collections()) ?? [])
+                .filter { CollectionListing.visibleInFolderList(type: $0.type, memberCount: $0.memberCount) }
             foldersTable.reloadData()
         }
     }

@@ -119,6 +119,7 @@
 		AD23FC6CF3B105EE3DDAA0BD /* NasDeletionJudge.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2F9846BB74E7227051237EA /* NasDeletionJudge.swift */; };
 		ADC4CED8C9181EF2B9D9DF01 /* NasScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = E19A319919B8080EFD5FF613 /* NasScope.swift */; };
 		AF53CB02CC28BB074B3E4AB8 /* music_travel_01.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 2024FD8E74926DD58B9FC2B7 /* music_travel_01.m4a */; };
+		B132E040AB9A8FF93DA6A0E7 /* CollectionListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D115E1AD01832D067A8F1079 /* CollectionListing.swift */; };
 		B15D3070EB38ECCB3C4989F7 /* LocalFilesFixtureAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71A143CB2CB56F2020C5A4DC /* LocalFilesFixtureAdapter.swift */; };
 		B3841E0AB7F0E6D746C40E9E /* music_wedding_01.m4a in Resources */ = {isa = PBXBuildFile; fileRef = FF463ABAC05A313115D5D0AE /* music_wedding_01.m4a */; };
 		B4EF6D15CFDD64885A3F9828 /* PhotoPilotImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA05EC1D7B0A19D0405FD529 /* PhotoPilotImportTests.swift */; };
@@ -332,6 +333,7 @@
 		C624C6AFF9211722EAB6DBF9 /* ThumbnailLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailLoader.swift; sourceTree = "<group>"; };
 		C85FB910E9777184F4AC7439 /* demo_sunset.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = demo_sunset.jpg; sourceTree = "<group>"; };
 		CA05EC1D7B0A19D0405FD529 /* PhotoPilotImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPilotImportTests.swift; sourceTree = "<group>"; };
+		D115E1AD01832D067A8F1079 /* CollectionListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionListing.swift; sourceTree = "<group>"; };
 		D14331CC32D7E882860BAD59 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		D41E0E68DE96D328FA559CAA /* nas-deletion.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "nas-deletion.json"; sourceTree = "<group>"; };
 		D4FA1ACE15205C3AC603205F /* NasCertTrustViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NasCertTrustViewController.swift; sourceTree = "<group>"; };
@@ -652,6 +654,7 @@
 				E061753DE4D246E9F302E4FB /* .gitkeep */,
 				F4F35DB99FB6F9AE613D4C02 /* AssetRepository.swift */,
 				39522C738A1D80AEA2D68BC9 /* CollectionDisplayName.swift */,
+				D115E1AD01832D067A8F1079 /* CollectionListing.swift */,
 			);
 			path = AssetRepository;
 			sourceTree = "<group>";
@@ -1188,6 +1191,7 @@
 				AC451BC5E0492A46DA34DF95 /* BottomNavBar.swift in Sources */,
 				A36187F1703BCE087AFEDE24 /* BrandMarkView.swift in Sources */,
 				33FA1314C9B9F9D2778B64C8 /* CollectionDisplayName.swift in Sources */,
+				B132E040AB9A8FF93DA6A0E7 /* CollectionListing.swift in Sources */,
 				84A90FB2A57124FF17347F50 /* ContractIndexes.swift in Sources */,
 				816198B451A7E84270216687 /* CoverPreviewViewController.swift in Sources */,
 				1A55A9E177D1717358D55A0A /* CredentialStore.swift in Sources */,
@@ -1362,7 +1366,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 21;
+				CURRENT_PROJECT_VERSION = 22;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1375,7 +1379,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.19;
+				MARKETING_VERSION = 1.1.20;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1499,7 +1503,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 21;
+				CURRENT_PROJECT_VERSION = 22;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1518,7 +1522,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.19;
+				MARKETING_VERSION = 1.1.20;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

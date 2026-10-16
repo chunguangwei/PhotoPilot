@@ -73,7 +73,12 @@ class KeyboardDismiss(private val root: ViewGroup) {
         val bottom = root.paddingBottom
         root.fitsSystemWindows = false
         window.setDecorFitsSystemWindows(false)
+        val appRoot = root as? dev.photopilot.scaffold.ui.AppRootView
         root.setOnApplyWindowInsetsListener { _, insets ->
+            if (appRoot?.fullBleedOverlay == true) {
+                root.setPadding(left, top, right, bottom)
+                return@setOnApplyWindowInsetsListener insets
+            }
             val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
             val extra = KeyboardDismissGesture.imeBottomExtra(
                 insets.isVisible(WindowInsets.Type.ime()),

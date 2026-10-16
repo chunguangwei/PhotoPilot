@@ -61,6 +61,7 @@ UPDATE_PERMISSIONS = {
     "android.permission.REQUEST_INSTALL_PACKAGES",
     "android.permission.FOREGROUND_SERVICE",
     "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+    "android.permission.WAKE_LOCK",
     "android.permission.POST_NOTIFICATIONS",
 }
 IOS_PHOTO_USAGE_KEYS = {"NSPhotoLibraryUsageDescription"}

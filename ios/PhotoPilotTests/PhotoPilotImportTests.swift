@@ -338,6 +338,12 @@ final class PhotoPilotImportTests: XCTestCase {
         )
     }
 
+    func testEmptyImportBatchHiddenFromFolderList() {
+        XCTAssertFalse(CollectionListing.visibleInFolderList(type: "import_batch", memberCount: 0))
+        XCTAssertTrue(CollectionListing.visibleInFolderList(type: "import_batch", memberCount: 3))
+        XCTAssertTrue(CollectionListing.visibleInFolderList(type: "source_folder", memberCount: 0))
+    }
+
     func testOffsetCursorFormatMatchesVector() async throws {
         let meta = try XCTUnwrap(try loadVector("fixture-enumeration")["meta"] as? [String: Any])
         XCTAssertEqual(try XCTUnwrap(meta["cursor_prefix"] as? String), OffsetCursor.prefix)
