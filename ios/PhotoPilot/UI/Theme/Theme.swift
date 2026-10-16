@@ -63,6 +63,7 @@ enum ThemeMetrics {
     static let bodyMaxWidth: CGFloat = 720
     static let gridGap: CGFloat = 16
     static let gridCellMin: CGFloat = 150
+    static let gridCellMinCompact: CGFloat = 85
     static let gridCellMax: CGFloat = 240
     static let touchTarget: CGFloat = 44
     static let controlOpacity: CGFloat = 0.94

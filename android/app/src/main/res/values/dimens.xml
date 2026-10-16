@@ -17,6 +17,8 @@
     <dimen name="pp_body_max_width">720dp</dimen>
     <dimen name="pp_grid_gap">16dp</dimen>
     <dimen name="pp_grid_cell_min">150dp</dimen>
+    <dimen name="pp_grid_cell_min_compact">85dp</dimen>
+    <dimen name="pp_grid_compact_breakpoint">600dp</dimen>
     <dimen name="pp_touch_target">48dp</dimen>
     <dimen name="pp_header_height">56dp</dimen>
     <dimen name="pp_icon_button">24dp</dimen>

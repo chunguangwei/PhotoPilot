@@ -82,12 +82,14 @@ final class WalkthroughTests: XCTestCase {
 
         let grid = app.collectionViews.firstMatch
         _ = grid.waitForExistence(timeout: 20)
-        let photoCells = app.cells.matching(NSPredicate(format: "label BEGINSWITH '照片'"))
+        let cellQuery = app.cells.matching(NSPredicate(format: "label BEGINSWITH '照片'"))
+        let imageQuery = app.images.matching(NSPredicate(format: "label BEGINSWITH '照片'"))
         let pollDeadline = Date().addingTimeInterval(90)
-        while photoCells.count == 0 && Date() < pollDeadline {
+        while cellQuery.count == 0 && imageQuery.count == 0 && Date() < pollDeadline {
             sleep(2)
         }
         capture("w-09-editor-photos")
+        let photoCells = cellQuery.count > 0 ? cellQuery : imageQuery
         var tapped = 0
         if photoCells.count > 0 {
             for index in 0..<min(photoCells.count, 4) {
@@ -102,7 +104,7 @@ final class WalkthroughTests: XCTestCase {
             let wide = app.windows.firstMatch.frame.width > 1000
             let points: [(CGFloat, CGFloat)] = wide
                 ? [(0.095, 0.19), (0.245, 0.19), (0.39, 0.19), (0.535, 0.19)]
-                : [(0.26, 0.35), (0.74, 0.35), (0.26, 0.56), (0.74, 0.56)]
+                : [(0.38, 0.30), (0.62, 0.30), (0.38, 0.40), (0.62, 0.40)]
             for (fx, fy) in points {
                 app.coordinate(withNormalizedOffset: CGVector(dx: fx, dy: fy)).tap()
                 usleep(300000)

@@ -224,9 +224,14 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
 
     private func updateColumns() {
         guard let grid = collectionView, grid.bounds.width > 0 else { return }
-        let cellMin = traitCollection.preferredContentSizeCategory.isAccessibilityCategory
-            ? ThemeMetrics.gridCellMax
-            : ThemeMetrics.gridCellMin
+        let cellMin: CGFloat
+        if traitCollection.preferredContentSizeCategory.isAccessibilityCategory {
+            cellMin = ThemeMetrics.gridCellMax
+        } else if traitCollection.horizontalSizeClass == .compact {
+            cellMin = ThemeMetrics.gridCellMinCompact
+        } else {
+            cellMin = ThemeMetrics.gridCellMin
+        }
         let available = grid.bounds.width - grid.contentInset.left - grid.contentInset.right
         let gap = ThemeMetrics.gridGap
         let count = max(1, Int((available + gap) / (cellMin + gap)))

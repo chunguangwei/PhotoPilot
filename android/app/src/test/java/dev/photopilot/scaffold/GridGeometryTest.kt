@@ -19,4 +19,38 @@ class GridGeometryTest {
         assertEquals(1, GridGeometry.columns(0, 16, 150))
         assertEquals(1, GridGeometry.columns(100, 16, 0))
     }
+
+    @Test
+    fun compactWidthUsesCompactCellMin() {
+        assertEquals(
+            2,
+            GridGeometry.columns(
+                availableWidthPx = 300,
+                gapPx = 16,
+                cellMinPx = 150,
+                compactCellMinPx = 100,
+                compactBreakpointPx = 600,
+            ),
+        )
+        assertEquals(
+            6,
+            GridGeometry.columns(
+                availableWidthPx = 1000,
+                gapPx = 16,
+                cellMinPx = 150,
+                compactCellMinPx = 100,
+                compactBreakpointPx = 600,
+            ),
+        )
+        assertEquals(
+            3,
+            GridGeometry.columns(
+                availableWidthPx = 600,
+                gapPx = 16,
+                cellMinPx = 150,
+                compactCellMinPx = 100,
+                compactBreakpointPx = 600,
+            ),
+        )
+    }
 }

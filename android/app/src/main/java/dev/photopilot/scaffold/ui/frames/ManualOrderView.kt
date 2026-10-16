@@ -43,6 +43,8 @@ class ManualOrderView(
 
     private val gapPx = resources.getDimensionPixelSize(R.dimen.pp_grid_gap)
     private val cellMinPx = resources.getDimensionPixelSize(R.dimen.pp_grid_cell_min)
+    private val cellMinCompactPx = resources.getDimensionPixelSize(R.dimen.pp_grid_cell_min_compact)
+    private val compactBreakpointPx = resources.getDimensionPixelSize(R.dimen.pp_grid_compact_breakpoint)
     private val gridInsetPx = resources.getDimensionPixelSize(R.dimen.pp_content_inset_compact)
 
     init {
@@ -113,7 +115,7 @@ class ManualOrderView(
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        val columns = GridGeometry.columns(w - gridInsetPx * 2, gapPx, cellMinPx)
+        val columns = GridGeometry.columns(w - gridInsetPx * 2, gapPx, cellMinPx, cellMinCompactPx, compactBreakpointPx)
         if (gridView.numColumns != columns) gridView.numColumns = columns
         val cell = (w - gridInsetPx * 2 - gapPx * (columns - 1)) / columns
         if (cell != cellSizePx && cell > 0) {

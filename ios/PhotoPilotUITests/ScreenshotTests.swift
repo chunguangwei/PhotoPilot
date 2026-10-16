@@ -43,11 +43,13 @@ final class ScreenshotTests: XCTestCase {
 
         let grid = app.collectionViews.firstMatch
         XCTAssertTrue(grid.waitForExistence(timeout: 20), "frame editor grid not shown")
-        let photoCells = app.cells.matching(NSPredicate(format: "label BEGINSWITH 'Photo'"))
+        let cellQuery = app.cells.matching(NSPredicate(format: "label BEGINSWITH 'Photo'"))
+        let imageQuery = app.images.matching(NSPredicate(format: "label BEGINSWITH 'Photo'"))
         let deadline = Date().addingTimeInterval(90)
-        while photoCells.count == 0 && Date() < deadline {
+        while cellQuery.count == 0 && imageQuery.count == 0 && Date() < deadline {
             sleep(2)
         }
+        let photoCells = cellQuery.count > 0 ? cellQuery : imageQuery
         var tapped = 0
         if photoCells.count > 0 {
             let selectable = min(photoCells.count, 6)
@@ -65,7 +67,7 @@ final class ScreenshotTests: XCTestCase {
             let wide = app.windows.firstMatch.frame.width > 1000
             let points: [(CGFloat, CGFloat)] = wide
                 ? [(0.095, 0.19), (0.245, 0.19), (0.39, 0.19), (0.535, 0.19), (0.68, 0.19), (0.825, 0.19)]
-                : [(0.26, 0.35), (0.74, 0.35), (0.26, 0.56), (0.74, 0.56), (0.26, 0.77), (0.74, 0.77)]
+                : [(0.38, 0.30), (0.62, 0.30), (0.38, 0.40), (0.62, 0.40), (0.38, 0.50), (0.62, 0.50)]
             for (fx, fy) in points {
                 app.coordinate(withNormalizedOffset: CGVector(dx: fx, dy: fy)).tap()
                 usleep(300000)
