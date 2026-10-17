@@ -1831,7 +1831,8 @@ final class PlayerViewController: UIViewController {
 
     private func idleTimerShouldBeDisabled() -> Bool {
         switch controllerState {
-        case PlaybackController.holding, PlaybackController.transitioning, PlaybackController.preparing:
+        case PlaybackController.holding, PlaybackController.transitioning, PlaybackController.preparing,
+             PlaybackController.resting:
             return true
         case PlaybackController.paused:
             return settings.keepAwakeWhenPaused

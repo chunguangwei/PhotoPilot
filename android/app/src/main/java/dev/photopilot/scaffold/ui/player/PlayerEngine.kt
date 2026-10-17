@@ -673,6 +673,7 @@ class PlayerEngine(
             PlaybackController.HOLDING,
             PlaybackController.TRANSITIONING,
             PlaybackController.PREPARING,
+            PlaybackController.RESTING,
             -> true
             PlaybackController.PAUSED -> settings.keepAwakeWhenPaused
             else -> false

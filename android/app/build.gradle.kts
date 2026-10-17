@@ -48,8 +48,8 @@ android {
         applicationId = "dev.photopilot.scaffold"
         minSdk = 29
         targetSdk = 36
-        versionCode = 30
-        versionName = "1.1.28"
+        versionCode = 31
+        versionName = "1.1.29"
     }
 
     signingConfigs {
