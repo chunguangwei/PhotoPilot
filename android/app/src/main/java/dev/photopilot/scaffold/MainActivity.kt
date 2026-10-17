@@ -1007,8 +1007,14 @@ class MainActivity : Activity() {
                     client.propfind("", 0)
                     null
                 } catch (e: WebDavClient.DavException) {
+                    android.util.Log.w("PhotoPilotNas", "webdav test failed code=${e.code}", e)
                     e.code
                 } catch (e: Exception) {
+                    android.util.Log.w(
+                        "PhotoPilotNas",
+                        "webdav test unexpected ${e.javaClass.simpleName}: ${e.message}",
+                        e,
+                    )
                     WebDavClient.ERR_SRC_UNAVAILABLE
                 }
             },
