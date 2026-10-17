@@ -13,6 +13,7 @@ internal class SegmentedControl(
     context: Context,
     private val textSizeRes: Int = R.dimen.pp_text_caption,
     private val autoSize: Boolean = false,
+    private val vertical: Boolean = false,
 ) : LinearLayout(context) {
 
     private val segments = mutableListOf<TextView>()
@@ -20,7 +21,7 @@ internal class SegmentedControl(
     private var onSelect: ((Int) -> Unit)? = null
 
     init {
-        orientation = HORIZONTAL
+        orientation = if (vertical) VERTICAL else HORIZONTAL
         val res = resources
         val inset = res.getDimensionPixelSize(R.dimen.pp_space_4)
         setPadding(inset, inset, inset, inset)
@@ -61,8 +62,14 @@ internal class SegmentedControl(
             segments += segment
             addView(
                 segment,
-                LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                    if (index > 0) marginStart = res.getDimensionPixelSize(R.dimen.pp_space_4)
+                if (vertical) {
+                    LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                        if (index > 0) topMargin = res.getDimensionPixelSize(R.dimen.pp_space_4)
+                    }
+                } else {
+                    LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
+                        if (index > 0) marginStart = res.getDimensionPixelSize(R.dimen.pp_space_4)
+                    }
                 },
             )
         }

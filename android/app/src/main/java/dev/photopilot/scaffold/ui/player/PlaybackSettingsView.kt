@@ -476,6 +476,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                     R.string.playback_fill_crop,
                 ),
                 fitIndex,
+                vertical = true,
             ) { index ->
                 fitIndex = index
                 cropWarning.visibility = if (fitIndex == 2) View.VISIBLE else View.GONE
@@ -978,7 +979,12 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         )
     }
 
-    private fun optionGroup(labelResList: List<Int>, selected: Int, onSelect: (Int) -> Unit): LinearLayout {
+    private fun optionGroup(
+        labelResList: List<Int>,
+        selected: Int,
+        vertical: Boolean = false,
+        onSelect: (Int) -> Unit,
+    ): LinearLayout {
         val res = resources
         val labels = labelResList.mapIndexed { index, labelRes ->
             res.getString(labelRes, *slotArgs(labelRes, index))
@@ -986,7 +992,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         return dev.photopilot.scaffold.ui.widget.SegmentedControl(
             context,
             textSizeRes = R.dimen.pp_text_meta,
-            autoSize = true,
+            autoSize = !vertical,
+            vertical = vertical,
         ).apply { setItems(labels, selected, onSelect) }
     }
 
