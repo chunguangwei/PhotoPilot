@@ -54,6 +54,24 @@ object WeatherLogic {
         else -> "unknown"
     }
 
+    fun conditionIcon(conditionCode: String): String = when (conditionCode) {
+        "clear" -> "☀️"
+        "partly_cloudy" -> "⛅"
+        "cloudy" -> "☁️"
+        "fog" -> "🌫️"
+        "drizzle" -> "🌦️"
+        "rain" -> "🌧️"
+        "heavy_rain" -> "🌧️"
+        "snow" -> "🌨️"
+        "heavy_snow" -> "❄️"
+        "thunderstorm" -> "⛈️"
+        "hail" -> "🌨️"
+        "windy" -> "💨"
+        "haze" -> "🌫️"
+        "sand" -> "🌫️"
+        else -> "☁️"
+    }
+
     fun conditionTextRes(conditionCode: String): Int? = when (conditionCode) {
         "clear" -> dev.photopilot.scaffold.R.string.weather_condition_clear
         "partly_cloudy" -> dev.photopilot.scaffold.R.string.weather_condition_partly_cloudy

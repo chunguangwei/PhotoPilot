@@ -29,6 +29,7 @@ import dev.photopilot.scaffold.data.logic.FramePlaybackSettings
 import dev.photopilot.scaffold.data.logic.MusicCatalog
 import dev.photopilot.scaffold.data.logic.PlaybackController
 import dev.photopilot.scaffold.data.logic.PlaybackTiming
+import dev.photopilot.scaffold.data.logic.RenderGeometry
 import dev.photopilot.scaffold.data.logic.VideoProbe
 import dev.photopilot.scaffold.ui.widget.primaryButton
 import dev.photopilot.scaffold.ui.widget.secondaryButton
@@ -430,11 +431,7 @@ class PlayerView(
         applyFitBackground(decoded)
         val incoming = if (showingA) foregroundB else foregroundA
         val outgoing = if (showingA) foregroundA else foregroundB
-        incoming.scaleType = if (settings.fitMode == FramePlaybackSettings.FILL_CROP) {
-            ImageView.ScaleType.CENTER_CROP
-        } else {
-            ImageView.ScaleType.FIT_CENTER
-        }
+        incoming.scaleType = adaptiveFitScaleType(decoded.bitmap)
         incoming.setImageBitmap(decoded.bitmap)
         incoming.contentDescription = resources.getString(
             R.string.a11y_current_photo, currentAssetIndex, currentQueueSize.coerceAtLeast(1),
@@ -652,8 +649,9 @@ class PlayerView(
     }
 
     private fun applyFitBackground(decoded: PlayerEngine.DecodedAsset) {
-        when (settings.fitMode) {
-            FramePlaybackSettings.FIT_BLUR -> {
+        when {
+            settings.fitMode == FramePlaybackSettings.FIT_BLUR ||
+                fillCropFallsBack(decoded.bitmap) -> {
                 if (decoded.blurred != null) {
                     backgroundImage.setImageBitmap(decoded.blurred)
                     scrim.visibility = View.VISIBLE
@@ -662,7 +660,7 @@ class PlayerView(
                     scrim.visibility = View.GONE
                 }
             }
-            FramePlaybackSettings.FIT_COLOR -> {
+            settings.fitMode == FramePlaybackSettings.FIT_COLOR -> {
                 backgroundImage.setImageDrawable(
                     ColorDrawable(solidBackgroundColor(decoded)),
                 )
@@ -671,6 +669,52 @@ class PlayerView(
             else -> {
                 backgroundImage.setImageDrawable(null)
                 scrim.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun adaptiveFitScaleType(bitmap: android.graphics.Bitmap): ImageView.ScaleType {
+        if (settings.fitMode == FramePlaybackSettings.FILL_CROP) {
+            return if (RenderGeometry.fillCropKeepsEnough(
+                    bitmap.width.toLong(), bitmap.height.toLong(),
+                    width.toLong(), height.toLong(),
+                )
+            ) {
+                ImageView.ScaleType.CENTER_CROP
+            } else {
+                ImageView.ScaleType.FIT_CENTER
+            }
+        }
+        if (settings.fitMode != FramePlaybackSettings.FIT_BLUR) {
+            return ImageView.ScaleType.FIT_CENTER
+        }
+        return if (RenderGeometry.narrowBarCrop(
+                bitmap.width.toLong(), bitmap.height.toLong(),
+                width.toLong(), height.toLong(),
+            )
+        ) {
+            ImageView.ScaleType.CENTER_CROP
+        } else {
+            ImageView.ScaleType.FIT_CENTER
+        }
+    }
+
+    private fun fillCropFallsBack(bitmap: android.graphics.Bitmap): Boolean =
+        settings.fitMode == FramePlaybackSettings.FILL_CROP && !RenderGeometry.fillCropKeepsEnough(
+            bitmap.width.toLong(), bitmap.height.toLong(),
+            width.toLong(), height.toLong(),
+        )
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        if (oldw == 0 || oldh == 0) return
+        if (settings.fitMode != FramePlaybackSettings.FIT_BLUR &&
+            settings.fitMode != FramePlaybackSettings.FILL_CROP
+        ) return
+        listOf(foregroundA, foregroundB).forEach { view ->
+            val bitmap = (view.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+            if (bitmap != null) {
+                view.scaleType = adaptiveFitScaleType(bitmap)
             }
         }
     }
@@ -822,6 +866,7 @@ class PlayerView(
         TextView(context).apply {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(sizeRes))
             setTextColor(context.getColor(R.color.pp_text_on_photo))
+            setShadowLayer(8f, 0f, 2f, 0x8C000000.toInt())
         }
 
     private fun controlButton(iconRes: Int, textRes: Int, action: (View) -> Unit): ImageButton =

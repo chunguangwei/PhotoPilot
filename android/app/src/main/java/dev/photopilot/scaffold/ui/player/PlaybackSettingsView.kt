@@ -955,6 +955,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             val label = TextView(context).apply {
                 text = res.getString(labelRes, *slotArgs(labelRes, index))
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_meta))
+                setAutoSizeTextTypeUniformWithConfiguration(10, 13, 1, TypedValue.COMPLEX_UNIT_SP)
+                maxLines = 1
                 gravity = Gravity.CENTER
                 minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
                 isDuplicateParentStateEnabled = true

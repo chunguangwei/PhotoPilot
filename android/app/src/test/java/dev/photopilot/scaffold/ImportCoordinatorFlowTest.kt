@@ -355,6 +355,97 @@ class ImportCoordinatorFlowTest {
     }
 
     @Test
+    fun racedHashBetweenPlanAndTransactionMergesInsteadOfCreatingDuplicate() = runBlocking {
+        val bytes = pngBytes(31)
+        setUp(mapOf("race.png" to bytes))
+        val (_, items) = newJobWithItems()
+        val racedAsset = racedAsset("raced-asset", shaOf(bytes))
+        var lookups = 0
+        scope.existingAssetByHashOverride = { _ ->
+            lookups++
+            if (lookups == 1) {
+                null
+            } else {
+                scope.assets[racedAsset.id] = racedAsset
+                racedAsset
+            }
+        }
+
+        val outcome = coordinator.processItem(items[0], adapter(), metadata) as ImportCoordinator.CommitOutcome.Imported
+
+        assertTrue(outcome.merged)
+        assertEquals("raced-asset", outcome.assetId)
+        assertEquals(mapOf("raced-asset" to racedAsset), scope.assets)
+        assertEquals(1, scope.origins.size)
+        assertEquals("raced-asset", scope.origins.keys.single().first)
+        assertTrue(originals.walkTopDown().filter { it.isFile }.none())
+        assertTrue(tmp.listFiles().isEmpty())
+    }
+
+    @Test
+    fun uniqueConstraintOnInsertFallsBackToMergeWithoutDeletingExistingRow() = runBlocking {
+        val bytes = pngBytes(32)
+        setUp(mapOf("dup.png" to bytes))
+        val (_, items) = newJobWithItems()
+        val racedAsset = racedAsset("winner-asset", shaOf(bytes))
+        scope.insertAssetHook = { _ ->
+            scope.assets[racedAsset.id] = racedAsset
+            throw RuntimeException("UNIQUE constraint failed: asset.content_hash (code 2067)")
+        }
+
+        val outcome = coordinator.processItem(items[0], adapter(), metadata) as ImportCoordinator.CommitOutcome.Imported
+
+        assertTrue(outcome.merged)
+        assertEquals("winner-asset", outcome.assetId)
+        assertEquals(mapOf("winner-asset" to racedAsset), scope.assets)
+        assertEquals(1, scope.origins.size)
+        assertEquals("winner-asset", scope.origins.keys.single().first)
+        assertTrue(originals.walkTopDown().filter { it.isFile }.none())
+        assertTrue(tmp.listFiles().isEmpty())
+    }
+
+    @Test
+    fun nonConstraintInsertFailurePropagates() = runBlocking {
+        val bytes = pngBytes(33)
+        setUp(mapOf("boom.png" to bytes))
+        val (_, items) = newJobWithItems()
+        scope.insertAssetHook = { throw IllegalStateException("disk full") }
+
+        try {
+            coordinator.processItem(items[0], adapter(), metadata)
+            org.junit.Assert.fail("expected IllegalStateException")
+        } catch (expected: IllegalStateException) {
+            assertEquals("disk full", expected.message)
+        }
+        assertTrue(scope.assets.isEmpty())
+    }
+
+    private fun racedAsset(id: String, hash: String) = dev.photopilot.scaffold.data.db.AssetEntity(
+        id = id,
+        contentHash = hash,
+        byteSize = 2048L,
+        format = AssetFormat.PNG,
+        pixelWidth = 100L,
+        pixelHeight = 80L,
+        exifOrientation = 1L,
+        orientationClass = dev.photopilot.scaffold.data.db.OrientationClass.LANDSCAPE,
+        capturedAt = null,
+        capturedAtSource = CapturedAtSource.UNKNOWN,
+        importedAt = now,
+        originalRelPath = "$id.png",
+        originalFileName = null,
+        readiness = AssetReadiness.READY,
+        failureCode = null,
+        privacyExcluded = false,
+        edgeColor = null,
+        mediaKind = dev.photopilot.scaffold.data.db.MediaKind.IMAGE,
+        durationMs = null,
+        deletedAt = null,
+        createdAt = now,
+        updatedAt = now,
+    )
+
+    @Test
     fun signalEffectsMatchSharedVectors() {
         val cases = Vectors.load("import-signal-effects.json").getJSONArray("cases")
         assertTrue("expected at least 8 signal vectors", cases.length() >= 8)

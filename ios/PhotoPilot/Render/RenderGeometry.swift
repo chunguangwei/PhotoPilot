@@ -9,6 +9,29 @@ struct FitRect: Sendable, Equatable {
 
 enum RenderGeometry {
     static let blurBackgroundLongEdge: Int64 = 256
+    static let narrowBarMaxFraction: Double = 0.035
+    static let fillCropMinVisibleFraction: Double = 0.6
+
+    static func fillCropKeepsEnough(srcW: Int64, srcH: Int64, dstW: Int64, dstH: Int64) -> Bool {
+        guard srcW > 0, srcH > 0, dstW > 0, dstH > 0 else { return true }
+        let fill = max(Double(dstW) / Double(srcW), Double(dstH) / Double(srcH))
+        let visible = (Double(dstW) * Double(dstH))
+            / (Double(srcW) * fill * Double(srcH) * fill)
+        return visible >= fillCropMinVisibleFraction
+    }
+
+    static func narrowBarCrop(srcW: Int64, srcH: Int64, dstW: Int64, dstH: Int64) -> Bool {
+        guard srcW > 0, srcH > 0, dstW > 0, dstH > 0 else { return false }
+        let photoAspect = Double(srcW) / Double(srcH)
+        let screenAspect = Double(dstW) / Double(dstH)
+        let barFraction: Double
+        if photoAspect > screenAspect {
+            barFraction = (Double(dstH) - Double(dstW) / photoAspect) / 2 / Double(dstH)
+        } else {
+            barFraction = (Double(dstW) - Double(dstH) * photoAspect) / 2 / Double(dstW)
+        }
+        return barFraction < narrowBarMaxFraction
+    }
 
     static func aspectFit(srcW: Int64, srcH: Int64, dstW: Int64, dstH: Int64) -> FitRect {
         scaleRect(srcW: srcW, srcH: srcH, dstW: dstW, dstH: dstH, scale: min(

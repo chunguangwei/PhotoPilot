@@ -85,6 +85,14 @@ final class LaunchViewController: UIViewController {
         loadTask = Task { [weak self] in
             let result: Result<(PersistenceController, Bool, String?), Error> = await Task.detached {
                 do {
+                    if CommandLine.arguments.contains("-uitest.reset") {
+                        let storeURL = PersistenceController.defaultStoreURL()
+                        for suffix in ["", "-wal", "-shm"] {
+                            try? FileManager.default.removeItem(
+                                at: URL(fileURLWithPath: storeURL.path + suffix)
+                            )
+                        }
+                    }
                     let persistence = PersistenceController()
                     guard !persistence.container.persistentStoreCoordinator.persistentStores.isEmpty else {
                         throw PersistenceError.dbMigrationFailed

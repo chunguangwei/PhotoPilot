@@ -26,6 +26,7 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
+    testImplementation("org.xerial:sqlite-jdbc:3.41.2.2")
 }
 
 kotlin {
@@ -47,8 +48,8 @@ android {
         applicationId = "dev.photopilot.scaffold"
         minSdk = 29
         targetSdk = 36
-        versionCode = 26
-        versionName = "1.1.24"
+        versionCode = 27
+        versionName = "1.1.25"
     }
 
     signingConfigs {

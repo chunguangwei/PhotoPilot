@@ -10,6 +10,27 @@ data class FitRect(val x: Long, val y: Long, val width: Long, val height: Long)
 object RenderGeometry {
 
     const val BLUR_BACKGROUND_LONG_EDGE = 256
+    const val NARROW_BAR_MAX_FRACTION = 0.035
+    const val FILL_CROP_MIN_VISIBLE_FRACTION = 0.6
+
+    fun fillCropKeepsEnough(srcW: Long, srcH: Long, dstW: Long, dstH: Long): Boolean {
+        if (srcW <= 0 || srcH <= 0 || dstW <= 0 || dstH <= 0) return true
+        val fill = maxOf(dstW.toDouble() / srcW, dstH.toDouble() / srcH)
+        val visible = (dstW.toDouble() * dstH) / (srcW * fill * srcH * fill)
+        return visible >= FILL_CROP_MIN_VISIBLE_FRACTION
+    }
+
+    fun narrowBarCrop(srcW: Long, srcH: Long, dstW: Long, dstH: Long): Boolean {
+        if (srcW <= 0 || srcH <= 0 || dstW <= 0 || dstH <= 0) return false
+        val photoAspect = srcW.toDouble() / srcH
+        val screenAspect = dstW.toDouble() / dstH
+        val barFraction = if (photoAspect > screenAspect) {
+            (dstH - dstW / photoAspect) / 2 / dstH
+        } else {
+            (dstW - dstH * photoAspect) / 2 / dstW
+        }
+        return barFraction < NARROW_BAR_MAX_FRACTION
+    }
 
     fun aspectFit(srcW: Long, srcH: Long, dstW: Long, dstH: Long): FitRect =
         scaleRect(srcW, srcH, dstW, dstH, min(dstW.toDouble() / srcW, dstH.toDouble() / srcH))

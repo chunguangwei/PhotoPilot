@@ -1604,7 +1604,7 @@ class MainActivity : Activity() {
             override fun fetchPhotos(limit: Int, offset: Int, callback: (List<AssetEntity>) -> Unit) {
                 scope.launch {
                     val page = withContext(Dispatchers.IO) {
-                        env.database.assetDao().browsePage(limit, offset)
+                        env.database.assetDao().browseReadyPage(limit, offset)
                     }
                     callback(page)
                 }
@@ -3024,11 +3024,12 @@ class MainActivity : Activity() {
                     }
                     val base = if (conditionText != null) "$temp · $conditionText" else temp
                     val prefixed = if (placeName.isNullOrEmpty()) base else "$placeName · $base"
+                    val withIcon = "${WeatherLogic.conditionIcon(snapshot.conditionCode)} $prefixed"
                     when (WeatherLogic.segmentOf(snapshot.observedAt, System.currentTimeMillis())) {
                         WeatherLogic.TtlSegment.EXPIRED -> getString(R.string.weather_unavailable)
                         WeatherLogic.TtlSegment.STALE ->
-                            "$prefixed · ${getString(R.string.weather_delayed)}"
-                        WeatherLogic.TtlSegment.FRESH -> prefixed
+                            "$withIcon · ${getString(R.string.weather_delayed)}"
+                        WeatherLogic.TtlSegment.FRESH -> withIcon
                     }
                 }
             }

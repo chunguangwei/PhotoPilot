@@ -84,4 +84,23 @@ final class PhotoPilotRenderTests: XCTestCase {
             }
         }
     }
+
+    func testNarrowBarCropThreshold() {
+        XCTAssertTrue(RenderGeometry.narrowBarCrop(srcW: 1170, srcH: 2532, dstW: 1170, dstH: 2532))
+        XCTAssertTrue(RenderGeometry.narrowBarCrop(srcW: 4000, srcH: 2660, dstW: 2388, dstH: 1668))
+        XCTAssertFalse(RenderGeometry.narrowBarCrop(srcW: 3024, srcH: 4032, dstW: 1170, dstH: 2532))
+        XCTAssertFalse(RenderGeometry.narrowBarCrop(srcW: 4000, srcH: 2660, dstW: 1170, dstH: 2532))
+        XCTAssertFalse(RenderGeometry.narrowBarCrop(srcW: 3024, srcH: 3024, dstW: 1170, dstH: 2532))
+        XCTAssertFalse(RenderGeometry.narrowBarCrop(srcW: 1170, srcH: 2532, dstW: 2388, dstH: 1668))
+        XCTAssertFalse(RenderGeometry.narrowBarCrop(srcW: 0, srcH: 100, dstW: 1170, dstH: 2532))
+        XCTAssertFalse(RenderGeometry.narrowBarCrop(srcW: 100, srcH: 100, dstW: 0, dstH: 0))
+    }
+
+    func testFillCropKeepsEnough() {
+        XCTAssertTrue(RenderGeometry.fillCropKeepsEnough(srcW: 4032, srcH: 3024, dstW: 2388, dstH: 1668))
+        XCTAssertTrue(RenderGeometry.fillCropKeepsEnough(srcW: 1170, srcH: 2532, dstW: 1170, dstH: 2532))
+        XCTAssertFalse(RenderGeometry.fillCropKeepsEnough(srcW: 3024, srcH: 4032, dstW: 2388, dstH: 1668))
+        XCTAssertFalse(RenderGeometry.fillCropKeepsEnough(srcW: 1920, srcH: 1080, dstW: 1170, dstH: 2532))
+        XCTAssertTrue(RenderGeometry.fillCropKeepsEnough(srcW: 0, srcH: 100, dstW: 1170, dstH: 2532))
+    }
 }

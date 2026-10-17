@@ -27,6 +27,7 @@ import dev.photopilot.scaffold.data.logic.NasDeletionJudge
 import dev.photopilot.scaffold.data.logic.SourceFingerprints
 import dev.photopilot.scaffold.data.logic.TombstoneIdentity
 import dev.photopilot.scaffold.data.logic.TombstoneMatchTier
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -50,6 +51,16 @@ class ImportCoordinator(
         const val REASON_MIRROR_DELETE = "mirror_delete"
 
         fun importBatchCollectionId(jobId: String): String = "import_batch_$jobId"
+
+        fun isUniqueConstraintFailure(failure: Throwable): Boolean {
+            var current: Throwable? = failure
+            while (current != null) {
+                if (current is android.database.sqlite.SQLiteConstraintException) return true
+                if (current.message?.contains("UNIQUE constraint") == true) return true
+                current = current.cause
+            }
+            return false
+        }
     }
 
     suspend fun createJob(
@@ -253,44 +264,60 @@ class ImportCoordinator(
 
             is CommitPlan.MergeExisting -> {
                 store.discardStaged(staged.tempRelPath)
-                applyInTransaction(job, item, sourceAsset, plan.assetId, now) { }
+                val applied = applyInTransaction(
+                    job,
+                    item,
+                    sourceAsset,
+                    staged.contentHash,
+                    plan.assetId,
+                    now,
+                    null,
+                )
                 recalc(job.id, ImportJobAggregate.Signal.NONE)
-                CommitOutcome.Imported(plan.assetId, merged = true)
+                CommitOutcome.Imported(applied.assetId, merged = true)
             }
 
             is CommitPlan.CreateNew -> {
                 val relPath = "${plan.assetId}.${metadata.format.wire}"
                 store.commitStaged(staged.tempRelPath, relPath)
-                applyInTransaction(job, item, sourceAsset, plan.assetId, now) {
-                    scope.insertAsset(
-                        AssetEntity(
-                            id = plan.assetId,
-                            contentHash = staged.contentHash,
-                            byteSize = staged.bytesWritten,
-                            format = metadata.format,
-                            pixelWidth = metadata.pixelWidth,
-                            pixelHeight = metadata.pixelHeight,
-                            exifOrientation = metadata.exifOrientation,
-                            orientationClass = orientationOf(metadata.pixelWidth, metadata.pixelHeight),
-                            capturedAt = metadata.capturedAt,
-                            capturedAtSource = metadata.capturedAtSource,
-                            importedAt = now,
-                            originalRelPath = relPath,
-                            originalFileName = metadata.originalFileName,
-                            readiness = AssetReadiness.READY,
-                            failureCode = null,
-                            privacyExcluded = false,
-                            edgeColor = null,
-                            mediaKind = metadata.mediaKind,
-                            durationMs = metadata.durationMs,
-                            deletedAt = null,
-                            createdAt = now,
-                            updatedAt = now,
-                        ),
+                val applied = applyInTransaction(
+                    job,
+                    item,
+                    sourceAsset,
+                    staged.contentHash,
+                    plan.assetId,
+                    now,
+                ) { assetId ->
+                    AssetEntity(
+                        id = assetId,
+                        contentHash = staged.contentHash,
+                        byteSize = staged.bytesWritten,
+                        format = metadata.format,
+                        pixelWidth = metadata.pixelWidth,
+                        pixelHeight = metadata.pixelHeight,
+                        exifOrientation = metadata.exifOrientation,
+                        orientationClass = orientationOf(metadata.pixelWidth, metadata.pixelHeight),
+                        capturedAt = metadata.capturedAt,
+                        capturedAtSource = metadata.capturedAtSource,
+                        importedAt = now,
+                        originalRelPath = relPath,
+                        originalFileName = metadata.originalFileName,
+                        readiness = AssetReadiness.READY,
+                        failureCode = null,
+                        privacyExcluded = false,
+                        edgeColor = null,
+                        mediaKind = metadata.mediaKind,
+                        durationMs = metadata.durationMs,
+                        deletedAt = null,
+                        createdAt = now,
+                        updatedAt = now,
                     )
                 }
+                if (!applied.createdNew) {
+                    store.deleteOriginal(relPath)
+                }
                 recalc(job.id, ImportJobAggregate.Signal.NONE)
-                CommitOutcome.Imported(plan.assetId, merged = false)
+                CommitOutcome.Imported(applied.assetId, merged = !applied.createdNew)
             }
         }
     }
@@ -369,20 +396,43 @@ class ImportCoordinator(
         recalc(jobId, ImportJobAggregate.Signal.NONE)
     }
 
+    data class CommitApply(
+        val assetId: String,
+        val createdNew: Boolean,
+    )
+
     private suspend fun applyInTransaction(
         job: ImportJobEntity,
         item: ImportItemEntity,
         sourceAsset: SourceAssetEntity,
-        assetId: String,
+        contentHash: String,
+        plannedAssetId: String,
         now: Long,
-        insertNewAsset: suspend () -> Unit,
-    ) {
-        scope.transaction {
+        buildNewAsset: ((String) -> AssetEntity)?,
+    ): CommitApply {
+        return scope.transaction {
             val source = scope.source(job.sourceId)
                 ?: throw IllegalStateException("epoch stale at commit")
             if (source.epoch != job.epochAtCreate) throw IllegalStateException("epoch stale at commit")
 
-            insertNewAsset()
+            var assetId = plannedAssetId
+            var createdNew = false
+            val existing = scope.existingAssetByHash(contentHash)
+            if (existing != null) {
+                assetId = existing.id
+            } else if (buildNewAsset != null) {
+                try {
+                    scope.insertAsset(buildNewAsset(assetId))
+                    createdNew = true
+                } catch (failure: Exception) {
+                    if (failure is CancellationException) throw failure
+                    if (!isUniqueConstraintFailure(failure)) throw failure
+                    val winner = scope.existingAssetByHash(contentHash) ?: throw failure
+                    assetId = winner.id
+                }
+            } else {
+                throw IllegalStateException("merge target missing at commit")
+            }
 
             if (scope.findOrigin(assetId, sourceAsset.id) == null) {
                 scope.insertOrigin(
@@ -409,6 +459,7 @@ class ImportCoordinator(
             mapToSourceFolder(job, sourceAsset, assetId, now)
             scope.bumpLibraryVersion(now)
             transition(item, ImportItemState.IMPORTED, now)
+            CommitApply(assetId, createdNew)
         }
     }
 

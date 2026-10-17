@@ -22,10 +22,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.FileNotFoundException
 import java.io.IOException
-import java.util.concurrent.ConcurrentHashMap
 
 class ImportRunner(
     private val db: PhotoPilotDatabase,
@@ -34,23 +36,76 @@ class ImportRunner(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
-    private val drivers = ConcurrentHashMap<String, Job>()
+    private val queueMutex = Mutex()
+    private val pendingJobIds = LinkedHashSet<String>()
+    private var driveTask: Job? = null
+    private var activeJobId: String? = null
+    private var activeJobHandle: Job? = null
 
     var activeDriverListener: ((Int) -> Unit)? = null
 
     fun start(jobId: String) {
-        if (drivers[jobId]?.isActive == true) return
-        val job = scope.launch { drive(jobId) }
-        drivers[jobId] = job
-        job.invokeOnCompletion {
-            drivers.remove(jobId, job)
-            notifyActiveDrivers()
+        scope.launch {
+            queueMutex.withLock {
+                if (activeJobId == jobId && activeJobHandle?.isActive == true) return@withLock
+                pendingJobIds.add(jobId)
+                if (driveTask == null) {
+                    launchDriveLoopLocked()
+                }
+                notifyActiveDrivers()
+            }
         }
-        notifyActiveDrivers()
+    }
+
+    private fun launchDriveLoopLocked() {
+        val task = scope.launch { driveLoop() }
+        driveTask = task
+        task.invokeOnCompletion {
+            scope.launch {
+                queueMutex.withLock {
+                    if (driveTask === task) {
+                        driveTask = null
+                        if (pendingJobIds.isNotEmpty()) {
+                            launchDriveLoopLocked()
+                        }
+                    }
+                    notifyActiveDrivers()
+                }
+            }
+        }
+    }
+
+    private suspend fun driveLoop() {
+        while (true) {
+            val next = queueMutex.withLock {
+                val id = pendingJobIds.firstOrNull()
+                if (id != null) {
+                    pendingJobIds.remove(id)
+                }
+                id
+            } ?: return
+            coroutineScope {
+                val handle = launch { drive(next) }
+                queueMutex.withLock {
+                    activeJobId = next
+                    activeJobHandle = handle
+                    notifyActiveDrivers()
+                }
+                handle.join()
+                queueMutex.withLock {
+                    if (activeJobHandle === handle) {
+                        activeJobId = null
+                        activeJobHandle = null
+                    }
+                    notifyActiveDrivers()
+                }
+            }
+        }
     }
 
     private fun notifyActiveDrivers() {
-        activeDriverListener?.invoke(drivers.values.count { it.isActive })
+        val active = (if (activeJobHandle?.isActive == true) 1 else 0) + pendingJobIds.size
+        activeDriverListener?.invoke(active)
     }
 
     suspend fun pause(jobId: String) {
@@ -82,12 +137,24 @@ class ImportRunner(
 
     suspend fun cancel(jobId: String) {
         coordinator.signal(jobId, ImportJobAggregate.Signal.USER_CANCEL)
-        drivers[jobId]?.cancel()
+        queueMutex.withLock {
+            pendingJobIds.remove(jobId)
+            if (activeJobId == jobId) {
+                activeJobHandle?.cancel()
+            }
+            notifyActiveDrivers()
+        }
     }
 
     fun stopAll() {
-        drivers.values.forEach { it.cancel() }
-        drivers.clear()
+        scope.launch {
+            queueMutex.withLock {
+                pendingJobIds.clear()
+                activeJobHandle?.cancel()
+                driveTask?.cancel()
+                notifyActiveDrivers()
+            }
+        }
     }
 
     suspend fun markInterruptedJobsRecoverable() {

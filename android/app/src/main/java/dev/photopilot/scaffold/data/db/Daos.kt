@@ -70,7 +70,7 @@ interface SourceAssetDao {
 
 @Dao
 interface AssetDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun upsert(entity: AssetEntity)
 
     @Update
@@ -103,6 +103,13 @@ interface AssetDao {
             "ORDER BY COALESCE(captured_at, imported_at) DESC, id LIMIT :limit OFFSET :offset",
     )
     suspend fun browsePage(limit: Int, offset: Int): List<AssetEntity>
+
+    @Query(
+        "SELECT * FROM asset WHERE readiness = 'ready' AND deleted_at IS NULL " +
+            "AND privacy_excluded = 0 AND media_kind != 'video' " +
+            "ORDER BY COALESCE(captured_at, imported_at) DESC, id LIMIT :limit OFFSET :offset",
+    )
+    suspend fun browseReadyPage(limit: Int, offset: Int): List<AssetEntity>
 
     @Query(
         "SELECT a.* FROM asset a INNER JOIN collection_asset ca ON a.id = ca.asset_id " +

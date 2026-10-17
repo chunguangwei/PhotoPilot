@@ -71,11 +71,16 @@ class FakeCommitScope : CommitScope {
         sourceAssets[entity.id] = entity
     }
 
+    var existingAssetByHashOverride: ((String) -> AssetEntity?)? = null
+    var insertAssetHook: ((AssetEntity) -> Unit)? = null
+
     override suspend fun existingAssetByHash(contentHash: String): AssetEntity? =
-        assets.values.firstOrNull { it.contentHash == contentHash && it.readiness != AssetReadiness.DELETED }
+        existingAssetByHashOverride?.invoke(contentHash)
+            ?: assets.values.firstOrNull { it.contentHash == contentHash && it.readiness != AssetReadiness.DELETED }
 
     override suspend fun insertAsset(entity: AssetEntity) {
         DataValidators.requireValidAsset(entity)
+        insertAssetHook?.invoke(entity)
         assets[entity.id] = entity
     }
 

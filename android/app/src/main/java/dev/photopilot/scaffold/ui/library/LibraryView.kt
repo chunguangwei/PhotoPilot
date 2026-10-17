@@ -31,6 +31,7 @@ import dev.photopilot.scaffold.data.logic.CollectionDisplayName
 import dev.photopilot.scaffold.data.logic.GridGeometry
 import dev.photopilot.scaffold.data.logic.LibraryCriteria
 import dev.photopilot.scaffold.data.logic.LibrarySort
+import dev.photopilot.scaffold.data.logic.PageDedup
 import dev.photopilot.scaffold.ui.widget.backButton
 import dev.photopilot.scaffold.ui.widget.primaryButton
 import java.io.File
@@ -466,7 +467,7 @@ class LibraryView(
         val callback: (List<AssetEntity>) -> Unit = { page ->
             loading = false
             if (page.size < PAGE_SIZE) exhausted = true
-            assets.addAll(page)
+            assets.addAll(PageDedup.filterNew(assets, page) { it.id })
             gridAdapter.notifyDataSetChanged()
             updateEmptyState()
         }

@@ -78,4 +78,25 @@ class RenderGeometryTest {
             }
         }
     }
+
+    @Test
+    fun narrowBarCropThreshold() {
+        assertTrue(RenderGeometry.narrowBarCrop(1170, 2532, 1170, 2532))
+        assertTrue(RenderGeometry.narrowBarCrop(4000, 2660, 2388, 1668))
+        assertTrue(RenderGeometry.narrowBarCrop(3024, 4032, 1170, 2532) == false)
+        assertTrue(RenderGeometry.narrowBarCrop(4000, 2660, 1170, 2532) == false)
+        assertTrue(RenderGeometry.narrowBarCrop(3024, 3024, 1170, 2532) == false)
+        assertTrue(RenderGeometry.narrowBarCrop(1170, 2532, 2388, 1668) == false)
+        assertTrue(RenderGeometry.narrowBarCrop(0, 100, 1170, 2532) == false)
+        assertTrue(RenderGeometry.narrowBarCrop(100, 100, 0, 0) == false)
+    }
+
+    @Test
+    fun fillCropKeepsEnoughThreshold() {
+        assertTrue(RenderGeometry.fillCropKeepsEnough(4032, 3024, 2388, 1668))
+        assertTrue(RenderGeometry.fillCropKeepsEnough(1170, 2532, 1170, 2532))
+        assertTrue(RenderGeometry.fillCropKeepsEnough(3024, 4032, 2388, 1668) == false)
+        assertTrue(RenderGeometry.fillCropKeepsEnough(1920, 1080, 1170, 2532) == false)
+        assertTrue(RenderGeometry.fillCropKeepsEnough(0, 100, 1170, 2532))
+    }
 }

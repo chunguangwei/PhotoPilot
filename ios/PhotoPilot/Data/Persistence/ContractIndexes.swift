@@ -1,6 +1,9 @@
 import CoreData
 import Foundation
+import OSLog
 import SQLite3
+
+private let contractIndexLog = Logger(subsystem: "com.photopilot", category: "persistence")
 
 struct ContractIndexSpec: Sendable {
     let name: String
@@ -153,8 +156,13 @@ enum ContractIndexes {
         defer { sqlite3_close_v2(db) }
         var applied = 0
         for statement in statements(for: model) {
-            if sqlite3_exec(db, statement, nil, nil, nil) == SQLITE_OK {
+            var errorPointer: UnsafeMutablePointer<CChar>?
+            if sqlite3_exec(db, statement, nil, nil, &errorPointer) == SQLITE_OK {
                 applied += 1
+            } else {
+                let message = errorPointer.map { String(cString: $0) } ?? "unknown"
+                contractIndexLog.error("contract index failed: \(message, privacy: .public)")
+                sqlite3_free(errorPointer)
             }
         }
         return applied

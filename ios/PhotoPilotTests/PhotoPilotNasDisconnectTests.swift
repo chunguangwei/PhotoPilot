@@ -106,11 +106,39 @@ final class PhotoPilotNasDisconnectTests: XCTestCase {
 
     private func fetch(_ entity: String, _ key: String, _ value: String) throws -> NSManagedObject? {
         let context = controller.container.viewContext
-        context.refreshAllObjects()
         let request = NSFetchRequest<NSManagedObject>(entityName: entity)
         request.predicate = NSPredicate(format: "id == %@", value)
         request.fetchLimit = 1
         return try context.fetch(request).first
+    }
+
+    private func fetchFresh(_ entity: String, _ key: String, _ value: String) throws -> [String: Any]? {
+        let context = controller.container.newBackgroundContext()
+        return try context.performAndWait {
+            let request = NSFetchRequest<NSManagedObject>(entityName: entity)
+            request.predicate = NSPredicate(format: "id == %@", value)
+            request.fetchLimit = 1
+            guard let object = try context.fetch(request).first else { return nil }
+            var snapshot: [String: Any] = [:]
+            for name in object.entity.attributesByName.keys {
+                if let attributeValue = object.value(forKey: name) {
+                    snapshot[name] = attributeValue
+                }
+            }
+            for name in object.entity.relationshipsByName.keys {
+                snapshot["rel:\(name)"] = object.value(forKey: name) != nil
+            }
+            return snapshot
+        }
+    }
+
+    private func freshCount(_ entity: String, predicate: NSPredicate? = nil) throws -> Int {
+        let context = controller.container.newBackgroundContext()
+        return try context.performAndWait {
+            let request = NSFetchRequest<NSManagedObject>(entityName: entity)
+            request.predicate = predicate
+            return try context.count(for: request)
+        }
     }
 
     private var fixtureRoot: URL {
@@ -125,16 +153,13 @@ final class PhotoPilotNasDisconnectTests: XCTestCase {
         try seedNasSource()
         let adapter = LocalFilesFixtureAdapter(rootURL: fixtureRoot)
         let coordinator = ImportCoordinator(controller: controller, adapter: adapter)
-        let countRequest = NSFetchRequest<NSManagedObject>(entityName: "SourceAsset")
-        let seededCount = try controller.container.viewContext.count(for: countRequest)
+        let seededCount = try freshCount("SourceAsset")
         let first = try await coordinator.createJob(sourceID: "sw1", scopeJSON: "{}")
         _ = try await coordinator.enqueueItems(jobID: first.id)
-        controller.container.viewContext.refreshAllObjects()
-        let afterFirst = try controller.container.viewContext.count(for: countRequest)
+        let afterFirst = try freshCount("SourceAsset")
         let second = try await coordinator.createJob(sourceID: "sw1", scopeJSON: "{}")
         _ = try await coordinator.enqueueItems(jobID: second.id)
-        controller.container.viewContext.refreshAllObjects()
-        let afterSecond = try controller.container.viewContext.count(for: countRequest)
+        let afterSecond = try freshCount("SourceAsset")
         XCTAssertGreaterThan(afterFirst, seededCount)
         XCTAssertEqual(afterSecond, afterFirst)
     }
@@ -147,11 +172,15 @@ final class PhotoPilotNasDisconnectTests: XCTestCase {
         _ = try await coordinator.enqueueItems(jobID: first.id)
 
         let context = controller.container.viewContext
-        context.refreshAllObjects()
-        let allSourceAssets = try context.fetch(
-            NSFetchRequest<NSManagedObject>(entityName: "SourceAsset")
-        )
-        for (index, sourceAsset) in allSourceAssets.enumerated() {
+        let sourceAssetIDs: [NSManagedObjectID] = {
+            let fresh = controller.container.newBackgroundContext()
+            return fresh.performAndWait {
+                ((try? fresh.fetch(NSFetchRequest<NSManagedObject>(entityName: "SourceAsset"))) ?? [])
+                    .map(\.objectID)
+            }
+        }()
+        for (index, objectID) in sourceAssetIDs.enumerated() {
+            let sourceAsset = context.object(with: objectID)
             let asset = insert("Asset", [
                 "id": "committed-\(index)",
                 "content_hash": "sha256:committed-\(index)",
@@ -183,10 +212,10 @@ final class PhotoPilotNasDisconnectTests: XCTestCase {
 
         let second = try await coordinator.createJob(sourceID: "sw1", scopeJSON: "{}")
         _ = try await coordinator.enqueueItems(jobID: second.id)
-        context.refreshAllObjects()
-        let request = NSFetchRequest<NSManagedObject>(entityName: "ImportItem")
-        request.predicate = NSPredicate(format: "job.id == %@", second.id)
-        XCTAssertEqual(try context.count(for: request), 0)
+        XCTAssertEqual(
+            try freshCount("ImportItem", predicate: NSPredicate(format: "job.id == %@", second.id)),
+            0
+        )
     }
 
     func testMirrorEnableResetsMissingCounts() throws {
@@ -199,39 +228,44 @@ final class PhotoPilotNasDisconnectTests: XCTestCase {
 
         try sources.setWebdavMirrorDelete(sourceID: "sw1", enabled: true)
 
-        context.refreshAllObjects()
-        let updated = try XCTUnwrap(fetch("SourceAsset", "id", "sa1"))
-        XCTAssertEqual(updated.value(forKey: "missing_scan_count") as? Int, 0)
-        XCTAssertEqual(updated.value(forKey: "access_state") as? String, "missing")
+        let updated = try XCTUnwrap(fetchFresh("SourceAsset", "id", "sa1"))
+        XCTAssertEqual(updated["missing_scan_count"] as? Int, 0)
+        XCTAssertEqual(updated["access_state"] as? String, "missing")
         XCTAssertTrue(try sources.webdavMirrorDeleteEnabled(sourceID: "sw1"))
 
         try sources.setWebdavMirrorDelete(sourceID: "sw1", enabled: false)
-        context.refreshAllObjects()
-        let afterDisable = try XCTUnwrap(fetch("SourceAsset", "id", "sa1"))
-        XCTAssertEqual(afterDisable.value(forKey: "missing_scan_count") as? Int, 0)
+        let afterDisable = try XCTUnwrap(fetchFresh("SourceAsset", "id", "sa1"))
+        XCTAssertEqual(afterDisable["missing_scan_count"] as? Int, 0)
     }
 
     func testDisconnectKeepCopiesThenReconnect() async throws {
         try seedNasSource()
         try await repository.disconnectSource(sourceID: "sw1", keepCopies: true)
 
-        let source = try XCTUnwrap(fetch("Source", "id", "sw1"))
-        XCTAssertEqual(source.value(forKey: "status") as? String, "disconnected")
-        XCTAssertNotNil(try fetch("SourceAsset", "id", "sa1"))
-        let asset = try XCTUnwrap(fetch("Asset", "id", "a1"))
-        XCTAssertEqual(asset.value(forKey: "readiness") as? String, "ready")
+        let source = try XCTUnwrap(fetchFresh("Source", "id", "sw1"))
+        XCTAssertEqual(source["status"] as? String, "disconnected")
+        XCTAssertNotNil(try fetchFresh("SourceAsset", "id", "sa1"))
+        let asset = try XCTUnwrap(fetchFresh("Asset", "id", "a1"))
+        XCTAssertEqual(asset["readiness"] as? String, "ready")
         XCTAssertTrue(
             FileManager.default.fileExists(
                 atPath: originalsRoot.appendingPathComponent("a1.jpg").path
             )
         )
-        let context = controller.container.viewContext
-        let originRequest = NSFetchRequest<NSManagedObject>(entityName: "AssetOrigin")
-        originRequest.predicate = NSPredicate(format: "asset.id == %@", "a1")
-        let origin = try XCTUnwrap(context.fetch(originRequest).first)
-        XCTAssertEqual(origin.value(forKey: "origin_state") as? String, "detached")
-        XCTAssertNotNil(origin.value(forKey: "sourceAsset"))
-        XCTAssertNil(try fetch("ImportJob", "id", "j1"))
+        let fresh = controller.container.newBackgroundContext()
+        let originSnapshot: [String: Any]? = try fresh.performAndWait {
+            let originRequest = NSFetchRequest<NSManagedObject>(entityName: "AssetOrigin")
+            originRequest.predicate = NSPredicate(format: "asset.id == %@", "a1")
+            guard let row = try fresh.fetch(originRequest).first else { return nil }
+            return [
+                "origin_state": row.value(forKey: "origin_state") as? String ?? "",
+                "hasSourceAsset": row.value(forKey: "sourceAsset") != nil,
+            ] as [String: Any]
+        }
+        let origin = try XCTUnwrap(originSnapshot)
+        XCTAssertEqual(origin["origin_state"] as? String, "detached")
+        XCTAssertEqual(origin["hasSourceAsset"] as? Bool, true)
+        XCTAssertNil(try fetchFresh("ImportJob", "id", "j1"))
 
         let revived = try sources.ensureWebdavSource(
             endpointKey: "webdav://nas.local:443/photos",
@@ -240,37 +274,44 @@ final class PhotoPilotNasDisconnectTests: XCTestCase {
             directories: ["photos"]
         )
         XCTAssertEqual(revived, "sw1")
-        let revivedSource = try XCTUnwrap(fetch("Source", "id", "sw1"))
-        XCTAssertEqual(revivedSource.value(forKey: "status") as? String, "active")
+        let revivedSource = try XCTUnwrap(fetchFresh("Source", "id", "sw1"))
+        XCTAssertEqual(revivedSource["status"] as? String, "active")
         XCTAssertEqual(
-            revivedSource.value(forKey: "settings_json") as? String,
+            revivedSource["settings_json"] as? String,
             "{\"directories\":[\"photos\"],\"recursive\":true}"
         )
-        let allSources = NSFetchRequest<NSManagedObject>(entityName: "Source")
-        XCTAssertEqual(try context.count(for: allSources), 1)
+        XCTAssertEqual(try freshCount("Source"), 1)
     }
 
     func testDisconnectDeleteCopies() async throws {
         try seedNasSource()
         try await repository.disconnectSource(sourceID: "sw1", keepCopies: false)
 
-        XCTAssertNil(try fetch("Source", "id", "sw1"))
-        XCTAssertNil(try fetch("SourceAsset", "id", "sa1"))
-        XCTAssertNil(try fetch("Asset", "id", "a1"))
+        XCTAssertNil(try fetchFresh("Source", "id", "sw1"))
+        XCTAssertNil(try fetchFresh("SourceAsset", "id", "sa1"))
+        XCTAssertNil(try fetchFresh("Asset", "id", "a1"))
         XCTAssertFalse(
             FileManager.default.fileExists(
                 atPath: originalsRoot.appendingPathComponent("a1.jpg").path
             )
         )
-        let context = controller.container.viewContext
-        let tombstones = NSFetchRequest<NSManagedObject>(entityName: "LocalTombstone")
-        tombstones.predicate = NSPredicate(format: "content_hash == %@", "sha256:test")
-        let tombstone = try XCTUnwrap(context.fetch(tombstones).first)
-        XCTAssertEqual(tombstone.value(forKey: "reason") as? String, "user_delete")
+        let fresh = controller.container.newBackgroundContext()
+        let tombstoneSnapshot: [String: String]? = try fresh.performAndWait {
+            let tombstones = NSFetchRequest<NSManagedObject>(entityName: "LocalTombstone")
+            tombstones.predicate = NSPredicate(format: "content_hash == %@", "sha256:test")
+            guard let row = try fresh.fetch(tombstones).first else { return nil }
+            return [
+                "reason": row.value(forKey: "reason") as? String ?? "",
+                "source_fingerprint": row.value(forKey: "source_fingerprint") as? String ?? "",
+                "remote_id": row.value(forKey: "remote_id") as? String ?? "",
+            ]
+        }
+        let tombstone = try XCTUnwrap(tombstoneSnapshot)
+        XCTAssertEqual(tombstone["reason"] as? String, "user_delete")
         XCTAssertEqual(
-            tombstone.value(forKey: "source_fingerprint") as? String,
+            tombstone["source_fingerprint"] as? String,
             "webdav://nas.local:443/photos"
         )
-        XCTAssertEqual(tombstone.value(forKey: "remote_id") as? String, "photos/a.jpg")
+        XCTAssertEqual(tombstone["remote_id"] as? String, "photos/a.jpg")
     }
 }

@@ -6,7 +6,7 @@ final class TransitionPreviewTests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = true
         app = XCUIApplication()
-        app.launchArguments += ["-AppleLanguages", "(zh-Hans)"]
+        app.launchArguments += ["-AppleLanguages", "(zh-Hans)", "-uitest.reset"]
         app.launch()
     }
 

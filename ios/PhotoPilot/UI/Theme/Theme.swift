@@ -37,12 +37,33 @@ enum ThemeFont {
     static func meta() -> UIFont { scaled(size: 13, weight: .regular, textStyle: .footnote) }
 
     static func clock() -> UIFont {
-        let base = UIFont.monospacedDigitSystemFont(ofSize: 64, weight: .light)
+        let base = UIFont.monospacedDigitSystemFont(ofSize: 64, weight: .medium)
         return UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: base, maximumPointSize: 88)
     }
 
     private static func scaled(size: CGFloat, weight: UIFont.Weight, textStyle: UIFont.TextStyle) -> UIFont {
         UIFontMetrics(forTextStyle: textStyle).scaledFont(for: UIFont.systemFont(ofSize: size, weight: weight))
+    }
+}
+
+enum WeatherIcon {
+    static func symbolName(for conditionCode: String) -> String {
+        switch conditionCode {
+        case "clear": return "sun.max.fill"
+        case "partly_cloudy": return "cloud.sun.fill"
+        case "cloudy": return "cloud.fill"
+        case "fog": return "cloud.fog.fill"
+        case "drizzle": return "cloud.drizzle.fill"
+        case "rain": return "cloud.rain.fill"
+        case "heavy_rain": return "cloud.heavyrain.fill"
+        case "snow", "heavy_snow": return "cloud.snow.fill"
+        case "thunderstorm": return "cloud.bolt.rain.fill"
+        case "hail": return "cloud.hail.fill"
+        case "windy": return "wind"
+        case "haze": return "sun.haze.fill"
+        case "sand": return "sun.dust.fill"
+        default: return "cloud.fill"
+        }
     }
 }
 

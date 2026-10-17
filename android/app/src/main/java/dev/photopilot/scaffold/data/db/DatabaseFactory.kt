@@ -15,11 +15,19 @@ object DatabaseFactory {
                 PhotoPilotDatabase.MIGRATION_1_2,
                 PhotoPilotDatabase.MIGRATION_2_3,
                 PhotoPilotDatabase.MIGRATION_3_4,
+                PhotoPilotDatabase.MIGRATION_4_5,
             )
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     super.onCreate(db)
                     PhotoPilotDatabase.applyContractDdl(db, System.currentTimeMillis())
+                }
+
+                override fun onOpen(db: SupportSQLiteDatabase) {
+                    super.onOpen(db)
+                    for (statement in PhotoPilotDatabase.CREATE_PARTIAL_INDEXES) {
+                        db.execSQL(statement)
+                    }
                 }
             })
 }

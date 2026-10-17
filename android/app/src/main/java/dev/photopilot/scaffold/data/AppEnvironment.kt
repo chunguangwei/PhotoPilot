@@ -18,8 +18,11 @@ import dev.photopilot.scaffold.data.net.NasTlsPolicy
 import dev.photopilot.scaffold.data.net.SmbClient
 import dev.photopilot.scaffold.data.net.TofuPinStore
 import dev.photopilot.scaffold.data.net.WeatherProvider
+import dev.photopilot.scaffold.data.net.FallbackWeatherProvider
+import dev.photopilot.scaffold.data.net.NativeGeocoderProvider
 import dev.photopilot.scaffold.data.net.OpenMeteoProvider
 import dev.photopilot.scaffold.data.net.WebDavClient
+import dev.photopilot.scaffold.data.net.WttrProvider
 import dev.photopilot.scaffold.data.repo.AppSettingsRepository
 import dev.photopilot.scaffold.data.repo.WeatherRepository
 import dev.photopilot.scaffold.data.repo.AssetRepository
@@ -160,7 +163,10 @@ class AppEnvironment private constructor(
             )
             val credentialStore = CredentialStore(appContext)
             val appSettings = AppSettingsRepository(database.settingsKvDao())
-            val weatherProvider: WeatherProvider = OpenMeteoProvider()
+            val weatherProvider: WeatherProvider = FallbackWeatherProvider(
+                forecast = listOf(OpenMeteoProvider(), WttrProvider()),
+                search = listOf(OpenMeteoProvider(), NativeGeocoderProvider(appContext)),
+            )
             val adapterResolver: suspend (String) -> SourceAdapter = { jobId ->
                 pickedAdapters[jobId]
                     ?: nasAdapters[jobId]

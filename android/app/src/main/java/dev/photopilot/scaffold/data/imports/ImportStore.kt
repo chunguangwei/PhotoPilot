@@ -21,6 +21,8 @@ interface ImportStore {
 
     fun discardStaged(tempRelPath: String)
 
+    fun deleteOriginal(relPath: String)
+
     fun existsOriginal(relPath: String): Boolean
 }
 
@@ -85,6 +87,10 @@ class LocalImportStore(
 
     override fun discardStaged(tempRelPath: String) {
         File(tmpDir, tempRelPath).delete()
+    }
+
+    override fun deleteOriginal(relPath: String) {
+        File(originalsDir, relPath).delete()
     }
 
     override fun existsOriginal(relPath: String): Boolean = File(originalsDir, relPath).isFile

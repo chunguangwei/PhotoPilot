@@ -321,6 +321,7 @@ final class PlayerViewController: UIViewController {
         weatherNoteLabel.adjustsFontForContentSizeCategory = true
         weatherNoteLabel.numberOfLines = 0
         weatherNoteLabel.isHidden = true
+        [clockLabel, dateLabel, weatherLabel, weatherNoteLabel].forEach { applyOverlayShadow($0) }
         clockStack.axis = .vertical
         clockStack.spacing = ThemeMetrics.space4
         clockStack.addArrangedSubview(clockLabel)
@@ -346,6 +347,8 @@ final class PlayerViewController: UIViewController {
         singleNoticeLabel.isHidden = true
         singleNoticeLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(singleNoticeLabel)
+
+        [noticeLabel, singleNoticeLabel].forEach { applyOverlayShadow($0) }
 
         buildControls()
         buildOverlays()
@@ -844,7 +847,15 @@ final class PlayerViewController: UIViewController {
     }
 
     private func updateBackdrop(for image: UIImage, assetID: String) {
-        switch settings.fitMode {
+        let fillFallsBack = settings.fitMode == "fill_crop"
+            && !RenderGeometry.fillCropKeepsEnough(
+                srcW: Int64(image.size.width),
+                srcH: Int64(image.size.height),
+                dstW: Int64(view.bounds.width),
+                dstH: Int64(view.bounds.height)
+            )
+        let effectiveFitMode = fillFallsBack ? "fit_blur" : settings.fitMode
+        switch effectiveFitMode {
         case "fill_crop":
             frontImageView.contentMode = .scaleAspectFill
             backImageView.contentMode = .scaleAspectFill
@@ -866,14 +877,42 @@ final class PlayerViewController: UIViewController {
                 }
             }
         default:
-            frontImageView.contentMode = .scaleAspectFit
-            backImageView.contentMode = .scaleAspectFit
+            let mode = adaptiveFitContentMode(for: image)
+            frontImageView.contentMode = mode
+            backImageView.contentMode = mode
+            if mode == .scaleAspectFill {
+                backgroundView.image = nil
+                dimView.isHidden = true
+                solidView.isHidden = true
+                return
+            }
             dimView.isHidden = false
             solidView.isHidden = true
             Task { [weak self, loader] in
                 guard let blurred = await loader.blurred(assetID: assetID, image: image) else { return }
                 self?.backgroundView.image = blurred
             }
+        }
+    }
+
+    private func adaptiveFitContentMode(for image: UIImage) -> UIView.ContentMode {
+        RenderGeometry.narrowBarCrop(
+            srcW: Int64(image.size.width),
+            srcH: Int64(image.size.height),
+            dstW: Int64(view.bounds.width),
+            dstH: Int64(view.bounds.height)
+        ) ? .scaleAspectFill : .scaleAspectFit
+    }
+
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+            guard let self,
+                  settings.fitMode != "fit_color",
+                  index < queue.count,
+                  let relPath = relPaths[queue[index]],
+                  let image = frontImageView.image else { return }
+            updateBackdrop(for: image, assetID: relPath)
         }
     }
 
@@ -1254,17 +1293,25 @@ final class PlayerViewController: UIViewController {
         }
         Task { [weak self] in
             guard let self else { return }
-            let text = await currentWeatherDisplay()
+            let display = await currentWeatherDisplay()
             guard settings.restDisplay == "clock_weather" else {
                 restWeatherLabel.isHidden = true
                 return
             }
-            restWeatherLabel.text = text
-            restWeatherLabel.isHidden = text == nil
+            guard let (text, conditionCode) = display else {
+                restWeatherLabel.isHidden = true
+                return
+            }
+            restWeatherLabel.attributedText = weatherOverlayText(
+                text,
+                conditionCode: conditionCode,
+                font: ThemeFont.meta()
+            )
+            restWeatherLabel.isHidden = false
         }
     }
 
-    private func currentWeatherDisplay() async -> String? {
+    private func currentWeatherDisplay() async -> (String, String)? {
         guard weatherGloballyEnabled else { return nil }
         guard let place = await currentWeatherPlace() else { return nil }
         guard let snapshot = try? await environment.weatherRepository.snapshot(placeId: place.placeId)
@@ -1280,7 +1327,7 @@ final class PlayerViewController: UIViewController {
         let condition = conditionText(for: snapshot.conditionCode)
         let placeName = AppLanguage.preferChinese ? place.nameZh : place.nameEn
         let weatherText = condition.map { "\(temperature) \($0)" } ?? temperature
-        return placeName.isEmpty ? weatherText : "\(placeName) · \(weatherText)"
+        return (placeName.isEmpty ? weatherText : "\(placeName) · \(weatherText)", snapshot.conditionCode)
     }
 
     private func currentTimeText(_ date: Date) -> String {
@@ -1411,11 +1458,19 @@ final class PlayerViewController: UIViewController {
             let display = placeName.isEmpty ? weatherText : "\(placeName) · \(weatherText)"
             switch WeatherRepository.freshness(observedAtMillis: snapshot.observedAt, nowMillis: now) {
             case .normal:
-                weatherLabel.text = display
+                weatherLabel.attributedText = weatherOverlayText(
+                    display,
+                    conditionCode: snapshot.conditionCode,
+                    font: ThemeFont.caption()
+                )
                 weatherLabel.isHidden = false
                 weatherNoteLabel.isHidden = true
             case .delayed:
-                weatherLabel.text = display
+                weatherLabel.attributedText = weatherOverlayText(
+                    display,
+                    conditionCode: snapshot.conditionCode,
+                    font: ThemeFont.caption()
+                )
                 weatherLabel.isHidden = false
                 weatherNoteLabel.text = L10n.string("weather.delayed")
                 weatherNoteLabel.isHidden = false
@@ -1427,7 +1482,7 @@ final class PlayerViewController: UIViewController {
             weatherLabel.accessibilityLabel = FormatStrings.string(
                 "a11y.weather_overlay",
                 condition ?? "",
-                weatherLabel.text ?? ""
+                display
             )
         }
     }
@@ -1437,6 +1492,28 @@ final class PlayerViewController: UIViewController {
         let key = "weather.condition.\(code)"
         let text = L10n.string(key)
         return text == key ? nil : text
+    }
+
+    private func applyOverlayShadow(_ label: UILabel) {
+        label.layer.shadowColor = UIColor.black.cgColor
+        label.layer.shadowOpacity = 0.55
+        label.layer.shadowOffset = CGSize(width: 0, height: 1)
+        label.layer.shadowRadius = 6
+    }
+
+    private func weatherOverlayText(_ text: String, conditionCode: String, font: UIFont) -> NSAttributedString {
+        let result = NSMutableAttributedString()
+        if let symbol = UIImage(
+            systemName: WeatherIcon.symbolName(for: conditionCode),
+            withConfiguration: UIImage.SymbolConfiguration(font: font)
+        ) {
+            let attachment = NSTextAttachment()
+            attachment.image = symbol.withTintColor(ThemeColor.textOnPhoto, renderingMode: .alwaysOriginal)
+            result.append(NSAttributedString(attachment: attachment))
+            result.append(NSAttributedString(string: " "))
+        }
+        result.append(NSAttributedString(string: text))
+        return result
     }
 
     private func temperatureText(milliCelsius: Int) -> String {

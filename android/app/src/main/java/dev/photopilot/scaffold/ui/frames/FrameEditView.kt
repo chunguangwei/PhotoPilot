@@ -29,6 +29,7 @@ import dev.photopilot.scaffold.data.db.CollectionEntity
 import dev.photopilot.scaffold.data.db.FrameOrderMode
 import dev.photopilot.scaffold.data.logic.CollectionDisplayName
 import dev.photopilot.scaffold.data.logic.GridGeometry
+import dev.photopilot.scaffold.data.logic.PageDedup
 import dev.photopilot.scaffold.data.logic.RuleUiState
 import dev.photopilot.scaffold.data.logic.SaveRuleRow
 import dev.photopilot.scaffold.ui.library.ThumbnailLoader
@@ -346,7 +347,7 @@ class FrameEditView(
         source.fetchPhotos(PAGE_SIZE, assets.size) { page ->
             loading = false
             if (page.size < PAGE_SIZE) exhausted = true
-            assets.addAll(page)
+            assets.addAll(PageDedup.filterNew(assets, page) { it.id })
             gridAdapter.notifyDataSetChanged()
         }
     }

@@ -534,7 +534,7 @@ class PlayerEngine(
                 null
             }
             val decoded = bitmap?.let {
-                val blurred = if (settings.fitMode == FramePlaybackSettings.FIT_BLUR) {
+                val blurred = if (settings.fitMode != FramePlaybackSettings.FIT_COLOR) {
                     runCatching { BitmapRenderer.blurBackground(it) }.getOrNull()
                 } else {
                     null

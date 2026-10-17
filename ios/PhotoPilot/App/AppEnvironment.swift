@@ -37,7 +37,10 @@ final class AppEnvironment: @unchecked Sendable {
         self.holidayStore = HolidayStore(controller: persistence)
         self.photoLibraryAdapter = PhotoLibrarySourceAdapter()
         self.weatherRepository = WeatherRepository(controller: persistence)
-        self.weatherProvider = OpenMeteoProvider()
+        self.weatherProvider = FallbackWeatherProvider(
+            forecast: [OpenMeteoProvider(), WttrProvider()],
+            search: [OpenMeteoProvider(), SystemGeocodingProvider()]
+        )
         self.weatherRefresher = WeatherRefresher(
             repository: weatherRepository,
             provider: weatherProvider
