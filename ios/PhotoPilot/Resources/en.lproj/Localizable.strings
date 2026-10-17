@@ -388,6 +388,8 @@
 "weather.condition.haze" = "Haze";
 "weather.condition.sand" = "Dust";
 "weather.disabled_notice" = "Weather is off. The clock still shows.";
+"weather.enable_and_choose_city" = "Turn on weather and choose a city";
+"weather.scope_help" = "Controls weather during playback and on the rest screen.";
 "permission.location.usage" = "Used to get the weather for your city while you use the app.";
 "permission.location.denied_body" = "Location access is off. You can choose a city manually.";
 "settings.title" = "Settings";

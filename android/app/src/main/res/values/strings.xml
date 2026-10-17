@@ -435,6 +435,8 @@
     <string name="weather.condition.haze">Haze</string>
     <string name="weather.condition.sand">Dust</string>
     <string name="weather.disabled_notice">Weather is off. The clock still shows.</string>
+    <string name="weather.enable_and_choose_city">Turn on weather and choose a city</string>
+    <string name="weather.scope_help">Controls weather during playback and on the rest screen.</string>
     <string name="permission.location.usage">Used to get the weather for your city while you use the app.</string>
     <string name="permission.location.denied_body">Location access is off. You can choose a city manually.</string>
     <string name="settings.title">Settings</string>

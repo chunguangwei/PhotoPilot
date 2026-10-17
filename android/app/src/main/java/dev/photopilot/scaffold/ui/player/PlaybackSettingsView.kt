@@ -68,6 +68,12 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private var musicLocalTitle: String? = null
     var onManagePhotos: (() -> Unit)? = null
     var onPickMusic: (() -> Unit)? = null
+    var weatherReady = true
+        set(value) {
+            field = value
+            updateWeatherSetupHint()
+        }
+    var onWeatherSetup: (() -> Unit)? = null
 
     private lateinit var holdCustomInput: EditText
     private lateinit var holdError: TextView
@@ -82,6 +88,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private lateinit var restEndButton: TextView
     private lateinit var restDisplayRow: LinearLayout
     private lateinit var restDisplayButton: TextView
+    private lateinit var weatherSetupHint: LinearLayout
     private lateinit var restError: TextView
     private lateinit var solidRow: LinearLayout
     private lateinit var musicButton: TextView
@@ -609,6 +616,24 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                 topMargin = resources.getDimensionPixelSize(R.dimen.pp_space_8)
             },
         )
+        weatherSetupHint = LinearLayout(context).apply { orientation = VERTICAL }
+        weatherSetupHint.addView(
+            TextView(context).apply {
+                text = resources.getString(R.string.weather_disabled_notice)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.pp_text_meta))
+                setTextColor(context.getColor(R.color.pp_status_warning))
+            },
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = resources.getDimensionPixelSize(R.dimen.pp_space_8)
+            },
+        )
+        weatherSetupHint.addView(
+            secondaryButton(context, R.string.weather_enable_and_choose_city).apply {
+                setOnClickListener { onWeatherSetup?.invoke() }
+            },
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
+        )
+        restDisplayRow.addView(weatherSetupHint, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         column.addView(restDisplayRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         addHelp(column, R.string.settings_rest_help)
         restError = addError(column)
@@ -763,6 +788,14 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         restEndButton.text = timeButtonText(R.string.settings_rest_end, restEndMinute)
         restDisplayRow.visibility = if (enabled) VISIBLE else GONE
         restDisplayButton.text = resources.getString(REST_DISPLAY_LABELS[restDisplayIndex]) + "  ⌄"
+        updateWeatherSetupHint()
+    }
+
+    fun updateWeatherSetupHint() {
+        if (!::weatherSetupHint.isInitialized) return
+        val wantsWeather = REST_DISPLAYS[restDisplayIndex] == FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER
+        weatherSetupHint.visibility =
+            if (restEnabled && wantsWeather && !weatherReady) VISIBLE else GONE
     }
 
     private fun showRestDisplayMenu(anchor: View) {

@@ -213,8 +213,8 @@ class ImportRunner(
     }
 
     private suspend fun drive(jobId: String) {
-        val adapter = adapterResolver(jobId)
         try {
+            val adapter = adapterResolver(jobId)
             val job = db.importJobDao().getById(jobId) ?: return
             if (job.cursor != ImportCoordinator.CURSOR_DONE) {
                 coordinator.enumerate(jobId, adapter)

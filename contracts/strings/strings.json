@@ -3004,6 +3004,20 @@
       "en": "Weather is off. The clock still shows."
     },
     {
+      "key": "weather.enable_and_choose_city",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "开启天气并选择城市",
+      "en": "Turn on weather and choose a city"
+    },
+    {
+      "key": "weather.scope_help",
+      "section": "8. 天气与位置（S14）",
+      "platform": "all",
+      "zh": "控制播放时与休息屏的天气显示。",
+      "en": "Controls weather during playback and on the rest screen."
+    },
+    {
       "key": "permission.location.usage",
       "section": "8. 天气与位置（S14）",
       "platform": "all",

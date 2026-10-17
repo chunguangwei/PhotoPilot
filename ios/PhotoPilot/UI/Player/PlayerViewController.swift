@@ -1299,7 +1299,20 @@ final class PlayerViewController: UIViewController {
                 return
             }
             guard let (text, conditionCode) = display else {
-                restWeatherLabel.isHidden = true
+                if !weatherGloballyEnabled {
+                    restWeatherLabel.text = L10n.string("weather.disabled_notice")
+                    restWeatherLabel.isHidden = false
+                    return
+                }
+                let place = await currentWeatherPlace()
+                guard settings.restDisplay == "clock_weather" else {
+                    restWeatherLabel.isHidden = true
+                    return
+                }
+                restWeatherLabel.text = place == nil
+                    ? L10n.string("weather.disabled_notice")
+                    : L10n.string("weather.unavailable")
+                restWeatherLabel.isHidden = false
                 return
             }
             restWeatherLabel.attributedText = weatherOverlayText(

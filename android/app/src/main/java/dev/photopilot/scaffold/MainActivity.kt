@@ -130,7 +130,12 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 class MainActivity : Activity() {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val scope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Main +
+            kotlinx.coroutines.CoroutineExceptionHandler { _, error ->
+                android.util.Log.e("PhotoPilot", "uncaught coroutine error", error)
+            },
+    )
     private lateinit var root: AppRootView
     private lateinit var keyboardDismiss: KeyboardDismiss
     private var database: PhotoPilotDatabase? = null
@@ -1003,7 +1008,7 @@ class MainActivity : Activity() {
                     null
                 } catch (e: WebDavClient.DavException) {
                     e.code
-                } catch (e: java.io.IOException) {
+                } catch (e: Exception) {
                     WebDavClient.ERR_SRC_UNAVAILABLE
                 }
             },
@@ -1108,10 +1113,12 @@ class MainActivity : Activity() {
                 val fingerprint = error?.fingerprint ?: return@trust
                 scope.launch {
                     val now = System.currentTimeMillis()
-                    env.tofuPins.savePin(
-                        NasTlsPolicy.hostPortKey(conn.host, conn.port),
-                        TofuPinStore.Pin(fingerprint, now, now),
-                    )
+                    runCatching {
+                        env.tofuPins.savePin(
+                            NasTlsPolicy.hostPortKey(conn.host, conn.port),
+                            TofuPinStore.Pin(fingerprint, now, now),
+                        )
+                    }
                     popOverlayTracked()
                     testNasConnection(formView, conn.form)
                 }
@@ -2096,6 +2103,15 @@ class MainActivity : Activity() {
         view.onSave = { draft, orderMode -> savePlaybackSettings(view, frame, draft, orderMode) }
         view.onManagePhotos = { openFrameEditor(frame) }
         view.onPickMusic = { openMusicPicker(view) }
+        view.onWeatherSetup = {
+            scope.launch {
+                env.settings.putRaw(WeatherLogic.KEY_ENABLED_DEFAULT, AppSettingsRepository.VALUE_TRUE)
+            }
+            openWeatherSearch { _, _ ->
+                scope.launch { view.weatherReady = weatherReadyNow(env) }
+            }
+        }
+        scope.launch { view.weatherReady = weatherReadyNow(env) }
         pushOverlayTracked(view, mapOf("type" to "playbackSettings", "frameId" to frame.id))
         view.bind(frame)
         scope.launch {
@@ -2970,6 +2986,11 @@ class MainActivity : Activity() {
             closeImportProgress()
             refreshJobUi()
         }
+    }
+
+    private suspend fun weatherReadyNow(env: AppEnvironment): Boolean = withContext(Dispatchers.IO) {
+        env.settings.rawValue(WeatherLogic.KEY_ENABLED_DEFAULT) ==
+            AppSettingsRepository.VALUE_TRUE && env.weather.places().isNotEmpty()
     }
 
     private suspend fun weatherObservedText(env: AppEnvironment): String? {

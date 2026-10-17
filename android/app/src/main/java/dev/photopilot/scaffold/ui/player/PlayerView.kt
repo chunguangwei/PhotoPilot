@@ -849,6 +849,9 @@ class PlayerView(
         if (restWeatherText != null) {
             restingWeather.text = restWeatherText
             restingWeather.visibility = View.VISIBLE
+        } else if (settings.restDisplay == FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER) {
+            restingWeather.text = resources.getString(R.string.weather_disabled_notice)
+            restingWeather.visibility = View.VISIBLE
         } else {
             restingWeather.visibility = View.GONE
         }

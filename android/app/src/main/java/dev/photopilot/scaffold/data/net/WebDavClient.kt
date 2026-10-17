@@ -272,7 +272,13 @@ class WebDavClient(
         }
         factory.isXIncludeAware = false
         factory.isExpandEntityReferences = false
-        val document = factory.newDocumentBuilder().parse(input)
+        val document = try {
+            factory.newDocumentBuilder().parse(input)
+        } catch (e: org.xml.sax.SAXException) {
+            throw DavException(ERR_SRC_NOT_WEBDAV, e)
+        } catch (e: javax.xml.parsers.ParserConfigurationException) {
+            throw DavException(ERR_SRC_UNAVAILABLE, e)
+        }
         val entries = mutableListOf<DavEntry>()
         val responses = document.getElementsByTagNameNS(DAV_NS, "response")
         for (i in 0 until responses.length) {

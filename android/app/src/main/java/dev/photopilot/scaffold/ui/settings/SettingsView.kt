@@ -145,6 +145,7 @@ class SettingsView(context: Context) : ScrollView(context) {
         addSwitchRow(weatherGroup, R.string.weather_enable, model.weatherEnabledDefault) {
             onToggleWeatherDefault?.invoke(it)
         }
+        addHelp(weatherGroup, R.string.weather_scope_help)
         addActionRow(weatherGroup, R.string.weather_choose_city) { onWeatherChooseCity?.invoke() }
         model.weatherPlaceName?.let { addTextValue(weatherGroup, it) }
         model.weatherObservedText?.let { addTextValue(weatherGroup, it) }

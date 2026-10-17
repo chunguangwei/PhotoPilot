@@ -241,6 +241,7 @@ final class SettingsViewController: UIViewController {
                     toggle: weatherEnabledSwitch,
                     action: #selector(handleWeatherEnabled)
                 ),
+                makeNote(key: "weather.scope_help"),
                 weatherCityRow,
                 weatherObservedLabel,
                 weatherAttributionLabel,

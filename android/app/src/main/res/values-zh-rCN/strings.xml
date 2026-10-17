@@ -423,6 +423,8 @@
     <string name="weather.condition.haze">霾</string>
     <string name="weather.condition.sand">沙尘</string>
     <string name="weather.disabled_notice">天气已关闭，时钟仍会显示。</string>
+    <string name="weather.enable_and_choose_city">开启天气并选择城市</string>
+    <string name="weather.scope_help">控制播放时与休息屏的天气显示。</string>
     <string name="permission.location.usage">用于获取你所在城市的天气，仅在使用期间。</string>
     <string name="permission.location.denied_body">未获得定位权限，可手动选择城市。</string>
     <string name="settings.title">设置</string>

@@ -100,6 +100,9 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     private var restDisplayIndex = 1
     private let restDisplayMenuButton = UIButton(type: .system)
     private var restDisplayRow = UIView()
+    private let weatherNoticeLabel = UILabel()
+    private let weatherNoticeButton = ActionButton(titleKey: "weather.enable_and_choose_city", style: .secondary)
+    private var weatherNoticeRow = UIView()
     private let qualitySegmented = UISegmentedControl()
     private var musicSelection = MusicSelection()
     private let musicButton = UIButton(type: .system)
@@ -573,6 +576,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         restStartRow.isHidden = !restSwitch.isOn
         restEndRow.isHidden = !restSwitch.isOn
         restDisplayRow.isHidden = !restSwitch.isOn
+        updateWeatherNoticeVisibility()
     }
 
     private func applyPositionIndex(_ index: Int) {
@@ -666,6 +670,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
             }
         })
         restDisplayMenuButton.accessibilityLabel = L10n.string("settings.rest_display")
+        updateWeatherNoticeVisibility()
     }
 
     private func handleRestDisplaySelection(_ index: Int) {
@@ -694,7 +699,49 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         row.heightAnchor.constraint(
             greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
         ).isActive = true
-        return row
+        weatherNoticeLabel.text = L10n.string("weather.disabled_notice")
+        weatherNoticeLabel.font = ThemeFont.meta()
+        weatherNoticeLabel.adjustsFontForContentSizeCategory = true
+        weatherNoticeLabel.textColor = ThemeColor.statusWarning
+        weatherNoticeLabel.numberOfLines = 0
+        weatherNoticeButton.addTarget(
+            self,
+            action: #selector(handleWeatherNoticeAction),
+            for: .touchUpInside
+        )
+        let notice = UIStackView(arrangedSubviews: [weatherNoticeLabel, weatherNoticeButton])
+        notice.axis = .vertical
+        notice.spacing = ThemeMetrics.space8
+        weatherNoticeRow = notice
+        weatherNoticeRow.isHidden = true
+        let container = UIStackView(arrangedSubviews: [row, weatherNoticeRow])
+        container.axis = .vertical
+        container.spacing = ThemeMetrics.space8
+        return container
+    }
+
+    private func updateWeatherNoticeVisibility() {
+        let weatherReady = weatherGloballyEnabled
+            && (try? environment.weatherRepository.selectedPlace()) != nil
+        weatherNoticeRow.isHidden = !restSwitch.isOn
+            || restDisplayIndex != 2
+            || weatherReady
+    }
+
+    private var weatherGloballyEnabled: Bool {
+        (try? environment.settings.value(forKey: WeatherRepository.enabledKey)) == "true"
+    }
+
+    @objc private func handleWeatherNoticeAction() {
+        try? environment.settings.setValue("true", forKey: WeatherRepository.enabledKey)
+        updateWeatherNoticeVisibility()
+        let picker = WeatherCityPickerViewController(environment: environment) { [weak self] _ in
+            guard let self else { return }
+            dismiss(animated: true)
+            updateWeatherNoticeVisibility()
+        }
+        picker.modalPresentationStyle = .fullScreen
+        present(picker, animated: true)
     }
 
     private func demoDuration() -> TimeInterval {
