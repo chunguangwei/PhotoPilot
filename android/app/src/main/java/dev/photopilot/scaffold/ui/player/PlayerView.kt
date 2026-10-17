@@ -65,7 +65,8 @@ class PlayerView(
     private val singlePhotoLine: TextView
     private val clockLine: TextView
     private val dateLine: TextView
-    private lateinit var restingClock: TextView
+    private lateinit var restingClock: dev.photopilot.scaffold.ui.widget.FlipClockView
+    private lateinit var restingDate: TextView
     private lateinit var restingWeather: TextView
     private lateinit var weatherLine: TextView
     private val overlayColumn: LinearLayout
@@ -106,8 +107,15 @@ class PlayerView(
     private val clockTickRunnable = object : Runnable {
         override fun run() {
             updateClock()
-            postDelayed(this, CLOCK_TICK_MS)
+            postDelayed(this, nextClockTickDelayMs())
         }
+    }
+
+    private fun nextClockTickDelayMs(): Long {
+        if (!restClockModeActive()) return CLOCK_TICK_MS
+        val remainder = System.currentTimeMillis() % SECOND_TICK_MS
+        val delay = SECOND_TICK_MS - remainder
+        return if (delay < SECOND_TICK_MIN_DELAY_MS) delay + SECOND_TICK_MS else delay
     }
 
     init {
@@ -720,6 +728,7 @@ class PlayerView(
         musicFailedSelection = null
         clockLine.visibility = if (settings.clockEnabled) View.VISIBLE else View.GONE
         dateLine.visibility = if (settings.dateEnabled) View.VISIBLE else View.GONE
+        restingDate.visibility = if (settings.dateEnabled) View.VISIBLE else View.GONE
         (context as? android.app.Activity)?.let { applyBrightnessIfNeeded(it) }
         applyClockPosition()
         if (restingOverlay.visibility == View.VISIBLE) {
@@ -769,15 +778,25 @@ class PlayerView(
 
     private fun updateClock() {
         val now = Date()
-        val pattern = ClockFormat.pattern(
-            settings.clockHour24,
-            DateFormat.is24HourFormat(context),
-        )
+        val hour24 = settings.clockHour24 ?: DateFormat.is24HourFormat(context)
+        val pattern = ClockFormat.pattern(hour24, DateFormat.is24HourFormat(context))
         val timeText = SimpleDateFormat(pattern, Locale.getDefault()).format(now)
         clockLine.text = timeText
         clockLine.contentDescription = resources.getString(R.string.a11y_clock_overlay, timeText)
-        dateLine.text = DateFormat.getDateFormat(context).format(now)
-        restingClock.text = timeText
+        val dateText = DateFormat.getDateFormat(context).format(now)
+        dateLine.text = dateText
+        restingDate.text = dateText
+        val calendar = java.util.Calendar.getInstance()
+        var hour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
+        if (!hour24) {
+            hour %= 12
+            if (hour == 0) hour = 12
+        }
+        restingClock.setTime(
+            String.format(Locale.US, "%02d", hour),
+            String.format(Locale.US, "%02d", calendar.get(java.util.Calendar.MINUTE)),
+            String.format(Locale.US, "%02d", calendar.get(java.util.Calendar.SECOND)),
+        )
         val restWeatherText = if (settings.restDisplay == FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER) {
             weatherTextProvider?.invoke()
         } else {
@@ -899,9 +918,10 @@ class PlayerView(
 
     private fun buildRestingOverlay() {
         val res = resources
-        restingClock = overlayText(R.dimen.pp_text_clock).apply {
-            typeface = android.graphics.Typeface.MONOSPACE
+        restingClock = dev.photopilot.scaffold.ui.widget.FlipClockView(context)
+        restingDate = overlayText(R.dimen.pp_text_meta).apply {
             gravity = Gravity.CENTER
+            visibility = if (settings.dateEnabled) View.VISIBLE else View.GONE
             importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
         }
         restingWeather = overlayText(R.dimen.pp_text_meta).apply {
@@ -918,25 +938,36 @@ class PlayerView(
             centered(restingClock),
         )
         restingOverlay.addView(
+            centered(restingDate, R.dimen.pp_space_8),
+        )
+        restingOverlay.addView(
             centered(restingWeather, R.dimen.pp_space_8),
         )
     }
+
+    private fun restClockModeActive(): Boolean =
+        restingOverlay.visibility == View.VISIBLE &&
+            settings.restDisplay != FramePlaybackSettings.REST_DISPLAY_DIM &&
+            settings.restDisplay != FramePlaybackSettings.REST_DISPLAY_BLACK
 
     private fun applyRestDisplayMode() {
         when (settings.restDisplay) {
             FramePlaybackSettings.REST_DISPLAY_DIM -> {
                 restingOverlay.setBackgroundColor(Color.argb(REST_DIM_ALPHA, 0, 0, 0))
                 restingClock.visibility = View.GONE
+                restingDate.visibility = View.GONE
                 restingWeather.visibility = View.GONE
             }
             FramePlaybackSettings.REST_DISPLAY_BLACK -> {
                 restingOverlay.setBackgroundColor(context.getColor(R.color.pp_surface_rest))
                 restingClock.visibility = View.GONE
+                restingDate.visibility = View.GONE
                 restingWeather.visibility = View.GONE
             }
             else -> {
                 restingOverlay.setBackgroundColor(context.getColor(R.color.pp_surface_rest))
                 restingClock.visibility = View.VISIBLE
+                restingDate.visibility = if (settings.dateEnabled) View.VISIBLE else View.GONE
             }
         }
         updateClock()
@@ -989,6 +1020,8 @@ class PlayerView(
         const val MENU_SETTINGS = 3
         const val CONTROLS_HIDE_MS = 4_000L
         const val CLOCK_TICK_MS = 30_000L
+        const val SECOND_TICK_MS = 1_000L
+        const val SECOND_TICK_MIN_DELAY_MS = 50L
         const val CONTROLS_ALPHA = 0.94f
         const val SCRIM_ALPHA = 0.35f
         const val REST_DIM_ALPHA = 191

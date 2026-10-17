@@ -40,6 +40,7 @@ class ImportProgressView(context: Context) : ScrollView(context) {
         setBackgroundColor(context.getColor(R.color.pp_surface_canvas))
         isFillViewport = true
         isClickable = true
+        keepScreenOn = true
         val res = resources
         val inset = res.getDimensionPixelSize(R.dimen.pp_content_inset)
         val column = LinearLayout(context).apply {

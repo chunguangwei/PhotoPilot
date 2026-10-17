@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 actor ImportRunner {
     let jobID: String
@@ -6,6 +7,7 @@ actor ImportRunner {
     private let coordinator: ImportCoordinator
     private var driveTask: Task<Void, Never>?
     private var watchdogTask: Task<Void, Never>?
+    private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
 
     private var onTerminal: (@Sendable (String) -> Void)?
 
@@ -105,7 +107,32 @@ actor ImportRunner {
         }
     }
 
+    private func beginBackgroundKeepAlive() async {
+        guard backgroundTaskID == .invalid else { return }
+        let identifier = await MainActor.run {
+            var taskID: UIBackgroundTaskIdentifier = .invalid
+            taskID = UIApplication.shared.beginBackgroundTask(withName: "photopilot.import") {
+                UIApplication.shared.endBackgroundTask(taskID)
+            }
+            return taskID
+        }
+        backgroundTaskID = identifier
+    }
+
+    private func endBackgroundKeepAlive() async {
+        guard backgroundTaskID != .invalid else { return }
+        let identifier = backgroundTaskID
+        backgroundTaskID = .invalid
+        await MainActor.run {
+            UIApplication.shared.endBackgroundTask(identifier)
+        }
+    }
+
     private func runLoop() async {
+        await beginBackgroundKeepAlive()
+        defer {
+            Task { await endBackgroundKeepAlive() }
+        }
         do {
             _ = try await coordinator.enqueueItems(jobID: jobID)
             _ = try await coordinator.retryDueItems(jobID: jobID, now: Self.nowMillis())

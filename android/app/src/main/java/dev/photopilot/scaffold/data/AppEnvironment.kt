@@ -189,7 +189,15 @@ class AppEnvironment private constructor(
                     database,
                     coordinator,
                     adapterResolver,
-                ),
+                ).apply {
+                    activeDriverListener = { count ->
+                        if (count > 0) {
+                            dev.photopilot.scaffold.data.imports.ImportKeepAliveService.start(appContext)
+                        } else {
+                            dev.photopilot.scaffold.data.imports.ImportKeepAliveService.stop(appContext)
+                        }
+                    }
+                },
                 frames = FrameRepository(
                     database,
                     LibraryVersionRepository(database.settingsKvDao()),

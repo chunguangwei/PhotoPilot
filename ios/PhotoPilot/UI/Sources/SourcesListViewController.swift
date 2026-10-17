@@ -294,14 +294,17 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         syncButton.isHidden = source.status == "disconnected"
         disconnectButton.isHidden = source.status == "disconnected"
 
-        let reconfigureButton = ActionButton(titleKey: "sources.reconfigure", style: .secondary)
+        let reconfigureButton = ActionButton(
+            titleKey: source.status == "needs_auth" ? "sources.reconfigure" : "common.edit",
+            style: .secondary
+        )
         reconfigureButton.addTarget(
             self,
             action: #selector(handleNasReconfigure(_:)),
             for: .touchUpInside
         )
         reconfigureButton.setContentHuggingPriority(.required, for: .horizontal)
-        reconfigureButton.isHidden = source.status != "needs_auth"
+        reconfigureButton.isHidden = source.status == "disconnected"
         if let endpointKey = source.endpointKey {
             nasEndpointKeys[ObjectIdentifier(reconfigureButton)] = endpointKey
         }
@@ -317,6 +320,9 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         mirrorLabel.font = ThemeFont.meta()
         mirrorLabel.adjustsFontForContentSizeCategory = true
         mirrorLabel.textColor = ThemeColor.textSecondary
+        mirrorLabel.numberOfLines = 0
+        mirrorLabel.setContentHuggingPriority(.required, for: .horizontal)
+        mirrorLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         let mirrorRow = UIStackView(arrangedSubviews: [mirrorLabel, mirrorSwitch])
         mirrorRow.axis = .horizontal
         mirrorRow.alignment = .center
@@ -373,7 +379,16 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
     @objc private func handleNasReconfigure(_ sender: ActionButton) {
         guard let endpointKey = nasEndpointKeys[ObjectIdentifier(sender)],
               let endpoint = NasAddress.parseFingerprint(endpointKey) else { return }
-        let controller = NasAddViewController(environment: environment, prefillEndpoint: endpoint)
+        let source = (try? environment.sources.webdavSources())?
+            .first(where: { $0.endpointKey == endpointKey })
+        let credential = environment.credentialStore.load(fingerprint: endpointKey)
+        let controller = NasAddViewController(
+            environment: environment,
+            prefillEndpoint: endpoint,
+            prefillCredential: credential,
+            prefillDirectories: source?.directories ?? [],
+            prefillRecursive: source?.recursive ?? false
+        )
         let navigation = UINavigationController(rootViewController: controller)
         navigation.modalPresentationStyle = .fullScreen
         present(navigation, animated: true)

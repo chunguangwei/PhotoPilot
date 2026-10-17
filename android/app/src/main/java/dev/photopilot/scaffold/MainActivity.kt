@@ -426,7 +426,8 @@ class MainActivity : Activity() {
             onNasClick = { onNasSourceClicked() }
             onNasSync = { sourceId -> nasSyncNow(sourceId) }
             onNasDisconnect = { sourceId -> confirmNasDisconnect(sourceId) }
-            onNasReauth = { sourceId -> openNasReauth(sourceId) }
+            onNasReauth = { sourceId -> openNasEdit(sourceId) }
+            onNasEdit = { sourceId -> openNasEdit(sourceId) }
             onNasMirrorToggle = { sourceId, enabled -> onNasMirrorToggle(sourceId, enabled) }
             onJobStatusClick = {
                 val jobId = progressJobId
@@ -846,16 +847,30 @@ class MainActivity : Activity() {
 
     private var nasFormView: NasFormView? = null
 
+    private data class NasEditContext(
+        val sourceId: String,
+        val endpointKey: String,
+        val directories: Set<String>,
+        val recursive: Boolean,
+    )
+
+    private var nasEditContext: NasEditContext? = null
+
     private fun openNasForm(
         prefillProtocol: String = "webdav",
         prefillHost: String = "",
         prefillPort: Int? = null,
         prefillPath: String = "",
+        prefillUsername: String = "",
+        prefillPassword: String = "",
+        editContext: NasEditContext? = null,
     ) {
+        nasEditContext = editContext
         val view = NasFormView(this)
         nasFormView = view
         view.onBack = {
             nasFormView = null
+            nasEditContext = null
             popOverlayTracked()
         }
         view.onTest = { form -> testNasConnection(view, form) }
@@ -865,7 +880,7 @@ class MainActivity : Activity() {
         }
         root.pushOverlay(view)
         if (prefillHost.isNotEmpty()) {
-            view.prefill(prefillProtocol, prefillHost, prefillPort, prefillPath)
+            view.prefill(prefillProtocol, prefillHost, prefillPort, prefillPath, prefillUsername, prefillPassword)
         }
     }
 
@@ -1132,6 +1147,7 @@ class MainActivity : Activity() {
         val view = NasDirectoryPickerView(this)
         view.rootPath = conn.browseRoot
         view.onBack = { popOverlayTracked() }
+        nasEditContext?.let { view.preselect(it.directories, it.recursive) }
         view.onLoadDirectory = { dir, callback ->
             scope.launch {
                 val children = withContext(Dispatchers.IO) {
@@ -1195,6 +1211,19 @@ class MainActivity : Activity() {
                 scopeJson = scopeJson,
             )
         }.getOrNull() ?: return
+        val editContext = nasEditContext
+        nasEditContext = null
+        if (editContext != null && editContext.endpointKey != conn.fingerprint) {
+            withContext(Dispatchers.IO) {
+                env.localSources.disconnect(
+                    editContext.sourceId,
+                    keepCopies = true,
+                    now = System.currentTimeMillis(),
+                )
+                env.credentialStore.delete(editContext.endpointKey)
+            }
+            framesDirty = true
+        }
         nasFormView = null
         while (root.topOverlay() != null) {
             popOverlayTracked()
@@ -1296,6 +1325,7 @@ class MainActivity : Activity() {
                                 nasStatusText(source.status)
                             },
                             needsReauth = orphan || source.status == SourceStatus.NEEDS_AUTH,
+                            isDisconnected = source.status == SourceStatus.DISCONNECTED,
                             mirrorDelete = NasSourceLifecycle.mirrorDeleteFromSettings(
                                 source.settingsJson,
                             ),
@@ -1330,13 +1360,31 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun openNasReauth(sourceId: String) {
+    private fun openNasEdit(sourceId: String) {
         val env = environment ?: return
         scope.launch {
-            val source = withContext(Dispatchers.IO) {
-                env.database.sourceDao().getById(sourceId)
+            val loaded = withContext(Dispatchers.IO) {
+                val source = env.database.sourceDao().getById(sourceId) ?: return@withContext null
+                val endpointKey = source.endpointKey ?: return@withContext null
+                val credentialJson = env.credentialStore.load(endpointKey)
+                val scopeJson = env.database.importJobDao().getBySource(sourceId)
+                    .maxByOrNull { it.createdAt }
+                    ?.scopeJson
+                NasEditContext(
+                    sourceId = source.id,
+                    endpointKey = endpointKey,
+                    directories = (
+                        JsonMini.parseObject(scopeJson)["directories"] as? List<*>
+                        )
+                        ?.mapNotNull { it as? String }
+                        ?.toSet()
+                        .orEmpty(),
+                    recursive = NasSourceLifecycle.recursiveFromSettings(source.settingsJson),
+                ) to credentialJson
             } ?: return@launch
-            val endpointKey = source.endpointKey ?: return@launch
+            val (editContext, credentialJson) = loaded
+            val credential = JsonMini.parseObject(credentialJson)
+            val endpointKey = editContext.endpointKey
             val protocol = endpointKey.substringBefore("://")
             val body = endpointKey.substringAfter("://")
             val hostPort = body.substringBefore('/')
@@ -1348,6 +1396,9 @@ class MainActivity : Activity() {
                 prefillHost = host,
                 prefillPort = port,
                 prefillPath = path,
+                prefillUsername = credential["username"] as? String ?: "",
+                prefillPassword = credential["password"] as? String ?: "",
+                editContext = editContext,
             )
         }
     }

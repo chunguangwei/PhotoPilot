@@ -12,6 +12,7 @@ enum ThemeColor {
     static let statusWarning = dynamic(light: 0x865B20, dark: 0xE0BC7B)
     static let statusError = dynamic(light: 0xA73930, dark: 0xEEAAA2)
     static let restSurface = UIColor(red: 0, green: 0, blue: 0, alpha: 1)
+    static let restCard = UIColor(red: 0x21 / 255, green: 0x24 / 255, blue: 0x22 / 255, alpha: 1)
     static let textOnPhoto = UIColor(red: 0xF4 / 255, green: 0xF1 / 255, blue: 0xEB / 255, alpha: 1)
     static let photoControl = UIColor(red: 0x17 / 255, green: 0x1A / 255, blue: 0x18 / 255, alpha: 1)
 

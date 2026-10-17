@@ -112,6 +112,7 @@
     <plurals name="sources.folders_count">
         <item quantity="other">%1$d 个目录</item>
     </plurals>
+    <string name="sources.reconfigure">重新配置</string>
     <string name="source.local_photos.title">本机照片</string>
     <string name="source.local_photos.body">从系统照片库选择照片，或从文件应用导入图片。</string>
     <string name="source.local_files.title">文件</string>

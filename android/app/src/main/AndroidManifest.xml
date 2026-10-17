@@ -37,6 +37,10 @@
             android:name=".data.update.UpdateDownloadService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+        <service
+            android:name=".data.imports.ImportKeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
         <provider
             android:name=".data.update.UpdateFileProvider"
             android:authorities="${applicationId}.updatefiles"

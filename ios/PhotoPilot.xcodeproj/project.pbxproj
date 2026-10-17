@@ -33,6 +33,7 @@
 		272A518E6AE67DCC32FFD113 /* music_night_01.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 163585C5CD9B826A5B23E5FF /* music_night_01.m4a */; };
 		282F5AE980823260973EB1D2 /* AssetRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4F35DB99FB6F9AE613D4C02 /* AssetRepository.swift */; };
 		2AEDAA396EB61724A97C8F32 /* selection-resolve.json in Resources */ = {isa = PBXBuildFile; fileRef = FB2E4083930D9F4D93EB6FF9 /* selection-resolve.json */; };
+		2B075077B91EC1F0BB3F6DA6 /* FlipClockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01932BFAF6F91B8E76B71099 /* FlipClockView.swift */; };
 		2B3925679E4CE6A4F23EFB75 /* PickedFilesSourceAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B098ADCA83F6F18354E4B2E7 /* PickedFilesSourceAdapter.swift */; };
 		2C485DF539083A41C7548C01 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5F8FC86260527124D556C223 /* Assets.xcassets */; };
 		2E6637A0BA9DBB3F9E26FC00 /* ScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AF9C683F7DA2E37F1E8B105 /* ScreenshotTests.swift */; };
@@ -199,6 +200,7 @@
 
 /* Begin PBXFileReference section */
 		0187547AE703C417FC51F6F3 /* LibraryFilterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFilterViewController.swift; sourceTree = "<group>"; };
+		01932BFAF6F91B8E76B71099 /* FlipClockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlipClockView.swift; sourceTree = "<group>"; };
 		01C40DE3E335C772BE580A13 /* SourcesListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcesListViewController.swift; sourceTree = "<group>"; };
 		02EE926A5A24E68E504B7064 /* playback-timing.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "playback-timing.json"; sourceTree = "<group>"; };
 		03D8B1E5C9BF2DC84133EC46 /* PhotoDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDetailViewController.swift; sourceTree = "<group>"; };
@@ -953,6 +955,7 @@
 		F1B51393A917D0731933EB6B /* Player */ = {
 			isa = PBXGroup;
 			children = (
+				01932BFAF6F91B8E76B71099 /* FlipClockView.swift */,
 				5E24485AAE2BBBBE62DCA0FE /* MusicPickerViewController.swift */,
 				4A709EA94ADA86A555D80075 /* PlaybackSettingsViewController.swift */,
 				3AA951EBE659EA34EE60B470 /* PlayerViewController.swift */,
@@ -1203,6 +1206,7 @@
 				53A78D018E45F994DF4867A1 /* DemoPlaceholderViewController.swift in Sources */,
 				553ECE0DC708E7034CA3A44B /* DiagnosticsExporter.swift in Sources */,
 				9DD54FF968B789D930520EA1 /* EdgeSwipeBack.swift in Sources */,
+				2B075077B91EC1F0BB3F6DA6 /* FlipClockView.swift in Sources */,
 				CB95E4E2EABF84B6936B80ED /* FormatStrings.swift in Sources */,
 				64580D95B1FD79B90FAD5E2B /* FrameEditViewController.swift in Sources */,
 				842F105E84523E18B90602A5 /* FrameManager.swift in Sources */,
@@ -1370,7 +1374,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 26;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1383,7 +1387,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.23;
+				MARKETING_VERSION = 1.1.24;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1507,7 +1511,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 26;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1526,7 +1530,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.23;
+				MARKETING_VERSION = 1.1.24;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

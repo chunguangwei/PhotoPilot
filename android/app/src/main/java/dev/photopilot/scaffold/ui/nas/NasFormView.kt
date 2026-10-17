@@ -78,12 +78,21 @@ class NasFormView(context: Context) : LinearLayout(context) {
         }
     }
 
-    fun prefill(protocol: String, host: String, port: Int?, path: String) {
+    fun prefill(
+        protocol: String,
+        host: String,
+        port: Int?,
+        path: String,
+        username: String = "",
+        password: String = "",
+    ) {
         this.protocol = protocol
         transport = if (protocol == PROTOCOL_WEBDAV_HTTP) TRANSPORT_HTTP else TRANSPORT_HTTPS
         hostInput.setText(host)
         portInput.setText(port?.toString() ?: "")
         pathInput.setText(path)
+        usernameInput.setText(username)
+        passwordInput.setText(password)
         transportSection?.visibility = if (protocol == PROTOCOL_SMB) View.GONE else View.VISIBLE
         paintProtocol()
         paintTransport()

@@ -14,7 +14,7 @@ final class KeyboardAvoidanceTests: XCTestCase {
         app = nil
     }
 
-    func testNasFormPasswordFieldStaysAboveKeyboard() throws {
+    private func openNasForm() {
         sleep(2)
         let skipButton = app.buttons["launch.skip"]
         if skipButton.waitForExistence(timeout: 15) { skipButton.tap() }
@@ -29,6 +29,48 @@ final class KeyboardAvoidanceTests: XCTestCase {
 
         let lanContinue = app.buttons["继续"].firstMatch
         if lanContinue.waitForExistence(timeout: 8) { lanContinue.tap() }
+    }
+
+    private func assertFieldStaysAboveKeyboard(
+        _ field: XCUIElement,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        field.tap()
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 10), "keyboard shown", file: file, line: line)
+        sleep(2)
+        let fieldBottom = field.frame.maxY
+        let keyboardTop = keyboard.frame.minY
+        XCTAssertLessThanOrEqual(
+            fieldBottom,
+            keyboardTop + 1,
+            "field bottom \(fieldBottom) must be above keyboard top \(keyboardTop)",
+            file: file,
+            line: line
+        )
+    }
+
+    func testNasFormKeyboardLandscape() throws {
+        openNasForm()
+        XCUIDevice.shared.orientation = .landscapeLeft
+        sleep(2)
+
+        let port = app.textFields["端口"].firstMatch
+        XCTAssertTrue(port.waitForExistence(timeout: 15), "port field")
+        capture("kbd-03-landscape-form")
+        assertFieldStaysAboveKeyboard(port)
+        capture("kbd-04-landscape-port-focused")
+
+        let password = app.secureTextFields["密码"].firstMatch
+        let passwordField = password.exists ? password : app.textFields["密码"].firstMatch
+        XCTAssertTrue(passwordField.waitForExistence(timeout: 10), "password field")
+        assertFieldStaysAboveKeyboard(passwordField)
+        capture("kbd-05-landscape-password-focused")
+    }
+
+    func testNasFormPasswordFieldStaysAboveKeyboard() throws {
+        openNasForm()
 
         let password = app.secureTextFields["密码"].firstMatch
         let passwordField = password.exists ? password : app.textFields["密码"].firstMatch

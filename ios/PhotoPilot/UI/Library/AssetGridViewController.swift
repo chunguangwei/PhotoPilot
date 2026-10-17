@@ -14,6 +14,7 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
     private var visibleCount = 0
     private var columns = 0
     private var itemSide: CGFloat = 0
+    private var lastLayoutWidth: CGFloat = 0
 
     private let layout = UICollectionViewFlowLayout()
     private var collectionView: UICollectionView?
@@ -235,8 +236,9 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         let available = grid.bounds.width - grid.contentInset.left - grid.contentInset.right
         let gap = ThemeMetrics.gridGap
         let count = max(1, Int((available + gap) / (cellMin + gap)))
-        guard count != columns else { return }
+        guard count != columns || available != lastLayoutWidth else { return }
         columns = count
+        lastLayoutWidth = available
         itemSide = ((available - gap * CGFloat(count - 1)) / CGFloat(count)).rounded(.down)
         layout.itemSize = CGSize(width: itemSide, height: itemSide)
         layout.invalidateLayout()

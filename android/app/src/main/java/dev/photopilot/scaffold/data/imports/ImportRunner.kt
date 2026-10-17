@@ -36,9 +36,21 @@ class ImportRunner(
 
     private val drivers = ConcurrentHashMap<String, Job>()
 
+    var activeDriverListener: ((Int) -> Unit)? = null
+
     fun start(jobId: String) {
         if (drivers[jobId]?.isActive == true) return
-        drivers[jobId] = scope.launch { drive(jobId) }
+        val job = scope.launch { drive(jobId) }
+        drivers[jobId] = job
+        job.invokeOnCompletion {
+            drivers.remove(jobId, job)
+            notifyActiveDrivers()
+        }
+        notifyActiveDrivers()
+    }
+
+    private fun notifyActiveDrivers() {
+        activeDriverListener?.invoke(drivers.values.count { it.isActive })
     }
 
     suspend fun pause(jobId: String) {

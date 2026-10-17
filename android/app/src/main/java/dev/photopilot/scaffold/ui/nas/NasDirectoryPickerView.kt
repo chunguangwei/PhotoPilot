@@ -125,6 +125,14 @@ class NasDirectoryPickerView(context: Context) : LinearLayout(context) {
         refreshCount()
     }
 
+    fun preselect(directories: Set<String>, recursive: Boolean) {
+        selected.clear()
+        selected.addAll(directories)
+        this.recursive = recursive
+        recursiveToggle.isChecked = recursive
+        refreshCount()
+    }
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         if (listColumn.childCount == 0) {

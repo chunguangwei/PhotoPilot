@@ -16,6 +16,8 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
     private let testButton = ActionButton(titleKey: "source.nas.test_connection", style: .secondary)
     private let statusLabel = UILabel()
     private let saveButton = ActionButton(titleKey: "common.next", style: .primary)
+    private weak var formScrollView: UIScrollView?
+    private weak var focusedField: UIView?
 
     private var testing = false
     private var pendingContinue = false
@@ -24,10 +26,22 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
     private var testedEndpoint: NasEndpoint?
     private var testedCredential: NasCredential?
     private let prefillEndpoint: NasEndpoint?
+    private let prefillCredential: NasCredential?
+    private let prefillDirectories: [String]
+    private let prefillRecursive: Bool
 
-    init(environment: AppEnvironment, prefillEndpoint: NasEndpoint? = nil) {
+    init(
+        environment: AppEnvironment,
+        prefillEndpoint: NasEndpoint? = nil,
+        prefillCredential: NasCredential? = nil,
+        prefillDirectories: [String] = [],
+        prefillRecursive: Bool = false
+    ) {
         self.environment = environment
         self.prefillEndpoint = prefillEndpoint
+        self.prefillCredential = prefillCredential
+        self.prefillDirectories = prefillDirectories
+        self.prefillRecursive = prefillRecursive
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -177,7 +191,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
             scrollView.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: ThemeMetrics.space8),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             form.topAnchor.constraint(
                 equalTo: scrollView.contentLayoutGuide.topAnchor,
                 constant: ThemeMetrics.space8
@@ -197,8 +211,57 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
             ),
             readable,
         ])
+        formScrollView = scrollView
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleKeyboardWillChange(_:)),
+            name: UIResponder.keyboardWillChangeFrameNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleFieldDidBegin(_:)),
+            name: UITextField.textDidBeginEditingNotification,
+            object: nil
+        )
         enableKeyboardDismissal()
         applyPrefill()
+    }
+
+    @objc private func handleFieldDidBegin(_ notification: Notification) {
+        guard let field = notification.object as? UITextField, field.isDescendant(of: view) else { return }
+        focusedField = field
+        DispatchQueue.main.async { [weak self] in
+            self?.scrollFocusedFieldAboveKeyboard()
+        }
+    }
+
+    @objc private func handleKeyboardWillChange(_ notification: Notification) {
+        guard let scrollView = formScrollView,
+              let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
+              let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double
+        else { return }
+        let endFrame = view.convert(frame, from: view.window)
+        let overlap = max(0, view.bounds.maxY - endFrame.minY)
+        let bottomInset = overlap > 0 ? overlap + ThemeMetrics.space8 : 0
+        UIView.animate(withDuration: duration) {
+            scrollView.contentInset.bottom = bottomInset
+            scrollView.verticalScrollIndicatorInsets.bottom = bottomInset
+        }
+        scrollFocusedFieldAboveKeyboard()
+    }
+
+    private func scrollFocusedFieldAboveKeyboard() {
+        guard let scrollView = formScrollView, let field = focusedField else { return }
+        scrollView.layoutIfNeeded()
+        let rect = field.convert(field.bounds, to: scrollView).insetBy(dx: 0, dy: -ThemeMetrics.space8)
+        let visibleBottom = scrollView.contentOffset.y
+            + scrollView.bounds.height
+            - scrollView.contentInset.bottom
+        guard rect.maxY > visibleBottom else { return }
+        var offset = scrollView.contentOffset
+        offset.y += rect.maxY - visibleBottom
+        scrollView.setContentOffset(offset, animated: true)
     }
 
     private func applyPrefill() {
@@ -215,6 +278,10 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
             pathField.text = split.subpath
         } else {
             pathField.text = endpoint.path
+        }
+        if let credential = prefillCredential {
+            usernameField.text = credential.username
+            passwordField.text = credential.password
         }
     }
 
@@ -586,10 +653,13 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         } else {
             return
         }
+        let preselected = DirectorySelection()
+        preselected.paths = Set(prefillDirectories)
+        preselected.recursive = prefillRecursive
         let picker = NasFolderPickerViewController(
             listFolders: listFolders,
             path: rootPath,
-            selection: DirectorySelection()
+            selection: preselected
         ) { [weak self] directories, recursive in
             self?.finish(directories: directories, recursive: recursive)
         }
@@ -626,6 +696,24 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
                     fingerprint: fingerprint,
                     credential: credential
                 )
+                if let prefillEndpoint {
+                    let oldKey = NasAddress.sourceFingerprint(
+                        scheme: prefillEndpoint.scheme,
+                        host: prefillEndpoint.host,
+                        port: prefillEndpoint.port,
+                        path: prefillEndpoint.path
+                    )
+                    if oldKey != fingerprint {
+                        if let old = try? environment.sources.webdavSources()
+                            .first(where: { $0.endpointKey == oldKey }) {
+                            try? await environment.assets.disconnectSource(
+                                sourceID: old.id,
+                                keepCopies: true
+                            )
+                        }
+                        environment.credentialStore.delete(fingerprint: oldKey)
+                    }
+                }
                 let runner = isSmbSelected
                     ? try await environment.startSmbImport(sourceID: sourceID)
                     : try await environment.startWebDavImport(sourceID: sourceID)

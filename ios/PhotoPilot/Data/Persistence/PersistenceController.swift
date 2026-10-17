@@ -1,6 +1,29 @@
 import CoreData
 import Foundation
 
+enum PermanentIDHook {
+    static func install(on context: NSManagedObjectContext) {
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("NSManagedObjectContextWillSaveNotification"),
+            object: context,
+            queue: nil
+        ) { notification in
+            guard let context = notification.object as? NSManagedObjectContext else { return }
+            let inserted = context.insertedObjects
+            guard !inserted.isEmpty else { return }
+            try? context.obtainPermanentIDs(for: Array(inserted))
+        }
+    }
+}
+
+final class PhotoPilotContainer: NSPersistentContainer {
+    override func newBackgroundContext() -> NSManagedObjectContext {
+        let context = super.newBackgroundContext()
+        PermanentIDHook.install(on: context)
+        return context
+    }
+}
+
 final class PersistenceController: @unchecked Sendable {
     let container: NSPersistentContainer
     let storeURL: URL
@@ -38,6 +61,7 @@ final class PersistenceController: @unchecked Sendable {
             _ = ContractIndexes.apply(storeURL: loadedStoreURL, model: model)
         }
         container.viewContext.automaticallyMergesChangesFromParent = true
+        PermanentIDHook.install(on: container.viewContext)
     }
 
     static func defaultStoreURL() -> URL {
@@ -65,7 +89,7 @@ final class PersistenceController: @unchecked Sendable {
         storeURL: URL,
         storeDescription: NSPersistentStoreDescription
     ) -> (container: NSPersistentContainer, didRecreateStore: Bool, backupURL: URL?) {
-        let container = NSPersistentContainer(name: "PhotoPilot", managedObjectModel: model)
+        let container = PhotoPilotContainer(name: "PhotoPilot", managedObjectModel: model)
         container.persistentStoreDescriptions = [storeDescription]
         do {
             try loadStoresSynchronously(container)
@@ -74,7 +98,7 @@ final class PersistenceController: @unchecked Sendable {
             let backupURL = backupStore(storeURL)
             let freshURL = storeURL.deletingLastPathComponent()
                 .appendingPathComponent("library.fresh.db")
-            let freshContainer = NSPersistentContainer(name: "PhotoPilot", managedObjectModel: model)
+            let freshContainer = PhotoPilotContainer(name: "PhotoPilot", managedObjectModel: model)
             freshContainer.persistentStoreDescriptions = [makeStoreDescription(url: freshURL)]
             try? loadStoresSynchronously(freshContainer)
             return (freshContainer, true, backupURL)

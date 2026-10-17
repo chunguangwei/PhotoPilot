@@ -21,6 +21,7 @@ class SourcesView(context: Context) : ScrollView(context) {
     var onNasSync: ((String) -> Unit)? = null
     var onNasDisconnect: ((String) -> Unit)? = null
     var onNasReauth: ((String) -> Unit)? = null
+    var onNasEdit: ((String) -> Unit)? = null
     var onNasMirrorToggle: ((String, Boolean) -> Unit)? = null
 
     private val jobStatusRow: LinearLayout
@@ -137,6 +138,7 @@ class SourcesView(context: Context) : ScrollView(context) {
         val displayName: String,
         val statusText: String,
         val needsReauth: Boolean = false,
+        val isDisconnected: Boolean = false,
         val mirrorDelete: Boolean = false,
     )
 
@@ -195,6 +197,22 @@ class SourcesView(context: Context) : ScrollView(context) {
                 setOnClickListener { onNasDisconnect?.invoke(model.sourceId) }
             }
             actions.addView(sync, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
+            if (!model.isDisconnected) {
+                val edit = TextView(context).apply {
+                    text = res.getString(
+                        if (model.needsReauth) R.string.sources_reconfigure else R.string.common_edit,
+                    )
+                    contentDescription = text
+                    setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
+                    setTextColor(context.getColor(R.color.pp_accent_action))
+                    minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+                    gravity = Gravity.CENTER
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener { onNasEdit?.invoke(model.sourceId) }
+                }
+                actions.addView(edit, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
+            }
             actions.addView(disconnect, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
             val mirror = android.widget.Switch(context).apply {
                 text = res.getString(R.string.source_nas_mirror_delete)

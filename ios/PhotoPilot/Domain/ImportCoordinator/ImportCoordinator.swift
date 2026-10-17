@@ -1,5 +1,8 @@
 import CoreData
 import Foundation
+import OSLog
+
+private let importLog = Logger(subsystem: "com.photopilot", category: "import")
 
 enum ImportFailureCode: String, Error {
     case storeLowSpace = "STORE_LOW_SPACE"
@@ -143,6 +146,7 @@ actor ImportCoordinator {
             do {
                 page = try await adapter.enumerateAssets(cursor: cursor)
             } catch {
+                importLog.error("enumerateAssets failed jobID=\(jobID, privacy: .public) error=\(String(describing: error), privacy: .public)")
                 throw ImportFailureCode.srcUnavailable
             }
             let now = nowMillis()
@@ -152,6 +156,7 @@ actor ImportCoordinator {
                 guard let source = job.value(forKey: "source") as? NSManagedObject else {
                     throw PersistenceError.dbConstraintViolation
                 }
+                var needsItems: [NSManagedObject] = []
                 for descriptor in page.assets {
                     let upsert = try Self.upsertSourceAsset(
                         context: context,
@@ -166,6 +171,12 @@ actor ImportCoordinator {
                             continue
                         }
                     }
+                    needsItems.append(sourceAsset)
+                }
+                if !context.insertedObjects.isEmpty {
+                    try context.obtainPermanentIDs(for: Array(context.insertedObjects))
+                }
+                for sourceAsset in needsItems {
                     let itemRequest = NSFetchRequest<NSManagedObject>(entityName: "ImportItem")
                     itemRequest.predicate = NSPredicate(
                         format: "job.id == %@ AND sourceAsset.id == %@",

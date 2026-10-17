@@ -241,7 +241,8 @@ final class PlayerViewController: UIViewController {
     private let safeOverlay = UIStackView()
     private let emptyOverlay = UIStackView()
     private let restingScreen = UIView()
-    private let restClockLabel = UILabel()
+    private let flipClock = FlipClockView()
+    private let restDateLabel = UILabel()
     private let restWeatherLabel = UILabel()
     private let restStack = UIStackView()
     private var videoPlayer: AVPlayer?
@@ -1199,27 +1200,49 @@ final class PlayerViewController: UIViewController {
         dateLabel.text = dateFormatter.string(from: now)
     }
 
+    private var restClockTask: Task<Void, Never>?
+
+    private func startRestClockTicker() {
+        guard restClockTask == nil else { return }
+        restClockTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                guard !Task.isCancelled else { return }
+                self?.updateRestClock()
+            }
+        }
+    }
+
     private func updateRestClock() {
-        restClockLabel.text = currentTimeText(Date())
+        flipClock.hour24 = settings.hour24
+        flipClock.setDate(Date())
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .full
+        dateFormatter.timeStyle = .none
+        restDateLabel.text = dateFormatter.string(from: Date())
     }
 
     private func applyRestDisplayMode() {
         switch settings.restDisplay {
         case "dim":
             restingScreen.backgroundColor = ThemeColor.restSurface.withAlphaComponent(0.75)
-            restClockLabel.isHidden = true
+            flipClock.isHidden = true
+            restDateLabel.isHidden = true
             restWeatherLabel.isHidden = true
         case "black":
             restingScreen.backgroundColor = ThemeColor.restSurface
-            restClockLabel.isHidden = true
+            flipClock.isHidden = true
+            restDateLabel.isHidden = true
             restWeatherLabel.isHidden = true
         case "clock_weather":
             restingScreen.backgroundColor = ThemeColor.restSurface
-            restClockLabel.isHidden = false
+            flipClock.isHidden = false
+            restDateLabel.isHidden = false
             updateRestWeather()
         default:
             restingScreen.backgroundColor = ThemeColor.restSurface
-            restClockLabel.isHidden = false
+            flipClock.isHidden = false
+            restDateLabel.isHidden = false
             restWeatherLabel.isHidden = true
         }
     }
@@ -1606,9 +1629,11 @@ final class PlayerViewController: UIViewController {
         restingScreen.accessibilityTraits = [.button]
         let restTap = UITapGestureRecognizer(target: self, action: #selector(handleRestingResume))
         restingScreen.addGestureRecognizer(restTap)
-        restClockLabel.font = ThemeFont.clock()
-        restClockLabel.textColor = ThemeColor.textOnPhoto
-        restClockLabel.textAlignment = .center
+        restDateLabel.font = ThemeFont.body()
+        restDateLabel.adjustsFontForContentSizeCategory = true
+        restDateLabel.textColor = ThemeColor.textOnPhoto
+        restDateLabel.textAlignment = .center
+        flipClock.translatesAutoresizingMaskIntoConstraints = false
         restWeatherLabel.font = ThemeFont.meta()
         restWeatherLabel.adjustsFontForContentSizeCategory = true
         restWeatherLabel.textColor = ThemeColor.textOnPhoto
@@ -1617,11 +1642,14 @@ final class PlayerViewController: UIViewController {
         restWeatherLabel.isHidden = true
         restStack.axis = .vertical
         restStack.alignment = .center
-        restStack.spacing = ThemeMetrics.space8
-        restStack.addArrangedSubview(restClockLabel)
+        restStack.spacing = ThemeMetrics.space16
+        restStack.addArrangedSubview(restDateLabel)
+        restStack.addArrangedSubview(flipClock)
         restStack.addArrangedSubview(restWeatherLabel)
         restStack.translatesAutoresizingMaskIntoConstraints = false
         restingScreen.addSubview(restStack)
+        let flipHeight = flipClock.heightAnchor.constraint(equalToConstant: 180)
+        flipHeight.priority = .defaultHigh
         NSLayoutConstraint.activate([
             restStack.centerXAnchor.constraint(equalTo: restingScreen.centerXAnchor),
             restStack.centerYAnchor.constraint(equalTo: restingScreen.centerYAnchor),
@@ -1633,6 +1661,11 @@ final class PlayerViewController: UIViewController {
                 lessThanOrEqualTo: restingScreen.trailingAnchor,
                 constant: -ThemeMetrics.contentInset
             ),
+            flipClock.heightAnchor.constraint(
+                lessThanOrEqualTo: restingScreen.heightAnchor,
+                multiplier: 0.28
+            ),
+            flipHeight,
         ])
         view.addSubview(restingScreen)
         NSLayoutConstraint.activate([
@@ -1666,6 +1699,10 @@ final class PlayerViewController: UIViewController {
         if isResting {
             updateRestClock()
             applyRestDisplayMode()
+            startRestClockTicker()
+        } else {
+            restClockTask?.cancel()
+            restClockTask = nil
         }
         emptyOverlay.isHidden = !isEmpty
         safeOverlay.isHidden = !safeImageShown

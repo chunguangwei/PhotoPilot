@@ -117,6 +117,7 @@
         <item quantity="one">%1$d folder</item>
         <item quantity="other">%1$d folders</item>
     </plurals>
+    <string name="sources.reconfigure">Reconfigure</string>
     <string name="source.local_photos.title">Photos on this device</string>
     <string name="source.local_photos.body">Choose photos from the photo library, or import images from Files.</string>
     <string name="source.local_files.title">Files</string>
