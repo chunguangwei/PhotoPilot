@@ -75,10 +75,7 @@ class LibraryView(
     private val sortToggle: TextView
     private val filterPanel: LinearLayout
     private val filterActiveRow: LinearLayout
-    private val tabPhotos: TextView
-    private val tabFolders: TextView
-    private val tabPhotosIndicator: View
-    private val tabFoldersIndicator: View
+    private val tabControl: dev.photopilot.scaffold.ui.widget.SegmentedControl
     private val backRow: LinearLayout
     private val gridView: GridView
     private val foldersScroll: ScrollView
@@ -216,18 +213,20 @@ class LibraryView(
             },
         )
 
-        val tint = context.getColorStateList(R.color.nav_item_tint)
-        val tabRow = LinearLayout(context).apply {
-            orientation = HORIZONTAL
+        tabControl = dev.photopilot.scaffold.ui.widget.SegmentedControl(
+            context,
+            textSizeRes = R.dimen.pp_text_body,
+        ).apply {
+            setItems(
+                listOf(
+                    res.getString(R.string.library_tab_photos),
+                    res.getString(R.string.library_tab_folders),
+                ),
+                0,
+            ) { index -> selectTab(if (index == 0) Tab.PHOTOS else Tab.FOLDERS) }
         }
-        tabPhotos = tabLabel(R.string.library_tab_photos, tint)
-        tabPhotosIndicator = tabIndicator()
-        tabFolders = tabLabel(R.string.library_tab_folders, tint)
-        tabFoldersIndicator = tabIndicator()
-        tabRow.addView(tabSlot(tabPhotos, tabPhotosIndicator) { selectTab(Tab.PHOTOS) }, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
-        tabRow.addView(tabSlot(tabFolders, tabFoldersIndicator) { selectTab(Tab.FOLDERS) }, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
         addView(
-            tabRow,
+            tabControl,
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
                 marginStart = inset
                 marginEnd = inset
@@ -412,10 +411,7 @@ class LibraryView(
     private fun selectTab(newTab: Tab) {
         tab = newTab
         activeCollection = null
-        tabPhotos.isSelected = newTab == Tab.PHOTOS
-        tabFolders.isSelected = newTab == Tab.FOLDERS
-        tabPhotosIndicator.visibility = if (newTab == Tab.PHOTOS) View.VISIBLE else View.INVISIBLE
-        tabFoldersIndicator.visibility = if (newTab == Tab.FOLDERS) View.VISIBLE else View.INVISIBLE
+        tabControl.setSelected(if (newTab == Tab.PHOTOS) 0 else 1)
         updateVisibility()
         refresh()
     }
@@ -754,50 +750,6 @@ class LibraryView(
             isClickable = true
             isFocusable = true
             setOnClickListener { onClick(it) }
-        }
-
-    private fun tabLabel(textRes: Int, tint: android.content.res.ColorStateList): TextView =
-        TextView(context).apply {
-            text = resources.getString(textRes)
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.pp_text_body))
-            setTextColor(tint)
-            gravity = Gravity.CENTER
-            minimumHeight = resources.getDimensionPixelSize(R.dimen.pp_touch_target)
-            isDuplicateParentStateEnabled = true
-        }
-
-    private fun tabIndicator(): View =
-        View(context).apply {
-            val states = android.graphics.drawable.StateListDrawable().apply {
-                addState(
-                    intArrayOf(android.R.attr.state_selected),
-                    android.graphics.drawable.ColorDrawable(context.getColor(R.color.pp_accent_action)),
-                )
-                addState(
-                    intArrayOf(),
-                    android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT),
-                )
-            }
-            background = states
-            visibility = View.INVISIBLE
-        }
-
-    private fun tabSlot(label: TextView, indicator: View, onClick: () -> Unit): LinearLayout =
-        LinearLayout(context).apply {
-            orientation = VERTICAL
-            isClickable = true
-            isFocusable = true
-            contentDescription = label.text
-            setOnClickListener {
-                isSelected = true
-                onClick()
-            }
-            label.isDuplicateParentStateEnabled = true
-            addView(label, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-            addView(
-                indicator,
-                LayoutParams(LayoutParams.MATCH_PARENT, indicatorHeightPx()),
-            )
         }
 
     private fun indicatorHeightPx(): Int =

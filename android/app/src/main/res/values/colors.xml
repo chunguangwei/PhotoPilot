@@ -14,4 +14,6 @@
     <color name="pp_text_on_photo">#F4F1EB</color>
     <color name="pp_surface_photo_control">#171A18</color>
     <color name="pp_star_filled">#FFD60A</color>
+    <color name="pp_segmented_track">#E8E3D8</color>
+    <color name="pp_segmented_pill">#FCFAF6</color>
 </resources>

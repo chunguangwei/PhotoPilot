@@ -48,34 +48,17 @@ class NasFormView(context: Context) : LinearLayout(context) {
     private var pendingSave = false
     private var pathLabel: TextView? = null
 
-    private var protocolButtons: List<TextView> = emptyList()
-    private var transportButtons: List<TextView> = emptyList()
+    private var protocolControl: dev.photopilot.scaffold.ui.widget.SegmentedControl? = null
+    private var transportControl: dev.photopilot.scaffold.ui.widget.SegmentedControl? = null
     private var transportSection: LinearLayout? = null
 
     private fun paintProtocol() {
-        paintOptions(protocolButtons) { tag -> (tag == PROTOCOL_SMB) == (protocol == PROTOCOL_SMB) }
+        protocolControl?.setSelected(if (protocol == PROTOCOL_SMB) 1 else 0)
         pathLabel?.setText(if (protocol == PROTOCOL_SMB) R.string.source_nas_share else R.string.source_nas_path)
     }
 
     private fun paintTransport() {
-        paintOptions(transportButtons) { tag -> tag == transport }
-    }
-
-    private fun paintOptions(buttons: List<TextView>, isSelected: (String) -> Boolean) {
-        buttons.forEach { button ->
-            val selected = isSelected(button.tag as String)
-            button.isSelected = selected
-            button.setTextColor(
-                context.getColor(if (selected) R.color.pp_accent_action else R.color.pp_text_primary),
-            )
-            button.background = android.graphics.drawable.GradientDrawable().apply {
-                setColor(context.getColor(R.color.pp_surface_panel))
-                cornerRadius = resources.getDimension(R.dimen.pp_radius_thumbnail)
-                if (selected) {
-                    setStroke(2, context.getColor(R.color.pp_accent_action))
-                }
-            }
-        }
+        transportControl?.setSelected(if (transport == TRANSPORT_HTTP) 1 else 0)
     }
 
     fun prefill(
@@ -116,66 +99,57 @@ class NasFormView(context: Context) : LinearLayout(context) {
         }
 
         addLabel(column, R.string.source_nas_protocol)
-        val protocolRow = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-        val buttons = mutableListOf<TextView>()
-        listOf(
-            res.getString(R.string.source_nas_protocol_webdav) to PROTOCOL_WEBDAV,
-            res.getString(R.string.source_nas_protocol_smb) to PROTOCOL_SMB,
+        val protocolControlView = dev.photopilot.scaffold.ui.widget.SegmentedControl(
+            context,
+            textSizeRes = R.dimen.pp_text_body,
         )
-            .forEachIndexed { index, (label, value) ->
-            val button = optionButton(label, value) {
-                if (value == PROTOCOL_SMB) {
-                    protocol = PROTOCOL_SMB
-                    portInput.setText("445")
-                    transportSection?.visibility = View.GONE
-                } else {
-                    protocol = if (transport == TRANSPORT_HTTP) PROTOCOL_WEBDAV_HTTP else PROTOCOL_WEBDAV
-                    portInput.setText(if (transport == TRANSPORT_HTTP) "80" else "443")
-                    transportSection?.visibility = View.VISIBLE
-                }
-                markDirty()
-                paintProtocol()
+        protocolControlView.setItems(
+            listOf(
+                res.getString(R.string.source_nas_protocol_webdav),
+                res.getString(R.string.source_nas_protocol_smb),
+            ),
+            0,
+        ) { index ->
+            if (index == 1) {
+                protocol = PROTOCOL_SMB
+                portInput.setText("445")
+                transportSection?.visibility = View.GONE
+            } else {
+                protocol = if (transport == TRANSPORT_HTTP) PROTOCOL_WEBDAV_HTTP else PROTOCOL_WEBDAV
+                portInput.setText(if (transport == TRANSPORT_HTTP) "80" else "443")
+                transportSection?.visibility = View.VISIBLE
             }
-            buttons += button
-            protocolRow.addView(
-                button,
-                LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                    if (index > 0) marginStart = res.getDimensionPixelSize(R.dimen.pp_space_8)
-                },
-            )
+            markDirty()
+            paintProtocol()
         }
-        protocolButtons = buttons
-        column.addView(protocolRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        protocolControl = protocolControlView
+        column.addView(protocolControlView, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         paintProtocol()
 
         val transportSectionView = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
         transportSection = transportSectionView
         addLabel(transportSectionView, R.string.source_nas_transport)
-        val transportRow = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-        val transportButtonList = mutableListOf<TextView>()
-        listOf(
-            res.getString(R.string.source_nas_transport_https) to TRANSPORT_HTTPS,
-            res.getString(R.string.source_nas_transport_http) to TRANSPORT_HTTP,
+        val transportControlView = dev.photopilot.scaffold.ui.widget.SegmentedControl(
+            context,
+            textSizeRes = R.dimen.pp_text_meta,
+            autoSize = true,
         )
-            .forEachIndexed { index, (label, value) ->
-            val button = optionButton(label, value, R.dimen.pp_text_meta) {
-                transport = value
-                protocol = if (value == TRANSPORT_HTTP) PROTOCOL_WEBDAV_HTTP else PROTOCOL_WEBDAV
-                portInput.setText(if (value == TRANSPORT_HTTP) "80" else "443")
-                markDirty()
-                paintTransport()
-            }
-            transportButtonList += button
-            transportRow.addView(
-                button,
-                LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                    if (index > 0) marginStart = res.getDimensionPixelSize(R.dimen.pp_space_8)
-                },
-            )
+        transportControlView.setItems(
+            listOf(
+                res.getString(R.string.source_nas_transport_https),
+                res.getString(R.string.source_nas_transport_http),
+            ),
+            0,
+        ) { index ->
+            transport = if (index == 1) TRANSPORT_HTTP else TRANSPORT_HTTPS
+            protocol = if (index == 1) PROTOCOL_WEBDAV_HTTP else PROTOCOL_WEBDAV
+            portInput.setText(if (index == 1) "80" else "443")
+            markDirty()
+            paintTransport()
         }
-        transportButtons = transportButtonList
+        transportControl = transportControlView
         transportSectionView.addView(
-            transportRow,
+            transportControlView,
             LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
         )
         column.addView(
@@ -336,22 +310,6 @@ class NasFormView(context: Context) : LinearLayout(context) {
         testPassed = false
         pendingSave = false
     }
-
-    private fun optionButton(label: String, value: String, onSelect: () -> Unit): TextView =
-        optionButton(label, value, R.dimen.pp_text_body, onSelect)
-
-    private fun optionButton(label: String, value: String, textRes: Int, onSelect: () -> Unit): TextView =
-        TextView(context).apply {
-            text = label
-            contentDescription = label
-            tag = value
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(textRes))
-            gravity = Gravity.CENTER
-            minimumHeight = resources.getDimensionPixelSize(R.dimen.pp_touch_target)
-            isClickable = true
-            isFocusable = true
-            setOnClickListener { onSelect() }
-        }
 
     private fun addLabel(parent: LinearLayout, textRes: Int): TextView {
         val res = resources

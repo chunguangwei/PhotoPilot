@@ -95,10 +95,7 @@ class FrameEditView(
     private val previewLoader = ThumbnailLoader(originalsDir, PREVIEW_CACHE_ENTRIES)
 
     private val nameInput: EditText
-    private val tabPhotos: TextView
-    private val tabFolders: TextView
-    private val tabPhotosIndicator: View
-    private val tabFoldersIndicator: View
+    private val tabControl: dev.photopilot.scaffold.ui.widget.SegmentedControl
     private val gridView: GridView
     private val foldersScroll: ScrollView
     private val foldersColumn: LinearLayout
@@ -142,16 +139,20 @@ class FrameEditView(
             },
         )
 
-        val tint = context.getColorStateList(R.color.nav_item_tint)
-        val tabRow = LinearLayout(context).apply { orientation = HORIZONTAL }
-        tabPhotos = tabLabel(R.string.library_tab_photos, tint)
-        tabPhotosIndicator = tabIndicator()
-        tabFolders = tabLabel(R.string.library_tab_folders, tint)
-        tabFoldersIndicator = tabIndicator()
-        tabRow.addView(tabSlot(tabPhotos, tabPhotosIndicator) { selectTab(false) }, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
-        tabRow.addView(tabSlot(tabFolders, tabFoldersIndicator) { selectTab(true) }, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
+        tabControl = dev.photopilot.scaffold.ui.widget.SegmentedControl(
+            context,
+            textSizeRes = R.dimen.pp_text_body,
+        ).apply {
+            setItems(
+                listOf(
+                    res.getString(R.string.library_tab_photos),
+                    res.getString(R.string.library_tab_folders),
+                ),
+                0,
+            ) { index -> selectTab(index == 1) }
+        }
         addView(
-            tabRow,
+            tabControl,
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
                 marginStart = inset
                 marginEnd = inset
@@ -331,10 +332,7 @@ class FrameEditView(
 
     private fun selectTab(folders: Boolean) {
         inFoldersTab = folders
-        tabPhotos.isSelected = !folders
-        tabFolders.isSelected = folders
-        tabPhotosIndicator.visibility = if (folders) View.INVISIBLE else View.VISIBLE
-        tabFoldersIndicator.visibility = if (folders) View.VISIBLE else View.INVISIBLE
+        tabControl.setSelected(if (folders) 1 else 0)
         gridView.visibility = if (folders) View.GONE else View.VISIBLE
         foldersScroll.visibility = if (folders) View.VISIBLE else View.GONE
         if (folders) loadFolders()
@@ -618,38 +616,6 @@ class FrameEditView(
             })
         }
     }
-
-    private fun tabLabel(textRes: Int, tint: android.content.res.ColorStateList): TextView =
-        TextView(context).apply {
-            text = resources.getString(textRes)
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.pp_text_body))
-            setTextColor(tint)
-            gravity = Gravity.CENTER
-            minimumHeight = resources.getDimensionPixelSize(R.dimen.pp_touch_target)
-            isDuplicateParentStateEnabled = true
-        }
-
-    private fun tabIndicator(): View =
-        View(context).apply {
-            background = GradientDrawable().apply {
-                setColor(context.getColor(R.color.pp_accent_action))
-            }
-            visibility = View.INVISIBLE
-        }
-
-    private fun tabSlot(label: TextView, indicator: View, onClick: () -> Unit): LinearLayout =
-        LinearLayout(context).apply {
-            orientation = VERTICAL
-            isClickable = true
-            isFocusable = true
-            contentDescription = label.text
-            setOnClickListener { onClick() }
-            addView(label, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-            addView(
-                indicator,
-                LayoutParams(LayoutParams.MATCH_PARENT, indicatorHeightPx()),
-            )
-        }
 
     private fun indicatorHeightPx(): Int =
         (INDICATOR_HEIGHT_DP * resources.displayMetrics.density).toInt().coerceAtLeast(1)

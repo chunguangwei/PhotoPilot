@@ -3,7 +3,6 @@ package dev.photopilot.scaffold.ui.player
 import android.app.TimePickerDialog
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.drawable.GradientDrawable
 import android.text.InputType
 import android.util.TypedValue
 import android.view.Gravity
@@ -948,69 +947,18 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
 
     private fun optionGroup(labelResList: List<Int>, selected: Int, onSelect: (Int) -> Unit): LinearLayout {
         val res = resources
-        val row = LinearLayout(context).apply { orientation = HORIZONTAL }
-        val slots = mutableListOf<LinearLayout>()
-        val indicators = mutableListOf<View>()
-        labelResList.forEachIndexed { index, labelRes ->
-            val label = TextView(context).apply {
-                text = res.getString(labelRes, *slotArgs(labelRes, index))
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_meta))
-                setAutoSizeTextTypeUniformWithConfiguration(10, 13, 1, TypedValue.COMPLEX_UNIT_SP)
-                maxLines = 1
-                gravity = Gravity.CENTER
-                minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-                isDuplicateParentStateEnabled = true
-                importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
-            }
-            label.setTextColor(context.getColorStateList(R.color.nav_item_tint))
-            val indicator = View(context).apply {
-                background = GradientDrawable().apply {
-                    setColor(context.getColor(R.color.pp_accent_action))
-                }
-                visibility = View.INVISIBLE
-            }
-            val slot = LinearLayout(context).apply {
-                orientation = VERTICAL
-                isClickable = true
-                isFocusable = true
-                contentDescription = label.text
-                accessibilityDelegate = object : View.AccessibilityDelegate() {
-                    override fun onInitializeAccessibilityNodeInfo(host: View, info: android.view.accessibility.AccessibilityNodeInfo) {
-                        super.onInitializeAccessibilityNodeInfo(host, info)
-                        info.className = android.widget.RadioButton::class.java.name
-                        info.isCheckable = true
-                        info.isChecked = host.isSelected
-                    }
-                }
-                addView(label, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-                addView(indicator, LayoutParams(LayoutParams.MATCH_PARENT, indicatorHeightPx()))
-                setOnClickListener {
-                    slots.forEachIndexed { i, s ->
-                        s.isSelected = i == index
-                        indicators[i].visibility = if (i == index) View.VISIBLE else View.INVISIBLE
-                    }
-                    onSelect(index)
-                }
-            }
-            slot.isSelected = index == selected
-            indicator.visibility = if (index == selected) View.VISIBLE else View.INVISIBLE
-            slots += slot
-            indicators += indicator
-            row.addView(
-                slot,
-                LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                    if (index > 0) marginStart = res.getDimensionPixelSize(R.dimen.pp_space_4)
-                },
-            )
+        val labels = labelResList.mapIndexed { index, labelRes ->
+            res.getString(labelRes, *slotArgs(labelRes, index))
         }
-        return row
+        return dev.photopilot.scaffold.ui.widget.SegmentedControl(
+            context,
+            textSizeRes = R.dimen.pp_text_meta,
+            autoSize = true,
+        ).apply { setItems(labels, selected, onSelect) }
     }
 
     private fun slotArgs(labelRes: Int, index: Int): Array<Any> =
         if (labelRes == R.string.format_seconds_short) arrayOf(HOLD_PRESETS[index]) else emptyArray()
-
-    private fun indicatorHeightPx(): Int =
-        (INDICATOR_HEIGHT_DP * resources.displayMetrics.density).toInt().coerceAtLeast(1)
 
     private companion object {
         val HOLD_PRESETS = listOf(5, 10, 15, 30, 60)
@@ -1056,6 +1004,5 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         const val PREVIEW_DECODE_PX = 512
         const val PREVIEW_HEIGHT_NUM = 9
         const val PREVIEW_HEIGHT_DEN = 16
-        const val INDICATOR_HEIGHT_DP = 2f
     }
 }

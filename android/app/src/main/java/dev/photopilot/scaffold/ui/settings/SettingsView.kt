@@ -330,56 +330,13 @@ class SettingsView(context: Context) : ScrollView(context) {
 
     private fun addOptionRow(parent: LinearLayout, labelResList: List<Int>, selected: Int, onSelect: (Int) -> Unit) {
         val res = resources
-        val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-        val slots = mutableListOf<LinearLayout>()
-        val indicators = mutableListOf<View>()
-        labelResList.forEachIndexed { index, labelRes ->
-            val label = TextView(context).apply {
-                text = res.getString(labelRes)
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
-                setTextColor(context.getColorStateList(R.color.nav_item_tint))
-                gravity = Gravity.CENTER
-                minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-                isDuplicateParentStateEnabled = true
-                importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
-            }
-            val indicator = View(context).apply {
-                background = GradientDrawable().apply {
-                    setColor(context.getColor(R.color.pp_accent_action))
-                }
-                visibility = View.INVISIBLE
-            }
-            val slot = LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                isClickable = true
-                isFocusable = true
-                contentDescription = label.text
-                addView(label, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-                addView(indicator, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, indicatorHeightPx()))
-                setOnClickListener {
-                    slots.forEachIndexed { i, s ->
-                        s.isSelected = i == index
-                        indicators[i].visibility = if (i == index) View.VISIBLE else View.INVISIBLE
-                    }
-                    onSelect(index)
-                }
-            }
-            slot.isSelected = index == selected
-            indicator.visibility = if (index == selected) View.VISIBLE else View.INVISIBLE
-            slots += slot
-            indicators += indicator
-            row.addView(
-                slot,
-                LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                    if (index > 0) marginStart = res.getDimensionPixelSize(R.dimen.pp_space_4)
-                },
-            )
-        }
-        parent.addView(row, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        val control = dev.photopilot.scaffold.ui.widget.SegmentedControl(
+            context,
+            textSizeRes = R.dimen.pp_text_body,
+        )
+        control.setItems(labelResList.map { res.getString(it) }, selected, onSelect)
+        parent.addView(control, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
     }
-
-    private fun indicatorHeightPx(): Int =
-        (INDICATOR_HEIGHT_DP * resources.displayMetrics.density).toInt().coerceAtLeast(1)
 
     private fun sectionCollapsed(titleRes: Int, expandedByDefault: Boolean): Boolean {
         val key = sectionStateKey(titleRes)
@@ -460,7 +417,6 @@ class SettingsView(context: Context) : ScrollView(context) {
         val LANGUAGE_VALUES = listOf("system", "zh", "en")
         const val BYTES_PER_MB = 1_048_576L
         const val MB_PER_GB = 1_024L
-        const val INDICATOR_HEIGHT_DP = 2f
         const val UI_STATE_PREFS = "ui_state"
         const val CHEVRON_EXPANDED = "⌄"
         const val CHEVRON_COLLAPSED = "›"
