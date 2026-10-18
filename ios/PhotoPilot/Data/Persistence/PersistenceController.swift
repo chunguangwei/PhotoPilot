@@ -36,6 +36,9 @@ final class PersistenceController: @unchecked Sendable {
     init(storeURL: URL? = nil, excludedFromBackup: Bool = true) {
         let model = PersistenceSchema.makeModel()
         let resolvedStoreURL = storeURL ?? PersistenceController.defaultStoreURL()
+        if storeURL == nil {
+            Self.adoptLegacyFreshStoreIfNeeded(defaultURL: resolvedStoreURL)
+        }
         self.storeURL = resolvedStoreURL
 
         var directory = resolvedStoreURL.deletingLastPathComponent()
@@ -95,13 +98,60 @@ final class PersistenceController: @unchecked Sendable {
             try loadStoresSynchronously(container)
             return (container, false, nil)
         } catch {
-            let backupURL = backupStore(storeURL)
-            let freshURL = storeURL.deletingLastPathComponent()
-                .appendingPathComponent("library.fresh.db")
-            let freshContainer = PhotoPilotContainer(name: "PhotoPilot", managedObjectModel: model)
-            freshContainer.persistentStoreDescriptions = [makeStoreDescription(url: freshURL)]
-            try? loadStoresSynchronously(freshContainer)
-            return (freshContainer, true, backupURL)
+            Thread.sleep(forTimeInterval: 0.3)
+            do {
+                try loadStoresSynchronously(container)
+                return (container, false, nil)
+            } catch {
+                let backupURL = backupStore(storeURL)
+                let freshContainer = PhotoPilotContainer(name: "PhotoPilot", managedObjectModel: model)
+                freshContainer.persistentStoreDescriptions = [makeStoreDescription(url: storeURL)]
+                try? loadStoresSynchronously(freshContainer)
+                return (freshContainer, true, backupURL)
+            }
+        }
+    }
+
+    static func adoptLegacyFreshStoreIfNeeded(defaultURL: URL) {
+        let fileManager = FileManager.default
+        let freshURL = defaultURL.deletingLastPathComponent()
+            .appendingPathComponent("library.fresh.db")
+        guard fileManager.fileExists(atPath: freshURL.path) else { return }
+        let freshDate = modificationDate(of: freshURL) ?? .distantPast
+        let defaultExists = fileManager.fileExists(atPath: defaultURL.path)
+        let defaultDate = defaultExists ? (modificationDate(of: defaultURL) ?? .distantPast) : .distantPast
+        if freshDate > defaultDate {
+            if defaultExists {
+                _ = backupStore(defaultURL)
+            }
+            moveStoreWithSidecars(from: freshURL, to: defaultURL)
+        } else {
+            removeStoreWithSidecars(at: freshURL)
+        }
+    }
+
+    private static func modificationDate(of url: URL) -> Date? {
+        (try? FileManager.default.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
+    }
+
+    private static func moveStoreWithSidecars(from source: URL, to destination: URL) {
+        let fileManager = FileManager.default
+        try? fileManager.moveItem(at: source, to: destination)
+        for suffix in ["-wal", "-shm"] {
+            let sourceSidecar = URL(fileURLWithPath: source.path + suffix)
+            guard fileManager.fileExists(atPath: sourceSidecar.path) else { continue }
+            try? fileManager.moveItem(
+                at: sourceSidecar,
+                to: URL(fileURLWithPath: destination.path + suffix)
+            )
+        }
+    }
+
+    private static func removeStoreWithSidecars(at url: URL) {
+        let fileManager = FileManager.default
+        try? fileManager.removeItem(at: url)
+        for suffix in ["-wal", "-shm"] {
+            try? fileManager.removeItem(at: URL(fileURLWithPath: url.path + suffix))
         }
     }
 
