@@ -13,6 +13,9 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
     private let frameValueLabel = UILabel()
     private let frameButton = ActionButton(titleKey: "holiday.frame_placeholder", style: .secondary)
     private let timeSectionLabel = UILabel()
+    private let timeSwitch = UISwitch()
+    private var timeStartRow: UIView!
+    private var timeEndRow: UIView!
     private let enabledSwitch = UISwitch()
     private let saveButton = ActionButton(titleKey: "common.save", style: .primary)
 
@@ -79,12 +82,19 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
         timeHelpLabel.textColor = ThemeColor.textSecondary
         timeHelpLabel.numberOfLines = 0
 
-        let clearButton = ActionButton(titleKey: "common.none", style: .secondary)
-        clearButton.addTarget(self, action: #selector(handleClearTime), for: .touchUpInside)
-        let timeHeader = UIStackView(arrangedSubviews: [timeSectionLabel, UIView(), clearButton])
+        timeSwitch.onTintColor = ThemeColor.accentAction
+        timeSwitch.accessibilityLabel = L10n.string("holiday.time_range")
+        timeSwitch.addTarget(self, action: #selector(handleTimeSwitchChanged), for: .valueChanged)
+        let timeHeader = UIStackView(arrangedSubviews: [timeSectionLabel, UIView(), timeSwitch])
         timeHeader.axis = .horizontal
         timeHeader.alignment = .center
         timeHeader.spacing = ThemeMetrics.space12
+        timeHeader.heightAnchor.constraint(
+            greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
+        ).isActive = true
+
+        timeStartRow = pickerRow(labelKey: "holiday.time_start", picker: timeStartPicker)
+        timeEndRow = pickerRow(labelKey: "holiday.time_end", picker: timeEndPicker)
 
         frameValueLabel.font = ThemeFont.body()
         frameValueLabel.adjustsFontForContentSizeCategory = true
@@ -120,8 +130,8 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
             pickerRow(labelKey: "holiday.date_start", picker: startPicker),
             pickerRow(labelKey: "holiday.date_end", picker: endPicker),
             timeHeader,
-            pickerRow(labelKey: "holiday.time_start", picker: timeStartPicker),
-            pickerRow(labelKey: "holiday.time_end", picker: timeEndPicker),
+            timeStartRow,
+            timeEndRow,
             timeHelpLabel,
             frameRow,
             enabledRow,
@@ -196,6 +206,8 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
             timeEndPicker.date = Self.date(fromMinute: 1080)
             enabledSwitch.isOn = true
         }
+        timeSwitch.isOn = hasTimeStart || hasTimeEnd
+        updateTimeRowsVisibility(animated: false)
         updateFrameValueLabel()
     }
 
@@ -221,9 +233,22 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
         dismiss(animated: true)
     }
 
-    @objc private func handleClearTime() {
-        hasTimeStart = false
-        hasTimeEnd = false
+    @objc private func handleTimeSwitchChanged() {
+        hasTimeStart = timeSwitch.isOn
+        hasTimeEnd = timeSwitch.isOn
+        updateTimeRowsVisibility(animated: true)
+    }
+
+    private func updateTimeRowsVisibility(animated: Bool) {
+        let changes = {
+            self.timeStartRow.isHidden = !self.timeSwitch.isOn
+            self.timeEndRow.isHidden = !self.timeSwitch.isOn
+        }
+        if animated {
+            UIView.animate(withDuration: 0.2, animations: changes)
+        } else {
+            changes()
+        }
     }
 
     @objc private func handleChooseFrame() {
