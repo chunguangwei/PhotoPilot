@@ -111,10 +111,18 @@ class PlayerEngine(
         )
     }
 
+    private val transitionWatchdogRunnable = Runnable {
+        if (state == PlaybackController.TRANSITIONING) {
+            transitionTargetIndex = null
+            dispatch(PlaybackEvent(type = "transition_finished"))
+        }
+    }
+
     private val restTickRunnable = object : Runnable {
         override fun run() {
             if (stopped) return
             checkRestWindow()
+            ensureHoldTimerIfHolding()
             handler.postDelayed(this, REST_TICK_MS)
         }
     }
@@ -232,14 +240,13 @@ class PlayerEngine(
                 else -> Unit
             }
         }
-        if (state == PlaybackController.HOLDING &&
-            PlaybackController.EFFECT_RESET_HOLD_TIMER !in effects &&
-            event.type in RESUME_EVENTS &&
-            !currentIsVideo()
-        ) {
-            scheduleHold(remainingHoldMs ?: settings.holdSeconds * 1000L)
-            remainingHoldMs = null
+        if (state == PlaybackController.TRANSITIONING) {
+            handler.removeCallbacks(transitionWatchdogRunnable)
+            handler.postDelayed(transitionWatchdogRunnable, TRANSITION_WATCHDOG_MS)
+        } else {
+            handler.removeCallbacks(transitionWatchdogRunnable)
         }
+        ensureHoldTimerIfHolding()
         if (state == PlaybackController.HOLDING && !markedPlayedOnce) {
             markedPlayedOnce = true
             scope.launch(Dispatchers.IO) {
@@ -572,6 +579,14 @@ class PlayerEngine(
         handler.postDelayed(holdRunnable, safeDelay)
     }
 
+    private fun ensureHoldTimerIfHolding() {
+        if (state != PlaybackController.HOLDING || currentIsVideo() || queue.size < 2) return
+        if (handler.hasCallbacks(holdRunnable)) return
+        val delay = remainingHoldMs ?: settings.holdSeconds * 1000L
+        remainingHoldMs = null
+        scheduleHold(delay)
+    }
+
     private fun checkRestWindow() {
         val calendar = Calendar.getInstance()
         val minute = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
@@ -727,8 +742,7 @@ class PlayerEngine(
         const val REST_TICK_MS = 60_000L
         const val HOLIDAY_TICK_MS = 60_000L
         const val FIRST_FRAME_TIME_US = 500_000L
-
-        val RESUME_EVENTS = setOf("user_resume", "app_foreground", "user_tap")
+        const val TRANSITION_WATCHDOG_MS = 12_000L
 
         val REST_INTERRUPTIBLE_STATES = setOf(
             PlaybackController.HOLDING,
