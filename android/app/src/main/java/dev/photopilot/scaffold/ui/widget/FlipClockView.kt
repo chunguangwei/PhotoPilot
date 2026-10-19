@@ -5,14 +5,14 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.provider.Settings
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
-import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import dev.photopilot.scaffold.R
@@ -22,7 +22,7 @@ class FlipClockView(context: Context) : LinearLayout(context) {
     private val hourCard = FlipCardView(context)
     private val minuteCard = FlipCardView(context)
     private val secondCard = FlipCardView(context)
-    private var appliedScale = 1f
+    private val spacing = resources.getDimensionPixelSize(R.dimen.pp_space_8)
 
     init {
         orientation = HORIZONTAL
@@ -30,7 +30,6 @@ class FlipClockView(context: Context) : LinearLayout(context) {
         clipChildren = false
         clipToPadding = false
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
-        val spacing = resources.getDimensionPixelSize(R.dimen.pp_space_8)
         listOf(hourCard, minuteCard, secondCard).forEachIndexed { index, card ->
             addView(
                 card,
@@ -48,26 +47,18 @@ class FlipClockView(context: Context) : LinearLayout(context) {
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        val maxWidth = MeasureSpec.getSize(widthMeasureSpec)
-        val fullWidth = (hourCard.cardWidth + minuteCard.cardWidth + secondCard.cardWidth) +
-            (childCount - 1) * resources.getDimensionPixelSize(R.dimen.pp_space_8) +
-            paddingStart + paddingEnd
-        val scale = if (maxWidth > 0 && fullWidth > maxWidth) {
-            maxWidth.toFloat() / fullWidth.toFloat()
-        } else {
+        val naturalWidth = hourCard.cardWidth + minuteCard.cardWidth + secondCard.cardWidth
+        val available = (MeasureSpec.getSize(widthMeasureSpec) - paddingLeft - paddingRight - 2 * spacing)
+            .coerceAtLeast(3)
+        val scale = if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.UNSPECIFIED) {
             1f
+        } else {
+            (available.toFloat() / naturalWidth).coerceAtMost(1f)
         }
-        if (scale != appliedScale) {
-            appliedScale = scale
-            for (index in 0 until childCount) {
-                getChildAt(index).scaleX = scale
-                getChildAt(index).scaleY = scale
-            }
+        for (index in 0 until childCount) {
+            (getChildAt(index) as FlipCardView).sizeScale = scale
         }
-        if (scale != 1f) {
-            setMeasuredDimension(maxWidth, (measuredHeight * scale).toInt())
-        }
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
     }
 
     private companion object {
@@ -82,31 +73,36 @@ class FlipClockView(context: Context) : LinearLayout(context) {
             textSize = resources.getDimension(R.dimen.pp_text_clock)
             textAlign = Paint.Align.CENTER
         }
+        private val surfaceColor = context.getColor(R.color.pp_surface_photo_control)
+        private val naturalTextSize = paint.textSize
         val cardWidth: Int
         private val cardHeight: Int
+        var sizeScale = 1f
         private var currentText = ""
         private val topStatic: HalfView
         private val bottomStatic: HalfView
+        private val bottomFlap: HalfView
         private val topFlap: HalfView
-        private var flipInProgress = false
-        private var pendingValue: String? = null
         private var flipToken = 0
         private var activeAnimator: Animator? = null
 
         init {
-            clipChildren = false
-            clipToPadding = false
+            clipChildren = true
+            clipToPadding = true
+            clipToOutline = true
             importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
             val res = resources
             val padH = res.getDimensionPixelSize(R.dimen.pp_space_16)
             cardWidth = (paint.measureText(SAMPLE) + padH * 2).toInt()
             cardHeight = ((paint.descent() - paint.ascent()) * HEIGHT_FACTOR).toInt()
             background = GradientDrawable().apply {
-                setColor(context.getColor(R.color.pp_surface_photo_control))
+                setColor(surfaceColor)
                 cornerRadius = res.getDimension(R.dimen.pp_radius_thumbnail)
             }
             bottomStatic = addHalf(top = false)
             topStatic = addHalf(top = true)
+            bottomFlap = addHalf(top = false).apply { visibility = INVISIBLE }
+            topFlap = addHalf(top = true).apply { visibility = INVISIBLE }
             val divider = View(context).apply {
                 setBackgroundColor(context.getColor(R.color.pp_surface_rest))
                 importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
@@ -120,7 +116,6 @@ class FlipClockView(context: Context) : LinearLayout(context) {
                     Gravity.CENTER,
                 ),
             )
-            topFlap = addHalf(top = true).apply { visibility = INVISIBLE }
         }
 
         private fun addHalf(top: Boolean): HalfView {
@@ -130,119 +125,123 @@ class FlipClockView(context: Context) : LinearLayout(context) {
         }
 
         fun setValue(value: String, animate: Boolean) {
-            if (value == currentText && !flipInProgress) return
-            if (!animate || currentText.isEmpty() || !isShown) {
-                cancelFlip()
-                currentText = value
-                topStatic.value = value
-                bottomStatic.value = value
+            if (value == currentText) return
+            val old = currentText
+            cancelFlip()
+            currentText = value
+            if (!animate || old.isEmpty() || !isShown || width == 0 ||
+                windowVisibility != VISIBLE || !ValueAnimator.areAnimatorsEnabled()
+            ) {
+                settle()
                 return
             }
-            if (flipInProgress) {
-                pendingValue = value
-                return
-            }
-            startFlip(currentText, value)
+            startFlip(old, value)
         }
 
         private fun startFlip(old: String, new: String) {
-            flipInProgress = true
-            currentText = new
             val token = ++flipToken
-            topStatic.value = new
-            topStatic.shade = SHADE_REVEALED
-            bottomStatic.value = old
-            bottomStatic.shade = 0
-            topFlap.value = old
-            topFlap.shade = 0
-            topFlap.rotationX = 0f
+            topStatic.value = old
+            bottomStatic.value = new
+            bottomFlap.value = old
+            topFlap.value = new
+            bottomFlap.visibility = VISIBLE
+            topFlap.visibility = INVISIBLE
+            bottomFlap.pivotY = height / 2f
             topFlap.pivotY = height / 2f
-            topFlap.visibility = VISIBLE
-            val flip = ValueAnimator.ofFloat(0f, FLIP_FULL_ANGLE).apply {
-                duration = FLIP_MS
-                interpolator = AccelerateDecelerateInterpolator()
+            bottomFlap.rotationX = 0f
+            topFlap.rotationX = -90f
+            val durationScale = Settings.Global.getFloat(
+                context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f,
+            )
+            val flip = ValueAnimator.ofFloat(0f, 1f).apply {
+                duration = (FLIP_MS / durationScale.coerceAtLeast(1f)).toLong().coerceAtLeast(1L)
+                interpolator = LinearInterpolator()
                 addUpdateListener { animator ->
-                    val fraction = animator.animatedFraction
-                    topFlap.rotationX = FLIP_FULL_ANGLE * fraction
-                    topFlap.shade = (SHADE_FALLEN * fraction).toInt()
-                    topStatic.shade = (SHADE_REVEALED * (1f - fraction)).toInt()
-                    if (fraction >= 0.5f) {
-                        if (topFlap.visibility == VISIBLE) topFlap.visibility = INVISIBLE
-                        if (bottomStatic.value != new) bottomStatic.value = new
-                    }
+                    val t = animator.animatedFraction
+                    val progress = t * t * (3f - 2f * t)
+                    bottomFlap.rotationX = (180f * progress).coerceAtMost(90f)
+                    topFlap.rotationX = (180f * (progress - 1f)).coerceAtLeast(-90f)
+                    bottomFlap.shade = MAX_SHADE * (2f * progress).coerceAtMost(1f)
+                    topFlap.shade = MAX_SHADE * (2f * (1f - progress)).coerceAtMost(1f)
+                    bottomFlap.visibility = if (progress < 0.5f) VISIBLE else INVISIBLE
+                    topFlap.visibility = if (progress >= 0.5f) VISIBLE else INVISIBLE
                 }
+                addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        if (token == flipToken) {
+                            activeAnimator = null
+                            settle()
+                        }
+                    }
+                })
             }
             activeAnimator = flip
-            flip.addListener(endListener(token) { finishFlip(new) })
             flip.start()
         }
 
-        private fun endListener(token: Int, action: () -> Unit): AnimatorListenerAdapter =
-            object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    if (token == flipToken) action()
-                }
-            }
-
-        private fun finishFlip(value: String) {
-            activeAnimator = null
+        private fun settle() {
+            topStatic.value = currentText
+            bottomStatic.value = currentText
+            bottomFlap.visibility = INVISIBLE
             topFlap.visibility = INVISIBLE
+            bottomFlap.rotationX = 0f
             topFlap.rotationX = 0f
-            topFlap.shade = 0
-            topStatic.shade = 0
-            bottomStatic.value = value
-            flipInProgress = false
-            val pending = pendingValue
-            pendingValue = null
-            if (pending != null && pending != value) {
-                setValue(pending, animate = true)
-            }
+            bottomFlap.shade = 0f
+            topFlap.shade = 0f
         }
 
         private fun cancelFlip() {
             flipToken++
             activeAnimator?.cancel()
             activeAnimator = null
-            flipInProgress = false
-            pendingValue = null
-            topFlap.visibility = INVISIBLE
-            topFlap.rotationX = 0f
-            topFlap.shade = 0
-            topStatic.shade = 0
-            bottomStatic.shade = 0
+            settle()
         }
 
         override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
             super.onMeasure(
-                MeasureSpec.makeMeasureSpec(cardWidth, MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(cardHeight, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec((cardWidth * sizeScale).toInt().coerceAtLeast(1), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec((cardHeight * sizeScale).toInt().coerceAtLeast(1), MeasureSpec.EXACTLY),
             )
         }
 
         override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
             super.onSizeChanged(w, h, oldw, oldh)
+            cancelFlip()
+            paint.textSize = naturalTextSize * sizeScale
+            bottomFlap.cameraDistance = h * CAMERA_DISTANCE_FACTOR
             topFlap.cameraDistance = h * CAMERA_DISTANCE_FACTOR
+        }
+
+        override fun onWindowVisibilityChanged(visibility: Int) {
+            super.onWindowVisibilityChanged(visibility)
+            if (visibility != VISIBLE && activeAnimator != null) cancelFlip()
+        }
+
+        override fun onVisibilityChanged(changedView: View, visibility: Int) {
+            super.onVisibilityChanged(changedView, visibility)
+            if (visibility != VISIBLE && activeAnimator != null) cancelFlip()
         }
 
         override fun onDetachedFromWindow() {
             cancelFlip()
-            if (currentText.isNotEmpty()) {
-                topStatic.value = currentText
-                bottomStatic.value = currentText
-            }
             super.onDetachedFromWindow()
         }
 
         private inner class HalfView(context: Context, private val top: Boolean) : View(context) {
 
+            private val surfacePaint = Paint().apply { color = surfaceColor }
+            private val shadePaint = Paint().apply { color = android.graphics.Color.BLACK }
+            private var baseline = 0f
             var value: String = ""
                 set(text) {
+                    if (field == text) return
                     field = text
                     invalidate()
                 }
 
-            var shade: Int = 0
+            var shade = 0f
                 set(alpha) {
+                    if (field == alpha) return
                     field = alpha
                     invalidate()
                 }
@@ -251,18 +250,22 @@ class FlipClockView(context: Context) : LinearLayout(context) {
                 importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
             }
 
+            override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+                baseline = h / 2f - (paint.descent() + paint.ascent()) / 2f
+            }
+
             override fun onDraw(canvas: Canvas) {
-                if (value.isEmpty()) return
                 canvas.save()
                 if (top) {
-                    canvas.clipRect(0, 0, width, height / 2)
+                    canvas.clipRect(0f, 0f, width.toFloat(), height / 2f)
                 } else {
-                    canvas.clipRect(0, height / 2, width, height)
+                    canvas.clipRect(0f, height / 2f, width.toFloat(), height.toFloat())
                 }
-                val baseline = height / 2f - (paint.descent() + paint.ascent()) / 2f
+                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), surfacePaint)
                 canvas.drawText(value, width / 2f, baseline, paint)
-                if (shade > 0) {
-                    canvas.drawColor(Color.argb(shade.coerceAtMost(255), 0, 0, 0))
+                if (shade > 0f) {
+                    shadePaint.alpha = (255 * shade).toInt()
+                    canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), shadePaint)
                 }
                 canvas.restore()
             }
@@ -270,10 +273,8 @@ class FlipClockView(context: Context) : LinearLayout(context) {
 
         private companion object {
             const val HEIGHT_FACTOR = 1.5f
-            const val FLIP_FULL_ANGLE = 180f
-            const val FLIP_MS = 850L
-            const val SHADE_FALLEN = 110
-            const val SHADE_REVEALED = 80
+            const val FLIP_MS = 920L
+            const val MAX_SHADE = 0.3f
             const val CAMERA_DISTANCE_FACTOR = 8f
         }
     }

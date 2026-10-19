@@ -117,6 +117,117 @@ final class PhotoPilotUIReviewTests: XCTestCase {
         }
     }
 
+    func testFlipClockFirstFrameAndPhoneTabletLayout() throws {
+        for width in [280, 393, 834, 1194] {
+            let controller = UIViewController()
+            let clock = FlipClockView(frame: CGRect(x: 0, y: 100, width: CGFloat(width), height: 180))
+            clock.hour24 = true
+            controller.view.addSubview(clock)
+            let window = show(controller, size: CGSize(width: CGFloat(width), height: 834))
+            defer { window.isHidden = true }
+            clock.setDate(Date(timeIntervalSince1970: 1_700_000_000))
+            clock.layoutIfNeeded()
+            let stack = try XCTUnwrap(clock.subviews.first as? UIStackView)
+            let row = try XCTUnwrap(stack.arrangedSubviews.first as? UIStackView)
+            XCTAssertEqual(row.arrangedSubviews.count, 3)
+            for card in row.arrangedSubviews {
+                let rect = card.convert(card.bounds, to: clock)
+                XCTAssertGreaterThan(card.bounds.width, 0)
+                XCTAssertGreaterThanOrEqual(rect.minX, -0.5)
+                XCTAssertLessThanOrEqual(rect.maxX, CGFloat(width) + 0.5)
+                XCTAssertTrue(card.subviews.allSatisfy { $0.layer.animation(forKey: "flip") == nil })
+            }
+            saveSnapshot(window, name: "flip-clock-\(width)")
+        }
+    }
+
+    func testFlipClockContinuousUpwardLeavesAndCancellation() throws {
+        let controller = UIViewController()
+        let clock = FlipClockView(frame: CGRect(x: 0, y: 100, width: 600, height: 180))
+        clock.hour24 = true
+        controller.view.addSubview(clock)
+        let window = show(controller, size: CGSize(width: 834, height: 1194))
+        defer { window.isHidden = true }
+        let date = Date(timeIntervalSince1970: 1_700_000_039)
+        clock.setDate(date)
+        clock.setDate(date.addingTimeInterval(1))
+        let stack = try XCTUnwrap(clock.subviews.first as? UIStackView)
+        let row = try XCTUnwrap(stack.arrangedSubviews.first as? UIStackView)
+        let card = try XCTUnwrap(row.arrangedSubviews.last)
+        let leaves = card.subviews.filter { $0.layer.animation(forKey: "flip") != nil }
+        XCTAssertEqual(leaves.count, 2)
+        for (index, leaf) in leaves.enumerated() {
+            let group = try XCTUnwrap(leaf.layer.animation(forKey: "flip") as? CAAnimationGroup)
+            XCTAssertEqual(group.duration, 0.92, accuracy: 0.001)
+            let rotation = try XCTUnwrap(group.animations?.first as? CAKeyframeAnimation)
+            let values = try XCTUnwrap(rotation.values as? [NSValue])
+            XCTAssertEqual(values.count, 121)
+            XCTAssertEqual(values[60].caTransform3DValue.m22, 0, accuracy: 0.0001)
+            XCTAssertGreaterThanOrEqual(values[30].caTransform3DValue.m22, -0.0001)
+            XCTAssertGreaterThanOrEqual(values[90].caTransform3DValue.m22, -0.0001)
+            XCTAssertEqual(leaf.layer.anchorPoint.y, index == 0 ? 0 : 1)
+            if index == 0 {
+                XCTAssertGreaterThan(values[30].caTransform3DValue.m23, 0)
+            } else {
+                XCTAssertLessThan(values[90].caTransform3DValue.m23, 0)
+            }
+        }
+        NotificationCenter.default.post(name: UIApplication.willResignActiveNotification, object: nil)
+        XCTAssertTrue(leaves.allSatisfy { $0.layer.animation(forKey: "flip") == nil && $0.layer.opacity == 0 })
+        let labels = card.subviews.prefix(2).compactMap { $0.subviews.first as? UILabel }
+        XCTAssertEqual(labels.count, 2)
+        XCTAssertEqual(labels.first?.text, labels.last?.text)
+        clock.setDate(date.addingTimeInterval(60))
+        XCTAssertTrue(card.subviews.allSatisfy { $0.layer.animation(forKey: "flip") == nil })
+    }
+
+    func testFlipClockAnimationSettlesWithoutStaleDigits() async throws {
+        let controller = UIViewController()
+        let clock = FlipClockView(frame: CGRect(x: 0, y: 100, width: 600, height: 180))
+        clock.hour24 = true
+        controller.view.addSubview(clock)
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = controller
+        window.makeKeyAndVisible()
+        clock.frame.size.width = window.bounds.width
+        window.layoutIfNeeded()
+        defer { window.isHidden = true }
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        clock.setDate(date)
+        clock.setDate(date.addingTimeInterval(1))
+        let clockStack = try XCTUnwrap(clock.subviews.first as? UIStackView)
+        let clockRow = try XCTUnwrap(clockStack.arrangedSubviews.first as? UIStackView)
+        let seconds = try XCTUnwrap(clockRow.arrangedSubviews.last)
+        try await Task.sleep(nanoseconds: 230_000_000)
+        XCTAssertEqual(seconds.subviews.filter { $0.layer.animation(forKey: "flip") != nil }.count, 2)
+        saveFlipPresentation(window, name: "flip-clock-lifting")
+        try await Task.sleep(nanoseconds: 460_000_000)
+        XCTAssertEqual(seconds.subviews.filter { $0.layer.animation(forKey: "flip") != nil }.count, 2)
+        saveFlipPresentation(window, name: "flip-clock-unfolding")
+        try await Task.sleep(nanoseconds: 510_000_000)
+        let stack = try XCTUnwrap(clock.subviews.first as? UIStackView)
+        let row = try XCTUnwrap(stack.arrangedSubviews.first as? UIStackView)
+        for card in row.arrangedSubviews {
+            XCTAssertTrue(card.subviews.allSatisfy { $0.layer.animation(forKey: "flip") == nil })
+            let labels = card.subviews.prefix(2).compactMap { $0.subviews.first as? UILabel }
+            XCTAssertEqual(labels.first?.text, labels.last?.text)
+        }
+    }
+
+    private func saveFlipPresentation(_ window: UIWindow, name: String) {
+        let image = UIGraphicsImageRenderer(bounds: window.bounds).image { context in
+            (window.layer.presentation() ?? window.layer).render(in: context.cgContext)
+        }
+        let attachment = XCTAttachment(image: image)
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("PhotoPilot-UI-review")
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try? image.pngData()?.write(to: directory.appendingPathComponent(name + ".png"))
+    }
+
     private func makeEnvironment() -> AppEnvironment {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         return AppEnvironment(persistence: PersistenceController(storeURL: directory.appendingPathComponent("library.db")))

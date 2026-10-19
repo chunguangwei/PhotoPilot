@@ -8,12 +8,14 @@ final class FlipClockView: UIView {
     private let secondCard = FlipCardView()
     private let periodLabel = UILabel()
     private var lastKey: String = ""
+    private var lastDate: Date?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         let row = UIStackView(arrangedSubviews: [hourCard, minuteCard, secondCard])
         row.axis = .horizontal
-        row.alignment = .center
+        row.alignment = .fill
+        row.distribution = .fillEqually
         row.spacing = ThemeMetrics.space16
         row.translatesAutoresizingMaskIntoConstraints = false
 
@@ -27,9 +29,13 @@ final class FlipClockView: UIView {
         stack.spacing = ThemeMetrics.space8
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
+        let preferredHeight = row.heightAnchor.constraint(equalTo: heightAnchor)
+        preferredHeight.priority = .defaultHigh
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: topAnchor),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor),
+            preferredHeight,
+            stack.topAnchor.constraint(greaterThanOrEqualTo: topAnchor),
+            stack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor),
+            stack.centerYAnchor.constraint(equalTo: centerYAnchor),
             stack.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor),
             stack.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
             stack.centerXAnchor.constraint(equalTo: centerXAnchor),
@@ -70,64 +76,51 @@ final class FlipClockView: UIView {
         let minuteText = String(format: "%02d", calendar.component(.minute, from: date))
         let secondText = String(format: "%02d", calendar.component(.second, from: date))
         let key = hourText + minuteText + secondText + (period ?? "")
+        let animate = lastDate.map { date.timeIntervalSince($0) > 0 && date.timeIntervalSince($0) < 1.5 } ?? false
+        lastDate = date
         guard key != lastKey else { return }
         lastKey = key
-        hourCard.setValue(hourText)
-        minuteCard.setValue(minuteText)
-        secondCard.setValue(secondText)
+        let beginTime = CACurrentMediaTime()
+        hourCard.setValue(hourText, animate: animate, beginTime: beginTime)
+        minuteCard.setValue(minuteText, animate: animate, beginTime: beginTime)
+        secondCard.setValue(secondText, animate: animate, beginTime: beginTime)
         periodLabel.text = period
         periodLabel.isHidden = period == nil
     }
 }
 
-private final class FlipCardView: UIView {
+private final class FlipCardView: UIView, CAAnimationDelegate {
     private let topHalf = HalfLabelView(isTop: true)
     private let bottomHalf = HalfLabelView(isTop: false)
+    private let flipBottom = HalfLabelView(isTop: false)
     private let flipTop = HalfLabelView(isTop: true)
     private let separator = UIView()
-
-    private(set) var value = ""
-    private var animating = false
-    private var pendingValue: String?
-    private var laidOut = false
+    private var value = ""
+    private var animationToken = 0
+    private var previousSize = CGSize.zero
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = ThemeColor.restCard
         layer.cornerRadius = ThemeMetrics.radiusGroup
         clipsToBounds = true
-
-        for half in [topHalf, bottomHalf, flipTop] {
-            half.translatesAutoresizingMaskIntoConstraints = false
+        for half in [topHalf, bottomHalf, flipBottom, flipTop] {
             addSubview(half)
         }
-        flipTop.isHidden = true
-        flipTop.layer.zPosition = 3
+        flipBottom.layer.anchorPoint = CGPoint(x: 0.5, y: 0)
+        flipTop.layer.anchorPoint = CGPoint(x: 0.5, y: 1)
+        flipBottom.layer.isDoubleSided = false
         flipTop.layer.isDoubleSided = false
-
+        flipBottom.layer.opacity = 0
+        flipTop.layer.opacity = 0
         separator.backgroundColor = ThemeColor.restSurface
-        separator.translatesAutoresizingMaskIntoConstraints = false
-        separator.layer.zPosition = 4
         addSubview(separator)
-
-        NSLayoutConstraint.activate([
-            topHalf.topAnchor.constraint(equalTo: topAnchor),
-            topHalf.leadingAnchor.constraint(equalTo: leadingAnchor),
-            topHalf.trailingAnchor.constraint(equalTo: trailingAnchor),
-            topHalf.heightAnchor.constraint(equalTo: heightAnchor, multiplier: 0.5),
-            bottomHalf.bottomAnchor.constraint(equalTo: bottomAnchor),
-            bottomHalf.leadingAnchor.constraint(equalTo: leadingAnchor),
-            bottomHalf.trailingAnchor.constraint(equalTo: trailingAnchor),
-            bottomHalf.heightAnchor.constraint(equalTo: heightAnchor, multiplier: 0.5),
-            flipTop.topAnchor.constraint(equalTo: topAnchor),
-            flipTop.leadingAnchor.constraint(equalTo: leadingAnchor),
-            flipTop.trailingAnchor.constraint(equalTo: trailingAnchor),
-            flipTop.heightAnchor.constraint(equalTo: heightAnchor, multiplier: 0.5),
-            separator.centerYAnchor.constraint(equalTo: centerYAnchor),
-            separator.leadingAnchor.constraint(equalTo: leadingAnchor),
-            separator.trailingAnchor.constraint(equalTo: trailingAnchor),
-            separator.heightAnchor.constraint(equalToConstant: 1.5),
-        ])
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(stopFlip), name: UIApplication.willResignActiveNotification, object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(stopFlip), name: UIAccessibility.reduceMotionStatusDidChangeNotification, object: nil
+        )
     }
 
     @available(*, unavailable)
@@ -137,78 +130,116 @@ private final class FlipCardView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        let fontSize = max(bounds.height * 0.62, 12)
-        for half in [topHalf, bottomHalf, flipTop] {
-            half.label.font = .monospacedDigitSystemFont(ofSize: fontSize, weight: .bold)
+        guard bounds.size != previousSize else { return }
+        stopFlip()
+        previousSize = bounds.size
+        let halfHeight = bounds.height / 2
+        let font = UIFont.monospacedDigitSystemFont(ofSize: max(bounds.height * 0.62, 12), weight: .bold)
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        topHalf.frame = CGRect(x: 0, y: 0, width: bounds.width, height: halfHeight)
+        bottomHalf.frame = CGRect(x: 0, y: halfHeight, width: bounds.width, height: halfHeight)
+        for flap in [flipBottom, flipTop] {
+            flap.bounds = CGRect(x: 0, y: 0, width: bounds.width, height: halfHeight)
+            flap.layer.position = CGPoint(x: bounds.midX, y: halfHeight)
         }
-        setAnchor(CGPoint(x: 0.5, y: 1), for: flipTop)
-        laidOut = true
+        for half in [topHalf, bottomHalf, flipBottom, flipTop] {
+            half.label.font = font
+        }
+        separator.frame = CGRect(x: 0, y: halfHeight - 0.75, width: bounds.width, height: 1.5)
+        CATransaction.commit()
     }
 
-    func setValue(_ next: String) {
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window == nil { stopFlip() }
+    }
+
+    func setValue(_ next: String, animate: Bool, beginTime: CFTimeInterval) {
         guard next != value else { return }
-        if animating {
-            pendingValue = next
+        layoutIfNeeded()
+        let old = value
+        stopFlip()
+        value = next
+        guard animate, !old.isEmpty, window != nil, bounds.height > 0,
+              !UIAccessibility.isReduceMotionEnabled, UIView.areAnimationsEnabled,
+              UIApplication.shared.applicationState == .active else {
+            stopFlip()
             return
         }
-        startFlip(to: next)
-    }
-
-    private func startFlip(to next: String) {
-        let old = value
-        value = next
-        animating = true
-        topHalf.text = next
-        flipTop.text = old
-        bottomHalf.text = old
-        if !laidOut { layoutIfNeeded() }
-        flipTop.layer.transform = CATransform3DIdentity
-        flipTop.isHidden = false
-        topHalf.shade.alpha = 0.35
-        flipTop.shade.alpha = 0
-        let duration = 0.85
-        UIView.animate(withDuration: duration, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
-            self.flipTop.layer.transform = self.flipRotation(-179.9)
-            self.flipTop.shade.alpha = 0.5
-            self.topHalf.shade.alpha = 0
-        } completion: { _ in
-            self.flipTop.isHidden = true
-            self.flipTop.layer.transform = CATransform3DIdentity
-            self.bottomHalf.text = next
-            self.animating = false
-            if let pending = self.pendingValue, pending != next {
-                self.pendingValue = nil
-                self.startFlip(to: pending)
-            } else {
-                self.pendingValue = nil
+        topHalf.text = old
+        bottomHalf.text = next
+        flipBottom.text = old
+        flipTop.text = next
+        layoutIfNeeded()
+        let token = animationToken
+        let duration = 0.92
+        let times = (0...120).map { NSNumber(value: Double($0) / 120) }
+        let progress = (0...120).map { index -> CGFloat in
+            let t = CGFloat(index) / 120
+            return t * t * (3 - 2 * t)
+        }
+        let outgoing = progress.map { rotation(min($0 * .pi, .pi / 2)) }
+        let incoming = progress.map { rotation(max(($0 - 1) * .pi, -.pi / 2)) }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for (flap, transforms, isIncoming) in [(flipBottom, outgoing, false), (flipTop, incoming, true)] {
+            let transform = CAKeyframeAnimation(keyPath: "transform")
+            transform.values = transforms.map { NSValue(caTransform3D: $0) }
+            transform.keyTimes = times
+            transform.duration = duration
+            let visibility = CAKeyframeAnimation(keyPath: "opacity")
+            visibility.values = isIncoming ? [0, 1, 1] : [1, 0, 0]
+            visibility.keyTimes = [0, 0.5, 1]
+            visibility.calculationMode = .discrete
+            visibility.duration = duration
+            let group = CAAnimationGroup()
+            group.animations = [transform, visibility]
+            group.duration = duration
+            group.fillMode = .forwards
+            group.isRemovedOnCompletion = false
+            group.beginTime = flap.layer.convertTime(beginTime, from: nil)
+            if isIncoming {
+                group.delegate = self
+                group.setValue(token, forKey: "flipToken")
             }
+            flap.layer.add(group, forKey: "flip")
+            let shade = CAKeyframeAnimation(keyPath: "opacity")
+            shade.values = progress.map { NSNumber(value: Double(isIncoming ? 0.3 * min(2 * (1 - $0), 1) : 0.3 * min(2 * $0, 1))) }
+            shade.keyTimes = times
+            shade.duration = duration
+            shade.beginTime = flap.shade.layer.convertTime(beginTime, from: nil)
+            flap.shade.layer.add(shade, forKey: "flipShade")
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration * 0.5) { [weak self] in
-            guard let self, self.animating, self.value == next else { return }
-            self.bottomHalf.text = next
+        CATransaction.commit()
+    }
+
+    nonisolated func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
+        guard flag, let token = anim.value(forKey: "flipToken") as? Int else { return }
+        Task { @MainActor [weak self] in
+            guard let self, self.animationToken == token else { return }
+            self.stopFlip()
         }
     }
 
-    private func flipRotation(_ degrees: CGFloat) -> CATransform3D {
+    @objc private func stopFlip() {
+        animationToken += 1
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for flap in [flipBottom, flipTop] {
+            flap.layer.removeAnimation(forKey: "flip")
+            flap.shade.layer.removeAnimation(forKey: "flipShade")
+            flap.layer.opacity = 0
+        }
+        topHalf.text = value
+        bottomHalf.text = value
+        CATransaction.commit()
+    }
+
+    private func rotation(_ radians: CGFloat) -> CATransform3D {
         var transform = CATransform3DIdentity
-        transform.m34 = -1.0 / max(bounds.height * 5, 320)
-        return CATransform3DRotate(transform, degrees * .pi / 180, 1, 0, 0)
-    }
-
-    private func setAnchor(_ anchor: CGPoint, for view: UIView) {
-        let oldPoint = CGPoint(
-            x: view.bounds.width * view.layer.anchorPoint.x,
-            y: view.bounds.height * view.layer.anchorPoint.y
-        )
-        let newPoint = CGPoint(
-            x: view.bounds.width * anchor.x,
-            y: view.bounds.height * anchor.y
-        )
-        var position = view.layer.position
-        position.x += newPoint.x - oldPoint.x
-        position.y += newPoint.y - oldPoint.y
-        view.layer.anchorPoint = anchor
-        view.layer.position = position
+        transform.m34 = -1 / max(bounds.height * 5, 320)
+        return CATransform3DRotate(transform, radians, 1, 0, 0)
     }
 }
 
