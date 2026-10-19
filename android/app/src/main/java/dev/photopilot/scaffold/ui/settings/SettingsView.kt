@@ -172,15 +172,34 @@ class SettingsView(context: Context) : ScrollView(context) {
             LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
         )
         addText(weatherGroup, R.string.weather_units, R.dimen.pp_text_body, R.color.pp_text_primary, R.dimen.pp_space_8)
-        addOptionRow(
-            weatherGroup,
-            listOf(
-                R.string.settings_appearance_system,
-                R.string.weather_unit_celsius,
-                R.string.weather_unit_fahrenheit,
-            ),
-            model.weatherUnitsIndex,
-        ) { onWeatherUnits?.invoke(it) }
+        val unitLabels = listOf(
+            R.string.settings_appearance_system,
+            R.string.weather_unit_celsius,
+            R.string.weather_unit_fahrenheit,
+        )
+        val unitsDropdown = dev.photopilot.scaffold.ui.widget.dropdownField(
+            context,
+            unitLabels[model.weatherUnitsIndex],
+        ).apply {
+            text = res.getString(unitLabels[model.weatherUnitsIndex]) + "  ⌄"
+            setOnClickListener { anchor ->
+                val menu = android.widget.PopupMenu(context, anchor)
+                unitLabels.forEachIndexed { index, labelRes ->
+                    menu.menu.add(0, index, index, res.getString(labelRes))
+                        .setOnMenuItemClickListener {
+                            if (index != model.weatherUnitsIndex) onWeatherUnits?.invoke(index)
+                            true
+                        }
+                }
+                menu.show()
+            }
+        }
+        weatherGroup.addView(
+            unitsDropdown,
+            LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = res.getDimensionPixelSize(R.dimen.pp_space_8)
+            },
+        )
 
         val privacyGroup = section(R.string.settings_privacy)
         addHelp(privacyGroup, R.string.settings_privacy_summary)

@@ -78,6 +78,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     var onWeatherSetup: (() -> Unit)? = null
 
     private lateinit var holdCustomInput: EditText
+    private lateinit var holdCustomSection: LinearLayout
+    private lateinit var holdUnitControl: dev.photopilot.scaffold.ui.widget.SegmentedControl
     private lateinit var holdError: TextView
     private lateinit var transitionSeek: SeekBar
     private lateinit var transitionValue: TextView
@@ -99,6 +101,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private lateinit var previewImage: ImageView
 
     private lateinit var transitionButton: TextView
+    private lateinit var fitButton: TextView
     private lateinit var previewImageB: ImageView
     private var previewBitmapB: Bitmap? = null
     private var isDemoRunning = false
@@ -202,9 +205,15 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         holdPresetIndex = HOLD_PRESETS.indexOf(s.holdSeconds)
         holdCustomMinutes = false
         if (holdPresetIndex < 0) {
-            holdPresetIndex = -1
-            holdCustomInput.setText(s.holdSeconds.toString())
+            holdPresetIndex = HOLD_CUSTOM_INDEX
+            if (s.holdSeconds >= 60 && s.holdSeconds % 60 == 0) {
+                holdCustomMinutes = true
+                holdCustomInput.setText((s.holdSeconds / 60).toString())
+            } else {
+                holdCustomInput.setText(s.holdSeconds.toString())
+            }
         }
+        holdUnitControl.setSelected(if (holdCustomMinutes) 1 else 0)
         transitionIndex = TRANSITIONS.indexOf(s.transition).coerceAtLeast(0)
         transitionTenths = (s.transitionSeconds * 10).toInt().coerceIn(2, 30)
         fitIndex = when (s.fitMode) {
@@ -375,10 +384,15 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
 
 
     private fun currentHoldSeconds(): Int {
-        if (holdPresetIndex >= 0) return HOLD_PRESETS[holdPresetIndex]
+        if (holdPresetIndex in HOLD_PRESETS.indices) return HOLD_PRESETS[holdPresetIndex]
         val raw = holdCustomInput.text.toString().trim().toDoubleOrNull() ?: return -1
         val seconds = if (holdCustomMinutes) raw * 60.0 else raw
         return seconds.toInt()
+    }
+
+    private fun updateHoldCustomVisibility() {
+        val custom = holdPresetIndex == HOLD_CUSTOM_INDEX
+        holdCustomSection.visibility = if (custom) View.VISIBLE else View.GONE
     }
 
     private fun attemptSave() {
@@ -443,15 +457,16 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         addHelp(column, R.string.playback_hold_duration_help)
         column.addView(
             optionGroup(
-                HOLD_PRESETS.map { R.string.format_seconds_short },
+                HOLD_PRESETS.map { R.string.format_seconds_short } + R.string.common_custom,
                 holdPresetIndex,
             ) { index ->
                 holdPresetIndex = index
-                holdCustomInput.isEnabled = false
+                updateHoldCustomVisibility()
             },
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
         )
-        addHelp(column, R.string.playback_hold_custom_title)
+        holdCustomSection = LinearLayout(context).apply { orientation = VERTICAL }
+        addHelp(holdCustomSection, R.string.playback_hold_custom_title)
         val customRow = LinearLayout(context).apply {
             orientation = HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -472,27 +487,28 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                 setColor(context.getColor(R.color.pp_surface_panel))
                 cornerRadius = resources.getDimension(R.dimen.pp_radius_group)
             }
-            isEnabled = false
-            setOnFocusChangeListener { _, hasFocus ->
-                if (hasFocus) {
-                    holdPresetIndex = -1
-                    isEnabled = true
-                }
-            }
         }
         customRow.addView(holdCustomInput, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
+        holdUnitControl = optionGroup(
+            listOf(R.string.playback_unit_seconds, R.string.playback_unit_minutes),
+            0,
+        ) { index -> holdCustomMinutes = index == 1 }
         customRow.addView(
-            optionGroup(
-                listOf(R.string.playback_unit_seconds, R.string.playback_unit_minutes),
-                0,
-            ) { index -> holdCustomMinutes = index == 1 },
+            holdUnitControl,
             LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginStart = resources.getDimensionPixelSize(R.dimen.pp_space_8)
             },
         )
-        column.addView(customRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-        addHelp(column, R.string.playback_hold_custom_help)
-        holdError = addError(column)
+        holdCustomSection.addView(
+            customRow,
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
+        )
+        addHelp(holdCustomSection, R.string.playback_hold_custom_help)
+        holdError = addError(holdCustomSection)
+        column.addView(
+            holdCustomSection,
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
+        )
 
         addLabel(column, R.string.playback_transition, R.dimen.pp_space_24)
         transitionButton = dropdownField(context, R.string.playback_transition).apply {
@@ -530,21 +546,14 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         transitionError = addError(column)
 
         addLabel(column, R.string.playback_fit_mode, R.dimen.pp_space_24)
+        fitButton = dropdownField(context, R.string.playback_fit_mode).apply {
+            setOnClickListener { anchor -> showFitModeMenu(anchor) }
+        }
         column.addView(
-            optionGroup(
-                listOf(
-                    R.string.playback_fit_blur,
-                    R.string.playback_fit_color,
-                    R.string.playback_fill_crop,
-                ),
-                fitIndex,
-            ) { index ->
-                fitIndex = index
-                cropWarning.visibility = if (fitIndex == 2) View.VISIBLE else View.GONE
-                solidRow.visibility = if (fitIndex == 1) View.VISIBLE else View.GONE
-                renderPreview()
+            fitButton,
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = resources.getDimensionPixelSize(R.dimen.pp_space_8)
             },
-            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
         )
         solidRow = optionGroup(
             listOf(
@@ -733,8 +742,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         transitionSeek.progress = transitionTenths - TRANSITION_TENTHS_MIN
         brightnessSeek.progress = brightnessPercent
         brightnessSeek.isEnabled = !brightnessFollow
-        cropWarning.visibility = if (fitIndex == 2) View.VISIBLE else View.GONE
-        solidRow.visibility = if (fitIndex == 1) View.VISIBLE else View.GONE
+        updateHoldCustomVisibility()
+        refreshFitState()
         refreshTransitionState()
         refreshRestState()
         refreshMusicState()
@@ -742,7 +751,29 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     }
 
     private fun refreshMusicState() {
-        musicButton.text = MusicCatalog.displayName(context, musicSelection())
+        musicButton.text = MusicCatalog.displayName(context, musicSelection()) + "  ⌄"
+    }
+
+    private fun refreshFitState() {
+        fitButton.text = resources.getString(FIT_LABELS[fitIndex]) + "  ⌄"
+        cropWarning.visibility = if (fitIndex == 2) View.VISIBLE else View.GONE
+        solidRow.visibility = if (fitIndex == 1) View.VISIBLE else View.GONE
+    }
+
+    private fun showFitModeMenu(anchor: View) {
+        val menu = android.widget.PopupMenu(context, anchor)
+        FIT_LABELS.forEachIndexed { index, labelRes ->
+            menu.menu.add(0, index, index, resources.getString(labelRes))
+                .setOnMenuItemClickListener {
+                    if (index != fitIndex) {
+                        fitIndex = index
+                        refreshFitState()
+                        renderPreview()
+                    }
+                    true
+                }
+        }
+        menu.show()
     }
 
     private fun refreshTransitionState() {
@@ -1059,10 +1090,20 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     }
 
     private fun slotArgs(labelRes: Int, index: Int): Array<Any> =
-        if (labelRes == R.string.format_seconds_short) arrayOf(HOLD_PRESETS[index]) else emptyArray()
+        if (labelRes == R.string.format_seconds_short && index < HOLD_PRESETS.size) {
+            arrayOf(HOLD_PRESETS[index])
+        } else {
+            emptyArray()
+        }
 
     private companion object {
         val HOLD_PRESETS = listOf(5, 10, 15, 30, 60)
+        const val HOLD_CUSTOM_INDEX = 5
+        val FIT_LABELS = listOf(
+            R.string.playback_fit_blur,
+            R.string.playback_fit_color,
+            R.string.playback_fill_crop,
+        )
         val TRANSITIONS = listOf(
             PlaybackTiming.TRANSITION_NONE,
             PlaybackTiming.TRANSITION_RANDOM,
