@@ -967,12 +967,12 @@ class PlayerView(
     private fun buildRestingOverlay() {
         val res = resources
         restingClock = dev.photopilot.scaffold.ui.widget.FlipClockView(context)
-        restingDate = overlayText(R.dimen.pp_text_meta).apply {
+        restingDate = overlayText(R.dimen.pp_text_heading).apply {
             gravity = Gravity.CENTER
             visibility = if (settings.dateEnabled) View.VISIBLE else View.GONE
             importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
         }
-        restingWeather = overlayText(R.dimen.pp_text_meta).apply {
+        restingWeather = overlayText(R.dimen.pp_text_body).apply {
             gravity = Gravity.CENTER
             visibility = View.GONE
             importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO

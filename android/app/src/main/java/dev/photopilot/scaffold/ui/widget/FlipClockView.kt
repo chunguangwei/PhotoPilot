@@ -3,8 +3,10 @@ package dev.photopilot.scaffold.ui.widget
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -13,6 +15,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
+import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import dev.photopilot.scaffold.R
@@ -152,32 +155,55 @@ class FlipClockView(context: Context) : LinearLayout(context) {
             currentText = new
             val token = ++flipToken
             topStatic.value = old
+            topStatic.shade = 0
             bottomStatic.value = old
+            bottomStatic.shade = 0
             topFlap.value = old
+            topFlap.shade = 0
             topFlap.rotationX = 0f
             topFlap.pivotY = height / 2f
             topFlap.visibility = VISIBLE
             val first = ObjectAnimator.ofFloat(topFlap, ROTATION_X, 0f, -FLIP_ANGLE).apply {
-                duration = FLIP_HALF_MS
+                duration = FLIP_TOP_MS
                 interpolator = AccelerateInterpolator()
+            }
+            val firstShade = ValueAnimator.ofInt(0, SHADE_FALLEN).apply {
+                duration = FLIP_TOP_MS
+                interpolator = AccelerateInterpolator()
+                addUpdateListener { topFlap.shade = it.animatedValue as Int }
             }
             activeAnimator = first
             first.addListener(endListener(token) {
                 topFlap.visibility = INVISIBLE
                 topStatic.value = new
+                topStatic.shade = SHADE_REVEALED
                 bottomFlap.value = new
+                bottomFlap.shade = SHADE_RAISED
                 bottomFlap.rotationX = FLIP_ANGLE
                 bottomFlap.pivotY = height / 2f
                 bottomFlap.visibility = VISIBLE
                 val second = ObjectAnimator.ofFloat(bottomFlap, ROTATION_X, FLIP_ANGLE, 0f).apply {
-                    duration = FLIP_HALF_MS
+                    duration = FLIP_BOTTOM_MS
+                    interpolator = OvershootInterpolator(OVERSHOOT_TENSION)
+                }
+                val secondShade = ValueAnimator.ofInt(SHADE_RAISED, 0).apply {
+                    duration = FLIP_BOTTOM_MS
                     interpolator = DecelerateInterpolator()
+                    addUpdateListener { bottomFlap.shade = it.animatedValue as Int }
+                }
+                val revealShade = ValueAnimator.ofInt(SHADE_REVEALED, 0).apply {
+                    duration = FLIP_BOTTOM_MS
+                    interpolator = DecelerateInterpolator()
+                    addUpdateListener { topStatic.shade = it.animatedValue as Int }
                 }
                 activeAnimator = second
                 second.addListener(endListener(token) { finishFlip(new) })
                 second.start()
+                secondShade.start()
+                revealShade.start()
             })
             first.start()
+            firstShade.start()
         }
 
         private fun endListener(token: Int, action: () -> Unit): AnimatorListenerAdapter =
@@ -239,6 +265,12 @@ class FlipClockView(context: Context) : LinearLayout(context) {
                     invalidate()
                 }
 
+            var shade: Int = 0
+                set(alpha) {
+                    field = alpha
+                    invalidate()
+                }
+
             init {
                 importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
             }
@@ -253,6 +285,9 @@ class FlipClockView(context: Context) : LinearLayout(context) {
                 }
                 val baseline = height / 2f - (paint.descent() + paint.ascent()) / 2f
                 canvas.drawText(value, width / 2f, baseline, paint)
+                if (shade > 0) {
+                    canvas.drawColor(Color.argb(shade.coerceAtMost(255), 0, 0, 0))
+                }
                 canvas.restore()
             }
         }
@@ -260,7 +295,12 @@ class FlipClockView(context: Context) : LinearLayout(context) {
         private companion object {
             const val HEIGHT_FACTOR = 1.5f
             const val FLIP_ANGLE = 90f
-            const val FLIP_HALF_MS = 180L
+            const val FLIP_TOP_MS = 170L
+            const val FLIP_BOTTOM_MS = 340L
+            const val OVERSHOOT_TENSION = 0.9f
+            const val SHADE_FALLEN = 110
+            const val SHADE_RAISED = 130
+            const val SHADE_REVEALED = 80
             const val CAMERA_DISTANCE_FACTOR = 8f
         }
     }

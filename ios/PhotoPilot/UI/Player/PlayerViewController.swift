@@ -1719,12 +1719,12 @@ final class PlayerViewController: UIViewController {
         restingScreen.accessibilityTraits = [.button]
         let restTap = UITapGestureRecognizer(target: self, action: #selector(handleRestingResume))
         restingScreen.addGestureRecognizer(restTap)
-        restDateLabel.font = ThemeFont.body()
+        restDateLabel.font = ThemeFont.heading()
         restDateLabel.adjustsFontForContentSizeCategory = true
         restDateLabel.textColor = ThemeColor.textOnPhoto
         restDateLabel.textAlignment = .center
         flipClock.translatesAutoresizingMaskIntoConstraints = false
-        restWeatherLabel.font = ThemeFont.meta()
+        restWeatherLabel.font = ThemeFont.body()
         restWeatherLabel.adjustsFontForContentSizeCategory = true
         restWeatherLabel.textColor = ThemeColor.textOnPhoto
         restWeatherLabel.textAlignment = .center
@@ -1744,13 +1744,14 @@ final class PlayerViewController: UIViewController {
             restStack.centerXAnchor.constraint(equalTo: restingScreen.centerXAnchor),
             restStack.centerYAnchor.constraint(equalTo: restingScreen.centerYAnchor),
             restStack.leadingAnchor.constraint(
-                greaterThanOrEqualTo: restingScreen.leadingAnchor,
+                equalTo: restingScreen.leadingAnchor,
                 constant: ThemeMetrics.contentInset
             ),
             restStack.trailingAnchor.constraint(
-                lessThanOrEqualTo: restingScreen.trailingAnchor,
+                equalTo: restingScreen.trailingAnchor,
                 constant: -ThemeMetrics.contentInset
             ),
+            flipClock.widthAnchor.constraint(equalTo: restStack.widthAnchor),
             flipClock.heightAnchor.constraint(
                 lessThanOrEqualTo: restingScreen.heightAnchor,
                 multiplier: 0.28

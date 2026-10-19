@@ -33,8 +33,10 @@ final class FlipClockView: UIView {
             stack.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor),
             stack.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
             stack.centerXAnchor.constraint(equalTo: centerXAnchor),
+            row.widthAnchor.constraint(lessThanOrEqualTo: widthAnchor),
         ])
         for card in [hourCard, minuteCard, secondCard] {
+            card.heightAnchor.constraint(equalTo: row.heightAnchor).isActive = true
             card.widthAnchor.constraint(equalTo: card.heightAnchor, multiplier: 0.78).isActive = true
         }
         isAccessibilityElement = false
@@ -172,13 +174,28 @@ private final class FlipCardView: UIView {
         flipBottom.layer.transform = flipRotation(-89.9)
         flipTop.isHidden = false
         flipBottom.isHidden = false
-        UIView.animate(withDuration: 0.17, delay: 0, options: [.curveEaseIn, .beginFromCurrentState]) {
+        topHalf.shade.alpha = 0.35
+        bottomHalf.shade.alpha = 0
+        flipTop.shade.alpha = 0
+        flipBottom.shade.alpha = 0.55
+        UIView.animate(withDuration: 0.22, delay: 0, options: [.curveEaseIn, .beginFromCurrentState]) {
             self.flipTop.layer.transform = self.flipRotation(89.9)
+            self.flipTop.shade.alpha = 0.45
+            self.topHalf.shade.alpha = 0
         } completion: { _ in
             self.flipTop.isHidden = true
             self.flipTop.layer.transform = CATransform3DIdentity
-            UIView.animate(withDuration: 0.17, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) {
+            self.bottomHalf.shade.alpha = 0.2
+            UIView.animate(
+                withDuration: 0.42,
+                delay: 0,
+                usingSpringWithDamping: 0.86,
+                initialSpringVelocity: 0.6,
+                options: [.beginFromCurrentState]
+            ) {
                 self.flipBottom.layer.transform = CATransform3DIdentity
+                self.flipBottom.shade.alpha = 0
+                self.bottomHalf.shade.alpha = 0
             } completion: { _ in
                 self.bottomHalf.text = next
                 self.flipBottom.isHidden = true
@@ -195,7 +212,7 @@ private final class FlipCardView: UIView {
 
     private func flipRotation(_ degrees: CGFloat) -> CATransform3D {
         var transform = CATransform3DIdentity
-        transform.m34 = -1.0 / 700
+        transform.m34 = -1.0 / max(bounds.height * 5, 320)
         return CATransform3DRotate(transform, degrees * .pi / 180, 1, 0, 0)
     }
 
@@ -218,6 +235,7 @@ private final class FlipCardView: UIView {
 
 private final class HalfLabelView: UIView {
     let label = UILabel()
+    let shade = UIView()
 
     init(isTop: Bool) {
         super.init(frame: .zero)
@@ -231,6 +249,11 @@ private final class HalfLabelView: UIView {
         label.baselineAdjustment = .alignCenters
         label.translatesAutoresizingMaskIntoConstraints = false
         addSubview(label)
+        shade.backgroundColor = .black
+        shade.alpha = 0
+        shade.isUserInteractionEnabled = false
+        shade.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(shade)
         NSLayoutConstraint.activate([
             label.centerXAnchor.constraint(equalTo: centerXAnchor),
             label.widthAnchor.constraint(equalTo: widthAnchor),
@@ -238,6 +261,10 @@ private final class HalfLabelView: UIView {
             isTop
                 ? label.topAnchor.constraint(equalTo: topAnchor)
                 : label.bottomAnchor.constraint(equalTo: bottomAnchor),
+            shade.topAnchor.constraint(equalTo: topAnchor),
+            shade.bottomAnchor.constraint(equalTo: bottomAnchor),
+            shade.leadingAnchor.constraint(equalTo: leadingAnchor),
+            shade.trailingAnchor.constraint(equalTo: trailingAnchor),
         ])
         isAccessibilityElement = false
     }
