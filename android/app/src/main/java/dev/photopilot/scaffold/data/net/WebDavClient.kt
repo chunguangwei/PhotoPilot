@@ -277,8 +277,8 @@ class WebDavClient(
         runCatching {
             factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
         }
-        factory.isXIncludeAware = false
-        factory.isExpandEntityReferences = false
+        runCatching { factory.isXIncludeAware = false }
+        runCatching { factory.isExpandEntityReferences = false }
         val document = try {
             factory.newDocumentBuilder().parse(input)
         } catch (e: org.xml.sax.SAXException) {
