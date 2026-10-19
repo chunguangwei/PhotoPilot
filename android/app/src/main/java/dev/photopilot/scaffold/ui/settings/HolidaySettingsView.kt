@@ -61,7 +61,8 @@ class HolidaySettingsView(context: Context) : LinearLayout(context) {
     private val endButton: TextView
     private val startTimeButton: TextView
     private val endTimeButton: TextView
-    private val clearTimeButton: TextView
+    private val timeSwitch: Switch
+    private val timeButtonsRow: LinearLayout
     private val frameButton: TextView
     private val enabledSwitch: Switch
 
@@ -135,7 +136,24 @@ class HolidaySettingsView(context: Context) : LinearLayout(context) {
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_4)
             },
         )
-        addLabel(formColumn, R.string.holiday_time_range)
+        timeSwitch = Switch(context).apply {
+            text = res.getString(R.string.holiday_time_range)
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
+            setTextColor(context.getColor(R.color.pp_text_primary))
+            minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+            setOnCheckedChangeListener { _, isChecked ->
+                if (!bindingForm) {
+                    if (!isChecked) draft = draft.copy(startTime = null, endTime = null)
+                    bindTimes()
+                }
+            }
+        }
+        formColumn.addView(
+            timeSwitch,
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = res.getDimensionPixelSize(R.dimen.pp_space_16)
+            },
+        )
         addHelp(formColumn, R.string.holiday_time_help)
         startTimeButton = dateButton(R.string.holiday_time_start) { pickTime(draft.startTime) { minute ->
             draft = draft.copy(startTime = minute)
@@ -145,21 +163,10 @@ class HolidaySettingsView(context: Context) : LinearLayout(context) {
             draft = draft.copy(endTime = minute)
             bindTimes()
         } }
-        clearTimeButton = secondaryButton(context, R.string.common_none).apply {
-            setOnClickListener {
-                draft = draft.copy(startTime = null, endTime = null)
-                bindTimes()
-            }
-        }
+        timeButtonsRow = horizontalPair(startTimeButton, endTimeButton)
         formColumn.addView(
-            horizontalPair(startTimeButton, endTimeButton),
+            timeButtonsRow,
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = res.getDimensionPixelSize(R.dimen.pp_space_4)
-            },
-        )
-        formColumn.addView(
-            clearTimeButton,
-            LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_4)
             },
         )
@@ -378,6 +385,11 @@ class HolidaySettingsView(context: Context) : LinearLayout(context) {
     }
 
     private fun bindTimes() {
+        val hasTime = draft.startTime != null || draft.endTime != null
+        bindingForm = true
+        timeSwitch.isChecked = hasTime
+        bindingForm = false
+        timeButtonsRow.visibility = if (hasTime) VISIBLE else GONE
         startTimeButton.text = labelled(resources.getString(R.string.holiday_time_start), draft.startTime?.let(::timeValue))
         endTimeButton.text = labelled(resources.getString(R.string.holiday_time_end), draft.endTime?.let(::timeValue))
     }
@@ -470,6 +482,10 @@ class HolidaySettingsView(context: Context) : LinearLayout(context) {
 
     private fun dateButton(labelRes: Int, onClick: () -> Unit): TextView =
         secondaryButton(context, labelRes).apply {
+            val padH = resources.getDimensionPixelSize(R.dimen.pp_space_8)
+            setPadding(padH, 0, padH, 0)
+            maxLines = 2
+            setAutoSizeTextTypeUniformWithConfiguration(10, 15, 1, TypedValue.COMPLEX_UNIT_SP)
             setOnClickListener { onClick() }
         }
 
