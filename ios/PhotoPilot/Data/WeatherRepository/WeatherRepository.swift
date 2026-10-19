@@ -32,6 +32,8 @@ actor WeatherRepository {
     static let enabledKey = "weather.enabled"
     static let unitsKey = "weather.units"
     static let selectedPlaceIdKey = "weather.selected_place_id"
+    static let followLocationKey = "weather.follow_location"
+    static let locationPlaceIdPrefix = "geo:"
     static let normalLimitMillis = 60 * 60 * 1000
     static let delayedLimitMillis = 180 * 60 * 1000
 
@@ -207,5 +209,57 @@ actor WeatherRepository {
             return hit
         }
         return all.last
+    }
+
+    func savePlace(_ place: WeatherPlace, followLocation: Bool) throws {
+        try savePlace(place)
+        try setFollowsLocation(followLocation)
+    }
+
+    func setFollowsLocation(_ value: Bool) throws {
+        let context = makeContext()
+        let now = Int(Date().timeIntervalSince1970 * 1000)
+        try context.performAndWait {
+            let request = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
+            request.predicate = NSPredicate(format: "key == %@", Self.followLocationKey)
+            request.fetchLimit = 1
+            let row = try context.fetch(request).first ?? NSEntityDescription.insertNewObject(
+                forEntityName: "SettingsKV",
+                into: context
+            )
+            row.setValue(Self.followLocationKey, forKey: "key")
+            row.setValue(value ? "true" : "false", forKey: "value_json")
+            if row.value(forKey: "created_at") == nil {
+                row.setValue(NSNumber(value: now), forKey: "created_at")
+            }
+            row.setValue(NSNumber(value: now), forKey: "updated_at")
+            try context.save()
+        }
+    }
+
+    static func followsLocation(storedFlag: String?, selectedPlaceID: String?) -> Bool {
+        switch storedFlag {
+        case "true":
+            return true
+        case "false":
+            return false
+        default:
+            return selectedPlaceID?.hasPrefix(locationPlaceIdPrefix) ?? false
+        }
+    }
+
+    static func shouldLocateOnPlayback(weatherEnabled: Bool, followsLocation: Bool) -> Bool {
+        weatherEnabled && followsLocation
+    }
+
+    func followsLocation() throws -> Bool {
+        let context = makeContext()
+        let stored: String? = try context.performAndWait {
+            let request = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
+            request.predicate = NSPredicate(format: "key == %@", Self.followLocationKey)
+            request.fetchLimit = 1
+            return try context.fetch(request).first?.value(forKey: "value_json") as? String
+        }
+        return Self.followsLocation(storedFlag: stored, selectedPlaceID: try selectedPlace()?.placeId)
     }
 }

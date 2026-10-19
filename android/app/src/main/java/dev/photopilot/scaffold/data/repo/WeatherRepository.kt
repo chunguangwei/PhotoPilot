@@ -37,6 +37,20 @@ class WeatherRepository(
         settings.putRaw(WeatherLogic.KEY_SELECTED_PLACE, place.placeId)
     }
 
+    suspend fun putPlace(place: WeatherLogic.StoredPlace, followLocation: Boolean) {
+        putPlace(place)
+        settings.putRaw(
+            WeatherLogic.KEY_FOLLOW_LOCATION,
+            if (followLocation) AppSettingsRepository.VALUE_TRUE else AppSettingsRepository.VALUE_FALSE,
+        )
+    }
+
+    suspend fun followsLocation(): Boolean =
+        WeatherLogic.followsLocation(
+            settings.rawValue(WeatherLogic.KEY_FOLLOW_LOCATION),
+            settings.rawValue(WeatherLogic.KEY_SELECTED_PLACE),
+        )
+
     suspend fun selectedPlace(): WeatherLogic.StoredPlace? {
         val all = places()
         if (all.isEmpty()) return null

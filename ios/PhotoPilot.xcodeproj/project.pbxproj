@@ -80,6 +80,7 @@
 		74867DAC7FD3F4FAAA63D22B /* LaunchBrandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DED473DBE306DD604E1E70D /* LaunchBrandingView.swift */; };
 		750FDF652BFC20E345EA1B74 /* selection-save.json in Resources */ = {isa = PBXBuildFile; fileRef = 6B636F011C8B57D582AE76C2 /* selection-save.json */; };
 		77044B5D73D0A1F10386E193 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93CAFA785F64A9343640FF8 /* Theme.swift */; };
+		772024B1495F7CC124491781 /* weather-location-follow.json in Resources */ = {isa = PBXBuildFile; fileRef = 47CEF5AFB0390C788CEE9AD4 /* weather-location-follow.json */; };
 		77421A1077253E690EEAB2E9 /* music_lounge_01.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 5F2AACC7FBD47B73C4447B53 /* music_lounge_01.m4a */; };
 		777CAECCA819374B473C18B8 /* ImportProgressViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48E174BEC5822E251C57A1A4 /* ImportProgressViewController.swift */; };
 		7A498551230BA3496B799635 /* LaunchPresentationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88B923A35C148322BC1B81EA /* LaunchPresentationState.swift */; };
@@ -160,6 +161,7 @@
 		EFB9543D8ABF410638BF8F70 /* NasLanNoticeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B9F0BA1ADABD2C3786236BA /* NasLanNoticeViewController.swift */; };
 		F247FE84C35EB4ABB180C94F /* PhotoPilotSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F98344FAA7FA3465FD7A765 /* PhotoPilotSelectionTests.swift */; };
 		F510425DFB0970953E589200 /* ActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = E560A005D1305A84A7F78CE3 /* ActionButton.swift */; };
+		F7754F089ADB34AFDE2A2DD0 /* WeatherLocationFollowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8ABF103A14AA8A4C54FBBB0 /* WeatherLocationFollowTests.swift */; };
 		F83E9966F7F222B1E2B63E38 /* demo_sunset.jpg in Resources */ = {isa = PBXBuildFile; fileRef = C85FB910E9777184F4AC7439 /* demo_sunset.jpg */; };
 		FA7CC954DF86DBEC5B7BD758 /* HolidayTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AA4BE24907BC5EA37AC013B /* HolidayTiming.swift */; };
 		FAD928F838E21FF5BDCC2874 /* AppearanceApplier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80325ED55AF30C814A2BCA54 /* AppearanceApplier.swift */; };
@@ -259,6 +261,7 @@
 		418E09C7211B1F7D126A5B41 /* HolidayEditViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayEditViewController.swift; sourceTree = "<group>"; };
 		434F1AEC8C5F4188DE456A0C /* music_qixi_01.m4a */ = {isa = PBXFileReference; path = music_qixi_01.m4a; sourceTree = "<group>"; };
 		436C76CBC53CC735BC30F280 /* SidebarNavBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarNavBar.swift; sourceTree = "<group>"; };
+		47CEF5AFB0390C788CEE9AD4 /* weather-location-follow.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "weather-location-follow.json"; sourceTree = "<group>"; };
 		48E174BEC5822E251C57A1A4 /* ImportProgressViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportProgressViewController.swift; sourceTree = "<group>"; };
 		4A709EA94ADA86A555D80075 /* PlaybackSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackSettingsViewController.swift; sourceTree = "<group>"; };
 		567C76BC93C03AA78A3E22BB /* HolidayStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayStore.swift; sourceTree = "<group>"; };
@@ -346,6 +349,7 @@
 		D41E0E68DE96D328FA559CAA /* nas-deletion.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "nas-deletion.json"; sourceTree = "<group>"; };
 		D4FA1ACE15205C3AC603205F /* NasCertTrustViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NasCertTrustViewController.swift; sourceTree = "<group>"; };
 		D73FFB8149C0A3DDA7B570F1 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.stringsdict"; sourceTree = "<group>"; };
+		D8ABF103A14AA8A4C54FBBB0 /* WeatherLocationFollowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherLocationFollowTests.swift; sourceTree = "<group>"; };
 		D90C3A32ACA6D13D8621CCCD /* SmbSourceAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmbSourceAdapter.swift; sourceTree = "<group>"; };
 		DA9794EE2BBA51A6FD50AC44 /* SourceRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceRepository.swift; sourceTree = "<group>"; };
 		DC1C9E31EFADB880B2E4DF6E /* NavItemButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavItemButton.swift; sourceTree = "<group>"; };
@@ -632,6 +636,7 @@
 				FB2E4083930D9F4D93EB6FF9 /* selection-resolve.json */,
 				6B636F011C8B57D582AE76C2 /* selection-save.json */,
 				EA79EFF1D219B50A3EBDEE5C /* tombstone-match.json */,
+				47CEF5AFB0390C788CEE9AD4 /* weather-location-follow.json */,
 			);
 			path = vectors;
 			sourceTree = "<group>";
@@ -985,6 +990,7 @@
 				C12E59AE709E01E1F8FAAFCE /* PhotoPilotRenderTests.swift */,
 				7F98344FAA7FA3465FD7A765 /* PhotoPilotSelectionTests.swift */,
 				AF381646DD3A8056F76730B7 /* PhotoPilotUIReviewTests.swift */,
+				D8ABF103A14AA8A4C54FBBB0 /* WeatherLocationFollowTests.swift */,
 				A7298CE4E05110EB66098672 /* WeatherProviderTests.swift */,
 			);
 			path = PhotoPilotTests;
@@ -1127,6 +1133,7 @@
 				2AEDAA396EB61724A97C8F32 /* selection-resolve.json in Resources */,
 				750FDF652BFC20E345EA1B74 /* selection-save.json in Resources */,
 				1C71CDC8273CD00595123ACF /* tombstone-match.json in Resources */,
+				772024B1495F7CC124491781 /* weather-location-follow.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1184,6 +1191,7 @@
 				8B8C2BF2ADEEF9D3193209CF /* PhotoPilotRenderTests.swift in Sources */,
 				F247FE84C35EB4ABB180C94F /* PhotoPilotSelectionTests.swift in Sources */,
 				D4525519795E69B7F1486124 /* PhotoPilotUIReviewTests.swift in Sources */,
+				F7754F089ADB34AFDE2A2DD0 /* WeatherLocationFollowTests.swift in Sources */,
 				B0C694C05492F946B1762A05 /* WeatherProviderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

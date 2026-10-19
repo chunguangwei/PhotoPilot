@@ -90,7 +90,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private lateinit var restDisplayButton: TextView
     private lateinit var weatherSetupHint: LinearLayout
     private lateinit var restError: TextView
-    private lateinit var solidRow: LinearLayout
+    private lateinit var solidRow: dev.photopilot.scaffold.ui.widget.SegmentedControl
     private lateinit var musicButton: TextView
     private lateinit var previewFrame: FrameLayout
     private lateinit var previewBackground: ImageView
@@ -104,6 +104,10 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private var previewBlurred: Bitmap? = null
     private var previewEdge: Int? = null
     private val executor = Executors.newSingleThreadExecutor()
+    private lateinit var contentColumn: LinearLayout
+    private lateinit var actionBar: LinearLayout
+    private lateinit var saveButton: TextView
+    private lateinit var cancelButton: TextView
 
     init {
         orientation = VERTICAL
@@ -121,6 +125,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             orientation = VERTICAL
             setPadding(inset, 0, inset, inset)
         }
+        contentColumn = column
         buildContent(column)
         scroll.addView(column, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         addView(scroll, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
@@ -143,7 +148,50 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_8)
             },
         )
+        actionBar = bottomBar
+        saveButton = save
+        cancelButton = cancel
         addView(bottomBar, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+    }
+
+    private fun applyWidthTier(width: Int) {
+        if (width <= 0) return
+        val res = resources
+        val inset = res.getDimensionPixelSize(R.dimen.pp_content_inset)
+        val gap = res.getDimensionPixelSize(R.dimen.pp_space_8)
+        val maxContent = (CONTENT_MAX_WIDTH_DP * res.displayMetrics.density).toInt()
+        val sidePadding = maxOf(inset, (width - maxContent) / 2)
+        if (contentColumn.paddingLeft != sidePadding) {
+            contentColumn.setPadding(sidePadding, 0, sidePadding, inset)
+        }
+        if (actionBar.paddingLeft != sidePadding) {
+            actionBar.setPadding(
+                sidePadding,
+                res.getDimensionPixelSize(R.dimen.pp_space_12),
+                sidePadding,
+                res.getDimensionPixelSize(R.dimen.pp_space_16),
+            )
+        }
+        val sideBySide = width / res.displayMetrics.density >= WIDE_ACTION_MIN_WIDTH_DP
+        val desired = if (sideBySide) HORIZONTAL else VERTICAL
+        if (actionBar.orientation == desired && actionBar.childCount == 2) {
+            if (actionBar.getChildAt(0) === (if (sideBySide) cancelButton else saveButton)) return
+        }
+        actionBar.removeAllViews()
+        actionBar.orientation = desired
+        if (sideBySide) {
+            actionBar.addView(cancelButton, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
+            actionBar.addView(
+                saveButton,
+                LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = gap },
+            )
+        } else {
+            actionBar.addView(saveButton, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+            actionBar.addView(
+                cancelButton,
+                LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = gap },
+            )
+        }
     }
 
     fun bind(frame: FrameEntity) {
@@ -476,7 +524,6 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                     R.string.playback_fill_crop,
                 ),
                 fitIndex,
-                vertical = true,
             ) { index ->
                 fitIndex = index
                 cropWarning.visibility = if (fitIndex == 2) View.VISIBLE else View.GONE
@@ -515,7 +562,6 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                     R.string.playback_position_bottom_trailing,
                 ),
                 positionIndex,
-                vertical = true,
             ) { positionIndex = it },
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
         )
@@ -854,8 +900,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         if (w > 0) {
-            val inset = resources.getDimensionPixelSize(R.dimen.pp_content_inset)
-            val previewWidth = (w - inset * 2).coerceAtLeast(1)
+            applyWidthTier(w)
+            val previewWidth = (w - contentColumn.paddingLeft - contentColumn.paddingRight).coerceAtLeast(1)
             val lp = previewFrame.layoutParams
             val target = previewWidth * PREVIEW_HEIGHT_NUM / PREVIEW_HEIGHT_DEN
             if (lp.height != target) {
@@ -985,9 +1031,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private fun optionGroup(
         labelResList: List<Int>,
         selected: Int,
-        vertical: Boolean = false,
         onSelect: (Int) -> Unit,
-    ): LinearLayout {
+    ): dev.photopilot.scaffold.ui.widget.SegmentedControl {
         val res = resources
         val labels = labelResList.mapIndexed { index, labelRes ->
             res.getString(labelRes, *slotArgs(labelRes, index))
@@ -995,8 +1040,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         return dev.photopilot.scaffold.ui.widget.SegmentedControl(
             context,
             textSizeRes = R.dimen.pp_text_meta,
-            autoSize = !vertical,
-            vertical = vertical,
+            autoSize = true,
         ).apply { setItems(labels, selected, onSelect) }
     }
 
@@ -1044,6 +1088,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             R.string.settings_rest_display_black,
         )
         const val TRANSITION_TENTHS_MIN = 2
+        const val CONTENT_MAX_WIDTH_DP = 560f
+        const val WIDE_ACTION_MIN_WIDTH_DP = 600f
         const val TRANSITION_SEEK_MAX = 28
         const val BRIGHTNESS_SEEK_MAX = 100
         const val PREVIEW_DECODE_PX = 512

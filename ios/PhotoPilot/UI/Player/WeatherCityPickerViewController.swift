@@ -199,7 +199,7 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
                 lonE7: coarse.lonE7,
                 region: ""
             )
-            try? await self.environment.weatherRepository.savePlace(place)
+            try? await self.environment.weatherRepository.savePlace(place, followLocation: true)
             self.onPick(place)
         }
     }
@@ -306,7 +306,7 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
         tableView.deselectRow(at: indexPath, animated: true)
         let place = results[indexPath.row]
         Task { [weak self] in
-            try? await self?.environment.weatherRepository.savePlace(place)
+            try? await self?.environment.weatherRepository.savePlace(place, followLocation: false)
             self?.onPick(place)
         }
     }

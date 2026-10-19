@@ -94,6 +94,8 @@ targets:
         buildPhase: resources
       - path: ../contracts/vectors/holiday-windows.json
         buildPhase: resources
+      - path: ../contracts/vectors/weather-location-follow.json
+        buildPhase: resources
     dependencies:
       - target: PhotoPilot
     settings:

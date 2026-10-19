@@ -10,10 +10,22 @@ object WeatherLogic {
     const val KEY_ENABLED_DEFAULT = "weather.enabled_default"
     const val KEY_UNITS = "weather.units"
     const val KEY_SELECTED_PLACE = "weather.selected_place_id"
+    const val KEY_FOLLOW_LOCATION = "weather.follow_location"
+    const val PLACE_ID_LOCATION_PREFIX = "geo:"
     const val UNITS_METRIC = "metric"
     const val UNITS_IMPERIAL = "imperial"
 
     enum class TtlSegment { FRESH, STALE, EXPIRED }
+
+    fun followsLocation(storedFlag: String?, selectedPlaceId: String?): Boolean =
+        when (storedFlag) {
+            "true" -> true
+            "false" -> false
+            else -> selectedPlaceId?.startsWith(PLACE_ID_LOCATION_PREFIX) == true
+        }
+
+    fun shouldLocateOnPlayback(weatherEnabled: Boolean, followsLocation: Boolean): Boolean =
+        weatherEnabled && followsLocation
 
     fun segmentOf(observedAt: Long, nowMs: Long): TtlSegment {
         val age = nowMs - observedAt

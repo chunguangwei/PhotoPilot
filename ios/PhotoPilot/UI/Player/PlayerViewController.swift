@@ -1425,8 +1425,10 @@ final class PlayerViewController: UIViewController {
             updateWeather()
             return
         }
-        weatherAutoLocator.refreshCurrentLocation()
         weatherTask = Task { [weak self] in
+            if await self?.shouldLocateWeatherOnPlayback() == true {
+                self?.weatherAutoLocator.refreshCurrentLocation()
+            }
             await self?.refreshWeather(manual: false)
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 30 * 60 * 1_000_000_000)
@@ -1438,6 +1440,14 @@ final class PlayerViewController: UIViewController {
 
     private var weatherGloballyEnabled: Bool {
         (try? environment.settings.value(forKey: WeatherRepository.enabledKey)) == "true"
+    }
+
+    private func shouldLocateWeatherOnPlayback() async -> Bool {
+        let follows = (try? await environment.weatherRepository.followsLocation()) ?? false
+        return WeatherRepository.shouldLocateOnPlayback(
+            weatherEnabled: weatherGloballyEnabled,
+            followsLocation: follows
+        )
     }
 
     private func currentWeatherPlace() async -> WeatherPlace? {

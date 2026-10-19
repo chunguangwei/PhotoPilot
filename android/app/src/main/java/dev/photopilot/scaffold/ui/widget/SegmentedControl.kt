@@ -5,7 +5,7 @@ import android.graphics.drawable.GradientDrawable
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
-import android.widget.LinearLayout
+import android.view.ViewGroup
 import android.widget.TextView
 import dev.photopilot.scaffold.R
 
@@ -13,21 +13,21 @@ internal class SegmentedControl(
     context: Context,
     private val textSizeRes: Int = R.dimen.pp_text_caption,
     private val autoSize: Boolean = false,
-    private val vertical: Boolean = false,
-) : LinearLayout(context) {
+) : ViewGroup(context) {
 
     private val segments = mutableListOf<TextView>()
     private var selectedIndex = -1
     private var onSelect: ((Int) -> Unit)? = null
+    private val gap = resources.getDimensionPixelSize(R.dimen.pp_space_4)
+    private val minSegmentHeight = (SEGMENT_HEIGHT_DP * resources.displayMetrics.density).toInt()
+    private var columns = 1
 
     init {
-        orientation = if (vertical) VERTICAL else HORIZONTAL
-        val res = resources
-        val inset = res.getDimensionPixelSize(R.dimen.pp_space_4)
+        val inset = resources.getDimensionPixelSize(R.dimen.pp_space_4)
         setPadding(inset, inset, inset, inset)
         background = GradientDrawable().apply {
             setColor(context.getColor(R.color.pp_segmented_track))
-            cornerRadius = res.getDimension(R.dimen.pp_radius_thumbnail)
+            cornerRadius = resources.getDimension(R.dimen.pp_radius_thumbnail)
         }
     }
 
@@ -45,7 +45,8 @@ internal class SegmentedControl(
                 }
                 maxLines = 1
                 gravity = Gravity.CENTER
-                minimumHeight = (SEGMENT_HEIGHT_DP * res.displayMetrics.density).toInt()
+                val padH = res.getDimensionPixelSize(R.dimen.pp_space_8)
+                setPadding(padH, 0, padH, 0)
                 contentDescription = label
                 isClickable = true
                 isFocusable = true
@@ -60,23 +61,82 @@ internal class SegmentedControl(
                 setOnClickListener { select(index, notify = true) }
             }
             segments += segment
-            addView(
-                segment,
-                if (vertical) {
-                    LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                        if (index > 0) topMargin = res.getDimensionPixelSize(R.dimen.pp_space_4)
-                    }
-                } else {
-                    LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                        if (index > 0) marginStart = res.getDimensionPixelSize(R.dimen.pp_space_4)
-                    }
-                },
-            )
+            addView(segment)
         }
         select(selected, notify = false)
+        requestLayout()
     }
 
     fun setSelected(index: Int) = select(index, notify = false)
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val count = childCount
+        if (count == 0) {
+            setMeasuredDimension(
+                resolveSize(paddingLeft + paddingRight, widthMeasureSpec),
+                resolveSize(paddingTop + paddingBottom, heightMeasureSpec),
+            )
+            return
+        }
+        val available = MeasureSpec.getSize(widthMeasureSpec) - paddingLeft - paddingRight
+        val unspecified = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
+        var widest = 0
+        for (index in 0 until count) {
+            val child = getChildAt(index)
+            child.measure(unspecified, unspecified)
+            widest = maxOf(widest, child.measuredWidth)
+        }
+        columns = if (available <= 0) {
+            count
+        } else {
+            var fit = count
+            while (fit > 1 && widest * fit + gap * (fit - 1) > available) fit--
+            fit
+        }
+        val rows = (count + columns - 1) / columns
+        val segmentWidth = if (available > 0) {
+            ((available - gap * (columns - 1)) / columns).coerceAtLeast(1)
+        } else {
+            widest
+        }
+        var rowHeight = minSegmentHeight
+        val widthSpec = MeasureSpec.makeMeasureSpec(segmentWidth, MeasureSpec.EXACTLY)
+        for (index in 0 until count) {
+            val child = getChildAt(index)
+            child.measure(widthSpec, unspecified)
+            rowHeight = maxOf(rowHeight, child.measuredHeight)
+        }
+        val heightSpec = MeasureSpec.makeMeasureSpec(rowHeight, MeasureSpec.EXACTLY)
+        for (index in 0 until count) {
+            getChildAt(index).measure(widthSpec, heightSpec)
+        }
+        val width = paddingLeft + paddingRight + segmentWidth * columns + gap * (columns - 1)
+        val height = paddingTop + paddingBottom + rowHeight * rows + gap * (rows - 1)
+        setMeasuredDimension(
+            resolveSize(width, widthMeasureSpec),
+            resolveSize(height, heightMeasureSpec),
+        )
+    }
+
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        val count = childCount
+        if (count == 0) return
+        val rtl = layoutDirection == LAYOUT_DIRECTION_RTL
+        val contentWidth = width - paddingLeft - paddingRight
+        for (index in 0 until count) {
+            val child = getChildAt(index)
+            val row = index / columns
+            val column = index % columns
+            val top = paddingTop + row * (child.measuredHeight + gap)
+            val offset = column * (child.measuredWidth + gap)
+            val left = if (rtl) {
+                paddingLeft + contentWidth - offset - child.measuredWidth
+            } else {
+                paddingLeft + offset
+            }
+            child.layout(left, top, left + child.measuredWidth, top + child.measuredHeight)
+        }
+    }
 
     private fun select(index: Int, notify: Boolean) {
         if (index !in segments.indices) return

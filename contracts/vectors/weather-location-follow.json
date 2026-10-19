@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "truth": "01-产品需求PRD.md §7.4 时间与天气；2026-10-19 用户裁决：设置里选城市=写死该城市，播放开始不再定位；选「使用当前位置」=跟随定位，播放开始再定位一次刷新。",
+    "note": "双端测试必须消费本文件，禁止各自另写期望值。follow_location 为 settings_kv 键 weather.follow_location，取值 \"true\"/\"false\"；缺失时按兼容回退推断：selected_place_id 以 \"geo:\" 开头视为跟随定位，否则视为固定城市。should_locate_on_playback：进入播放时是否触发定位刷新，要求 weather_enabled 且跟随定位同时成立。双端不得各写分叉回退。"
+  },
+  "cases": [
+    {
+      "id": "WLOC-01",
+      "scenario": "用户在城市搜索里选中具体城市",
+      "stored_follow_location": "false",
+      "selected_place_id": "openmeteo:101",
+      "weather_enabled": true,
+      "follows_location": false,
+      "should_locate_on_playback": false
+    },
+    {
+      "id": "WLOC-02",
+      "scenario": "用户点了使用当前位置",
+      "stored_follow_location": "true",
+      "selected_place_id": "geo:399042,1163940",
+      "weather_enabled": true,
+      "follows_location": true,
+      "should_locate_on_playback": true
+    },
+    {
+      "id": "WLOC-03",
+      "scenario": "跟随定位但天气总开关关闭",
+      "stored_follow_location": "true",
+      "selected_place_id": "geo:399042,1163940",
+      "weather_enabled": false,
+      "follows_location": true,
+      "should_locate_on_playback": false
+    },
+    {
+      "id": "WLOC-04",
+      "scenario": "旧版本无标志、历史选择来自定位",
+      "stored_follow_location": null,
+      "selected_place_id": "geo:399042,1163940",
+      "weather_enabled": true,
+      "follows_location": true,
+      "should_locate_on_playback": true
+    },
+    {
+      "id": "WLOC-05",
+      "scenario": "旧版本无标志、历史选择为搜索城市",
+      "stored_follow_location": null,
+      "selected_place_id": "openmeteo:101",
+      "weather_enabled": true,
+      "follows_location": false,
+      "should_locate_on_playback": false
+    },
+    {
+      "id": "WLOC-06",
+      "scenario": "从未选过地点",
+      "stored_follow_location": null,
+      "selected_place_id": null,
+      "weather_enabled": true,
+      "follows_location": false,
+      "should_locate_on_playback": false
+    },
+    {
+      "id": "WLOC-07",
+      "scenario": "显式关闭跟随后即使地点仍是定位结果也不再定位",
+      "stored_follow_location": "false",
+      "selected_place_id": "geo:399042,1163940",
+      "weather_enabled": true,
+      "follows_location": false,
+      "should_locate_on_playback": false
+    },
+    {
+      "id": "WLOC-08",
+      "scenario": "未知脏值按缺失处理",
+      "stored_follow_location": "yes",
+      "selected_place_id": "geo:399042,1163940",
+      "weather_enabled": true,
+      "follows_location": true,
+      "should_locate_on_playback": true
+    }
+  ]
+}

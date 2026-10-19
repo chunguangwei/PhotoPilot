@@ -105,6 +105,7 @@ class WeatherCitySearchView(context: Context) : LinearLayout(context) {
 
     fun showSearching() {
         statusLine.visibility = View.VISIBLE
+        statusLine.setTextColor(context.getColor(R.color.pp_text_secondary))
         statusLine.text = resources.getString(R.string.common_loading)
     }
 
