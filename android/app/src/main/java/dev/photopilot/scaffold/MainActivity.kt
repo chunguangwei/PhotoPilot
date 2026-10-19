@@ -2412,13 +2412,15 @@ class MainActivity : Activity() {
         val lonE7 = Math.round(lon * 10_000_000.0).toInt()
         val names = reverseGeocodeNames(fix.latitude, fix.longitude)
         val fallback = String.format(Locale.US, "%.1f, %.1f", lat, lon)
-        return WeatherLogic.StoredPlace(
+        val candidate = WeatherLogic.StoredPlace(
             placeId = "${WeatherLogic.PLACE_ID_LOCATION_PREFIX}$latE7,$lonE7",
             nameZh = names.first ?: names.second ?: fallback,
             nameEn = names.second ?: names.first ?: fallback,
             latE7 = latE7,
             lonE7 = lonE7,
         )
+        val existing = environment?.weather?.place(candidate.placeId)
+        return WeatherLogic.preserveLocatedPlace(existing, candidate)
     }
 
     private suspend fun reverseGeocodeNames(lat: Double, lon: Double): Pair<String?, String?> =

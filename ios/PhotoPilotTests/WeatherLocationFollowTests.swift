@@ -28,4 +28,37 @@ final class WeatherLocationFollowTests: XCTestCase {
             )
         }
     }
+
+    func testPreserveContractVectors() throws {
+        let url = try XCTUnwrap(
+            Bundle(for: type(of: self)).url(forResource: "weather-location-preserve", withExtension: "json"),
+            "向量文件未入测试 bundle：weather-location-preserve.json"
+        )
+        let data = try Data(contentsOf: url)
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let cases = try XCTUnwrap(root["cases"] as? [[String: Any]])
+        XCTAssertGreaterThanOrEqual(cases.count, 3)
+        for item in cases {
+            let id = try XCTUnwrap(item["id"] as? String)
+            let existing = (item["existing"] as? [String: Any]).map(place(from:))
+            let candidate = place(from: try XCTUnwrap(item["candidate"] as? [String: Any]))
+            let result = WeatherRepository.preserveLocatedPlace(existing: existing, candidate: candidate)
+            XCTAssertEqual(result.placeId, item["result_place_id"] as? String, id)
+            XCTAssertEqual(result.nameZh, item["result_name_zh"] as? String, id)
+            XCTAssertEqual(result.nameEn, item["result_name_en"] as? String, id)
+            XCTAssertEqual(result.latE7, item["result_lat_e7"] as? Int, id)
+            XCTAssertEqual(result.lonE7, item["result_lon_e7"] as? Int, id)
+        }
+    }
+
+    private func place(from dict: [String: Any]) -> WeatherPlace {
+        WeatherPlace(
+            placeId: dict["place_id"] as? String ?? "",
+            nameZh: dict["name_zh"] as? String ?? "",
+            nameEn: dict["name_en"] as? String ?? "",
+            latE7: dict["lat_e7"] as? Int ?? 0,
+            lonE7: dict["lon_e7"] as? Int ?? 0,
+            region: ""
+        )
+    }
 }

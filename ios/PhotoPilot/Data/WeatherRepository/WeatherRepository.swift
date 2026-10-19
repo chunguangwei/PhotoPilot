@@ -145,6 +145,10 @@ actor WeatherRepository {
     }
 
     func savePlace(_ place: WeatherPlace) throws {
+        try savePlaceInternal(place, followLocation: nil)
+    }
+
+    private func savePlaceInternal(_ place: WeatherPlace, followLocation: Bool?) throws {
         let context = makeContext()
         let now = Int(Date().timeIntervalSince1970 * 1000)
         try context.performAndWait {
@@ -191,6 +195,21 @@ actor WeatherRepository {
                 selectedRow.setValue(NSNumber(value: now), forKey: "created_at")
             }
             selectedRow.setValue(NSNumber(value: now), forKey: "updated_at")
+            if let followLocation {
+                let followRequest = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
+                followRequest.predicate = NSPredicate(format: "key == %@", Self.followLocationKey)
+                followRequest.fetchLimit = 1
+                let followRow = try context.fetch(followRequest).first ?? NSEntityDescription.insertNewObject(
+                    forEntityName: "SettingsKV",
+                    into: context
+                )
+                followRow.setValue(Self.followLocationKey, forKey: "key")
+                followRow.setValue(followLocation ? "true" : "false", forKey: "value_json")
+                if followRow.value(forKey: "created_at") == nil {
+                    followRow.setValue(NSNumber(value: now), forKey: "created_at")
+                }
+                followRow.setValue(NSNumber(value: now), forKey: "updated_at")
+            }
             try context.save()
         }
     }
@@ -212,29 +231,12 @@ actor WeatherRepository {
     }
 
     func savePlace(_ place: WeatherPlace, followLocation: Bool) throws {
-        try savePlace(place)
-        try setFollowsLocation(followLocation)
+        try savePlaceInternal(place, followLocation: followLocation)
     }
 
-    func setFollowsLocation(_ value: Bool) throws {
-        let context = makeContext()
-        let now = Int(Date().timeIntervalSince1970 * 1000)
-        try context.performAndWait {
-            let request = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
-            request.predicate = NSPredicate(format: "key == %@", Self.followLocationKey)
-            request.fetchLimit = 1
-            let row = try context.fetch(request).first ?? NSEntityDescription.insertNewObject(
-                forEntityName: "SettingsKV",
-                into: context
-            )
-            row.setValue(Self.followLocationKey, forKey: "key")
-            row.setValue(value ? "true" : "false", forKey: "value_json")
-            if row.value(forKey: "created_at") == nil {
-                row.setValue(NSNumber(value: now), forKey: "created_at")
-            }
-            row.setValue(NSNumber(value: now), forKey: "updated_at")
-            try context.save()
-        }
+    static func preserveLocatedPlace(existing: WeatherPlace?, candidate: WeatherPlace) -> WeatherPlace {
+        if let existing, existing.placeId == candidate.placeId { return existing }
+        return candidate
     }
 
     static func followsLocation(storedFlag: String?, selectedPlaceID: String?) -> Bool {

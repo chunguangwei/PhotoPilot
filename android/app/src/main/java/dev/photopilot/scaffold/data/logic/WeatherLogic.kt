@@ -27,6 +27,9 @@ object WeatherLogic {
     fun shouldLocateOnPlayback(weatherEnabled: Boolean, followsLocation: Boolean): Boolean =
         weatherEnabled && followsLocation
 
+    fun preserveLocatedPlace(existing: StoredPlace?, candidate: StoredPlace): StoredPlace =
+        if (existing != null && existing.placeId == candidate.placeId) existing else candidate
+
     fun segmentOf(observedAt: Long, nowMs: Long): TtlSegment {
         val age = nowMs - observedAt
         return when {

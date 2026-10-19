@@ -191,7 +191,7 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
                 Double(coarse.latE7) / 10_000_000.0,
                 Double(coarse.lonE7) / 10_000_000.0
             )
-            let place = WeatherPlace(
+            let candidate = WeatherPlace(
                 placeId: "geo:\(coarse.latE7),\(coarse.lonE7)",
                 nameZh: zh ?? en ?? fallback,
                 nameEn: en ?? zh ?? fallback,
@@ -199,6 +199,9 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
                 lonE7: coarse.lonE7,
                 region: ""
             )
+            let existing = (try? await self.environment.weatherRepository.places())?
+                .first(where: { $0.placeId == candidate.placeId })
+            let place = WeatherRepository.preserveLocatedPlace(existing: existing, candidate: candidate)
             try? await self.environment.weatherRepository.savePlace(place, followLocation: true)
             self.onPick(place)
         }

@@ -65,7 +65,7 @@ final class WeatherAutoLocator: NSObject, @preconcurrency CLLocationManagerDeleg
             )
             let nameZh = await zh
             let nameEn = await en
-            let place = WeatherPlace(
+            let candidate = WeatherPlace(
                 placeId: "geo:\(coarse.latE7),\(coarse.lonE7)",
                 nameZh: nameZh ?? nameEn ?? fallback,
                 nameEn: nameEn ?? nameZh ?? fallback,
@@ -73,6 +73,8 @@ final class WeatherAutoLocator: NSObject, @preconcurrency CLLocationManagerDeleg
                 lonE7: coarse.lonE7,
                 region: ""
             )
+            let existing = (try? await repository.places())?.first(where: { $0.placeId == candidate.placeId })
+            let place = WeatherRepository.preserveLocatedPlace(existing: existing, candidate: candidate)
             try? await repository.savePlace(place)
             onPlaceUpdated?()
         }

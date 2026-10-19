@@ -33,4 +33,34 @@ class WeatherLocationFollowTest {
             )
         }
     }
+
+    @Test
+    fun preserveContractVectors() {
+        val cases = Vectors.load("weather-location-preserve.json").getJSONArray("cases")
+        assertTrue("expected at least 3 vectors", cases.length() >= 3)
+        for (i in 0 until cases.length()) {
+            val case = cases.getJSONObject(i)
+            val id = case.getString("id")
+            val existing = if (case.isNull("existing")) {
+                null
+            } else {
+                place(case.getJSONObject("existing"))
+            }
+            val candidate = place(case.getJSONObject("candidate"))
+            val result = WeatherLogic.preserveLocatedPlace(existing, candidate)
+            assertEquals(id, case.getString("result_place_id"), result.placeId)
+            assertEquals(id, case.getString("result_name_zh"), result.nameZh)
+            assertEquals(id, case.getString("result_name_en"), result.nameEn)
+            assertEquals(id, case.getLong("result_lat_e7"), result.latE7.toLong())
+            assertEquals(id, case.getLong("result_lon_e7"), result.lonE7.toLong())
+        }
+    }
+
+    private fun place(obj: org.json.JSONObject) = WeatherLogic.StoredPlace(
+        placeId = obj.getString("place_id"),
+        nameZh = obj.getString("name_zh"),
+        nameEn = obj.getString("name_en"),
+        latE7 = obj.getInt("lat_e7"),
+        lonE7 = obj.getInt("lon_e7"),
+    )
 }
