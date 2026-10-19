@@ -50,21 +50,3 @@ internal fun secondaryButton(context: Context, textRes: Int): TextView =
         isClickable = true
         isFocusable = true
     }
-
-internal fun dropdownField(context: Context, textRes: Int): TextView =
-    TextView(context).apply {
-        val res = resources
-        text = res.getString(textRes)
-        setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
-        setTextColor(context.getColor(R.color.pp_text_primary))
-        gravity = Gravity.CENTER_VERTICAL or Gravity.START
-        minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-        val horizontal = res.getDimensionPixelSize(R.dimen.pp_space_16)
-        setPadding(horizontal, 0, horizontal, 0)
-        background = GradientDrawable().apply {
-            setColor(context.getColor(R.color.pp_surface_panel))
-            cornerRadius = res.getDimension(R.dimen.pp_radius_group)
-        }
-        isClickable = true
-        isFocusable = true
-    }

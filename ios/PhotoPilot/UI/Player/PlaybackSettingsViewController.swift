@@ -26,6 +26,14 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         "top_leading", "top_center", "top_trailing",
         "bottom_leading", "bottom_center", "bottom_trailing",
     ]
+    private static let positionTitleKeys = [
+        "playback.position_top_leading",
+        "playback.position_top_center",
+        "playback.position_top_trailing",
+        "playback.position_bottom_leading",
+        "playback.position_bottom_center",
+        "playback.position_bottom_trailing",
+    ]
     private static let orderWireValues = [
         PlaybackQueue.orderCapturedAsc,
         PlaybackQueue.orderRandom,
@@ -62,7 +70,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     private let unitSegmented = UISegmentedControl()
     private let holdErrorLabel = UILabel()
     private var transitionIndex = 1
-    private let transitionMenuButton = UIButton(type: .system)
+    private let transitionMenuButton = MenuFieldButton.makeMenuButton()
     private let durationSlider = UISlider()
     private let durationValueLabel = UILabel()
     private let durationDisabledLabel = UILabel()
@@ -78,14 +86,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     private let clockSwitch = UISwitch()
     private let dateSwitch = UISwitch()
     private var positionIndex = 3
-    private let positionButtons = [
-        ActionButton(titleKey: "playback.position_top_leading", style: .secondary),
-        ActionButton(titleKey: "playback.position_top_center", style: .secondary),
-        ActionButton(titleKey: "playback.position_top_trailing", style: .secondary),
-        ActionButton(titleKey: "playback.position_bottom_leading", style: .secondary),
-        ActionButton(titleKey: "playback.position_bottom_center", style: .secondary),
-        ActionButton(titleKey: "playback.position_bottom_trailing", style: .secondary)
-    ]
+    private let positionMenuButton = MenuFieldButton.makeMenuButton()
     private let hourSegmented = UISegmentedControl()
     private let orderSegmented = UISegmentedControl()
     private let orderHintLabel = UILabel()
@@ -101,14 +102,14 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     private var restStartRow = UIView()
     private var restEndRow = UIView()
     private var restDisplayIndex = 1
-    private let restDisplayMenuButton = UIButton(type: .system)
+    private let restDisplayMenuButton = MenuFieldButton.makeMenuButton()
     private var restDisplayRow = UIView()
     private let weatherNoticeLabel = UILabel()
     private let weatherNoticeButton = ActionButton(titleKey: "weather.enable_and_choose_city", style: .secondary)
     private var weatherNoticeRow = UIView()
     private let qualitySegmented = UISegmentedControl()
     private var musicSelection = MusicSelection()
-    private let musicButton = UIButton(type: .system)
+    private let musicButton = MenuFieldButton(type: .system)
     private let formStack = UIStackView()
 
     init(environment: AppEnvironment, frameID: String) {
@@ -337,12 +338,12 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         formStack.addArrangedSubview(makeSwitchRow(key: "playback.clock", toggle: clockSwitch))
         formStack.addArrangedSubview(makeSwitchRow(key: "playback.date", toggle: dateSwitch))
         formStack.addArrangedSubview(makeHelpLabel(key: "playback.overlay_position"))
-        for (index, button) in positionButtons.enumerated() {
-            button.tag = index
-            button.addTarget(self, action: #selector(handlePositionChanged(_:)), for: .touchUpInside)
-            formStack.addArrangedSubview(button)
-        }
+        positionMenuButton.contentHorizontalAlignment = .fill
+        positionMenuButton.heightAnchor.constraint(
+            greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
+        ).isActive = true
         applyPositionIndex(positionIndex)
+        formStack.addArrangedSubview(positionMenuButton)
         formStack.addArrangedSubview(makeHelpLabel(key: "playback.hour_format"))
         configure(
             segmented: hourSegmented,
@@ -584,14 +585,25 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
 
     private func applyPositionIndex(_ index: Int) {
         positionIndex = index
-        for (buttonIndex, button) in positionButtons.enumerated() {
-            button.isOptionSelected = buttonIndex == index
-        }
+        positionMenuButton.configuration = menuFieldConfiguration(
+            title: L10n.string(Self.positionTitleKeys[safe: index] ?? Self.positionTitleKeys[0])
+        )
+        positionMenuButton.menu = UIMenu(children: Self.positionTitleKeys.enumerated().map {
+            (menuIndex, key) in
+            UIAction(
+                title: L10n.string(key),
+                state: menuIndex == positionIndex ? .on : .off
+            ) { [weak self] _ in
+                self?.handlePositionSelection(menuIndex)
+            }
+        })
+        positionMenuButton.accessibilityLabel = L10n.string("playback.overlay_position")
     }
 
-    @objc private func handlePositionChanged(_ sender: ActionButton) {
-        applyPositionIndex(sender.tag)
-        handleControlChanged()
+    private func handlePositionSelection(_ index: Int) {
+        guard index != positionIndex else { return }
+        applyPositionIndex(index)
+        dirty = true
     }
 
     @objc private func handleControlChanged() {
@@ -601,26 +613,10 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
 
     private func applyTransitionIndex(_ index: Int) {
         transitionIndex = index
-        var configuration = UIButton.Configuration.plain()
-        configuration.title = L10n.string(Self.transitionTitleKeys[safe: index]
-            ?? Self.transitionTitleKeys[1])
-        configuration.image = UIImage(systemName: "chevron.down")
-        configuration.imagePlacement = .trailing
-        configuration.imagePadding = ThemeMetrics.space12
-        configuration.contentInsets = NSDirectionalEdgeInsets(
-            top: ThemeMetrics.space12, leading: ThemeMetrics.space16,
-            bottom: ThemeMetrics.space12, trailing: ThemeMetrics.space16
+        transitionMenuButton.configuration = menuFieldConfiguration(
+            title: L10n.string(Self.transitionTitleKeys[safe: index]
+                ?? Self.transitionTitleKeys[1])
         )
-        configuration.titleAlignment = .leading
-        configuration.baseForegroundColor = ThemeColor.textPrimary
-        configuration.background.backgroundColor = ThemeColor.panel
-        configuration.background.cornerRadius = ThemeMetrics.radiusGroup
-        configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer {
-            var attributes = $0
-            attributes.font = ThemeFont.body()
-            return attributes
-        }
-        transitionMenuButton.configuration = configuration
         transitionMenuButton.menu = UIMenu(children: Self.transitionTitleKeys.enumerated().map {
             (index, key) in
             UIAction(
@@ -643,26 +639,10 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
 
     private func applyRestDisplayIndex(_ index: Int) {
         restDisplayIndex = index
-        var configuration = UIButton.Configuration.plain()
-        configuration.title = L10n.string(Self.restDisplayTitleKeys[safe: index]
-            ?? Self.restDisplayTitleKeys[1])
-        configuration.image = UIImage(systemName: "chevron.down")
-        configuration.imagePlacement = .trailing
-        configuration.imagePadding = ThemeMetrics.space12
-        configuration.contentInsets = NSDirectionalEdgeInsets(
-            top: ThemeMetrics.space12, leading: ThemeMetrics.space16,
-            bottom: ThemeMetrics.space12, trailing: ThemeMetrics.space16
+        restDisplayMenuButton.configuration = menuFieldConfiguration(
+            title: L10n.string(Self.restDisplayTitleKeys[safe: index]
+                ?? Self.restDisplayTitleKeys[1])
         )
-        configuration.titleAlignment = .leading
-        configuration.baseForegroundColor = ThemeColor.textPrimary
-        configuration.background.backgroundColor = ThemeColor.panel
-        configuration.background.cornerRadius = ThemeMetrics.radiusGroup
-        configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer {
-            var attributes = $0
-            attributes.font = ThemeFont.body()
-            return attributes
-        }
-        restDisplayMenuButton.configuration = configuration
         restDisplayMenuButton.menu = UIMenu(children: Self.restDisplayTitleKeys.enumerated().map {
             (index, key) in
             UIAction(
@@ -857,8 +837,15 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     }
 
     private func applyMusicSelection() {
+        musicButton.configuration = menuFieldConfiguration(
+            title: MusicCatalog.displayName(for: musicSelection)
+        )
+        musicButton.accessibilityLabel = L10n.string("playback.music_title")
+    }
+
+    private func menuFieldConfiguration(title: String) -> UIButton.Configuration {
         var configuration = UIButton.Configuration.plain()
-        configuration.title = MusicCatalog.displayName(for: musicSelection)
+        configuration.title = title
         configuration.image = UIImage(systemName: "chevron.right")
         configuration.imagePlacement = .trailing
         configuration.imagePadding = ThemeMetrics.space12
@@ -875,8 +862,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
             attributes.font = ThemeFont.body()
             return attributes
         }
-        musicButton.configuration = configuration
-        musicButton.accessibilityLabel = L10n.string("playback.music_title")
+        return configuration
     }
 
     @objc private func handleMusic() {
@@ -1197,5 +1183,36 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
 private extension Array {
     subscript(safe index: Int) -> Element? {
         indices.contains(index) ? self[index] : nil
+    }
+}
+
+private final class MenuFieldButton: UIButton {
+
+    var togglesChevron = false
+    private var chevronExpanded = false
+
+    static func makeMenuButton() -> MenuFieldButton {
+        let button = MenuFieldButton(type: .system)
+        button.togglesChevron = true
+        button.showsMenuAsPrimaryAction = true
+        return button
+    }
+
+    override var isHighlighted: Bool {
+        didSet {
+            guard togglesChevron, isHighlighted != chevronExpanded else { return }
+            chevronExpanded = isHighlighted
+            guard var config = configuration else { return }
+            config.image = UIImage(systemName: isHighlighted ? "chevron.down" : "chevron.right")
+            configuration = config
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard let imageView = imageView else { return }
+        var frame = imageView.frame
+        frame.origin.x = bounds.width - frame.width - ThemeMetrics.space16
+        imageView.frame = frame
     }
 }

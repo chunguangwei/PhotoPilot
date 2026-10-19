@@ -181,8 +181,9 @@ class SettingsView(context: Context) : ScrollView(context) {
             context,
             unitLabels[model.weatherUnitsIndex],
         ).apply {
-            text = res.getString(unitLabels[model.weatherUnitsIndex]) + "  ⌄"
+            text = res.getString(unitLabels[model.weatherUnitsIndex])
             setOnClickListener { anchor ->
+                val field = anchor as? dev.photopilot.scaffold.ui.widget.DropdownField
                 val menu = android.widget.PopupMenu(context, anchor)
                 unitLabels.forEachIndexed { index, labelRes ->
                     menu.menu.add(0, index, index, res.getString(labelRes))
@@ -191,6 +192,8 @@ class SettingsView(context: Context) : ScrollView(context) {
                             true
                         }
                 }
+                field?.setExpanded(true)
+                menu.setOnDismissListener { field?.setExpanded(false) }
                 menu.show()
             }
         }
@@ -385,20 +388,34 @@ class SettingsView(context: Context) : ScrollView(context) {
         titleRes: Int,
         expandedByDefault: Boolean,
         collapsible: Boolean = true,
-    ): Pair<TextView, LinearLayout> {
+    ): Pair<LinearLayout, LinearLayout> {
         val res = resources
         val collapsed = collapsible && sectionCollapsed(titleRes, expandedByDefault)
-        val header = TextView(context).apply {
+        val chevron = TextView(context).apply {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
             setTextColor(context.getColor(R.color.pp_text_secondary))
+            gravity = Gravity.CENTER_VERTICAL or Gravity.END
+            text = if (collapsed) CHEVRON_COLLAPSED else CHEVRON_EXPANDED
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+        val title = TextView(context).apply {
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
+            setTextColor(context.getColor(R.color.pp_text_secondary))
+            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+            text = res.getString(titleRes)
+        }
+        val header = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
             minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-            gravity = Gravity.CENTER_VERTICAL
             isClickable = collapsible
             isFocusable = collapsible
             contentDescription = if (collapsible) {
                 res.getString(titleRes) + ", " + res.getString(if (collapsed) R.string.a11y_collapsed else R.string.a11y_expanded)
             } else res.getString(titleRes)
-            text = if (collapsible) sectionTitle(titleRes, !collapsed) else res.getString(titleRes)
+            addView(title, LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1f))
+            if (collapsible) {
+                addView(chevron, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT))
+            }
         }
         column.addView(
             header,
@@ -426,7 +443,7 @@ class SettingsView(context: Context) : ScrollView(context) {
             header.setOnClickListener {
                 val nowCollapsed = body.visibility != View.GONE
                 body.visibility = if (nowCollapsed) View.GONE else View.VISIBLE
-                header.text = sectionTitle(titleRes, !nowCollapsed)
+                chevron.text = if (nowCollapsed) CHEVRON_COLLAPSED else CHEVRON_EXPANDED
                 header.contentDescription = res.getString(titleRes) + ", " + res.getString(
                     if (nowCollapsed) R.string.a11y_collapsed else R.string.a11y_expanded,
                 )
@@ -438,9 +455,6 @@ class SettingsView(context: Context) : ScrollView(context) {
         }
         return header to body
     }
-
-    private fun sectionTitle(titleRes: Int, expanded: Boolean): String =
-        resources.getString(titleRes) + "  " + if (expanded) CHEVRON_EXPANDED else CHEVRON_COLLAPSED
 
     private companion object {
         val APPEARANCE_VALUES = listOf("system", "light", "dark")

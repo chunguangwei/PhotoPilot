@@ -112,6 +112,12 @@ class PlayerView(
         }
     }
 
+    private fun restartClockTick() {
+        removeCallbacks(clockTickRunnable)
+        updateClock()
+        postDelayed(clockTickRunnable, nextClockTickDelayMs())
+    }
+
     private fun nextClockTickDelayMs(): Long {
         if (!restClockModeActive()) return CLOCK_TICK_MS
         val remainder = System.currentTimeMillis() % SECOND_TICK_MS
@@ -260,7 +266,7 @@ class PlayerView(
             }
         }
         updateClock()
-        postDelayed(clockTickRunnable, CLOCK_TICK_MS)
+        postDelayed(clockTickRunnable, nextClockTickDelayMs())
     }
 
     override fun onStateChanged(state: String) {
@@ -268,6 +274,7 @@ class PlayerView(
         restingOverlay.visibility = if (state == PlaybackController.RESTING) View.VISIBLE else View.GONE
         if (state == PlaybackController.RESTING) {
             applyRestDisplayMode()
+            restartClockTick()
         }
         failedOverlay.visibility = if (state == PlaybackController.FAILED) View.VISIBLE else View.GONE
         val isPlaying = state != PlaybackController.PAUSED
@@ -560,6 +567,7 @@ class PlayerView(
         hostRoot = parent as? dev.photopilot.scaffold.ui.AppRootView
         hostRoot?.fullBleedOverlay = true
         setImmersive(true)
+        restartClockTick()
     }
 
     override fun onDetachedFromWindow() {

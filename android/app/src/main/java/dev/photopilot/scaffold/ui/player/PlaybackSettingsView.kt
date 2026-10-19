@@ -91,17 +91,17 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private lateinit var restStartButton: TextView
     private lateinit var restEndButton: TextView
     private lateinit var restDisplayRow: LinearLayout
-    private lateinit var restDisplayButton: TextView
+    private lateinit var restDisplayButton: dev.photopilot.scaffold.ui.widget.DropdownField
     private lateinit var weatherSetupHint: LinearLayout
     private lateinit var restError: TextView
     private lateinit var solidRow: dev.photopilot.scaffold.ui.widget.SegmentedControl
-    private lateinit var musicButton: TextView
+    private lateinit var musicButton: dev.photopilot.scaffold.ui.widget.DropdownField
     private lateinit var previewFrame: FrameLayout
     private lateinit var previewBackground: ImageView
     private lateinit var previewImage: ImageView
 
-    private lateinit var transitionButton: TextView
-    private lateinit var fitButton: TextView
+    private lateinit var transitionButton: dev.photopilot.scaffold.ui.widget.DropdownField
+    private lateinit var fitButton: dev.photopilot.scaffold.ui.widget.DropdownField
     private lateinit var previewImageB: ImageView
     private var previewBitmapB: Bitmap? = null
     private var isDemoRunning = false
@@ -751,16 +751,17 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     }
 
     private fun refreshMusicState() {
-        musicButton.text = MusicCatalog.displayName(context, musicSelection()) + "  ⌄"
+        musicButton.text = MusicCatalog.displayName(context, musicSelection())
     }
 
     private fun refreshFitState() {
-        fitButton.text = resources.getString(FIT_LABELS[fitIndex]) + "  ⌄"
+        fitButton.text = resources.getString(FIT_LABELS[fitIndex])
         cropWarning.visibility = if (fitIndex == 2) View.VISIBLE else View.GONE
         solidRow.visibility = if (fitIndex == 1) View.VISIBLE else View.GONE
     }
 
     private fun showFitModeMenu(anchor: View) {
+        val field = anchor as? dev.photopilot.scaffold.ui.widget.DropdownField
         val menu = android.widget.PopupMenu(context, anchor)
         FIT_LABELS.forEachIndexed { index, labelRes ->
             menu.menu.add(0, index, index, resources.getString(labelRes))
@@ -773,6 +774,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                     true
                 }
         }
+        field?.setExpanded(true)
+        menu.setOnDismissListener { field?.setExpanded(false) }
         menu.show()
     }
 
@@ -782,10 +785,11 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         updateTransitionValue()
         transitionDisabledNote.visibility = if (off) View.VISIBLE else View.GONE
         transitionButton.isEnabled = !reduceMotion
-        transitionButton.text = resources.getString(TRANSITION_LABELS[transitionIndex]) + "  ⌄"
+        transitionButton.text = resources.getString(TRANSITION_LABELS[transitionIndex])
     }
 
     private fun showTransitionMenu(anchor: View) {
+        val field = anchor as? dev.photopilot.scaffold.ui.widget.DropdownField
         val menu = android.widget.PopupMenu(context, anchor)
         TRANSITION_LABELS.forEachIndexed { index, labelRes ->
             menu.menu.add(0, index, index, resources.getString(labelRes))
@@ -798,6 +802,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                     true
                 }
         }
+        field?.setExpanded(true)
+        menu.setOnDismissListener { field?.setExpanded(false) }
         menu.show()
     }
 
@@ -882,7 +888,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         restStartButton.text = timeButtonText(R.string.settings_rest_start, restStartMinute)
         restEndButton.text = timeButtonText(R.string.settings_rest_end, restEndMinute)
         restDisplayRow.visibility = if (enabled) VISIBLE else GONE
-        restDisplayButton.text = resources.getString(REST_DISPLAY_LABELS[restDisplayIndex]) + "  ⌄"
+        restDisplayButton.text = resources.getString(REST_DISPLAY_LABELS[restDisplayIndex])
         updateWeatherSetupHint()
     }
 
@@ -894,6 +900,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     }
 
     private fun showRestDisplayMenu(anchor: View) {
+        val field = anchor as? dev.photopilot.scaffold.ui.widget.DropdownField
         val menu = android.widget.PopupMenu(context, anchor)
         REST_DISPLAY_LABELS.forEachIndexed { index, labelRes ->
             menu.menu.add(0, index, index, resources.getString(labelRes))
@@ -905,6 +912,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                     true
                 }
         }
+        field?.setExpanded(true)
+        menu.setOnDismissListener { field?.setExpanded(false) }
         menu.show()
     }
 
@@ -1097,8 +1106,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         }
 
     private companion object {
-        val HOLD_PRESETS = listOf(5, 10, 15, 30, 60)
-        const val HOLD_CUSTOM_INDEX = 5
+        val HOLD_PRESETS = listOf(10, 15, 30)
+        const val HOLD_CUSTOM_INDEX = 3
         val FIT_LABELS = listOf(
             R.string.playback_fit_blur,
             R.string.playback_fit_color,
