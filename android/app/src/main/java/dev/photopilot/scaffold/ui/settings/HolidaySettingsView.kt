@@ -144,7 +144,7 @@ class HolidaySettingsView(context: Context) : LinearLayout(context) {
             setOnCheckedChangeListener { _, isChecked ->
                 if (!bindingForm) {
                     if (!isChecked) draft = draft.copy(startTime = null, endTime = null)
-                    bindTimes()
+                    timeButtonsRow.visibility = if (isChecked) VISIBLE else GONE
                 }
             }
         }
