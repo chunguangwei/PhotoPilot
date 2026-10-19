@@ -802,6 +802,20 @@ class PlayerView(
                 lp.topMargin = inset
                 lp.bottomMargin = 0
             }
+            FramePlaybackSettings.POSITION_TOP_CENTER -> {
+                lp.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+                lp.marginStart = 0
+                lp.marginEnd = 0
+                lp.topMargin = inset
+                lp.bottomMargin = 0
+            }
+            FramePlaybackSettings.POSITION_BOTTOM_CENTER -> {
+                lp.gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                lp.marginStart = 0
+                lp.marginEnd = 0
+                lp.topMargin = 0
+                lp.bottomMargin = controlsClearance
+            }
             FramePlaybackSettings.POSITION_BOTTOM_TRAILING -> {
                 lp.gravity = Gravity.BOTTOM or Gravity.END
                 lp.marginStart = 0

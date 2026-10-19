@@ -2530,6 +2530,20 @@
       "en": "Bottom right"
     },
     {
+      "key": "playback.position_bottom_center",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "中下",
+      "en": "Bottom center"
+    },
+    {
+      "key": "playback.position_top_center",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "中上",
+      "en": "Top center"
+    },
+    {
       "key": "playback.position_top_leading",
       "section": "7. 播放设置（S13）",
       "platform": "all",

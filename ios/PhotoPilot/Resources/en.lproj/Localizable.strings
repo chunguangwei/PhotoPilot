@@ -325,6 +325,8 @@
 "playback.overlay_position" = "Position";
 "playback.position_bottom_leading" = "Bottom left";
 "playback.position_bottom_trailing" = "Bottom right";
+"playback.position_bottom_center" = "Bottom center";
+"playback.position_top_center" = "Top center";
 "playback.position_top_leading" = "Top left";
 "playback.position_top_trailing" = "Top right";
 "playback.hour_format" = "Time format";

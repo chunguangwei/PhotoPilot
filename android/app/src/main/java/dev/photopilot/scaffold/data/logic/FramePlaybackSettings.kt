@@ -37,8 +37,10 @@ data class FramePlaybackSettings(
         const val FILL_CROP = "fill_crop"
 
         const val POSITION_TOP_LEADING = "top_leading"
+        const val POSITION_TOP_CENTER = "top_center"
         const val POSITION_TOP_TRAILING = "top_trailing"
         const val POSITION_BOTTOM_LEADING = "bottom_leading"
+        const val POSITION_BOTTOM_CENTER = "bottom_center"
         const val POSITION_BOTTOM_TRAILING = "bottom_trailing"
 
         const val QUALITY_AUTO = "auto"

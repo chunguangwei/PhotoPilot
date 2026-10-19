@@ -360,6 +360,8 @@
     <string name="playback.overlay_position">显示位置</string>
     <string name="playback.position_bottom_leading">左下</string>
     <string name="playback.position_bottom_trailing">右下</string>
+    <string name="playback.position_bottom_center">中下</string>
+    <string name="playback.position_top_center">中上</string>
     <string name="playback.position_top_leading">左上</string>
     <string name="playback.position_top_trailing">右上</string>
     <string name="playback.hour_format">时间格式</string>

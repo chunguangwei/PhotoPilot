@@ -46,7 +46,7 @@ struct PlayerSettings: Sendable {
         if let clock = object["clock"] as? [String: Any] {
             settings.clockEnabled = clock["enabled"] as? Bool ?? true
             if let position = clock["position"] as? String,
-               ["top_leading", "top_trailing", "bottom_leading", "bottom_trailing"].contains(position) {
+               ["top_leading", "top_center", "top_trailing", "bottom_leading", "bottom_center", "bottom_trailing"].contains(position) {
                 settings.clockPosition = position
             }
             settings.hour24 = clock["hour24"] as? Bool
@@ -1557,12 +1557,20 @@ final class PlayerViewController: UIViewController {
                 clockStack.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor, constant: inset),
                 clockStack.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: vertical),
             ],
+            "top_center": [
+                clockStack.centerXAnchor.constraint(equalTo: safeArea.centerXAnchor),
+                clockStack.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: vertical),
+            ],
             "top_trailing": [
                 clockStack.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor, constant: -inset),
                 clockStack.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: vertical),
             ],
             "bottom_leading": [
                 clockStack.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor, constant: inset),
+                clockStack.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor, constant: -vertical),
+            ],
+            "bottom_center": [
+                clockStack.centerXAnchor.constraint(equalTo: safeArea.centerXAnchor),
                 clockStack.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor, constant: -vertical),
             ],
             "bottom_trailing": [
@@ -1577,10 +1585,19 @@ final class PlayerViewController: UIViewController {
         for (position, constraints) in clockConstraintsByPosition {
             constraints.forEach { $0.isActive = position == settings.clockPosition }
         }
-        let trailing = settings.clockPosition.hasSuffix("trailing")
-        clockStack.alignment = trailing ? .trailing : .leading
-        clockLabel.textAlignment = trailing ? .right : .left
-        dateLabel.textAlignment = trailing ? .right : .left
+        if settings.clockPosition.hasSuffix("trailing") {
+            clockStack.alignment = .trailing
+            clockLabel.textAlignment = .right
+            dateLabel.textAlignment = .right
+        } else if settings.clockPosition.hasSuffix("center") {
+            clockStack.alignment = .center
+            clockLabel.textAlignment = .center
+            dateLabel.textAlignment = .center
+        } else {
+            clockStack.alignment = .leading
+            clockLabel.textAlignment = .left
+            dateLabel.textAlignment = .left
+        }
     }
 
     private func applyBrightness() {

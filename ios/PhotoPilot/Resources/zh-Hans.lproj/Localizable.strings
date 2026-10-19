@@ -325,6 +325,8 @@
 "playback.overlay_position" = "显示位置";
 "playback.position_bottom_leading" = "左下";
 "playback.position_bottom_trailing" = "右下";
+"playback.position_bottom_center" = "中下";
+"playback.position_top_center" = "中上";
 "playback.position_top_leading" = "左上";
 "playback.position_top_trailing" = "右上";
 "playback.hour_format" = "时间格式";

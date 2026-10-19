@@ -372,6 +372,8 @@
     <string name="playback.overlay_position">Position</string>
     <string name="playback.position_bottom_leading">Bottom left</string>
     <string name="playback.position_bottom_trailing">Bottom right</string>
+    <string name="playback.position_bottom_center">Bottom center</string>
+    <string name="playback.position_top_center">Top center</string>
     <string name="playback.position_top_leading">Top left</string>
     <string name="playback.position_top_trailing">Top right</string>
     <string name="playback.hour_format">Time format</string>

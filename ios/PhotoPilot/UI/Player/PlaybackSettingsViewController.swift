@@ -23,7 +23,8 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     private static let fitWireValues = ["fit_blur", "fit_color", "fill_crop"]
     private static let solidWireValues = ["", "black", "warm_white"]
     private static let positionWireValues = [
-        "top_leading", "top_trailing", "bottom_leading", "bottom_trailing",
+        "top_leading", "top_center", "top_trailing",
+        "bottom_leading", "bottom_center", "bottom_trailing",
     ]
     private static let orderWireValues = [
         PlaybackQueue.orderCapturedAsc,
@@ -76,11 +77,13 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     private let cropWarningLabel = UILabel()
     private let clockSwitch = UISwitch()
     private let dateSwitch = UISwitch()
-    private var positionIndex = 2
+    private var positionIndex = 3
     private let positionButtons = [
         ActionButton(titleKey: "playback.position_top_leading", style: .secondary),
+        ActionButton(titleKey: "playback.position_top_center", style: .secondary),
         ActionButton(titleKey: "playback.position_top_trailing", style: .secondary),
         ActionButton(titleKey: "playback.position_bottom_leading", style: .secondary),
+        ActionButton(titleKey: "playback.position_bottom_center", style: .secondary),
         ActionButton(titleKey: "playback.position_bottom_trailing", style: .secondary)
     ]
     private let hourSegmented = UISegmentedControl()
@@ -458,7 +461,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
                 .firstIndex(of: parsed.solidColor ?? "") ?? 0
             clockSwitch.isOn = parsed.clockEnabled
             dateSwitch.isOn = parsed.dateEnabled
-            applyPositionIndex(Self.positionWireValues.firstIndex(of: parsed.clockPosition) ?? 2)
+            applyPositionIndex(Self.positionWireValues.firstIndex(of: parsed.clockPosition) ?? 3)
             hourSegmented.selectedSegmentIndex = parsed.hour24.map { $0 ? 2 : 1 } ?? 0
             orderSegmented.selectedSegmentIndex = Self.orderWireValues
                 .firstIndex(of: bundle.orderMode) ?? 0

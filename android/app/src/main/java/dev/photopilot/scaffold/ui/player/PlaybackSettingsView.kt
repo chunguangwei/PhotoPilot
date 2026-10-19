@@ -508,11 +508,14 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             optionGroup(
                 listOf(
                     R.string.playback_position_top_leading,
+                    R.string.playback_position_top_center,
                     R.string.playback_position_top_trailing,
                     R.string.playback_position_bottom_leading,
+                    R.string.playback_position_bottom_center,
                     R.string.playback_position_bottom_trailing,
                 ),
                 positionIndex,
+                vertical = true,
             ) { positionIndex = it },
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
         )
@@ -1022,8 +1025,10 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         )
         val POSITIONS = listOf(
             FramePlaybackSettings.POSITION_TOP_LEADING,
+            FramePlaybackSettings.POSITION_TOP_CENTER,
             FramePlaybackSettings.POSITION_TOP_TRAILING,
             FramePlaybackSettings.POSITION_BOTTOM_LEADING,
+            FramePlaybackSettings.POSITION_BOTTOM_CENTER,
             FramePlaybackSettings.POSITION_BOTTOM_TRAILING,
         )
         val REST_DISPLAYS = listOf(
