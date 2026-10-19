@@ -4387,6 +4387,20 @@
       "en": "Daily hours (optional)"
     },
     {
+      "key": "holiday.time_start",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "开始时间",
+      "en": "Start time"
+    },
+    {
+      "key": "holiday.time_end",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "结束时间",
+      "en": "End time"
+    },
+    {
       "key": "holiday.time_help",
       "section": "9. 设置（S15、S17）",
       "platform": "all",

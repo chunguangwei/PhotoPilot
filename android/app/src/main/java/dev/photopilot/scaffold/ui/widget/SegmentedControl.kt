@@ -13,6 +13,7 @@ internal class SegmentedControl(
     context: Context,
     private val textSizeRes: Int = R.dimen.pp_text_caption,
     private val autoSize: Boolean = false,
+    private val singleRow: Boolean = false,
 ) : ViewGroup(context) {
 
     private val segments = mutableListOf<TextView>()
@@ -87,7 +88,9 @@ internal class SegmentedControl(
             child.measure(unspecified, unspecified)
             widest = maxOf(widest, child.measuredWidth)
         }
-        columns = if (available <= 0) {
+        columns = if (singleRow) {
+            count
+        } else if (available <= 0) {
             count
         } else {
             var fit = count

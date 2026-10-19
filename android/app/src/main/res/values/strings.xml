@@ -628,6 +628,8 @@
     <string name="holiday.date_start">Start date</string>
     <string name="holiday.date_end">End date</string>
     <string name="holiday.time_range">Daily hours (optional)</string>
+    <string name="holiday.time_start">Start time</string>
+    <string name="holiday.time_end">End time</string>
     <string name="holiday.time_help">Leave both unset to play all day; an end time earlier than the start time crosses midnight.</string>
     <string name="holiday.frame">Frame to play</string>
     <string name="holiday.frame_placeholder">Choose a frame</string>

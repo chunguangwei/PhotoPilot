@@ -366,6 +366,8 @@ class SettingsView(context: Context) : ScrollView(context) {
         val control = dev.photopilot.scaffold.ui.widget.SegmentedControl(
             context,
             textSizeRes = R.dimen.pp_text_body,
+            autoSize = true,
+            singleRow = true,
         )
         control.setItems(labelResList.map { res.getString(it) }, selected, onSelect)
         parent.addView(control, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))

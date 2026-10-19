@@ -550,6 +550,8 @@
 "holiday.date_start" = "Start date";
 "holiday.date_end" = "End date";
 "holiday.time_range" = "Daily hours (optional)";
+"holiday.time_start" = "Start time";
+"holiday.time_end" = "End time";
 "holiday.time_help" = "Leave both unset to play all day; an end time earlier than the start time crosses midnight.";
 "holiday.frame" = "Frame to play";
 "holiday.frame_placeholder" = "Choose a frame";

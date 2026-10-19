@@ -612,6 +612,8 @@
     <string name="holiday.date_start">开始日期</string>
     <string name="holiday.date_end">结束日期</string>
     <string name="holiday.time_range">每日时段（可选）</string>
+    <string name="holiday.time_start">开始时间</string>
+    <string name="holiday.time_end">结束时间</string>
     <string name="holiday.time_help">两者都不设置则全天播放；结束时间早于开始时间视为跨午夜。</string>
     <string name="holiday.frame">播放相框</string>
     <string name="holiday.frame_placeholder">选择相框</string>

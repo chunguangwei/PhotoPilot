@@ -585,6 +585,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                     R.string.playback_position_bottom_trailing,
                 ),
                 positionIndex,
+                singleRow = false,
             ) { positionIndex = it },
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
         )
@@ -1085,6 +1086,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     private fun optionGroup(
         labelResList: List<Int>,
         selected: Int,
+        singleRow: Boolean = true,
         onSelect: (Int) -> Unit,
     ): dev.photopilot.scaffold.ui.widget.SegmentedControl {
         val res = resources
@@ -1095,6 +1097,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             context,
             textSizeRes = R.dimen.pp_text_meta,
             autoSize = true,
+            singleRow = singleRow,
         ).apply { setItems(labels, selected, onSelect) }
     }
 

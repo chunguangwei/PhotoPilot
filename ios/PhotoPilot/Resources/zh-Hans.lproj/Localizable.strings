@@ -550,6 +550,8 @@
 "holiday.date_start" = "开始日期";
 "holiday.date_end" = "结束日期";
 "holiday.time_range" = "每日时段（可选）";
+"holiday.time_start" = "开始时间";
+"holiday.time_end" = "结束时间";
 "holiday.time_help" = "两者都不设置则全天播放；结束时间早于开始时间视为跨午夜。";
 "holiday.frame" = "播放相框";
 "holiday.frame_placeholder" = "选择相框";

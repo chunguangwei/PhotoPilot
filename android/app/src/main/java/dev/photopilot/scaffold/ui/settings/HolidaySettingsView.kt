@@ -137,11 +137,11 @@ class HolidaySettingsView(context: Context) : LinearLayout(context) {
         )
         addLabel(formColumn, R.string.holiday_time_range)
         addHelp(formColumn, R.string.holiday_time_help)
-        startTimeButton = dateButton(R.string.holiday_date_start) { pickTime(draft.startTime) { minute ->
+        startTimeButton = dateButton(R.string.holiday_time_start) { pickTime(draft.startTime) { minute ->
             draft = draft.copy(startTime = minute)
             bindTimes()
         } }
-        endTimeButton = dateButton(R.string.holiday_date_end) { pickTime(draft.endTime) { minute ->
+        endTimeButton = dateButton(R.string.holiday_time_end) { pickTime(draft.endTime) { minute ->
             draft = draft.copy(endTime = minute)
             bindTimes()
         } }
@@ -378,8 +378,8 @@ class HolidaySettingsView(context: Context) : LinearLayout(context) {
     }
 
     private fun bindTimes() {
-        startTimeButton.text = labelled(resources.getString(R.string.holiday_date_start), draft.startTime?.let(::timeValue))
-        endTimeButton.text = labelled(resources.getString(R.string.holiday_date_end), draft.endTime?.let(::timeValue))
+        startTimeButton.text = labelled(resources.getString(R.string.holiday_time_start), draft.startTime?.let(::timeValue))
+        endTimeButton.text = labelled(resources.getString(R.string.holiday_time_end), draft.endTime?.let(::timeValue))
     }
 
     private fun bindFrame() {
@@ -387,7 +387,23 @@ class HolidaySettingsView(context: Context) : LinearLayout(context) {
         frameButton.text = name ?: resources.getString(R.string.holiday_frame_placeholder)
     }
 
-    private fun labelled(label: String, value: String?): String = "$label: ${value ?: "—"}"
+    private fun labelled(label: String, value: String?): CharSequence {
+        val text = "$label\n${value ?: "—"}"
+        return android.text.SpannableString(text).apply {
+            setSpan(
+                android.text.style.RelativeSizeSpan(LABEL_SIZE_RATIO),
+                0,
+                label.length,
+                0,
+            )
+            setSpan(
+                android.text.style.ForegroundColorSpan(context.getColor(R.color.pp_text_secondary)),
+                0,
+                label.length,
+                0,
+            )
+        }
+    }
 
     private fun timeValue(minute: Int): String =
         String.format(Locale.US, "%02d:%02d", minute / 60, minute % 60)
@@ -497,5 +513,9 @@ class HolidaySettingsView(context: Context) : LinearLayout(context) {
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_4)
             },
         )
+    }
+
+    private companion object {
+        const val LABEL_SIZE_RATIO = 0.8f
     }
 }
