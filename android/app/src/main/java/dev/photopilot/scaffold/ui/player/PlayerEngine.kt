@@ -573,11 +573,15 @@ class PlayerEngine(
     }
 
     private fun checkRestWindow() {
+        val calendar = Calendar.getInstance()
+        val minute = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
+        if (!settings.restActiveAt(minute, false)) {
+            restOverride = false
+        }
         val active = restActiveNow()
         if (active && state in REST_INTERRUPTIBLE_STATES) {
             dispatch(PlaybackEvent(type = "rest_window_start"))
         } else if (!active && state == PlaybackController.RESTING) {
-            restOverride = false
             dispatch(PlaybackEvent(type = "user_tap"))
         }
     }

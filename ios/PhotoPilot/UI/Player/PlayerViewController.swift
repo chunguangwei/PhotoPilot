@@ -183,6 +183,7 @@ final class PlayerImageLoader: @unchecked Sendable {
 final class PlayerViewController: UIViewController {
     static let blurDimOpacity: CGFloat = 0.4
     private static let controlsHideDelayNanos: UInt64 = 4_000_000_000
+    private static let transitionWatchdogNanos: UInt64 = 12_000_000_000
     private(set) static weak var activePlayer: PlayerViewController?
 
     static func dismissActiveIfAny() {
@@ -216,6 +217,7 @@ final class PlayerViewController: UIViewController {
     private var originalBrightness: CGFloat?
 
     private var holdTask: Task<Void, Never>?
+    private var transitionWatchdog: Task<Void, Never>?
     private var workTask: Task<Void, Never>?
     private var controlsHideTask: Task<Void, Never>?
     private var clockTask: Task<Void, Never>?
@@ -465,6 +467,10 @@ final class PlayerViewController: UIViewController {
         let enteredTransition = outcome.state == PlaybackController.transitioning
             && controllerState != PlaybackController.transitioning
         controllerState = outcome.state
+        if controllerState != PlaybackController.transitioning {
+            transitionWatchdog?.cancel()
+            transitionWatchdog = nil
+        }
         if controllerState == PlaybackController.resting {
             if musicPlayer.isPlaying {
                 musicPausedForRest = true
@@ -481,7 +487,21 @@ final class PlayerViewController: UIViewController {
             perform(effect: effect)
         }
         if enteredTransition {
+            transitionWatchdog?.cancel()
+            transitionWatchdog = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: Self.transitionWatchdogNanos)
+                guard !Task.isCancelled else { return }
+                guard let self, controllerState == PlaybackController.transitioning else { return }
+                transitionWatchdog = nil
+                dispatch(PlaybackEvent(type: "transition_finished"))
+            }
             advance(by: event.type == "user_prev" ? queue.count - 1 : 1)
+        }
+        if controllerState == PlaybackController.holding,
+           holdTask == nil,
+           queue.count > 1,
+           !currentIsVideo() {
+            scheduleHoldTimer()
         }
         updateStateChrome()
     }
@@ -933,6 +953,7 @@ final class PlayerViewController: UIViewController {
             try? await Task.sleep(nanoseconds: UInt64(max(holdMs, 0)) * 1_000_000)
             guard !Task.isCancelled else { return }
             guard let self else { return }
+            holdTask = nil
             dispatch(PlaybackEvent(type: "hold_elapsed", nextReady: isNextReady()))
         }
     }
@@ -1036,10 +1057,14 @@ final class PlayerViewController: UIViewController {
     }
 
     private func restActiveNow() -> Bool {
+        restWindowActive() && !skipRestOnce
+    }
+
+    private func restWindowActive() -> Bool {
         let components = Calendar.current.dateComponents([.hour, .minute], from: Date())
         let minute = (components.hour ?? 0) * 60 + (components.minute ?? 0)
         return PlaybackTiming.restActive(
-            enabled: settings.restEnabled && !skipRestOnce,
+            enabled: settings.restEnabled,
             startMinute: settings.restStartMinute,
             endMinute: settings.restEndMinute,
             nowMinute: minute
@@ -1058,6 +1083,9 @@ final class PlayerViewController: UIViewController {
     }
 
     private func evaluateRestWindow() {
+        if !restWindowActive() {
+            skipRestOnce = false
+        }
         let active = restActiveNow()
         if active {
             dispatch(PlaybackEvent(type: "rest_window_start"))
@@ -1993,6 +2021,7 @@ final class PlayerViewController: UIViewController {
 
     private func exitPlayer() {
         holdTask?.cancel()
+        transitionWatchdog?.cancel()
         workTask?.cancel()
         clockTask?.cancel()
         restTask?.cancel()

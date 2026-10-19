@@ -59,7 +59,17 @@ class SettingsView(context: Context) : ScrollView(context) {
 
     fun showWeatherError(show: Boolean) {
         if (::weatherError.isInitialized) {
+            weatherError.setTextColor(context.getColor(R.color.pp_status_error))
+            weatherError.text = resources.getString(R.string.weather_unavailable)
             weatherError.visibility = if (show) View.VISIBLE else View.GONE
+        }
+    }
+
+    fun showWeatherRefreshing() {
+        if (::weatherError.isInitialized) {
+            weatherError.setTextColor(context.getColor(R.color.pp_text_secondary))
+            weatherError.text = resources.getString(R.string.common_loading)
+            weatherError.visibility = View.VISIBLE
         }
     }
 

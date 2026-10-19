@@ -118,11 +118,11 @@ import dev.photopilot.scaffold.ui.widget.KeyboardDismiss
 import dev.photopilot.scaffold.ui.widget.secondaryButton
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -531,6 +531,7 @@ class MainActivity : Activity() {
             }
         }
         view.onWeatherManualRefresh = {
+            activeSettingsView?.showWeatherRefreshing()
             scope.launch {
                 val env = environment ?: return@launch
                 val placeId = withContext(Dispatchers.IO) {
@@ -544,11 +545,14 @@ class MainActivity : Activity() {
                             reloadSettingsModel(settingsView)
                         }
                         outcome.errorCode != null -> settingsView.showWeatherError(true)
-                        else -> Toast.makeText(
-                            this@MainActivity,
-                            R.string.weather_delayed,
-                            Toast.LENGTH_SHORT,
-                        ).show()
+                        else -> {
+                            settingsView.showWeatherError(false)
+                            Toast.makeText(
+                                this@MainActivity,
+                                R.string.weather_delayed,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
                     }
                 }
             }
@@ -2270,6 +2274,9 @@ class MainActivity : Activity() {
 
     private var weatherSearchView: WeatherCitySearchView? = null
     private var pendingLocationAction: (() -> Unit)? = null
+    private val geocodeExecutor = Executors.newCachedThreadPool { runnable ->
+        Thread(runnable, "photopilot-geocode").apply { isDaemon = true }
+    }
     private var musicPickerView: MusicPickerView? = null
 
     private fun openWeatherSearch(onSelected: (WeatherLogic.StoredPlace, String) -> Unit) {
@@ -2415,15 +2422,13 @@ class MainActivity : Activity() {
     }
 
     private suspend fun reverseGeocodeNames(lat: Double, lon: Double): Pair<String?, String?> =
-        coroutineScope {
-            val zh = async(Dispatchers.IO) { reverseGeocodeName(lat, lon, Locale("zh")) }
-            val en = async(Dispatchers.IO) { reverseGeocodeName(lat, lon, Locale.ENGLISH) }
-            val names = withTimeoutOrNull(GEOCODE_TIMEOUT_MS) { zh.await() to en.await() }
-            if (names == null) {
-                zh.cancel()
-                en.cancel()
-            }
-            names ?: (null to null)
+        withContext(Dispatchers.IO) {
+            if (!Geocoder.isPresent()) return@withContext (null to null)
+            val zh = geocodeExecutor.submit<String?> { reverseGeocodeName(lat, lon, Locale("zh")) }
+            val en = geocodeExecutor.submit<String?> { reverseGeocodeName(lat, lon, Locale.ENGLISH) }
+            val zhName = runCatching { zh.get(GEOCODE_TIMEOUT_MS, TimeUnit.MILLISECONDS) }.getOrNull()
+            val enName = runCatching { en.get(GEOCODE_TIMEOUT_MS, TimeUnit.MILLISECONDS) }.getOrNull()
+            zhName to enName
         }
 
     private fun reverseGeocodeName(lat: Double, lon: Double, locale: Locale): String? =

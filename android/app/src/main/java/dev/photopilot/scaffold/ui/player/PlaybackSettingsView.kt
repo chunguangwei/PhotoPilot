@@ -3,6 +3,7 @@ package dev.photopilot.scaffold.ui.player
 import android.app.TimePickerDialog
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.drawable.GradientDrawable
 import android.text.InputType
 import android.util.TypedValue
 import android.view.Gravity
@@ -24,6 +25,7 @@ import dev.photopilot.scaffold.data.logic.MusicCatalog
 import dev.photopilot.scaffold.data.logic.PlaybackSettingsEdit
 import dev.photopilot.scaffold.data.logic.PlaybackTiming
 import dev.photopilot.scaffold.data.render.BitmapRenderer
+import dev.photopilot.scaffold.ui.widget.dropdownField
 import dev.photopilot.scaffold.ui.widget.primaryButton
 import dev.photopilot.scaffold.ui.widget.screenHeader
 import dev.photopilot.scaffold.ui.widget.secondaryButton
@@ -452,6 +454,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         addHelp(column, R.string.playback_hold_custom_title)
         val customRow = LinearLayout(context).apply {
             orientation = HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             dev.photopilot.scaffold.ui.widget.KeyboardDismiss.keepInputOnTouch(this)
         }
         holdCustomInput = EditText(context).apply {
@@ -460,6 +463,15 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             dev.photopilot.scaffold.ui.widget.KeyboardDismiss.configureDone(this)
             setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.pp_text_body))
             setTextColor(context.getColor(R.color.pp_text_primary))
+            setHintTextColor(context.getColor(R.color.pp_text_secondary))
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = resources.getDimensionPixelSize(R.dimen.pp_touch_target)
+            val padH = resources.getDimensionPixelSize(R.dimen.pp_space_16)
+            setPadding(padH, 0, padH, 0)
+            background = GradientDrawable().apply {
+                setColor(context.getColor(R.color.pp_surface_panel))
+                cornerRadius = resources.getDimension(R.dimen.pp_radius_group)
+            }
             isEnabled = false
             setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
@@ -474,14 +486,16 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                 listOf(R.string.playback_unit_seconds, R.string.playback_unit_minutes),
                 0,
             ) { index -> holdCustomMinutes = index == 1 },
-            LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f),
+            LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = resources.getDimensionPixelSize(R.dimen.pp_space_8)
+            },
         )
         column.addView(customRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         addHelp(column, R.string.playback_hold_custom_help)
         holdError = addError(column)
 
         addLabel(column, R.string.playback_transition, R.dimen.pp_space_24)
-        transitionButton = secondaryButton(context, R.string.playback_transition).apply {
+        transitionButton = dropdownField(context, R.string.playback_transition).apply {
             setOnClickListener { anchor -> showTransitionMenu(anchor) }
         }
         column.addView(
@@ -657,7 +671,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                 topMargin = resources.getDimensionPixelSize(R.dimen.pp_space_12)
             },
         )
-        restDisplayButton = secondaryButton(context, R.string.settings_rest_display).apply {
+        restDisplayButton = dropdownField(context, R.string.settings_rest_display).apply {
             setOnClickListener { anchor -> showRestDisplayMenu(anchor) }
         }
         restDisplayRow.addView(
@@ -703,7 +717,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
 
         addLabel(column, R.string.playback_music_title, R.dimen.pp_space_24)
         addHelp(column, R.string.playback_music_help)
-        musicButton = secondaryButton(context, R.string.playback_music_title).apply {
+        musicButton = dropdownField(context, R.string.playback_music_title).apply {
             setOnClickListener { onPickMusic?.invoke() }
         }
         column.addView(

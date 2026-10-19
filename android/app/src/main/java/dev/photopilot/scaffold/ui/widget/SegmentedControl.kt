@@ -21,6 +21,7 @@ internal class SegmentedControl(
     private val gap = resources.getDimensionPixelSize(R.dimen.pp_space_4)
     private val minSegmentHeight = (SEGMENT_HEIGHT_DP * resources.displayMetrics.density).toInt()
     private var columns = 1
+    private var rowHeight = 0
 
     init {
         val inset = resources.getDimensionPixelSize(R.dimen.pp_space_4)
@@ -94,23 +95,29 @@ internal class SegmentedControl(
             fit
         }
         val rows = (count + columns - 1) / columns
-        val segmentWidth = if (available > 0) {
-            ((available - gap * (columns - 1)) / columns).coerceAtLeast(1)
-        } else {
-            widest
-        }
-        var rowHeight = minSegmentHeight
-        val widthSpec = MeasureSpec.makeMeasureSpec(segmentWidth, MeasureSpec.EXACTLY)
+        rowHeight = minSegmentHeight
         for (index in 0 until count) {
+            val row = index / columns
+            val inRow = minOf(columns, count - row * columns)
+            val width = if (available > 0) {
+                ((available - gap * (inRow - 1)) / inRow).coerceAtLeast(1)
+            } else {
+                widest
+            }
             val child = getChildAt(index)
-            child.measure(widthSpec, unspecified)
+            child.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), unspecified)
             rowHeight = maxOf(rowHeight, child.measuredHeight)
         }
         val heightSpec = MeasureSpec.makeMeasureSpec(rowHeight, MeasureSpec.EXACTLY)
         for (index in 0 until count) {
-            getChildAt(index).measure(widthSpec, heightSpec)
+            val child = getChildAt(index)
+            child.measure(
+                MeasureSpec.makeMeasureSpec(child.measuredWidth, MeasureSpec.EXACTLY),
+                heightSpec,
+            )
         }
-        val width = paddingLeft + paddingRight + segmentWidth * columns + gap * (columns - 1)
+        val width = paddingLeft + paddingRight +
+            (if (available > 0) available else widest * columns + gap * (columns - 1))
         val height = paddingTop + paddingBottom + rowHeight * rows + gap * (rows - 1)
         setMeasuredDimension(
             resolveSize(width, widthMeasureSpec),
@@ -122,19 +129,25 @@ internal class SegmentedControl(
         val count = childCount
         if (count == 0) return
         val rtl = layoutDirection == LAYOUT_DIRECTION_RTL
-        val contentWidth = width - paddingLeft - paddingRight
-        for (index in 0 until count) {
-            val child = getChildAt(index)
-            val row = index / columns
-            val column = index % columns
-            val top = paddingTop + row * (child.measuredHeight + gap)
-            val offset = column * (child.measuredWidth + gap)
-            val left = if (rtl) {
-                paddingLeft + contentWidth - offset - child.measuredWidth
-            } else {
-                paddingLeft + offset
+        var index = 0
+        var row = 0
+        while (index < count) {
+            val inRow = minOf(columns, count - row * columns)
+            val top = paddingTop + row * (rowHeight + gap)
+            var offset = 0
+            for (k in 0 until inRow) {
+                val child = getChildAt(index + k)
+                val childWidth = child.measuredWidth
+                val left = if (rtl) {
+                    width - paddingRight - offset - childWidth
+                } else {
+                    paddingLeft + offset
+                }
+                child.layout(left, top, left + childWidth, top + child.measuredHeight)
+                offset += childWidth + gap
             }
-            child.layout(left, top, left + child.measuredWidth, top + child.measuredHeight)
+            index += inRow
+            row++
         }
     }
 
