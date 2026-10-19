@@ -214,7 +214,7 @@ class FramesView(
         }
         val target = res.getDimensionPixelSize(R.dimen.pp_touch_target)
         val more = ImageButton(context).apply {
-            setImageResource(android.R.drawable.ic_menu_more)
+            setImageResource(R.drawable.ic_player_more_24)
             imageTintList = ColorStateList.valueOf(context.getColor(R.color.pp_accent_action))
             contentDescription = res.getString(R.string.player_more)
             minimumWidth = target

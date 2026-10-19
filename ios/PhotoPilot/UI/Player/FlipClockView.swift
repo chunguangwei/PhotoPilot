@@ -84,7 +84,6 @@ private final class FlipCardView: UIView {
     private let topHalf = HalfLabelView(isTop: true)
     private let bottomHalf = HalfLabelView(isTop: false)
     private let flipTop = HalfLabelView(isTop: true)
-    private let flipBottom = HalfLabelView(isTop: false)
     private let separator = UIView()
 
     private(set) var value = ""
@@ -98,14 +97,13 @@ private final class FlipCardView: UIView {
         layer.cornerRadius = ThemeMetrics.radiusGroup
         clipsToBounds = true
 
-        for half in [topHalf, bottomHalf, flipTop, flipBottom] {
+        for half in [topHalf, bottomHalf, flipTop] {
             half.translatesAutoresizingMaskIntoConstraints = false
             addSubview(half)
         }
         flipTop.isHidden = true
-        flipBottom.isHidden = true
         flipTop.layer.zPosition = 3
-        flipBottom.layer.zPosition = 2
+        flipTop.layer.isDoubleSided = false
 
         separator.backgroundColor = ThemeColor.restSurface
         separator.translatesAutoresizingMaskIntoConstraints = false
@@ -125,10 +123,6 @@ private final class FlipCardView: UIView {
             flipTop.leadingAnchor.constraint(equalTo: leadingAnchor),
             flipTop.trailingAnchor.constraint(equalTo: trailingAnchor),
             flipTop.heightAnchor.constraint(equalTo: heightAnchor, multiplier: 0.5),
-            flipBottom.bottomAnchor.constraint(equalTo: bottomAnchor),
-            flipBottom.leadingAnchor.constraint(equalTo: leadingAnchor),
-            flipBottom.trailingAnchor.constraint(equalTo: trailingAnchor),
-            flipBottom.heightAnchor.constraint(equalTo: heightAnchor, multiplier: 0.5),
             separator.centerYAnchor.constraint(equalTo: centerYAnchor),
             separator.leadingAnchor.constraint(equalTo: leadingAnchor),
             separator.trailingAnchor.constraint(equalTo: trailingAnchor),
@@ -144,11 +138,10 @@ private final class FlipCardView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         let fontSize = max(bounds.height * 0.62, 12)
-        for half in [topHalf, bottomHalf, flipTop, flipBottom] {
+        for half in [topHalf, bottomHalf, flipTop] {
             half.label.font = .monospacedDigitSystemFont(ofSize: fontSize, weight: .bold)
         }
         setAnchor(CGPoint(x: 0.5, y: 1), for: flipTop)
-        setAnchor(CGPoint(x: 0.5, y: 0), for: flipBottom)
         laidOut = true
     }
 
@@ -167,46 +160,32 @@ private final class FlipCardView: UIView {
         animating = true
         topHalf.text = next
         flipTop.text = old
-        flipBottom.text = next
         bottomHalf.text = old
         if !laidOut { layoutIfNeeded() }
         flipTop.layer.transform = CATransform3DIdentity
-        flipBottom.layer.transform = flipRotation(-89.9)
         flipTop.isHidden = false
-        flipBottom.isHidden = false
         topHalf.shade.alpha = 0.35
-        bottomHalf.shade.alpha = 0
         flipTop.shade.alpha = 0
-        flipBottom.shade.alpha = 0.55
-        UIView.animate(withDuration: 0.22, delay: 0, options: [.curveEaseIn, .beginFromCurrentState]) {
-            self.flipTop.layer.transform = self.flipRotation(89.9)
-            self.flipTop.shade.alpha = 0.45
+        let duration = 0.85
+        UIView.animate(withDuration: duration, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
+            self.flipTop.layer.transform = self.flipRotation(-179.9)
+            self.flipTop.shade.alpha = 0.5
             self.topHalf.shade.alpha = 0
         } completion: { _ in
             self.flipTop.isHidden = true
             self.flipTop.layer.transform = CATransform3DIdentity
-            self.bottomHalf.shade.alpha = 0.2
-            UIView.animate(
-                withDuration: 0.42,
-                delay: 0,
-                usingSpringWithDamping: 0.86,
-                initialSpringVelocity: 0.6,
-                options: [.beginFromCurrentState]
-            ) {
-                self.flipBottom.layer.transform = CATransform3DIdentity
-                self.flipBottom.shade.alpha = 0
-                self.bottomHalf.shade.alpha = 0
-            } completion: { _ in
-                self.bottomHalf.text = next
-                self.flipBottom.isHidden = true
-                self.animating = false
-                if let pending = self.pendingValue, pending != next {
-                    self.pendingValue = nil
-                    self.startFlip(to: pending)
-                } else {
-                    self.pendingValue = nil
-                }
+            self.bottomHalf.text = next
+            self.animating = false
+            if let pending = self.pendingValue, pending != next {
+                self.pendingValue = nil
+                self.startFlip(to: pending)
+            } else {
+                self.pendingValue = nil
             }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration * 0.5) { [weak self] in
+            guard let self, self.animating, self.value == next else { return }
+            self.bottomHalf.text = next
         }
     }
 

@@ -531,7 +531,7 @@ class MainActivity : Activity() {
             scope.launch {
                 val env = environment ?: return@launch
                 val placeId = withContext(Dispatchers.IO) {
-                    env.weather.places().keys.firstOrNull()
+                    env.weather.selectedPlace()?.placeId
                 } ?: return@launch
                 val outcome = env.weatherRefresher.refreshIfDue(placeId, manual = true)
                 activeSettingsView?.let { settingsView ->
@@ -2059,6 +2059,7 @@ class MainActivity : Activity() {
         pushOverlayTracked(view, mapOf("type" to "player", "frameId" to frame.id))
         view.applyBrightnessIfNeeded(this)
         engine.start(fromSnapshot)
+        autoLocateWeatherForPlayback()
     }
 
     private fun closePlayer() {
@@ -2407,6 +2408,35 @@ class MainActivity : Activity() {
                     .firstOrNull { it.isNotBlank() }
             }
         }.getOrNull()
+
+    private fun autoLocateWeatherForPlayback() {
+        val env = environment ?: return
+        val granted = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED ||
+            checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            if (pendingLocationAction == null) {
+                pendingLocationAction = { autoLocateWeatherForPlayback() }
+                requestPermissions(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                    ),
+                    REQUEST_LOCATION,
+                )
+            }
+            return
+        }
+        scope.launch {
+            val weatherOn = env.settings.rawValue(WeatherLogic.KEY_ENABLED_DEFAULT) ==
+                AppSettingsRepository.VALUE_TRUE
+            if (!weatherOn) return@launch
+            val place = withContext(Dispatchers.IO) { currentLocationPlace() } ?: return@launch
+            env.weather.putPlace(place)
+            refreshWeatherLine()
+        }
+    }
 
     private fun weatherLang(): String =
         if (resources.configuration.locales[0]?.language == "zh") "zh" else "en"
@@ -3000,7 +3030,7 @@ class MainActivity : Activity() {
     }
 
     private suspend fun weatherObservedText(env: AppEnvironment): String? {
-        val placeId = env.weather.places().keys.firstOrNull() ?: return null
+        val placeId = env.weather.selectedPlace()?.placeId ?: return null
         val snapshot = env.weather.snapshot(placeId) ?: return null
         val date = java.util.Date(snapshot.observedAt)
         val datePart = android.text.format.DateFormat.getDateFormat(this).format(date)
@@ -3009,7 +3039,7 @@ class MainActivity : Activity() {
     }
 
     private suspend fun weatherAttributionText(env: AppEnvironment): String? {
-        val placeId = env.weather.places().keys.firstOrNull() ?: return null
+        val placeId = env.weather.selectedPlace()?.placeId ?: return null
         val snapshot = env.weather.snapshot(placeId) ?: return null
         val text = WeatherLogic.attributionText(snapshot.attribution) ?: return null
         return getString(R.string.weather_attribution, text)
@@ -3022,7 +3052,7 @@ class MainActivity : Activity() {
             weatherTextCache = null
             return
         }
-        val placeId = env.weather.places().keys.firstOrNull()
+        val placeId = env.weather.selectedPlace()?.placeId
         val weatherOn = env.settings.rawValue(WeatherLogic.KEY_ENABLED_DEFAULT) ==
             AppSettingsRepository.VALUE_TRUE
         weatherTextCache = if (weatherOn && placeId != null) {

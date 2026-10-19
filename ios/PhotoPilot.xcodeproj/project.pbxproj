@@ -134,6 +134,7 @@
 		BDE8BCB058A306CE9E307481 /* NasAddViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63C7D22EE0D7E2FD9809E4FD /* NasAddViewController.swift */; };
 		C07CFD33445E764F74F14974 /* PhotoPilotDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CF5A5128E2C226E0C408E8F /* PhotoPilotDataTests.swift */; };
 		C29C9FC1F2AEC148FA6B173B /* WeatherRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE8D12B6E7688E070B9926AE /* WeatherRepository.swift */; };
+		C2DF0E629D6D1DBAA7880B6D /* WeatherAutoLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31A7B456758C21433C56D134 /* WeatherAutoLocator.swift */; };
 		C462F3335FE6A87CDB200914 /* import-signal-effects.json in Resources */ = {isa = PBXBuildFile; fileRef = BF4E31877A0B09D51C70DA8A /* import-signal-effects.json */; };
 		C936E14F86D0FDD8F142F2AC /* NasSyncDiff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15312C455AC4E45928DC448C /* NasSyncDiff.swift */; };
 		CB95E4E2EABF84B6936B80ED /* FormatStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A099B699DD88C4DECD3EFBF /* FormatStrings.swift */; };
@@ -244,6 +245,7 @@
 		2FDE475AB42725C936CF2E41 /* music_spring_festival_01.m4a */ = {isa = PBXFileReference; path = music_spring_festival_01.m4a; sourceTree = "<group>"; };
 		303E01AA5DFF9038E65FB2DA /* demo_coffee.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = demo_coffee.jpg; sourceTree = "<group>"; };
 		3175407F4677C15A3B6124F4 /* HolidayTimingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayTimingTests.swift; sourceTree = "<group>"; };
+		31A7B456758C21433C56D134 /* WeatherAutoLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAutoLocator.swift; sourceTree = "<group>"; };
 		34CEA2230C48145F1E319274 /* nas-enum-cursor.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "nas-enum-cursor.json"; sourceTree = "<group>"; };
 		3792A589DEAAA2B972FD2C2C /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		37C269BF943E3BADF5DB570C /* music_coffee_01.m4a */ = {isa = PBXFileReference; path = music_coffee_01.m4a; sourceTree = "<group>"; };
@@ -815,6 +817,7 @@
 		92B230DC0C38D57AC2508AE0 /* WeatherRepository */ = {
 			isa = PBXGroup;
 			children = (
+				31A7B456758C21433C56D134 /* WeatherAutoLocator.swift */,
 				94FD5541A292592503C4A2F3 /* WeatherRefresher.swift */,
 				DE8D12B6E7688E070B9926AE /* WeatherRepository.swift */,
 			);
@@ -1277,6 +1280,7 @@
 				77044B5D73D0A1F10386E193 /* Theme.swift in Sources */,
 				5243468F16EA6B399FAA585A /* ThumbnailLoader.swift in Sources */,
 				618E61B13CA25758BD3E4D62 /* TofuPinStore.swift in Sources */,
+				C2DF0E629D6D1DBAA7880B6D /* WeatherAutoLocator.swift in Sources */,
 				7205BADF237CDF0FD7E3390A /* WeatherCityPickerViewController.swift in Sources */,
 				609FBD7177433B50F8C8149E /* WeatherProvider.swift in Sources */,
 				3B4D609B95071724020B9771 /* WeatherRefresher.swift in Sources */,
@@ -1378,7 +1382,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 33;
+				CURRENT_PROJECT_VERSION = 34;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1391,7 +1395,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.31;
+				MARKETING_VERSION = 1.1.32;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1515,7 +1519,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 33;
+				CURRENT_PROJECT_VERSION = 34;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1534,7 +1538,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.1.31;
+				MARKETING_VERSION = 1.1.32;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

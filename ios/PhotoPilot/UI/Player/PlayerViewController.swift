@@ -1411,12 +1411,21 @@ final class PlayerViewController: UIViewController {
         startMusicIfNeeded()
     }
 
+    private lazy var weatherAutoLocator: WeatherAutoLocator = {
+        let locator = WeatherAutoLocator(repository: environment.weatherRepository)
+        locator.onPlaceUpdated = { [weak self] in
+            Task { await self?.refreshWeather(manual: false) }
+        }
+        return locator
+    }()
+
     private func startWeatherTask() {
         weatherTask?.cancel()
         guard weatherGloballyEnabled else {
             updateWeather()
             return
         }
+        weatherAutoLocator.refreshCurrentLocation()
         weatherTask = Task { [weak self] in
             await self?.refreshWeather(manual: false)
             while !Task.isCancelled {

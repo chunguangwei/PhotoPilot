@@ -9,6 +9,7 @@ object WeatherLogic {
     const val KEY_PLACES = "weather.places"
     const val KEY_ENABLED_DEFAULT = "weather.enabled_default"
     const val KEY_UNITS = "weather.units"
+    const val KEY_SELECTED_PLACE = "weather.selected_place_id"
     const val UNITS_METRIC = "metric"
     const val UNITS_IMPERIAL = "imperial"
 

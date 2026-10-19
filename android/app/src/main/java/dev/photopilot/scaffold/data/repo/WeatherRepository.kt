@@ -34,5 +34,13 @@ class WeatherRepository(
         val current = places().toMutableMap()
         current[place.placeId] = place
         settings.putRaw(WeatherLogic.KEY_PLACES, WeatherLogic.encodePlaces(current))
+        settings.putRaw(WeatherLogic.KEY_SELECTED_PLACE, place.placeId)
+    }
+
+    suspend fun selectedPlace(): WeatherLogic.StoredPlace? {
+        val all = places()
+        if (all.isEmpty()) return null
+        val selectedId = settings.rawValue(WeatherLogic.KEY_SELECTED_PLACE)
+        return selectedId?.let { all[it] } ?: all.values.firstOrNull()
     }
 }
