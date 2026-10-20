@@ -857,7 +857,12 @@ class PlayerView(
         val timeText = SimpleDateFormat(pattern, Locale.getDefault()).format(now)
         clockLine.text = timeText
         clockLine.contentDescription = resources.getString(R.string.a11y_clock_overlay, timeText)
-        val dateText = DateFormat.getDateFormat(context).format(now)
+        val dateText = ClockFormat.dateWithWeekday(
+            DateFormat.getDateFormat(context).format(now),
+            now,
+            resources.configuration.locales[0] ?: Locale.getDefault(),
+            java.util.TimeZone.getDefault(),
+        )
         dateLine.text = dateText
         restingDate.text = dateText
         val calendar = java.util.Calendar.getInstance()
@@ -871,6 +876,10 @@ class PlayerView(
             String.format(Locale.US, "%02d", calendar.get(java.util.Calendar.MINUTE)),
             String.format(Locale.US, "%02d", calendar.get(java.util.Calendar.SECOND)),
         )
+        refreshWeather()
+    }
+
+    fun refreshWeather() {
         val restWeatherText = if (settings.restDisplay == FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER) {
             weatherTextProvider?.invoke()
         } else {

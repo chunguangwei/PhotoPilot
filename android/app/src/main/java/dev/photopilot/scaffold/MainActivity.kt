@@ -123,6 +123,7 @@ import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -1853,6 +1854,7 @@ class MainActivity : Activity() {
 
     private var weatherTextCache: String? = null
     private var weatherA11yCache: String? = null
+    private var weatherRefreshJob: Job? = null
 
     private fun openHolidaySettings() {
         val env = environment ?: return
@@ -2070,6 +2072,7 @@ class MainActivity : Activity() {
         pushOverlayTracked(view, mapOf("type" to "player", "frameId" to frame.id))
         view.applyBrightnessIfNeeded(this)
         engine.start(fromSnapshot)
+        scope.launch { refreshWeatherLine() }
         autoLocateWeatherForPlayback()
     }
 
@@ -3090,20 +3093,25 @@ class MainActivity : Activity() {
     private suspend fun refreshWeatherLine() {
         val env = environment ?: return
         val engine = playerEngine
-        if (engine == null) {
+        val targetView = playerView
+        if (engine == null || targetView == null) {
             weatherTextCache = null
+            weatherA11yCache = null
             return
         }
         val placeId = env.weather.selectedPlace()?.placeId
         val weatherOn = env.settings.rawValue(WeatherLogic.KEY_ENABLED_DEFAULT) ==
             AppSettingsRepository.VALUE_TRUE
-        weatherTextCache = if (weatherOn && placeId != null) {
+        val presentation: Pair<String?, String?> = if (weatherOn && placeId != null) {
             withContext(Dispatchers.IO) {
-                env.weatherRefresher.refreshIfDue(placeId)
                 val snapshot = env.weather.snapshot(placeId)
-                if (snapshot == null || !WeatherLogic.weatherDataAllowed(snapshot.attribution)) {
-                    weatherA11yCache = null
-                    getString(R.string.weather_unavailable)
+                val segment = snapshot?.let {
+                    WeatherLogic.segmentOf(it.observedAt, System.currentTimeMillis())
+                } ?: WeatherLogic.TtlSegment.EXPIRED
+                if (snapshot == null || !WeatherLogic.weatherDataAllowed(snapshot.attribution) ||
+                    segment == WeatherLogic.TtlSegment.EXPIRED
+                ) {
+                    getString(R.string.weather_unavailable) to getString(R.string.weather_unavailable)
                 } else {
                     val imperial = env.settings.rawValue(WeatherLogic.KEY_UNITS) ==
                         WeatherLogic.UNITS_IMPERIAL
@@ -3113,7 +3121,7 @@ class MainActivity : Activity() {
                     )
                     val conditionText = WeatherLogic.conditionTextRes(snapshot.conditionCode)
                         ?.let { getString(it) }
-                    weatherA11yCache = if (conditionText != null) {
+                    val a11y = if (conditionText != null) {
                         getString(R.string.a11y_weather_overlay, temp, conditionText)
                     } else {
                         temp
@@ -3124,17 +3132,28 @@ class MainActivity : Activity() {
                     val base = if (conditionText != null) "$temp · $conditionText" else temp
                     val prefixed = if (placeName.isNullOrEmpty()) base else "$placeName · $base"
                     val withIcon = "${WeatherLogic.conditionIcon(snapshot.conditionCode)} $prefixed"
-                    when (WeatherLogic.segmentOf(snapshot.observedAt, System.currentTimeMillis())) {
+                    val text = when (segment) {
                         WeatherLogic.TtlSegment.EXPIRED -> getString(R.string.weather_unavailable)
                         WeatherLogic.TtlSegment.STALE ->
                             "$withIcon · ${getString(R.string.weather_delayed)}"
                         WeatherLogic.TtlSegment.FRESH -> withIcon
                     }
+                    text to a11y
                 }
             }
         } else {
-            weatherA11yCache = null
-            null
+            null to null
+        }
+        if (env.weather.selectedPlace()?.placeId != placeId) return
+        if (playerEngine !== engine || playerView !== targetView) return
+        weatherTextCache = presentation.first
+        weatherA11yCache = presentation.second
+        targetView.refreshWeather()
+        if (weatherOn && placeId != null && weatherRefreshJob?.isActive != true) {
+            weatherRefreshJob = scope.launch {
+                withContext(Dispatchers.IO) { env.weatherRefresher.refreshIfDue(placeId) }
+                refreshWeatherLine()
+            }
         }
     }
 

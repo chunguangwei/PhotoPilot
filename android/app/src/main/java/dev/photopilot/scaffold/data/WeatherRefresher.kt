@@ -7,6 +7,8 @@ import dev.photopilot.scaffold.data.net.WeatherException
 import dev.photopilot.scaffold.data.net.WeatherProvider
 import dev.photopilot.scaffold.data.repo.WeatherRepository
 import dev.photopilot.scaffold.data.repo.WeatherStore
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class WeatherRefresher(
     private val provider: WeatherProvider,
@@ -23,10 +25,18 @@ class WeatherRefresher(
     private val lastManualMs = mutableMapOf<String, Long>()
     private val lastAutoMs = mutableMapOf<String, Long>()
     private val nextAllowedMs = mutableMapOf<String, Long>()
+    private val refreshMutex = Mutex()
 
     suspend fun refreshIfDue(
         placeId: String,
         manual: Boolean = false,
+    ): RefreshOutcome = refreshMutex.withLock {
+        refreshLocked(placeId, manual)
+    }
+
+    private suspend fun refreshLocked(
+        placeId: String,
+        manual: Boolean,
     ): RefreshOutcome {
         if (!online()) {
             return RefreshOutcome(updated = false, errorCode = WeatherException.ERR_STALE)

@@ -9,6 +9,9 @@ import dev.photopilot.scaffold.data.net.WeatherException
 import dev.photopilot.scaffold.data.net.WeatherProvider
 import dev.photopilot.scaffold.data.repo.WeatherStore
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -26,9 +29,11 @@ class WeatherRefresherTest {
             "https://open-meteo.com/",
         ),
         var error: WeatherException? = null,
+        val gate: CompletableDeferred<Unit>? = null,
     ) : WeatherProvider {
         override suspend fun forecast(latitude: Double, longitude: Double): ForecastResult {
             calls += latitude to longitude
+            gate?.await()
             error?.let { throw it }
             return result
         }
@@ -64,6 +69,24 @@ class WeatherRefresherTest {
             nowMs = { now },
         )
         return Triple(refresher, store, provider)
+    }
+
+    @Test
+    fun concurrentAutoRefreshesShareOnePendingRequest() = runBlocking {
+        val gate = CompletableDeferred<Unit>()
+        val provider = FakeProvider(gate = gate)
+        val (r, _, _) = refresher("om:1", provider)
+        val first = async(start = CoroutineStart.UNDISPATCHED) { r.refreshIfDue("om:1") }
+        val second = async(start = CoroutineStart.UNDISPATCHED) { r.refreshIfDue("om:1") }
+        try {
+            assertEquals(1, provider.calls.size)
+        } finally {
+            gate.complete(Unit)
+        }
+        val results = listOf(first.await(), second.await())
+        assertEquals(1, results.count { it.updated })
+        assertEquals(1, provider.calls.size)
+        Unit
     }
 
     @Test
