@@ -121,4 +121,39 @@ class FallbackWeatherProviderTest {
         }
         Unit
     }
+
+    @Test
+    fun forecastLogsErrorTypeWithoutLocationOrUrl() = runBlocking {
+        val logs = mutableListOf<String>()
+        val provider = FallbackWeatherProvider(
+            forecast = listOf(
+                FakeProvider(forecastBehavior = {
+                    throw java.io.IOException("https://weather.example/?latitude=39.9&longitude=116.4")
+                }),
+                FakeProvider(forecastBehavior = { snapshot("clear") }),
+            ),
+            search = emptyList(),
+            logger = logs::add,
+        )
+        provider.forecast(39.9, 116.4)
+        assertEquals(listOf("forecast failed via FakeProvider: IOException"), logs)
+    }
+
+    @Test
+    fun searchLogsErrorTypeWithoutQueryOrUrl() = runBlocking {
+        val logs = mutableListOf<String>()
+        val provider = FallbackWeatherProvider(
+            forecast = emptyList(),
+            search = listOf(
+                FakeProvider(searchBehavior = {
+                    throw java.io.IOException("https://weather.example/search?q=PrivateHomeAddress")
+                }),
+                FakeProvider(searchBehavior = { listOf(place("geo:1,2")) }),
+            ),
+            logger = logs::add,
+        )
+        provider.search("PrivateHomeAddress", "en")
+        assertEquals(listOf("search failed via FakeProvider: IOException"), logs)
+    }
+
 }

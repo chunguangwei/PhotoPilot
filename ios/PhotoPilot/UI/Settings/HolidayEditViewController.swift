@@ -19,6 +19,7 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
     private let enabledSwitch = UISwitch()
     private let saveButton = ActionButton(titleKey: "common.save", style: .primary)
 
+    private var adaptiveRows: [UIStackView] = []
     private var frames: [FrameCardDTO] = []
     private var selectedFrameID: String?
     private var hasTimeStart = false
@@ -47,6 +48,7 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
         titleLabel.font = ThemeFont.heading()
         titleLabel.adjustsFontForContentSizeCategory = true
         titleLabel.textColor = ThemeColor.textPrimary
+        titleLabel.numberOfLines = 0
         titleLabel.accessibilityTraits.insert(.header)
         let topBar = UIStackView(arrangedSubviews: [backButton, titleLabel, UIView()])
         topBar.axis = .horizontal
@@ -74,6 +76,7 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
         timeSectionLabel.font = ThemeFont.body()
         timeSectionLabel.adjustsFontForContentSizeCategory = true
         timeSectionLabel.textColor = ThemeColor.textPrimary
+        timeSectionLabel.numberOfLines = 0
         timeSectionLabel.accessibilityTraits.insert(.header)
 
         timeHelpLabel.text = L10n.string("holiday.time_help")
@@ -83,6 +86,8 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
         timeHelpLabel.numberOfLines = 0
 
         timeSwitch.onTintColor = ThemeColor.accentAction
+        timeSwitch.setContentCompressionResistancePriority(.required, for: .horizontal)
+        timeSwitch.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
         timeSwitch.accessibilityLabel = L10n.string("holiday.time_range")
         timeSwitch.addTarget(self, action: #selector(handleTimeSwitchChanged), for: .valueChanged)
         let timeHeader = UIStackView(arrangedSubviews: [timeSectionLabel, UIView(), timeSwitch])
@@ -111,6 +116,8 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
         ).isActive = true
 
         enabledSwitch.onTintColor = ThemeColor.accentAction
+        enabledSwitch.setContentCompressionResistancePriority(.required, for: .horizontal)
+        enabledSwitch.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
         enabledSwitch.accessibilityLabel = L10n.string("holiday.enabled")
         let enabledRow = UIStackView(arrangedSubviews: [makeLabel("holiday.enabled"), UIView(), enabledSwitch])
         enabledRow.axis = .horizontal
@@ -120,6 +127,7 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
             greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
         ).isActive = true
 
+        adaptiveRows.append(contentsOf: [timeHeader, frameRow, enabledRow])
         saveButton.addTarget(self, action: #selector(handleSave), for: .touchUpInside)
 
         let form = UIStackView(arrangedSubviews: [
@@ -183,6 +191,18 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
         enableKeyboardDismissal()
         applyRule()
         reloadFrames()
+    }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        let stacked = view.bounds.width < 600 || traitCollection.preferredContentSizeCategory.isAccessibilityCategory
+        for row in adaptiveRows {
+            row.axis = stacked ? .vertical : .horizontal
+            row.alignment = stacked ? .leading : .center
+            for child in row.arrangedSubviews where type(of: child) == UIView.self {
+                child.isHidden = stacked
+            }
+        }
     }
 
     private func applyRule() {
@@ -393,6 +413,9 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
 
     private func configure(_ picker: UIDatePicker, mode: UIDatePicker.Mode, labelKey: String) {
         picker.datePickerMode = mode
+        picker.preferredDatePickerStyle = .compact
+        picker.setContentCompressionResistancePriority(.required, for: .horizontal)
+        picker.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
         picker.timeZone = .current
         picker.addTarget(self, action: #selector(handleTimePicked), for: .valueChanged)
         picker.accessibilityLabel = L10n.string(labelKey)
@@ -415,6 +438,7 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
         row.heightAnchor.constraint(
             greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
         ).isActive = true
+        adaptiveRows.append(row)
         return row
     }
 

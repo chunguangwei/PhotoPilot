@@ -91,6 +91,8 @@ final class PlayerImageLoader: @unchecked Sendable {
     static let maxDecodePixels: Int64 = 4096
 
     private nonisolated(unsafe) static let sharedCache = NSCache<NSString, UIImage>()
+    private static let cacheLock = NSLock()
+    private nonisolated(unsafe) static var cacheGeneration = 0
 
     private let originalsRoot: URL
 
@@ -99,7 +101,23 @@ final class PlayerImageLoader: @unchecked Sendable {
     }
 
     static func clearMemoryCache() {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        cacheGeneration &+= 1
         sharedCache.removeAllObjects()
+    }
+
+    private static func cacheEntry(for key: NSString) -> (image: UIImage?, generation: Int) {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        return (sharedCache.object(forKey: key), cacheGeneration)
+    }
+
+    private static func cache(_ image: UIImage, for key: NSString, generation: Int) {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        guard generation == cacheGeneration else { return }
+        sharedCache.setObject(image, forKey: key)
     }
 
     func image(
@@ -110,7 +128,8 @@ final class PlayerImageLoader: @unchecked Sendable {
         quality: String = "auto"
     ) async -> UIImage? {
         let key = "\(assetID)#\(quality)" as NSString
-        if let cached = Self.sharedCache.object(forKey: key) {
+        let entry = Self.cacheEntry(for: key)
+        if let cached = entry.image {
             return cached
         }
         let factor: Double
@@ -147,14 +166,15 @@ final class PlayerImageLoader: @unchecked Sendable {
             return UIImage(cgImage: cgImage)
         }.value
         if let image {
-            Self.sharedCache.setObject(image, forKey: key)
+            Self.cache(image, for: key, generation: entry.generation)
         }
         return image
     }
 
     func blurred(assetID: String, image: UIImage) async -> UIImage? {
         let key = "\(assetID)#blur" as NSString
-        if let cached = Self.sharedCache.object(forKey: key) {
+        let entry = Self.cacheEntry(for: key)
+        if let cached = entry.image {
             return cached
         }
         let blurred: UIImage? = await Task.detached {
@@ -163,7 +183,7 @@ final class PlayerImageLoader: @unchecked Sendable {
             return UIImage(cgImage: output)
         }.value
         if let blurred {
-            Self.sharedCache.setObject(blurred, forKey: key)
+            Self.cache(blurred, for: key, generation: entry.generation)
         }
         return blurred
     }
@@ -176,7 +196,7 @@ final class PlayerImageLoader: @unchecked Sendable {
     }
 
     func clear() {
-        Self.sharedCache.removeAllObjects()
+        Self.clearMemoryCache()
     }
 }
 
@@ -200,7 +220,7 @@ final class PlayerViewController: UIViewController {
     private var queue: [String] = []
     private var relPaths: [String: String] = [:]
     private var index = 0
-    private var controllerState = PlaybackController.idle
+    var controllerState = PlaybackController.idle
     private var decodeFailStreak = 0
     private var skippedAny = false
     private var pendingSnapshot: PlaybackSnapshotDTO?
@@ -219,10 +239,16 @@ final class PlayerViewController: UIViewController {
     private var holdTask: Task<Void, Never>?
     private var transitionWatchdog: Task<Void, Never>?
     private var workTask: Task<Void, Never>?
+    private var imageTask: Task<Void, Never>?
+    private var imageGeneration = 0
     private var controlsHideTask: Task<Void, Never>?
     private var clockTask: Task<Void, Never>?
     private var restTask: Task<Void, Never>?
     private var holidayTask: Task<Void, Never>?
+    private var frameChangeTask: Task<Void, Never>?
+    private var foregroundTask: Task<Void, Never>?
+    private var brightnessTask: Task<Void, Never>?
+    private var musicSettingsTask: Task<Void, Never>?
     private var holidayNoticeTask: Task<Void, Never>?
 
     private let backgroundView = UIImageView()
@@ -426,11 +452,13 @@ final class PlayerViewController: UIViewController {
                 showEmptyOverlay()
                 return
             }
+            guard !Task.isCancelled else { return }
             settings = PlayerSettings.parse(json: bundle.settingsJSON)
             applyBrightness()
             randomSeed = bundle.randomSeed
             selectionVersion = bundle.selectionVersion
             pendingSnapshot = try? await environment.frameManager.playbackSnapshot(frameID: frameID)
+            guard !Task.isCancelled else { return }
             updateClockVisibility()
             startWeatherTask()
             if restActiveNow(), !skipRestOnce {
@@ -453,6 +481,7 @@ final class PlayerViewController: UIViewController {
     }
 
     private func takeover() {
+        stopPlaybackTasks()
         _ = PlaybackController.reduce(
             state: controllerState,
             event: PlaybackEvent(type: "takeover_by_other_window")
@@ -544,30 +573,45 @@ final class PlayerViewController: UIViewController {
         }
     }
 
-    private func rebuildQueue(keepIndex: Bool) {
+    func rebuildQueue(keepIndex: Bool) {
         workTask?.cancel()
+        invalidateImageLoad()
         workTask = Task { [weak self] in
             guard let self else { return }
+            let newQueue = (try? await environment.frames.buildPlayQueue(frameID: frameID)) ?? []
+            guard !Task.isCancelled else { return }
             if !keepIndex, let snapshot = pendingSnapshot,
                snapshot.selectionVersion == Int(selectionVersion),
                snapshot.seed == randomSeed,
                let cursor = Self.parseCursor(snapshot.cursorJSON),
-               !cursor.queue.isEmpty {
+               !cursor.queue.isEmpty, !newQueue.isEmpty {
                 pendingSnapshot = nil
-                queue = cursor.queue
-                index = min(cursor.index, queue.count - 1)
-                remainingHoldMs = Int64(snapshot.remainingHoldMs)
+                let allowed = Set(newQueue)
+                var seen = Set<String>()
+                queue = (cursor.queue + newQueue).filter { allowed.contains($0) && seen.insert($0).inserted }
+                let savedID = cursor.queue.indices.contains(cursor.index) ? cursor.queue[cursor.index] : nil
+                let restoredIndex = savedID.flatMap { queue.firstIndex(of: $0) }
+                index = restoredIndex ?? 0
+                remainingHoldMs = restoredIndex == nil ? nil : Int64(max(0, snapshot.remainingHoldMs))
                 safeImageShown = false
+                if controllerState == PlaybackController.empty {
+                    controllerState = PlaybackController.preparing
+                }
                 await refreshRelPaths()
+                guard !Task.isCancelled else { return }
                 loadCurrent()
                 return
             }
             pendingSnapshot = nil
-            let newQueue = (try? await environment.frames.buildPlayQueue(frameID: frameID)) ?? []
-            guard !Task.isCancelled else { return }
             if newQueue.isEmpty {
                 queue = []
-                dispatch(PlaybackEvent(type: "none_playable"))
+                clearTextures()
+                safeImageShown = true
+                if ![PlaybackController.resting, PlaybackController.paused, PlaybackController.suspended]
+                    .contains(controllerState) {
+                    controllerState = PlaybackController.empty
+                }
+                updateStateChrome()
                 return
             }
             let currentID = keepIndex && index < queue.count ? queue[index] : nil
@@ -578,13 +622,18 @@ final class PlayerViewController: UIViewController {
                 index = min(index, newQueue.count - 1)
             }
             safeImageShown = false
+            if controllerState == PlaybackController.empty {
+                controllerState = PlaybackController.preparing
+            }
             await refreshRelPaths()
+            guard !Task.isCancelled else { return }
             loadCurrent()
         }
     }
 
     private func refreshRelPaths() async {
         let items = (try? await environment.assets.libraryItems()) ?? []
+        guard !Task.isCancelled else { return }
         relPaths = Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0.originalRelPath) })
     }
 
@@ -595,9 +644,13 @@ final class PlayerViewController: UIViewController {
             setupVideo(assetID: assetID, animated: false, firstEntry: true)
             return
         }
-        Task { [weak self] in
+        invalidateImageLoad()
+        let generation = imageGeneration
+        imageTask = Task { [weak self] in
             guard let self else { return }
-            guard let image = await loadImage(assetID: assetID) else {
+            let loaded = await loadImage(assetID: assetID)
+            guard !Task.isCancelled, generation == imageGeneration else { return }
+            guard let image = loaded else {
                 handleDecodeFail()
                 return
             }
@@ -782,9 +835,13 @@ final class PlayerViewController: UIViewController {
             setupVideo(assetID: assetID, animated: true, firstEntry: false)
             return
         }
-        Task { [weak self] in
+        invalidateImageLoad()
+        let generation = imageGeneration
+        imageTask = Task { [weak self] in
             guard let self else { return }
-            guard let image = await loadImage(assetID: assetID) else {
+            let loaded = await loadImage(assetID: assetID)
+            guard !Task.isCancelled, generation == imageGeneration else { return }
+            guard let image = loaded else {
                 handleDecodeFail()
                 return
             }
@@ -796,6 +853,7 @@ final class PlayerViewController: UIViewController {
     }
 
     private func show(image: UIImage, assetID: String, animated: Bool, direction: Int = 1) {
+        let generation = imageGeneration
         updateBackdrop(for: image, assetID: assetID)
         let reduced = UIAccessibility.isReduceMotionEnabled
         let duration = animated && !reduced && settings.transition != PlaybackTiming.transitionNone
@@ -846,7 +904,7 @@ final class PlayerViewController: UIViewController {
                 }
             },
             completion: { [weak self] _ in
-                guard let self else { return }
+                guard let self, generation == imageGeneration else { return }
                 frontImageView.image = incoming.image
                 frontImageView.alpha = 1
                 frontImageView.transform = .identity
@@ -867,6 +925,7 @@ final class PlayerViewController: UIViewController {
     }
 
     private func updateBackdrop(for image: UIImage, assetID: String) {
+        let generation = imageGeneration
         let fillFallsBack = settings.fitMode == "fill_crop"
             && !RenderGeometry.fillCropKeepsEnough(
                 srcW: Int64(image.size.width),
@@ -893,7 +952,8 @@ final class PlayerViewController: UIViewController {
             } else {
                 Task { [weak self, loader] in
                     guard let hex = await loader.edgeColorHex(of: image) else { return }
-                    self?.solidView.backgroundColor = Self.color(fromHex: hex) ?? ThemeColor.canvas
+                    guard let self, generation == imageGeneration else { return }
+                    solidView.backgroundColor = Self.color(fromHex: hex) ?? ThemeColor.canvas
                 }
             }
         default:
@@ -910,7 +970,8 @@ final class PlayerViewController: UIViewController {
             solidView.isHidden = true
             Task { [weak self, loader] in
                 guard let blurred = await loader.blurred(assetID: assetID, image: image) else { return }
-                self?.backgroundView.image = blurred
+                guard let self, generation == imageGeneration else { return }
+                backgroundView.image = blurred
             }
         }
     }
@@ -980,14 +1041,17 @@ final class PlayerViewController: UIViewController {
         }
         let cursor = Self.cursorJSON(queue: queue, index: index)
         let remaining = Int(remainingHoldMs ?? 0)
+        let snapshotFrameID = frameID
+        let snapshotSeed = randomSeed
+        let snapshotVersion = selectionVersion
         Task { [weak self] in
             guard let self else { return }
             try? await environment.frameManager.savePlaybackSnapshot(
-                frameID: frameID,
+                frameID: snapshotFrameID,
                 remainingHoldMs: remaining,
                 cursorJSON: cursor,
-                seed: randomSeed,
-                selectionVersion: Int(selectionVersion)
+                seed: snapshotSeed,
+                selectionVersion: Int(snapshotVersion)
             )
         }
     }
@@ -1006,8 +1070,19 @@ final class PlayerViewController: UIViewController {
         backImageView.transform = .identity
     }
 
+    private func invalidateImageLoad() {
+        imageGeneration &+= 1
+        imageTask?.cancel()
+        imageTask = nil
+    }
+
     private func clearTextures() {
+        workTask?.cancel()
+        invalidateImageLoad()
+        frontImageView.layer.removeAllAnimations()
+        backImageView.layer.removeAllAnimations()
         holdTask?.cancel()
+        holdTask = nil
         stopVideo()
         frontImageView.image = nil
         backImageView.image = nil
@@ -1129,6 +1204,7 @@ final class PlayerViewController: UIViewController {
 
     private func evaluateHolidayWindow() async {
         let rules = (try? await environment.holidayStore.rules()) ?? []
+        guard !Task.isCancelled else { return }
         let now = holidayNow()
         let hitID = HolidayTiming.pick(rules: rules, date: now.date, minute: now.minute)
         if let activeID = activeHolidayRuleID, hitID != activeID {
@@ -1146,7 +1222,8 @@ final class PlayerViewController: UIViewController {
 
     private func enterHoliday(rule: HolidayRule) {
         let previousFrameID = frameID
-        Task { [weak self] in
+        frameChangeTask?.cancel()
+        frameChangeTask = Task { [weak self] in
             guard let self else { return }
             let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: rule.frameID)
             guard !Task.isCancelled else { return }
@@ -1166,6 +1243,7 @@ final class PlayerViewController: UIViewController {
                 holidayHandledRuleID = nil
                 return
             }
+            clearTextures()
             preHolidayFrameID = previousFrameID
             frameID = rule.frameID
             settings = PlayerSettings.parse(json: bundle.settingsJSON)
@@ -1179,9 +1257,14 @@ final class PlayerViewController: UIViewController {
             safeImageShown = false
             decodeFailStreak = 0
             await refreshRelPaths()
+            guard !Task.isCancelled else { return }
             if controllerState == PlaybackController.empty || controllerState == PlaybackController.failed {
                 dispatch(PlaybackEvent(type: "start"))
+            } else {
+                loadCurrent()
             }
+            applyBrightness()
+            updateClockVisibility()
             showHolidayNotice(L10n.format("holiday.notice_switched", rule.name))
         }
     }
@@ -1194,7 +1277,8 @@ final class PlayerViewController: UIViewController {
         }
         guard !holidayReturnInFlight else { return }
         holidayReturnInFlight = true
-        Task { [weak self] in
+        frameChangeTask?.cancel()
+        frameChangeTask = Task { [weak self] in
             guard let self else { return }
             let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: previousFrameID)
             guard !Task.isCancelled else { return }
@@ -1208,6 +1292,7 @@ final class PlayerViewController: UIViewController {
                 holidayReturnInFlight = false
                 return
             }
+            clearTextures()
             frameID = previousFrameID
             settings = PlayerSettings.parse(json: bundle.settingsJSON)
             restartMusicForFrameSwitch()
@@ -1223,11 +1308,16 @@ final class PlayerViewController: UIViewController {
             holidayHandledRuleID = nil
             holidayReturnInFlight = false
             await refreshRelPaths()
+            guard !Task.isCancelled else { return }
             if newQueue.isEmpty {
                 showEmptyOverlay()
             } else if controllerState == PlaybackController.empty || controllerState == PlaybackController.failed {
                 dispatch(PlaybackEvent(type: "start"))
+            } else {
+                loadCurrent()
             }
+            applyBrightness()
+            updateClockVisibility()
             showHolidayNotice(L10n.string("holiday.notice_returned"))
         }
     }
@@ -1410,10 +1500,13 @@ final class PlayerViewController: UIViewController {
     }
 
     private func reloadMusicSettings() {
-        Task { [weak self] in
+        musicSettingsTask?.cancel()
+        let requestedFrameID = frameID
+        musicSettingsTask = Task { [weak self] in
             guard let self,
                   let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: frameID)
             else { return }
+            guard !Task.isCancelled, frameID == requestedFrameID else { return }
             let updated = PlayerSettings.parse(json: bundle.settingsJSON)
             guard updated.music != settings.music else {
                 if controllerState == PlaybackController.holding
@@ -1650,9 +1743,12 @@ final class PlayerViewController: UIViewController {
     }
 
     func reloadBrightnessFromStore() {
-        workTask = Task { [weak self] in
+        brightnessTask?.cancel()
+        let requestedFrameID = frameID
+        brightnessTask = Task { [weak self] in
             guard let self,
                   let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: frameID) else { return }
+            guard !Task.isCancelled, frameID == requestedFrameID else { return }
             settings = PlayerSettings.parse(json: bundle.settingsJSON)
             applyBrightness()
             updateStateChrome()
@@ -2019,7 +2115,7 @@ final class PlayerViewController: UIViewController {
         present(settings, animated: true)
     }
 
-    private func exitPlayer() {
+    private func stopPlaybackTasks() {
         holdTask?.cancel()
         transitionWatchdog?.cancel()
         workTask?.cancel()
@@ -2029,6 +2125,15 @@ final class PlayerViewController: UIViewController {
         holidayNoticeTask?.cancel()
         weatherTask?.cancel()
         controlsHideTask?.cancel()
+        frameChangeTask?.cancel()
+        foregroundTask?.cancel()
+        brightnessTask?.cancel()
+        musicSettingsTask?.cancel()
+        restClockTask?.cancel()
+    }
+
+    private func exitPlayer() {
+        stopPlaybackTasks()
         musicPlayer.stop()
         clearTextures()
         restoreBrightness()
@@ -2037,6 +2142,9 @@ final class PlayerViewController: UIViewController {
     }
 
     @objc private func handleBackground() {
+        foregroundTask?.cancel()
+        brightnessTask?.cancel()
+        musicSettingsTask?.cancel()
         musicPlayingBeforeBackground = musicPlayer.isPlaying
         musicPlayer.stop()
         videoPlayingBeforeBackground = videoPlayer != nil && videoPlayer?.rate != 0
@@ -2048,22 +2156,26 @@ final class PlayerViewController: UIViewController {
     @objc private func handleForeground() {
         applyBrightness()
         checkRevocation()
-        evaluateRestWindow()
-        if musicPlayingBeforeBackground {
-            musicPlayingBeforeBackground = false
-            if controllerState == PlaybackController.resting {
-                musicPausedForRest = true
-            } else if controllerState != PlaybackController.paused {
-                startMusicIfNeeded()
-            }
-        }
-        Task { [weak self] in
+        foregroundTask?.cancel()
+        let requestedFrameID = frameID
+        foregroundTask = Task { [weak self] in
             guard let self else { return }
             let current = (try? await environment.frameManager.framePlaybackBundle(frameID: frameID))
+            guard !Task.isCancelled, frameID == requestedFrameID else { return }
             let intact = current.map {
                 $0.selectionVersion == selectionVersion && !$0.settingsJSON.isEmpty
             } ?? false
             dispatch(PlaybackEvent(type: "app_foreground", queueIntact: intact))
+            evaluateRestWindow()
+            if musicPlayingBeforeBackground {
+                musicPlayingBeforeBackground = false
+                if controllerState == PlaybackController.resting {
+                    musicPausedForRest = true
+                } else if controllerState != PlaybackController.paused {
+                    startMusicIfNeeded()
+                }
+            }
+
             if controllerState == PlaybackController.holding {
                 if currentIsVideo() {
                     if videoPlayingBeforeBackground {

@@ -11,6 +11,7 @@ final class KeyboardAvoidanceTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
+        XCUIDevice.shared.orientation = .portrait
         app = nil
     }
 

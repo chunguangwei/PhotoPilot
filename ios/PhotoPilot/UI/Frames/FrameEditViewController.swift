@@ -67,6 +67,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         titleLabel.text = L10n.string("library.choose_title")
         titleLabel.font = ThemeFont.heading()
         titleLabel.adjustsFontForContentSizeCategory = true
+        titleLabel.numberOfLines = 0
         titleLabel.textColor = ThemeColor.textPrimary
         titleLabel.accessibilityTraits.insert(.header)
 
@@ -107,6 +108,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         summaryLabel.font = ThemeFont.body()
         summaryLabel.adjustsFontForContentSizeCategory = true
         summaryLabel.textColor = ThemeColor.textPrimary
+        summaryLabel.numberOfLines = 0
 
         noteLabel.text = L10n.string("library.selection_note_static") + "\n" + L10n.string("frames.cover_hint")
         noteLabel.font = ThemeFont.meta()
@@ -125,13 +127,28 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         manualButton.isHidden = true
         saveButton.addTarget(self, action: #selector(handleSave), for: .touchUpInside)
 
-        let bottomBar = UIStackView(arrangedSubviews: [
-            pendingLabel, summaryLabel, noteLabel, manualButton, saveButton,
+        let details = UIStackView(arrangedSubviews: [pendingLabel, summaryLabel, noteLabel, manualButton])
+        details.axis = .vertical
+        details.spacing = ThemeMetrics.space8
+        details.translatesAutoresizingMaskIntoConstraints = false
+        let detailsScroll = UIScrollView()
+        detailsScroll.addSubview(details)
+        let naturalHeight = detailsScroll.heightAnchor.constraint(equalTo: details.heightAnchor)
+        naturalHeight.priority = .defaultLow
+        NSLayoutConstraint.activate([
+            details.topAnchor.constraint(equalTo: detailsScroll.contentLayoutGuide.topAnchor),
+            details.bottomAnchor.constraint(equalTo: detailsScroll.contentLayoutGuide.bottomAnchor),
+            details.leadingAnchor.constraint(equalTo: detailsScroll.contentLayoutGuide.leadingAnchor),
+            details.trailingAnchor.constraint(equalTo: detailsScroll.contentLayoutGuide.trailingAnchor),
+            details.widthAnchor.constraint(equalTo: detailsScroll.frameLayoutGuide.widthAnchor),
+            naturalHeight
         ])
+        let bottomBar = UIStackView(arrangedSubviews: [detailsScroll, saveButton])
         bottomBar.axis = .vertical
         bottomBar.spacing = ThemeMetrics.space8
         bottomBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(bottomBar)
+        detailsScroll.heightAnchor.constraint(lessThanOrEqualTo: view.heightAnchor, multiplier: 0.28).isActive = true
 
         let readable = header.widthAnchor.constraint(
             lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth

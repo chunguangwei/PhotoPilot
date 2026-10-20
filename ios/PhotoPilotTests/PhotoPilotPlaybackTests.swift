@@ -1,7 +1,134 @@
+import CoreData
 import XCTest
+import UIKit
 @testable import PhotoPilot
 
 final class PhotoPilotPlaybackTests: XCTestCase {
+
+    @MainActor
+    func testEmptyQueueClearsPreviouslyDisplayedPhotos() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let environment = AppEnvironment(
+            persistence: PersistenceController(storeURL: directory.appendingPathComponent("library.db"))
+        )
+        let frameID = try await environment.frameManager.createFrame(name: "Empty queue")
+        for state in [PlaybackController.holding, PlaybackController.transitioning,
+                      PlaybackController.paused, PlaybackController.suspended, PlaybackController.resting] {
+            let player = PlayerViewController(environment: environment, frameID: frameID)
+            player.loadViewIfNeeded()
+            player.controllerState = state
+            for child in Mirror(reflecting: player).children {
+                if ["frontImageView", "backImageView", "backgroundView"].contains(child.label ?? "") {
+                    (child.value as? UIImageView)?.image = UIImage(systemName: "photo")
+                }
+            }
+            player.rebuildQueue(keepIndex: true)
+            for _ in 0..<100 {
+                let safe = Mirror(reflecting: player).children.first { $0.label == "safeImageShown" }?.value as? Bool
+                if safe == true { break }
+                try await Task.sleep(nanoseconds: 10_000_000)
+            }
+            let preserving = [PlaybackController.paused, PlaybackController.suspended, PlaybackController.resting].contains(state)
+            XCTAssertEqual(player.controllerState, preserving ? state : PlaybackController.empty)
+            let values = Mirror(reflecting: player).children
+            XCTAssertEqual(values.first { $0.label == "safeImageShown" }?.value as? Bool, true)
+            for label in ["frontImageView", "backImageView", "backgroundView"] {
+                let imageView = values.first { $0.label == label }?.value as? UIImageView
+                XCTAssertNil(imageView?.image)
+            }
+            PlayerViewController.dismissActiveIfAny()
+        }
+    }
+
+    @MainActor
+    func testEmptyPlayerResumesWhenQueueBecomesPlayable() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let environment = AppEnvironment(
+            persistence: PersistenceController(storeURL: directory.appendingPathComponent("library.db"))
+        )
+        let frameID = try await environment.frameManager.createFrame(name: "Repopulated queue")
+        let player = PlayerViewController(environment: environment, frameID: frameID)
+        player.loadViewIfNeeded()
+        player.controllerState = PlaybackController.holding
+        player.rebuildQueue(keepIndex: true)
+        defer { PlayerViewController.dismissActiveIfAny() }
+        for _ in 0..<100 where player.controllerState != PlaybackController.empty {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(player.controllerState, PlaybackController.empty)
+        let context = environment.persistence.container.viewContext
+        func insert(_ entity: String, _ values: [String: Any]) -> NSManagedObject {
+            let row = NSEntityDescription.insertNewObject(forEntityName: entity, into: context)
+            for (key, attribute) in row.entity.attributesByName where !attribute.isOptional {
+                row.setValue(attribute.defaultValue ?? (attribute.attributeType == .stringAttributeType ? "" : 0), forKey: key)
+            }
+            values.forEach { row.setValue($0.value, forKey: $0.key) }
+            return row
+        }
+        let source = insert("Source", ["id": "fixture-source", "type": "local_files", "status": "active"])
+        let request = NSFetchRequest<NSManagedObject>(entityName: "Frame")
+        request.predicate = NSPredicate(format: "id == %@", frameID)
+        let frame = try XCTUnwrap(context.fetch(request).first)
+        try FileManager.default.createDirectory(at: environment.originalsRootURL, withIntermediateDirectories: true)
+        let fixture = UIGraphicsImageRenderer(size: CGSize(width: 16, height: 16)).image { context in
+            UIColor.red.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 16, height: 16))
+        }
+        for id in ["fixture-one", "fixture-two"] {
+            let path = id + ".jpg"
+            try XCTUnwrap(fixture.jpegData(compressionQuality: 1)).write(to: environment.originalsRootURL.appendingPathComponent(path))
+            let asset = insert("Asset", [
+                "id": id, "content_hash": id, "original_rel_path": path,
+                "readiness": "ready", "media_kind": "image", "format": "jpeg",
+                "pixel_width": 16, "pixel_height": 16, "exif_orientation": 1,
+                "orientation_class": "square", "captured_at_source": "unknown"
+            ])
+            let remote = insert("SourceAsset", ["id": id, "source": source, "remote_key": path, "access_state": "available"])
+            _ = insert("AssetOrigin", ["asset": asset, "sourceAsset": remote, "policy_state": "allowed", "origin_state": "active"])
+            _ = insert("FrameSelection", ["frame": frame, "asset": asset, "ref_key": id, "mode": "include"])
+        }
+        try context.save()
+        let playable = try await environment.frames.buildPlayQueue(frameID: frameID)
+        XCTAssertEqual(playable.count, 2)
+        player.rebuildQueue(keepIndex: true)
+        for _ in 0..<200 where player.controllerState != PlaybackController.holding {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(player.controllerState, PlaybackController.holding)
+        let values = Mirror(reflecting: player).children
+        XCTAssertEqual((values.first { $0.label == "emptyOverlay" }?.value as? UIView)?.isHidden, true)
+        XCTAssertNotNil((values.first { $0.label == "frontImageView" }?.value as? UIImageView)?.image)
+        XCTAssertNotNil(values.first { $0.label == "holdTask" }?.value as? Task<Void, Never>)
+    }
+
+    @MainActor
+    func testSnapshotCannotRestoreAssetsOutsideCurrentPlayableQueue() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let environment = AppEnvironment(
+            persistence: PersistenceController(storeURL: directory.appendingPathComponent("library.db"))
+        )
+        let frameID = try await environment.frameManager.createFrame(name: "Snapshot privacy")
+        let bundle = try await environment.frameManager.framePlaybackBundle(frameID: frameID)
+        try await environment.frameManager.savePlaybackSnapshot(
+            frameID: frameID,
+            remainingHoldMs: 500,
+            cursorJSON: #"{"queue":["withdrawn-photo"],"index":0}"#,
+            seed: bundle.randomSeed,
+            selectionVersion: Int(bundle.selectionVersion)
+        )
+        let player = PlayerViewController(environment: environment, frameID: frameID)
+        player.loadViewIfNeeded()
+        player.viewWillAppear(false)
+        defer { PlayerViewController.dismissActiveIfAny() }
+        for _ in 0..<100 {
+            let state = Mirror(reflecting: player).children.first { $0.label == "controllerState" }?.value as? String
+            if state == PlaybackController.empty || state == PlaybackController.failed { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        let values = Mirror(reflecting: player).children
+        XCTAssertEqual(values.first { $0.label == "queue" }?.value as? [String], [])
+        XCTAssertEqual(values.first { $0.label == "controllerState" }?.value as? String, PlaybackController.empty)
+    }
 
     private func loadVector(_ name: String) throws -> [String: Any] {
         let url = try XCTUnwrap(

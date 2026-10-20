@@ -146,7 +146,7 @@ actor ImportCoordinator {
             do {
                 page = try await adapter.enumerateAssets(cursor: cursor)
             } catch {
-                importLog.error("enumerateAssets failed jobID=\(jobID, privacy: .public) error=\(String(describing: error), privacy: .public)")
+                importLog.error("enumerateAssets failed jobID=\(jobID, privacy: .public) code=\((error as NSError).code)")
                 throw ImportFailureCode.srcUnavailable
             }
             let now = nowMillis()

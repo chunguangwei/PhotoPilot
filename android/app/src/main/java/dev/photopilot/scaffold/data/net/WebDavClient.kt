@@ -49,13 +49,7 @@ class WebDavClient(
             body = PROPFIND_BODY.toByteArray(Charsets.UTF_8),
         )
         if (channel.status != HTTP_MULTISTATUS) {
-            val preview = runCatching {
-                String(channel.input.readBounded(PROBE_PREVIEW_BYTES), Charsets.ISO_8859_1).take(PROBE_PREVIEW_CHARS)
-            }.getOrDefault("")
-            android.util.Log.w(
-                "PhotoPilotNas",
-                "propfind path=$path unexpected status=${channel.status} headers=${channel.headers} body=$preview",
-            )
+            android.util.Log.w("PhotoPilotNas", "propfind failed code=${statusToCode(channel.status, pathLevel = true)}")
             channel.closeQuietly()
             throw DavException(statusToCode(channel.status, pathLevel = true))
         }
@@ -322,8 +316,6 @@ class WebDavClient(
         const val CONNECT_TIMEOUT_MS = 15_000
         const val READ_TIMEOUT_MS = 30_000
         const val DAV_NS = "DAV:"
-        const val PROBE_PREVIEW_BYTES = 512L
-        const val PROBE_PREVIEW_CHARS = 200
 
         const val ERR_SRC_AUTH_FAILED = "SRC_AUTH_FAILED"
         const val ERR_SRC_PATH_NOT_FOUND = "SRC_PATH_NOT_FOUND"

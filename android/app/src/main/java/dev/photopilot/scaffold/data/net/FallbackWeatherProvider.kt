@@ -14,7 +14,7 @@ class FallbackWeatherProvider(
             try {
                 return provider.forecast(latitude, longitude)
             } catch (e: Exception) {
-                logger("forecast failed via ${provider.javaClass.simpleName}: ${e.message}")
+                logger("forecast failed via ${provider.javaClass.simpleName}: ${e.javaClass.simpleName}")
                 lastError = e
             }
         }
@@ -29,7 +29,7 @@ class FallbackWeatherProvider(
                 if (results.isNotEmpty()) return results
                 logger("search empty via ${provider.javaClass.simpleName}")
             } catch (e: Exception) {
-                logger("search failed via ${provider.javaClass.simpleName}: ${e.message}")
+                logger("search failed via ${provider.javaClass.simpleName}: ${e.javaClass.simpleName}")
                 lastError = e
             }
         }

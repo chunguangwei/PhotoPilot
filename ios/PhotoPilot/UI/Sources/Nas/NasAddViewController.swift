@@ -5,6 +5,9 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
 
     private let schemeSegmented = UISegmentedControl()
     private let transportSegmented = UISegmentedControl()
+    private let httpsButton = ActionButton(titleKey: "source.nas.transport_https", style: .secondary)
+    private let httpButton = ActionButton(titleKey: "source.nas.transport_http", style: .secondary)
+    private var adaptiveRows: [(UIStackView, NSLayoutConstraint)] = []
     private var transportRow: UIView?
     private let shareField = UITextField()
     private var shareRow: UIView?
@@ -61,6 +64,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         titleLabel.font = ThemeFont.heading()
         titleLabel.adjustsFontForContentSizeCategory = true
         titleLabel.textColor = ThemeColor.textPrimary
+        titleLabel.numberOfLines = 0
         titleLabel.accessibilityTraits.insert(.header)
         let topBar = UIStackView(arrangedSubviews: [backButton, titleLabel, UIView()])
         topBar.axis = .horizontal
@@ -100,7 +104,13 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         transportSegmented.heightAnchor.constraint(
             greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
         ).isActive = true
-        transportRow = makeRow(labelKey: "source.nas.transport", control: transportSegmented)
+        httpsButton.addTarget(self, action: #selector(selectHTTPS), for: .touchUpInside)
+        httpButton.addTarget(self, action: #selector(selectHTTP), for: .touchUpInside)
+        let transportChoices = UIStackView(arrangedSubviews: [httpsButton, httpButton])
+        transportChoices.axis = .vertical
+        transportChoices.spacing = ThemeMetrics.space8
+        transportRow = makeRow(labelKey: "source.nas.transport", control: transportChoices)
+        updateTransportSelection()
 
         configure(field: hostField, labelKey: "source.nas.host", keyboard: .URL)
         configure(field: portField, labelKey: "source.nas.port", keyboard: .numberPad)
@@ -180,7 +190,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
             equalTo: scrollView.frameLayoutGuide.widthAnchor,
             constant: -2 * ThemeMetrics.contentInsetCompact
         )
-        fillWidth.priority = .defaultHigh
+        fillWidth.priority = UILayoutPriority(999)
         NSLayoutConstraint.activate([
             topBar.topAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.topAnchor,
@@ -209,11 +219,11 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
             form.centerXAnchor.constraint(equalTo: scrollView.frameLayoutGuide.centerXAnchor),
             form.leadingAnchor.constraint(
                 greaterThanOrEqualTo: scrollView.frameLayoutGuide.leadingAnchor,
-                constant: ThemeMetrics.contentInset
+                constant: ThemeMetrics.contentInsetCompact
             ),
             form.trailingAnchor.constraint(
                 lessThanOrEqualTo: scrollView.frameLayoutGuide.trailingAnchor,
-                constant: -ThemeMetrics.contentInset
+                constant: -ThemeMetrics.contentInsetCompact
             ),
             readable,
             fillWidth
@@ -233,6 +243,34 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         )
         enableKeyboardDismissal()
         applyPrefill()
+        updateTransportSelection()
+    }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        let stacked = view.bounds.width < 600 || traitCollection.preferredContentSizeCategory.isAccessibilityCategory
+        for (row, width) in adaptiveRows {
+            width.isActive = !stacked
+            row.axis = stacked ? .vertical : .horizontal
+            row.alignment = stacked ? .fill : .center
+        }
+    }
+
+    @objc private func selectHTTPS() {
+        transportSegmented.selectedSegmentIndex = 0
+        handleTransportChanged()
+        updateTransportSelection()
+    }
+
+    @objc private func selectHTTP() {
+        transportSegmented.selectedSegmentIndex = 1
+        handleTransportChanged()
+        updateTransportSelection()
+    }
+
+    private func updateTransportSelection() {
+        httpsButton.isOptionSelected = transportSegmented.selectedSegmentIndex == 0
+        httpButton.isOptionSelected = transportSegmented.selectedSegmentIndex == 1
     }
 
     @objc private func handleFieldDidBegin(_ notification: Notification) {
@@ -315,11 +353,13 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         label.adjustsFontForContentSizeCategory = true
         label.textColor = ThemeColor.textPrimary
         label.setContentHuggingPriority(.defaultHigh, for: .horizontal)
-        label.widthAnchor.constraint(equalToConstant: ThemeMetrics.railWidth).isActive = true
+        label.numberOfLines = 0
+        let labelWidth = label.widthAnchor.constraint(equalToConstant: ThemeMetrics.railWidth)
         let row = UIStackView(arrangedSubviews: [label, control])
         row.axis = .horizontal
         row.alignment = .center
         row.spacing = ThemeMetrics.space12
+        adaptiveRows.append((row, labelWidth))
         return row
     }
 

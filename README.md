@@ -1,6 +1,6 @@
 # PhotoPilot
 
-一个把旧 iPad / Android 平板变成数字相框的应用：导入本机、文件或 NAS（WebDAV/SMB）里的照片与视频，按相框精选内容，配上时钟、日期与天气，常亮播放。
+一个把旧 iPad / Android 平板变成数字相框的应用：导入本机、文件或 NAS（WebDAV/SMB）里的照片，按相框精选内容，配上时钟、日期与天气，常亮播放。
 
 Turn a spare iPad or Android tablet into a digital photo frame: import from the device, files, or a NAS (WebDAV/SMB), curate frames, and play them with clock, date and weather overlays.
 
@@ -9,7 +9,7 @@ Turn a spare iPad or Android tablet into a digital photo frame: import from the 
 - 本地导入、二次选片、手动排序与自动播放（中英双语）
 - NAS 来源：WebDAV（HTTPS/HTTP 私网）与 SMB，凭证安全存储（Keychain / Keystore）、TLS TOFU 证书信任、增量同步与墓碑删除保护
 - 天气叠字（Open-Meteo，CC-BY 4.0 署名）、时钟与休息时段、节日专属播放
-- 视频（mp4/mov，默认静音）与 RAW（系统解码）播放
+- RAW 照片按系统解码能力支持
 - 背景音乐：14 首内置循环曲（8 首公有领域节日旋律自有合成编曲 + 6 首氛围原创）或本地音频文件，随播放/暂停/休息联动
 - 照片只在本机处理；不上传、不记录照片名与路径
 - Android 内置 GitHub 更新检查（断点续传 + 前台保活下载）
@@ -52,3 +52,10 @@ See [LICENSE](LICENSE).
 见根目录 [PRIVACY.md](PRIVACY.md)（中英双语）。核心承诺：照片只在本机处理，不上传、无广告、不需要账号。
 
 See [PRIVACY.md](PRIVACY.md) (bilingual). Photos never leave your device — no uploads, no ads, no account.
+
+
+## 支持 / Support
+
+使用中遇到问题，请发送邮件至 **chunguangwee@gmail.com**，说明设备型号、系统版本、PhotoPilot 版本和复现步骤。请勿附上私人照片、NAS 密码或服务器完整地址。
+
+For help, email **chunguangwee@gmail.com** with your device model, OS version, PhotoPilot version and steps to reproduce the issue. Please do not include private photos, NAS passwords or full server addresses.

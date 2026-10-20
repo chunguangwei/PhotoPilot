@@ -135,3 +135,4 @@ __pycache__/
 # release artifacts & screenshot working dir
 PhotoPilot-v*.apk
 store/appstore/raw/
+!store/appstore/review/ReviewPhotos.zip

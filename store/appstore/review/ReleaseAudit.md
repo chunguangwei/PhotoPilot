@@ -1,0 +1,51 @@
+# Release 归档复核 · 2026-10-20
+
+构建来自 v1.1.46 基线与本轮未提交修复；未改版本号。归档为本地未签名检查产物，不能用于 App Store 提交，也没有执行 Apple Validate 或上传。
+
+| 检查 | 实际结果 |
+|---|---|
+| 配置/平台 | Release，iphoneos27.1，arm64，最低 iOS 15.0 |
+| App 身份 | dev.photopilot.scaffold，1.1.46 (46)，iPhone + iPad |
+| 隐私清单 | 入包且与源文件逐字节一致；追踪 false；收集数组为空不等于隐私标签已经定稿 |
+| Required-reason API | UserDefaults CA92.1；FileTimestamp C617.1；DiskSpace E174.1；本轮补 SystemBootTime 35F9.1 |
+| 使用理由证据 | LaunchViewController 使用 systemUptime 计算应用内启动展示时长，不向外发送系统启动时间 |
+| 许可文本 | ThirdPartyNotices.txt 入包且与源文件一致；SHA-256 944b9199742089e2c60d031329d5f973bb389b6f8cea550ffcb7aa57cc1b7ff4 |
+| 非系统动态框架 | AMSMB2.framework；otool -L 确认 App 通过 @rpath 加载 |
+| 测试与源文件 | 无 .xctest、无 .swift 源文件入包 |
+| 音乐/演示素材 | 14 首音乐、8 张演示照片均与仓库源文件逐字节一致；详情 AssetEvidence.json |
+| 字体文件 | 未打包 .ttf/.otf 文件；不代表所有商店物料字体使用均已完成权利审核 |
+| 加密声明 | 移除未经定稿的 ITSAppUsesNonExemptEncryption=false 预设；须在 ASC 填写真实问卷 |
+| 签名环境 | 当前钥匙串未发现 Apple Distribution 身份；不能据此断言账号未开通或云端没有证书 |
+
+本地证据：`.build/appstore-audit/PhotoPilot-unsigned.xcarchive`、`ReleaseAudit.json`；构建日志 `.build/appstore-release-archive.log`。
+
+## 加密问卷的实际输入
+
+当前 HTTPS/Keychain/CryptoKit 使用系统能力；AMSMB2 内的 libsmb2 还包含 NTLM、哈希与 AES-CCM 等实现。Apple 平台 AES 封装调用 CommonCrypto，但归档框架仍导出 AES reference 实现符号。不能仅凭“HTTPS 使用系统加密”概括整个 App，也不能仅凭发现符号直接认定全部均非豁免。须结合实际用途、分发地区及问卷完成分类。
+
+[Apple 加密材料要求](https://developer.apple.com/help/app-store-connect/reference/app-information/export-compliance-documentation-for-encryption/)区分仅系统加密与非系统标准算法；法国分发等条件须在真实问卷确认。分类完成后才能决定是否恢复 plist 的豁免取值。
+
+## SMB 对应源码准备
+
+已从无本地修改的锁定 checkout 制作本地源码快照，包含 libsmb2 子模块、构建文件及原始许可证，排除了 .git/.build/.swiftpm 与符号链接：
+
+- AMSMB2 4.0.3：1726aaaf7adf63d7d1d2a0c5d1b0e635028215c0。
+- libsmb2：aff9fa6ba9f41cfd3c15d184554601ec3f6d8d03。
+- `.build/appstore-audit/AMSMB2-4.0.3-source.tar.gz`，218 文件，SHA-256 `0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077`。
+- `.build/appstore-audit/SMBSourceManifest.json` 记录逐文件哈希。
+
+这是供后续分发审核使用的源码准备，尚未建立最终用户下载渠道，也未完成替换/重链接步骤验证、最终签名分发兼容性判断或书面结论。源码 ZIP/链接和许可页都不能单独证明 LGPL 义务已履行。
+
+## 仍需补齐
+
+1. Apple Distribution 签名/描述文件、最终归档 Validate、ASC 构建处理结果。
+2. 天气隐私标签及备用服务日志说明；线上政策与最终包一致。
+3. SMB 最终源码交付、替换/重链接材料与分发结论；App 用户许可衔接。
+4. 审核 NAS 可达环境和最小权限凭证；最终发布包的真机完整流程。
+5. 账号表单、分发地区、加密分类、素材权利定稿及更新后的商店截图。
+
+[Required-reason API 与 35F9.1](https://developer.apple.com/documentation/bundleresources/app-privacy-configuration/nsprivacyaccessedapitypes/nsprivacyaccessedapitype)。本记录证明本地检查结果，不代表审核批准。
+
+## v1.1.47 分发收尾补记
+
+2026-10-20 发布前按双端 1.1.47 (47) 再次生成本地未签名 iOS Release 归档：`.build/appstore-audit/PhotoPilot-v1.1.47-unsigned.xcarchive`。隐私清单与完整许可文本仍与当前源文件一致。包含新增大字号侧栏高度/滚动修复；全量 131 项 XCTest 通过。GitHub 的 Android 签名 APK 分发不等于 iOS Distribution 验证或 App Store 提交；上述未完成事项保持。

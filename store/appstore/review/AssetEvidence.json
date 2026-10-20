@@ -1,0 +1,115 @@
+{
+  "scope": "iOS unsigned Release archive; file identity only, not legal clearance",
+  "assets": [
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_birthday_01.m4a",
+      "sha256": "096c68aa420849e85be95b094782ab60f104475fa0df0da54d25a65515407b2b",
+      "bytes": 389228
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_christmas_01.m4a",
+      "sha256": "dbfb005555e4cdff21cf7dcda8255b874cf2d9393662afdfa72135352e1ca78f",
+      "bytes": 274624
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_classical_01.m4a",
+      "sha256": "ccd861c19967e6d56178a4266d372b677153046ca7f7a6ef3a65d25f2bb21777",
+      "bytes": 431684
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_coffee_01.m4a",
+      "sha256": "d6a14976c502e2be8b4b822babadf0d297def524bb93a3f99a3d70ddd1700097",
+      "bytes": 574717
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_festive_01.m4a",
+      "sha256": "84aab2f37f53e2c394733c15a223ad9fe728334aa0be60f5c5c16a1aebcaae50",
+      "bytes": 307088
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_lounge_01.m4a",
+      "sha256": "f8bd8105ed3094a2019c0e7d30f14c33ac0d29fca29fea1ed78537d867c0f09a",
+      "bytes": 604051
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_morning_01.m4a",
+      "sha256": "5613e4d3cff575f3973f105c5d932dab1cf4cad652a9a34a70a9c5daa1fada92",
+      "bytes": 431345
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_nature_01.m4a",
+      "sha256": "b475bb5d99cc763a0984a6602685c29a02d464f79b429fe36f82c8b7d3693563",
+      "bytes": 758466
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_night_01.m4a",
+      "sha256": "0ffb9abab91dbbc5bf86fcaa417ed6fd4c776cc6c13cccca4a54f85bfd249d09",
+      "bytes": 681788
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_qixi_01.m4a",
+      "sha256": "af7a564e141caa93b8c9e44a051b0197bd54fd622865d1b8093cadf26edac51f",
+      "bytes": 567922
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_spring_festival_01.m4a",
+      "sha256": "4550dee7c9dbf0f5093a7074b972b6d6b539f2edd27142fcf4a3a54b0cb65b7e",
+      "bytes": 342895
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_travel_01.m4a",
+      "sha256": "30721aa059b86b80f212ac0ee419f8dbba5809a4bbfd984d7221da458192f730",
+      "bytes": 399782
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_valentine_01.m4a",
+      "sha256": "99840e8fc767129b6de755b15e371be0650c35a2346d52b80368ca98b53dc5d5",
+      "bytes": 479244
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Music/music_wedding_01.m4a",
+      "sha256": "8bdb8809ffe4a527ac79149e9a31a38f6e6e2af3b8d0a548981dccda2a994afc",
+      "bytes": 567066
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Demo/demo_city.jpg",
+      "sha256": "3ca9d7fb4bbae956edc262ca64ed4ab590c38b2f28821867367e269e09daad6b",
+      "bytes": 337387
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Demo/demo_coffee.jpg",
+      "sha256": "e73e91bb68867d76bd3b95095201f4a97db6e1c15834223d906c45612d1b42c8",
+      "bytes": 276398
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Demo/demo_dog.jpg",
+      "sha256": "372491537d065b20d3a2a9894f29deb94841422a12abad09c6e7e85481c5be28",
+      "bytes": 416847
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Demo/demo_flowers.jpg",
+      "sha256": "096cbb64b987c93f7057eb796a2389c8ab67cb30cc5fea51728fbc7ff153fb05",
+      "bytes": 505380
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Demo/demo_forest.jpg",
+      "sha256": "9e56c14e387736e47489a18f17d018cbe240968739039004b1d8ae99cced714e",
+      "bytes": 707199
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Demo/demo_lake.jpg",
+      "sha256": "06783af56321a1b0fcb90b106a1edcf21951f3ff307771dff05f5157b697e072",
+      "bytes": 247271
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Demo/demo_snow.jpg",
+      "sha256": "d311621fc5431f6f68d995bc29695b7a743d42f6ef3877bda8b5a521ba82c44a",
+      "bytes": 480489
+    },
+    {
+      "path": "ios/PhotoPilot/Resources/Demo/demo_sunset.jpg",
+      "sha256": "b4152b197818b21eaadccd29ca2633d1f393eb51785b7b778ad83150474a3c2a",
+      "bytes": 332461
+    }
+  ]
+}

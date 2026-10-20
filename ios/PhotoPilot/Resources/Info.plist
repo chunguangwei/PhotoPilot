@@ -57,8 +57,6 @@
         <key>UIColorName</key>
         <string>LaunchCanvas</string>
     </dict>
-    <key>ITSAppUsesNonExemptEncryption</key>
-    <false/>
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>

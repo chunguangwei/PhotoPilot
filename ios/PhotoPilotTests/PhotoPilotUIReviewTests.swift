@@ -4,6 +4,114 @@ import UIKit
 
 @MainActor
 final class PhotoPilotUIReviewTests: XCTestCase {
+    func testEmptyGridKeepsCloseButtonHittable() async throws {
+        let controller = AssetGridViewController(
+            environment: makeEnvironment(), headerTitle: "Empty folder", showsCloseButton: true
+        )
+        let window = show(controller, size: CGSize(width: 375, height: 667))
+        defer { window.isHidden = true }
+        try await Task.sleep(nanoseconds: 100_000_000)
+        window.layoutIfNeeded()
+        func descendants(_ view: UIView) -> [UIView] {
+            view.subviews.flatMap { [$0] + descendants($0) }
+        }
+        let back = try XCTUnwrap(descendants(controller.view).first {
+            $0 is ActionButton && $0.accessibilityLabel == L10n.string("common.back")
+        })
+        let point = back.convert(CGPoint(x: back.bounds.midX, y: back.bounds.midY), to: window)
+        let hit = try XCTUnwrap(window.hitTest(point, with: nil))
+        XCTAssertTrue(hit === back || hit.isDescendant(of: back))
+    }
+
+    func testNavigationLabelsFitAtAccessibilitySize() throws {
+        let previousLanguage = AppLanguage.overrideValue
+        defer { AppLanguage.configure(value: previousLanguage) }
+        for language in [AppLanguage.zhValue, AppLanguage.enValue] {
+            AppLanguage.configure(value: language)
+            for style in [NavItemButton.Style.bottomBar, .rail] {
+                for key in ["nav.frames", "nav.library", "nav.sources", "nav.settings"] {
+                    let controller = UIViewController()
+                    let button = NavItemButton(item: NavItem(titleKey: key, symbolName: "gearshape"), style: style)
+                    controller.view.addSubview(button)
+                    let host = UIViewController()
+                    host.addChild(controller)
+                    host.view.addSubview(controller.view)
+                    controller.didMove(toParent: host)
+                    host.setOverrideTraitCollection(
+                        UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge),
+                        forChild: controller
+                    )
+                    let window = show(host, size: CGSize(width: 375, height: 667))
+                    defer { window.isHidden = true }
+                    button.frame = CGRect(x: 0, y: 0, width: 80, height: 200)
+                    button.frame.size.height = max(200, button.requiredContentHeight)
+                    button.layoutIfNeeded()
+                    let stack = try XCTUnwrap(button.subviews.compactMap { $0 as? UIStackView }.first)
+                    let label = try XCTUnwrap(stack.arrangedSubviews.compactMap { $0 as? UILabel }.first)
+                    let rect = label.convert(label.bounds, to: button)
+                    XCTAssertGreaterThanOrEqual(rect.minX, 0)
+                    XCTAssertLessThanOrEqual(rect.maxX, button.bounds.width)
+                    XCTAssertGreaterThanOrEqual(rect.minY, 0)
+                    XCTAssertLessThanOrEqual(rect.maxY, button.bounds.height)
+                    let paragraph = NSMutableParagraphStyle()
+                    paragraph.lineBreakMode = label.lineBreakMode
+                    paragraph.alignment = label.textAlignment
+                    let needed = (label.text! as NSString).boundingRect(
+                        with: CGSize(width: label.bounds.width, height: .greatestFiniteMagnitude),
+                        options: [.usesLineFragmentOrigin, .usesFontLeading],
+                        attributes: [.font: label.font!, .paragraphStyle: paragraph],
+                        context: nil
+                    ).height
+                    XCTAssertGreaterThanOrEqual(label.bounds.height + 1, needed, "\(language) \(style) \(key)")
+                    if key == "nav.library" {
+                        saveSnapshot(window, name: "nav-library-\(language)-\(style)-AX")
+                    }
+                }
+            }
+        }
+    }
+
+    func testRailNavigationRemainsReachableAtAccessibilitySize() throws {
+        let previousLanguage = AppLanguage.overrideValue
+        defer { AppLanguage.configure(value: previousLanguage) }
+        for language in [AppLanguage.zhValue, AppLanguage.enValue] {
+            AppLanguage.configure(value: language)
+            let controller = UIViewController()
+            let rail = RailNavBar(items: ["nav.frames", "nav.library", "nav.sources", "nav.settings"].map {
+                NavItem(titleKey: $0, symbolName: "gearshape")
+            })
+            controller.view.addSubview(rail)
+            rail.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                rail.leadingAnchor.constraint(equalTo: controller.view.leadingAnchor),
+                rail.topAnchor.constraint(equalTo: controller.view.topAnchor),
+                rail.widthAnchor.constraint(equalToConstant: 80),
+                rail.bottomAnchor.constraint(equalTo: controller.view.bottomAnchor)
+            ])
+            let host = UIViewController()
+            host.addChild(controller)
+            host.view.addSubview(controller.view)
+            controller.didMove(toParent: host)
+            host.setOverrideTraitCollection(
+                UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge),
+                forChild: controller
+            )
+            let window = show(host, size: CGSize(width: 375, height: 300))
+            defer { window.isHidden = true }
+            let scroll = try XCTUnwrap(rail.subviews.first as? UIScrollView)
+            window.layoutIfNeeded()
+            let stack = try XCTUnwrap(scroll.subviews.compactMap { $0 as? UIStackView }.first)
+            let last = try XCTUnwrap(stack.arrangedSubviews.last as? NavItemButton)
+            XCTAssertGreaterThan(scroll.contentSize.height, scroll.bounds.height)
+            scroll.scrollRectToVisible(last.convert(last.bounds, to: scroll), animated: false)
+            window.layoutIfNeeded()
+            let point = last.convert(CGPoint(x: last.bounds.midX, y: last.bounds.midY), to: window)
+            let hit = try XCTUnwrap(window.hitTest(point, with: nil))
+            XCTAssertTrue(hit === last || hit.isDescendant(of: last))
+            saveSnapshot(window, name: "rail-scrolled-\(language)-AX")
+        }
+    }
+
     func testActionButtonWrapsAtAccessibilitySize() {
         let button = ActionButton(titleKey: "welcome.primary_action", style: .primary)
         let controller = UIViewController()
@@ -73,6 +181,72 @@ final class PhotoPilotUIReviewTests: XCTestCase {
             XCTAssertFalse(controller.view.hasAmbiguousLayout)
             saveSnapshot(window, name: "welcome-\(Int(size.width))")
             window.isHidden = true
+        }
+    }
+
+    func testNASFormUsesAvailableWidthAndShowsTransportSafetyText() throws {
+        for (width, category) in [(320.0, UIContentSizeCategory.large), (375.0, .accessibilityExtraExtraExtraLarge)] {
+            let controller = NasAddViewController(environment: makeEnvironment())
+            let host = UIViewController()
+            host.addChild(controller)
+            host.view.addSubview(controller.view)
+            controller.view.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                controller.view.topAnchor.constraint(equalTo: host.view.topAnchor),
+                controller.view.bottomAnchor.constraint(equalTo: host.view.bottomAnchor),
+                controller.view.leadingAnchor.constraint(equalTo: host.view.leadingAnchor),
+                controller.view.trailingAnchor.constraint(equalTo: host.view.trailingAnchor)
+            ])
+            controller.didMove(toParent: host)
+            host.setOverrideTraitCollection(UITraitCollection(preferredContentSizeCategory: category), forChild: controller)
+            let window = show(host, size: CGSize(width: width, height: 667))
+            defer { window.isHidden = true }
+            let values = Mirror(reflecting: controller).children
+            let hostField = try XCTUnwrap(values.first { $0.label == "hostField" }?.value as? UITextField)
+            XCTAssertEqual(hostField.bounds.width, width - 2 * ThemeMetrics.contentInsetCompact, accuracy: 1)
+            for name in ["httpsButton", "httpButton"] {
+                let button = try XCTUnwrap(values.first { $0.label == name }?.value as? ActionButton)
+                let label = try XCTUnwrap(button.subviews.compactMap { $0 as? UILabel }.first)
+                let requiredHeight = label.sizeThatFits(CGSize(width: label.bounds.width, height: .greatestFiniteMagnitude)).height
+                XCTAssertGreaterThanOrEqual(label.bounds.height + 1, requiredHeight)
+                XCTAssertEqual(button.bounds.width, hostField.bounds.width, accuracy: 1)
+            }
+        }
+    }
+
+    func testFormsAtSmallPhoneAndTabletWidths() async throws {
+        let environment = makeEnvironment()
+        let frameID = try await environment.frameManager.createFrame(name: "Layout review")
+        for (width, height, large) in [(320, 568, false), (375, 667, true), (744, 1133, false), (1024, 768, false)] {
+            let screens: [(String, UIViewController)] = [
+                ("nas", NasAddViewController(environment: environment)),
+                ("holiday", HolidayEditViewController(environment: environment, rule: nil)),
+                ("playback", PlaybackSettingsViewController(environment: environment, frameID: frameID)),
+                ("weather", WeatherCityPickerViewController(environment: environment, onPick: { _ in })),
+                ("selection", FrameEditViewController(environment: environment, frameID: frameID))
+            ]
+            for (name, controller) in screens {
+                let host = UIViewController()
+                host.addChild(controller)
+                host.view.addSubview(controller.view)
+                controller.view.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    controller.view.topAnchor.constraint(equalTo: host.view.topAnchor),
+                    controller.view.bottomAnchor.constraint(equalTo: host.view.bottomAnchor),
+                    controller.view.leadingAnchor.constraint(equalTo: host.view.leadingAnchor),
+                    controller.view.trailingAnchor.constraint(equalTo: host.view.trailingAnchor)
+                ])
+                controller.didMove(toParent: host)
+                host.setOverrideTraitCollection(
+                    UITraitCollection(preferredContentSizeCategory: large ? .accessibilityExtraExtraExtraLarge : .large),
+                    forChild: controller
+                )
+                let window = show(host, size: CGSize(width: width, height: height))
+                try await Task.sleep(nanoseconds: 100_000_000)
+                window.layoutIfNeeded()
+                saveSnapshot(window, name: "audit-\(name)-\(width)-\(large ? "AX" : "normal")")
+                window.isHidden = true
+            }
         }
     }
 

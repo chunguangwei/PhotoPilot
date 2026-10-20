@@ -135,8 +135,8 @@ class MainActivity : Activity() {
 
     private val scope = CoroutineScope(
         SupervisorJob() + Dispatchers.Main +
-            kotlinx.coroutines.CoroutineExceptionHandler { _, error ->
-                android.util.Log.e("PhotoPilot", "uncaught coroutine error", error)
+            kotlinx.coroutines.CoroutineExceptionHandler { _, _ ->
+                android.util.Log.e("PhotoPilot", "uncaught coroutine error")
             },
     )
     private lateinit var root: AppRootView
@@ -494,6 +494,11 @@ class MainActivity : Activity() {
         }
         view.onToggleShareStatistics = { enabled ->
             scope.launch { environment?.settings?.setShareStatisticsEnabled(enabled) }
+        }
+        view.onPrivacyPolicy = {
+            runCatching {
+                startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/chunguangwei/PhotoPilot/blob/main/PRIVACY.md")))
+            }
         }
         view.onClearCache = { confirmClearCache(view) }
         view.onRestoreDeleted = { confirmRestoreDeleted() }
@@ -1014,13 +1019,12 @@ class MainActivity : Activity() {
                     client.propfind("", 0)
                     null
                 } catch (e: WebDavClient.DavException) {
-                    android.util.Log.w("PhotoPilotNas", "webdav test failed code=${e.code}", e)
+                    android.util.Log.w("PhotoPilotNas", "webdav test failed code=${e.code}")
                     e.code
                 } catch (e: Exception) {
                     android.util.Log.w(
                         "PhotoPilotNas",
-                        "webdav test unexpected ${e.javaClass.simpleName}: ${e.message}",
-                        e,
+                        "webdav test failed code=${WebDavClient.ERR_SRC_UNAVAILABLE}",
                     )
                     WebDavClient.ERR_SRC_UNAVAILABLE
                 }

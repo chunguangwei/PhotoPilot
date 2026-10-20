@@ -177,6 +177,7 @@ final class SettingsViewController: UIViewController {
         ))
 
         let holidayButton = ActionButton(titleKey: "common.settings", style: .secondary)
+        holidayButton.accessibilityIdentifier = "settings.holiday.open"
         holidayButton.setContentHuggingPriority(.required, for: .horizontal)
         holidayButton.addTarget(self, action: #selector(handleOpenHolidayRules), for: .touchUpInside)
         let holidayRow = makeRow(labelKey: "settings.holiday", control: holidayButton)
@@ -287,10 +288,12 @@ final class SettingsViewController: UIViewController {
         licenseNotice.numberOfLines = 0
         let licensesButton = ActionButton(titleKey: "settings.licenses", style: .secondary)
         licensesButton.addTarget(self, action: #selector(handleLicenses), for: .touchUpInside)
+        let privacyButton = ActionButton(titleKey: "settings.privacy_policy", style: .secondary)
+        privacyButton.addTarget(self, action: #selector(handlePrivacyPolicy), for: .touchUpInside)
         formStack.addArrangedSubview(makeSection(
             titleKey: "settings.about",
             collapsible: false,
-            rows: [makeRow(labelKey: "settings.version_label", control: versionValue), licenseNotice, licensesButton]
+            rows: [makeRow(labelKey: "settings.version_label", control: versionValue), licenseNotice, privacyButton, licensesButton]
         ))
     }
 
@@ -630,6 +633,11 @@ final class SettingsViewController: UIViewController {
         present(licenses, animated: true)
     }
 
+    @objc private func handlePrivacyPolicy() {
+        guard let url = URL(string: "https://github.com/chunguangwei/PhotoPilot/blob/main/PRIVACY.md") else { return }
+        UIApplication.shared.open(url)
+    }
+
     @objc private func handleOpenHolidayRules() {
         let list = HolidayListViewController(environment: environment)
         list.modalPresentationStyle = .fullScreen
@@ -872,6 +880,7 @@ final class LicensesViewController: UIViewController {
         backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
         let titleLabel = UILabel()
         titleLabel.text = L10n.string("settings.licenses")
+        titleLabel.numberOfLines = 0
         titleLabel.font = ThemeFont.heading()
         titleLabel.adjustsFontForContentSizeCategory = true
         titleLabel.textColor = ThemeColor.textPrimary
@@ -883,31 +892,21 @@ final class LicensesViewController: UIViewController {
         topBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(topBar)
 
-        let noticeLabel = UILabel()
-        noticeLabel.text = L10n.string("settings.license_notice")
-        noticeLabel.font = ThemeFont.meta()
-        noticeLabel.adjustsFontForContentSizeCategory = true
-        noticeLabel.textColor = ThemeColor.textSecondary
-        noticeLabel.numberOfLines = 0
-
-        let dependencyLabel = UILabel()
-        dependencyLabel.text = "AMSMB2 — MIT · libsmb2 — LGPL-2.1"
-        dependencyLabel.font = ThemeFont.body()
-        dependencyLabel.adjustsFontForContentSizeCategory = true
-        dependencyLabel.textColor = ThemeColor.textPrimary
-        dependencyLabel.numberOfLines = 0
-
-        let musicLabel = UILabel()
-        musicLabel.text = L10n.string("licenses.music_note")
-        musicLabel.font = ThemeFont.meta()
-        musicLabel.adjustsFontForContentSizeCategory = true
-        musicLabel.textColor = ThemeColor.textSecondary
-        musicLabel.numberOfLines = 0
-
-        let content = UIStackView(arrangedSubviews: [noticeLabel, dependencyLabel, musicLabel])
-        content.axis = .vertical
-        content.alignment = .leading
-        content.spacing = ThemeMetrics.space16
+        let notices = Bundle.main.url(forResource: "ThirdPartyNotices", withExtension: "txt")
+            .flatMap { try? String(contentsOf: $0, encoding: .utf8) }
+            ?? "AMSMB2 with libsmb2 — LGPL-2.1; AMSMB2 Swift sources — MIT"
+        let content = UITextView()
+        content.text = [
+            L10n.string("settings.license_notice"),
+            L10n.string("licenses.music_note"),
+            notices
+        ].joined(separator: "\n\n")
+        content.font = ThemeFont.meta()
+        content.adjustsFontForContentSizeCategory = true
+        content.textColor = ThemeColor.textPrimary
+        content.backgroundColor = .clear
+        content.isEditable = false
+        content.dataDetectorTypes = .link
         content.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(content)
 
@@ -936,6 +935,7 @@ final class LicensesViewController: UIViewController {
                 equalTo: view.safeAreaLayoutGuide.trailingAnchor,
                 constant: -ThemeMetrics.contentInsetCompact
             ),
+            content.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
         ])
     }
 

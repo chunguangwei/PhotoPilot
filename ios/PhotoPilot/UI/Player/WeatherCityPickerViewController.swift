@@ -15,6 +15,7 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
     private let geocoder = CLGeocoder()
     private var awaitingLocation = false
     private let locationButton = ActionButton(titleKey: "weather.use_current_location", style: .secondary)
+    private let locationRow = UIStackView()
 
     init(environment: AppEnvironment, onPick: @escaping (WeatherPlace) -> Void) {
         self.environment = environment
@@ -38,6 +39,7 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
         titleLabel.text = L10n.string("weather.choose_city")
         titleLabel.font = ThemeFont.heading()
         titleLabel.adjustsFontForContentSizeCategory = true
+        titleLabel.numberOfLines = 0
         titleLabel.textColor = ThemeColor.textPrimary
         titleLabel.accessibilityTraits.insert(.header)
         let topBar = UIStackView(arrangedSubviews: [backButton, titleLabel, UIView()])
@@ -67,6 +69,7 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
         statusLabel.adjustsFontForContentSizeCategory = true
         statusLabel.textColor = ThemeColor.textSecondary
         statusLabel.textAlignment = .center
+        statusLabel.numberOfLines = 0
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(statusLabel)
 
@@ -85,9 +88,9 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
         locationHelp.adjustsFontForContentSizeCategory = true
         locationHelp.textColor = ThemeColor.textSecondary
         locationHelp.numberOfLines = 0
-        let locationRow = UIStackView(arrangedSubviews: [locationButton, locationHelp])
-        locationRow.axis = .horizontal
-        locationRow.alignment = .center
+        locationRow.addArrangedSubview(locationButton)
+        locationRow.addArrangedSubview(locationHelp)
+        updateLocationLayout()
         locationRow.spacing = ThemeMetrics.space12
         locationRow.heightAnchor.constraint(
             greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
@@ -118,6 +121,7 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
             ),
             locationRow.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: ThemeMetrics.space8),
             locationRow.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+            locationRow.widthAnchor.constraint(equalTo: searchField.widthAnchor),
             locationRow.leadingAnchor.constraint(
                 greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor,
                 constant: ThemeMetrics.contentInset
@@ -140,6 +144,7 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
             fillWidth,
             statusLabel.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: ThemeMetrics.space8),
             statusLabel.centerXAnchor.constraint(equalTo: searchField.centerXAnchor),
+            statusLabel.widthAnchor.constraint(equalTo: searchField.widthAnchor),
             table.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: ThemeMetrics.space8),
             table.leadingAnchor.constraint(equalTo: searchField.leadingAnchor),
             table.trailingAnchor.constraint(equalTo: searchField.trailingAnchor),
@@ -149,6 +154,17 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
 
         locationManager.delegate = self
         enableKeyboardDismissal()
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        updateLocationLayout()
+    }
+
+    private func updateLocationLayout() {
+        let large = traitCollection.preferredContentSizeCategory.isAccessibilityCategory
+        locationRow.axis = large ? .vertical : .horizontal
+        locationRow.alignment = large ? .fill : .center
     }
 
     @objc private func handleUseCurrentLocation() {

@@ -17,6 +17,7 @@ object UpdateDownloader {
         expectedSize: Long,
         onProgress: (downloaded: Long, total: Long) -> Unit,
     ) {
+        DownloadIdentity.prepare(partFile, url, expectedSize)
         if (ResumeLogic.isComplete(partFile.length(), expectedSize)) {
             onProgress(partFile.length(), expectedSize)
             return

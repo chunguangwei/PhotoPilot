@@ -47,6 +47,7 @@ class SettingsView(context: Context) : ScrollView(context) {
     var onClearAll: (() -> Unit)? = null
     var onExportDiagnostics: (() -> Unit)? = null
     var onOpenAccessibilitySettings: (() -> Unit)? = null
+    var onPrivacyPolicy: (() -> Unit)? = null
     var onLicenses: (() -> Unit)? = null
     var onUpdate: (() -> Unit)? = null
     var onToggleWeatherDefault: ((Boolean) -> Unit)? = null
@@ -225,6 +226,7 @@ class SettingsView(context: Context) : ScrollView(context) {
             model.versionName,
         )
         addHelp(aboutGroup, R.string.settings_license_notice)
+        addActionRow(aboutGroup, R.string.settings_privacy_policy) { onPrivacyPolicy?.invoke() }
         addActionRow(aboutGroup, R.string.settings_licenses) { onLicenses?.invoke() }
         addActionRow(aboutGroup, R.string.settings_update) { onUpdate?.invoke() }
     }

@@ -14,11 +14,12 @@ final class NavItemButton: UIControl {
     private var labelHeight: NSLayoutConstraint?
 
     var requiredContentHeight: CGFloat {
-        let font = UIFontMetrics(forTextStyle: .subheadline).scaledFont(
-            for: UIFont.systemFont(ofSize: 15), compatibleWith: traitCollection
-        )
-        let labelHeight = font.lineHeight * (traitCollection.preferredContentSizeCategory.isAccessibilityCategory ? 2 : 1)
-        return max(NavChromeMetrics.bottomBarContentHeight, 28 + labelHeight + 14)
+        let width = bounds.width > 8 ? bounds.width - 8 : 80
+        let labelSize = titleLabel.sizeThatFits(CGSize(width: width, height: CGFloat.greatestFiniteMagnitude))
+        let chromeHeight = style == .rail
+            ? max(28, ceil(iconView.intrinsicContentSize.height)) + 3 * ThemeMetrics.space4
+            : 42
+        return max(NavChromeMetrics.bottomBarContentHeight, chromeHeight + ceil(labelSize.height))
     }
 
     override var isSelected: Bool {
@@ -58,7 +59,7 @@ final class NavItemButton: UIControl {
             content.spacing = ThemeMetrics.space4
             iconView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 24, weight: .regular)
             titleLabel.font = ThemeFont.caption()
-            titleLabel.numberOfLines = 2
+            titleLabel.numberOfLines = 0
             titleLabel.lineBreakMode = .byCharWrapping
             titleLabel.textAlignment = .center
             let height = titleLabel.heightAnchor.constraint(equalToConstant: requiredContentHeight - 42)
@@ -84,7 +85,16 @@ final class NavItemButton: UIControl {
             iconView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(font: ThemeFont.heading())
             titleLabel.font = ThemeFont.caption()
             titleLabel.textAlignment = .center
+            titleLabel.numberOfLines = 0
+            titleLabel.lineBreakMode = .byCharWrapping
+            let height = titleLabel.heightAnchor.constraint(equalToConstant: titleLabel.sizeThatFits(
+                CGSize(width: 80, height: CGFloat.greatestFiniteMagnitude)
+            ).height)
+            labelHeight = height
             NSLayoutConstraint.activate([
+                content.widthAnchor.constraint(equalTo: widthAnchor, constant: -8),
+                titleLabel.widthAnchor.constraint(equalTo: content.widthAnchor),
+                height,
                 indicator.leadingAnchor.constraint(equalTo: leadingAnchor),
                 indicator.topAnchor.constraint(equalTo: topAnchor),
                 indicator.bottomAnchor.constraint(equalTo: bottomAnchor),
@@ -99,6 +109,7 @@ final class NavItemButton: UIControl {
             content.spacing = ThemeMetrics.space12
             iconView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(font: ThemeFont.body())
             titleLabel.font = ThemeFont.body()
+            titleLabel.numberOfLines = 0
             NSLayoutConstraint.activate([
                 indicator.leadingAnchor.constraint(equalTo: leadingAnchor),
                 indicator.topAnchor.constraint(equalTo: topAnchor),
@@ -128,7 +139,14 @@ final class NavItemButton: UIControl {
     }
 
     override func layoutSubviews() {
-        if style == .bottomBar { labelHeight?.constant = requiredContentHeight - 42 }
+        if style == .bottomBar {
+            labelHeight?.constant = requiredContentHeight - 42
+        } else if style == .rail {
+            let width = bounds.width > 8 ? bounds.width - 8 : 80
+            labelHeight?.constant = ceil(titleLabel.sizeThatFits(
+                CGSize(width: width, height: CGFloat.greatestFiniteMagnitude)
+            ).height)
+        }
         super.layoutSubviews()
     }
 

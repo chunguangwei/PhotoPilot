@@ -45,5 +45,6 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 Third-party components / 第三方组件
 
 Third-party libraries included with this application remain under their own
-licenses (for example: AMSMB2 — MIT; Room — Apache-2.0; Kotlin — Apache-2.0;
+licenses (for example: AMSMB2 Swift sources — MIT; AMSMB2 with libsmb2 — LGPL-2.1;
+Room — Apache-2.0; Kotlin — Apache-2.0;
 SQLite — Public Domain). 本应用包含的第三方库仍适用各自的许可证。

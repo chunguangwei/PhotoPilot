@@ -13,6 +13,7 @@ import dev.photopilot.scaffold.data.logic.FramePlaybackSettings
 import dev.photopilot.scaffold.data.logic.PlaybackController
 import dev.photopilot.scaffold.data.logic.PlaybackEvent
 import dev.photopilot.scaffold.data.logic.HolidayTiming
+import dev.photopilot.scaffold.data.logic.PlaybackRestore
 import dev.photopilot.scaffold.data.logic.PlaybackTiming
 import dev.photopilot.scaffold.data.logic.QualityScale
 import dev.photopilot.scaffold.data.render.BitmapRenderer
@@ -88,6 +89,7 @@ class PlayerEngine(
     private var holidayPendingReturn: Pair<String, String>? = null
     private var lastHolidayPickId: String? = null
     private var pendingHolidayEnter: HolidayEnter? = null
+    private var holidayCheck: kotlinx.coroutines.Job? = null
 
     data class HolidayEnter(val ruleId: String, val frameId: String, val name: String)
 
@@ -101,6 +103,7 @@ class PlayerEngine(
     }
 
     private var useSnapshotOnRebuild = false
+    private var queueGeneration = 0L
 
     private val holdRunnable = Runnable {
         dispatch(
@@ -160,6 +163,7 @@ class PlayerEngine(
         stopped = true
         handler.removeCallbacksAndMessages(null)
         executor.shutdownNow()
+        holidayCheck?.cancel()
         if (clearSnapshot) {
             scope.launch(Dispatchers.IO) {
                 env.database.playbackSnapshotDao().getByFrame(frame.id)?.let {
@@ -192,7 +196,16 @@ class PlayerEngine(
                 val fresh = env.database.frameDao().getById(frame.id) ?: return@withContext false
                 fresh.selectionVersion == frame.selectionVersion
             }
-            dispatch(PlaybackEvent(type = "app_foreground", queueIntact = intact))
+            if (stopped) return@launch
+            if (state == PlaybackController.SUSPENDED && restActiveNow()) {
+                state = PlaybackController.RESTING
+                listener.onStateChanged(state)
+                updateKeepScreenOn()
+                if (!intact) rebuildQueue(safePoint = true, allowSnapshot = false, silent = true)
+            } else {
+                dispatch(PlaybackEvent(type = "app_foreground", queueIntact = intact))
+                checkRestWindow()
+            }
         }
     }
 
@@ -312,30 +325,50 @@ class PlayerEngine(
     }
 
     private fun rebuildQueue(safePoint: Boolean, allowSnapshot: Boolean, silent: Boolean = false) {
+        val generation = ++queueGeneration
         scope.launch {
-            val rebuilt = withContext(Dispatchers.IO) {
-                val fromSnapshot = if (allowSnapshot) loadSnapshotQueue() else null
-                fromSnapshot ?: env.frames.buildPlayQueue(frame.id)
+            val loaded = withContext(Dispatchers.IO) {
+                val live = env.frames.buildPlayQueue(frame.id)
+                val restored = if (allowSnapshot) loadSnapshotQueue(live) else null
+                val result = restored ?: PlaybackRestore.Result(live, 0, null)
+                result to env.database.assetDao().getByIds(result.queue).associateBy { it.id }
             }
-            if (stopped) return@launch
+            if (stopped || generation != queueGeneration) return@launch
             val anchor = if (safePoint) queue.getOrNull(index) else null
-            queue = rebuilt
+            queue = loaded.first.queue
+            assetsById = loaded.second
+            decodedNext = null
+            transitionTargetIndex = null
             listener.onQueueInfo(queue.size)
             if (queue.isEmpty()) {
-                dispatch(PlaybackEvent(type = "none_playable"))
+                decodedCurrent = null
+                listener.onClearTextures()
+                listener.onShowSafeImage()
+                if (state !in setOf(PlaybackController.RESTING, PlaybackController.PAUSED, PlaybackController.SUSPENDED)) {
+                    state = PlaybackController.EMPTY
+                }
+                listener.onStateChanged(state)
+                updateKeepScreenOn()
+                handler.removeCallbacks(holdRunnable)
                 return@launch
             }
-            index = anchor?.let { queue.indexOf(it).takeIf { pos -> pos >= 0 } }
-                ?: index.coerceIn(0, queue.size - 1).takeIf { safePoint }
-                ?: 0
-            assetsById = withContext(Dispatchers.IO) {
-                env.database.assetDao().getByIds(queue).associateBy { it.id }
+            index = if (safePoint) {
+                anchor?.let { queue.indexOf(it).takeIf { pos -> pos >= 0 } }
+                    ?: index.coerceIn(0, queue.size - 1)
+            } else {
+                remainingHoldMs = loaded.first.remainingHoldMs
+                loaded.first.index
+            }
+            if (state == PlaybackController.EMPTY) {
+                state = PlaybackController.PREPARING
+                listener.onStateChanged(state)
+                updateKeepScreenOn()
             }
             decodeAndShowFirst(silent)
         }
     }
 
-    private suspend fun loadSnapshotQueue(): List<String>? {
+    private suspend fun loadSnapshotQueue(live: List<String>): PlaybackRestore.Result? {
         val snapshot = env.database.playbackSnapshotDao().getByFrame(frame.id) ?: return null
         val fresh = env.database.frameDao().getById(frame.id) ?: return null
         if (snapshot.selectionVersion != fresh.selectionVersion) return null
@@ -343,10 +376,8 @@ class PlayerEngine(
         val cursor = dev.photopilot.scaffold.data.logic.JsonMini.parseObject(snapshot.cursorJson)
         val ids = (cursor["queue"] as? List<*>)?.mapNotNull { it as? String } ?: return null
         if (ids.isEmpty()) return null
-        val snapIndex = (cursor["index"] as? Double)?.toInt() ?: 0
-        remainingHoldMs = snapshot.remainingHoldMs.takeIf { it > 0L }
-        index = snapIndex.coerceIn(0, ids.size - 1)
-        return ids
+        val snapIndex = (cursor["index"] as? Number)?.toInt() ?: 0
+        return PlaybackRestore.resolve(live, ids, snapIndex, snapshot.remainingHoldMs)
     }
 
     private fun showVideoIfNeeded(asset: AssetEntity, silent: Boolean): Boolean {
@@ -523,9 +554,10 @@ class PlayerEngine(
     }
 
     private fun decodeAsset(assetId: String, callback: (DecodedAsset?) -> Unit) {
+        val generation = queueGeneration
         val asset = assetsById[assetId]
         if (asset == null) {
-            mainHandler.post { callback(null) }
+            mainHandler.post { if (!stopped && generation == queueGeneration) callback(null) }
             return
         }
         val file = File(originalsDir, asset.originalRelPath)
@@ -555,7 +587,7 @@ class PlayerEngine(
                 }
                 DecodedAsset(bitmap = it, blurred = blurred, edgeColor = edge)
             }
-            mainHandler.post { callback(decoded) }
+            mainHandler.post { if (!stopped && generation == queueGeneration) callback(decoded) }
         }
     }
 
@@ -610,7 +642,7 @@ class PlayerEngine(
     }
 
     private fun checkHolidayWindow() {
-        if (restActiveNow()) return
+        if (restActiveNow() || holidayCheck?.isActive == true) return
         val calendar = Calendar.getInstance()
         val date = String.format(
             java.util.Locale.US,
@@ -620,9 +652,11 @@ class PlayerEngine(
             calendar.get(Calendar.DAY_OF_MONTH),
         )
         val minute = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
-        scope.launch(Dispatchers.IO) {
+        holidayCheck = scope.launch {
             if (stopped) return@launch
-            val rules = env.database.holidayDao().getEnabled().map {
+            val rows = withContext(Dispatchers.IO) { env.database.holidayDao().getEnabled() }
+            if (stopped || restActiveNow()) return@launch
+            val rules = rows.map {
                 HolidayTiming.Rule(
                     id = it.id,
                     enabled = it.enabled,
@@ -652,7 +686,7 @@ class PlayerEngine(
                     val pending = holidayPendingReturn
                     holidayPendingReturn = null
                     if (pending != null) {
-                        mainHandler.post { onHolidayReturn?.invoke(pending.first, pending.second) }
+                        onHolidayReturn?.invoke(pending.first, pending.second)
                     }
                 }
             }
@@ -662,22 +696,21 @@ class PlayerEngine(
                 return@launch
             }
             if (picked.id in holidayEnterAnnounced) return@launch
-            val frameExists = env.database.frameDao().getById(picked.frameId) != null
-            val playable = frameExists &&
-                runCatching { env.frames.buildPlayQueue(picked.frameId).isNotEmpty() }.getOrDefault(false)
+            val playable = withContext(Dispatchers.IO) {
+                env.database.frameDao().getById(picked.frameId) != null &&
+                    runCatching { env.frames.buildPlayQueue(picked.frameId).isNotEmpty() }.getOrDefault(false)
+            }
+            if (stopped || restActiveNow()) return@launch
             if (!playable) {
                 if (picked.id !in holidayMissingAnnounced) {
                     holidayMissingAnnounced.add(picked.id)
-                    mainHandler.post { onHolidayMissing?.invoke(picked.id, picked.name) }
+                    onHolidayMissing?.invoke(picked.id, picked.name)
                 }
                 return@launch
             }
             holidayEnterAnnounced.add(picked.id)
-            mainHandler.post {
-                if (!stopped && lastHolidayPickId == picked.id) {
-                    pendingHolidayEnter = HolidayEnter(picked.id, picked.frameId, picked.name)
-                }
-            }
+            pendingHolidayEnter = HolidayEnter(picked.id, picked.frameId, picked.name)
+            if (queue.size <= 1 && state == PlaybackController.HOLDING) flushHolidayEnter()
         }
     }
 

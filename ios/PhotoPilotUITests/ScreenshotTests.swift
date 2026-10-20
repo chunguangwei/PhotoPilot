@@ -11,7 +11,53 @@ final class ScreenshotTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
+        XCUIDevice.shared.orientation = .portrait
         app = nil
+    }
+
+    func testPrivacyLicensesAndHolidayHours() throws {
+        app.terminate()
+        app.launchArguments += ["-uitest.onboarded"]
+        app.launch()
+        let skip = app.buttons["launch.skip"]
+        if skip.waitForExistence(timeout: 15) { skip.tap() }
+        let settings = app.buttons["Settings"].firstMatch
+        XCTAssertTrue(settings.waitForExistence(timeout: 20))
+        settings.tap()
+        let playback = app.buttons["Playback"].firstMatch
+        XCTAssertTrue(playback.waitForExistence(timeout: 5))
+        let holiday = app.buttons["settings.holiday.open"]
+        if !holiday.isHittable { playback.tap() }
+        for _ in 0..<6 where !holiday.isHittable { app.swipeUp() }
+        XCTAssertTrue(holiday.isHittable)
+        holiday.tap()
+        let add = app.buttons["Add rule"]
+        XCTAssertTrue(add.waitForExistence(timeout: 5))
+        add.tap()
+        let hours = app.switches["Daily hours (optional)"]
+        for _ in 0..<6 where !hours.isHittable { app.swipeUp() }
+        XCTAssertTrue(hours.isHittable)
+        hours.tap()
+        XCTAssertEqual(hours.value as? String, "1")
+        XCTAssertTrue(app.staticTexts["Start time"].exists)
+        capture("audit-holiday-hours-on")
+        hours.tap()
+        XCTAssertEqual(hours.value as? String, "0")
+        XCTAssertFalse(app.staticTexts["Start time"].exists)
+        app.buttons["Back"].firstMatch.tap()
+        app.buttons["Back"].firstMatch.tap()
+        let policy = app.buttons["Privacy Policy"]
+        for _ in 0..<10 where !policy.isHittable { app.swipeUp() }
+        XCTAssertTrue(policy.isHittable)
+        let licenses = app.buttons["Open source licenses"]
+        for _ in 0..<4 where !licenses.isHittable { app.swipeUp() }
+        XCTAssertTrue(licenses.isHittable)
+        capture("audit-privacy-entry")
+        licenses.tap()
+        let text = app.textViews.firstMatch
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        XCTAssertTrue((text.value as? String)?.contains("GNU LESSER GENERAL PUBLIC LICENSE") == true)
+        capture("audit-license-text")
     }
 
     func testCaptureSourcesLandscape() throws {

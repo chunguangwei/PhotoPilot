@@ -270,6 +270,9 @@ class PlayerView(
     }
 
     override fun onStateChanged(state: String) {
+        if (state == PlaybackController.RESTING || state == PlaybackController.EMPTY) {
+            safeOverlay.visibility = View.GONE
+        }
         emptyOverlay.visibility = if (state == PlaybackController.EMPTY) View.VISIBLE else View.GONE
         restingOverlay.visibility = if (state == PlaybackController.RESTING) View.VISIBLE else View.GONE
         if (state == PlaybackController.RESTING) {
@@ -434,6 +437,7 @@ class PlayerView(
         position: Int,
     ) {
         stopVideo()
+        safeOverlay.visibility = View.GONE
         currentAssetIndex = position
         applyFitBackground(decoded)
         val incoming = if (showingA) foregroundB else foregroundA
@@ -538,7 +542,11 @@ class PlayerView(
     }
 
     override fun onShowSafeImage() {
-        safeOverlay.visibility = View.VISIBLE
+        safeOverlay.visibility = if (engine?.currentState() in setOf(PlaybackController.RESTING, PlaybackController.EMPTY)) {
+            View.GONE
+        } else {
+            View.VISIBLE
+        }
     }
 
     override fun onQueueInfo(size: Int) {

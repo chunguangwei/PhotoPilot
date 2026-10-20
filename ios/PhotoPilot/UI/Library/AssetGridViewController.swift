@@ -19,6 +19,7 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
     private let layout = UICollectionViewFlowLayout()
     private var collectionView: UICollectionView?
     private let emptyView = UIStackView()
+    private let emptyScroll = UIScrollView()
 
     var selectionEnabled = false
     private(set) var selectedAssetIDs: Set<String> = []
@@ -144,6 +145,7 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         emptyTitleLabel.adjustsFontForContentSizeCategory = true
         emptyTitleLabel.textColor = ThemeColor.textPrimary
         emptyTitleLabel.textAlignment = .center
+        emptyTitleLabel.numberOfLines = 0
         emptyTitleLabel.accessibilityTraits.insert(.header)
 
         emptyBodyLabel.text = L10n.string("library.empty_body")
@@ -158,23 +160,42 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         emptyView.addArrangedSubview(emptyTitleLabel)
         emptyView.addArrangedSubview(emptyBodyLabel)
         emptyView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(emptyView)
+        emptyScroll.translatesAutoresizingMaskIntoConstraints = false
+        emptyScroll.addSubview(emptyView)
+        view.addSubview(emptyScroll)
+        let centered = emptyView.centerYAnchor.constraint(equalTo: emptyScroll.frameLayoutGuide.centerYAnchor)
+        centered.priority = .defaultLow
 
         NSLayoutConstraint.activate([
             root.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             root.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             root.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             root.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            emptyView.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
-            emptyView.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor),
+            emptyScroll.topAnchor.constraint(equalTo: grid.topAnchor),
+            emptyScroll.bottomAnchor.constraint(equalTo: grid.bottomAnchor),
+            emptyScroll.leadingAnchor.constraint(equalTo: grid.leadingAnchor),
+            emptyScroll.trailingAnchor.constraint(equalTo: grid.trailingAnchor),
+            emptyView.topAnchor.constraint(
+                greaterThanOrEqualTo: emptyScroll.contentLayoutGuide.topAnchor,
+                constant: ThemeMetrics.space8
+            ),
+            emptyView.bottomAnchor.constraint(
+                equalTo: emptyScroll.contentLayoutGuide.bottomAnchor,
+                constant: -ThemeMetrics.space8
+            ),
             emptyView.leadingAnchor.constraint(
-                greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor,
+                equalTo: emptyScroll.contentLayoutGuide.leadingAnchor,
                 constant: ThemeMetrics.contentInset
             ),
             emptyView.trailingAnchor.constraint(
-                lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor,
+                equalTo: emptyScroll.contentLayoutGuide.trailingAnchor,
                 constant: -ThemeMetrics.contentInset
             ),
+            emptyView.widthAnchor.constraint(
+                equalTo: emptyScroll.frameLayoutGuide.widthAnchor,
+                constant: -2 * ThemeMetrics.contentInset
+            ),
+            centered
         ])
 
         reload()
@@ -217,7 +238,7 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         emptyTitleLabel.text = L10n.string(emptyTitleKey ?? "library.empty_title")
         emptyBodyLabel.text = L10n.string(emptyBodyKey ?? "library.empty_body")
         emptyView.isHidden = !fetched.isEmpty
-        collectionView?.isHidden = fetched.isEmpty
+        emptyScroll.isHidden = !fetched.isEmpty
         columns = 0
         updateColumns()
         collectionView?.reloadData()

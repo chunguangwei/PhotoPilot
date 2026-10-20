@@ -365,7 +365,7 @@ final class FallbackWeatherProvider: WeatherProvider {
             do {
                 return try await provider.fetchCurrent(latE7: latE7, lonE7: lonE7)
             } catch {
-                weatherLog.warning("forecast provider \(String(describing: type(of: provider)), privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                weatherLog.warning("forecast provider \(String(describing: type(of: provider)), privacy: .public) failed code=\((error as NSError).code)")
                 lastError = error
             }
         }
@@ -379,7 +379,7 @@ final class FallbackWeatherProvider: WeatherProvider {
                 let results = try await provider.searchPlaces(query: query, language: language)
                 if !results.isEmpty { return results }
             } catch {
-                weatherLog.warning("search provider \(String(describing: type(of: provider)), privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                weatherLog.warning("search provider \(String(describing: type(of: provider)), privacy: .public) failed code=\((error as NSError).code)")
                 lastError = error
             }
         }

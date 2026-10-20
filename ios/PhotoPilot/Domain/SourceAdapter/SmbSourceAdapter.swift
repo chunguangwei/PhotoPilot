@@ -153,21 +153,21 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
         do {
             try await preferred.connectShare(name: share, encrypted: true)
             sessionEncrypted = true
-            smbLog.notice("connectShare encrypted ok share=\(share, privacy: .public)")
+            smbLog.notice("connectShare encrypted ok")
             return preferred
         } catch {
             sessionEncrypted = false
-            smbLog.notice("connectShare encrypted failed share=\(share, privacy: .public) error=\(String(describing: error), privacy: .public)")
+            smbLog.error("connectShare encrypted failed code=\((error as NSError).code)")
         }
         guard let fallback = makeManager() else {
             throw NasTransportError.unavailable
         }
         do {
             try await fallback.connectShare(name: share, encrypted: false)
-            smbLog.notice("connectShare plain ok share=\(share, privacy: .public)")
+            smbLog.notice("connectShare plain ok")
             return fallback
         } catch {
-            smbLog.error("connectShare plain failed share=\(share, privacy: .public) error=\(String(describing: error), privacy: .public)")
+            smbLog.error("connectShare plain failed code=\((error as NSError).code)")
             throw await Self.mapConnectError(error, host: config.host, port: config.port)
         }
     }
@@ -185,7 +185,7 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
             smbLog.notice("listShares ok count=\(shares.count)")
             return shares.map(\.name).sorted()
         } catch {
-            smbLog.error("listShares failed error=\(String(describing: error), privacy: .public)")
+            smbLog.error("listShares failed code=\((error as NSError).code)")
             throw await Self.mapConnectError(error, host: config.host, port: config.port)
         }
     }
@@ -198,7 +198,7 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
     }
 
     func enumerateAssets(cursor: String?) async throws -> SourceAssetPage {
-        smbLog.notice("enumerate start share=\(self.config.share, privacy: .public) dirs=\(self.directories.joined(separator: "|"), privacy: .public) cursor=\(cursor == nil ? "nil" : "yes", privacy: .public)")
+        smbLog.notice("enumerate start directoryCount=\(self.directories.count)")
         var state: WebDavSourceAdapter.EnumState
         if let cursor {
             state = WebDavSourceAdapter.decodeCursor(cursor)
@@ -244,9 +244,9 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
                     atPath: resolved.subpath.isEmpty ? "/" : resolved.subpath,
                     recursive: false
                 )
-                smbLog.notice("listdir share=\(resolved.share, privacy: .public) path=\(resolved.subpath, privacy: .public) entries=\(entries.count)")
+                smbLog.notice("listdir entries=\(entries.count)")
             } catch {
-                smbLog.error("listdir failed share=\(resolved.share, privacy: .public) path=\(resolved.subpath, privacy: .public) error=\(String(describing: error), privacy: .public)")
+                smbLog.error("listdir failed code=\((error as NSError).code)")
                 throw Self.mapError(error, phase: .read)
             }
             var subdirs: [String] = []
@@ -362,7 +362,7 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
             )
             try await client.downloadItem(atPath: resolved.subpath, to: fileURL) { _, _ in true }
         } catch {
-            smbLog.error("download failed remoteID=\(remoteID, privacy: .public) error=\(String(describing: error), privacy: .public)")
+            smbLog.error("download failed code=\((error as NSError).code)")
             throw Self.mapError(error, phase: .read)
         }
         let size = (try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
