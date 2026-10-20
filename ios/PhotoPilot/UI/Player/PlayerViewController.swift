@@ -286,6 +286,7 @@ final class PlayerViewController: UIViewController {
     private let weatherNoteLabel = UILabel()
     private var controlsPresented = false
     private var weatherTask: Task<Void, Never>?
+    private var weatherRenderGeneration = 0
     private let clockStack = UIStackView()
     private var clockConstraintsByPosition: [String: [NSLayoutConstraint]] = [:]
 
@@ -443,6 +444,7 @@ final class PlayerViewController: UIViewController {
             reloadBrightnessFromStore()
             checkRevocation()
             reloadMusicSettings()
+            startWeatherTask()
             dispatch(PlaybackEvent(type: "selection_changed"))
             return
         }
@@ -1576,12 +1578,16 @@ final class PlayerViewController: UIViewController {
     }
 
     private func refreshWeather(manual: Bool) async {
-        guard let place = await currentWeatherPlace() else { return }
+        updateWeather()
+        guard weatherGloballyEnabled, let place = await currentWeatherPlace(), !Task.isCancelled else { return }
         _ = await environment.weatherRefresher.refresh(place: place, manual: manual)
+        guard !Task.isCancelled else { return }
         updateWeather()
     }
 
     private func updateWeather() {
+        weatherRenderGeneration += 1
+        let generation = weatherRenderGeneration
         guard weatherGloballyEnabled else {
             weatherLabel.isHidden = true
             weatherNoteLabel.isHidden = true
@@ -1591,12 +1597,17 @@ final class PlayerViewController: UIViewController {
         Task { [weak self] in
             guard let self else { return }
             defer { updateRestWeather() }
-            guard let place = await currentWeatherPlace() else {
+            let selectedPlace = await currentWeatherPlace()
+            guard !Task.isCancelled, generation == weatherRenderGeneration,
+                  weatherGloballyEnabled else { return }
+            guard let place = selectedPlace else {
                 weatherLabel.isHidden = true
                 weatherNoteLabel.isHidden = true
                 return
             }
             let snapshot = try? await environment.weatherRepository.snapshot(placeId: place.placeId)
+            guard !Task.isCancelled, generation == weatherRenderGeneration,
+                  weatherGloballyEnabled else { return }
             guard let snapshot else {
                 weatherLabel.isHidden = true
                 weatherNoteLabel.text = L10n.string("weather.unavailable")
@@ -2116,6 +2127,7 @@ final class PlayerViewController: UIViewController {
     }
 
     private func stopPlaybackTasks() {
+        weatherRenderGeneration += 1
         holdTask?.cancel()
         transitionWatchdog?.cancel()
         workTask?.cancel()

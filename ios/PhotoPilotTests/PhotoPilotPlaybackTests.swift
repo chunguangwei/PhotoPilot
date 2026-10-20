@@ -6,6 +6,105 @@ import UIKit
 final class PhotoPilotPlaybackTests: XCTestCase {
 
     @MainActor
+    func testWeatherCacheAppearsWhileRefreshIsPending() async throws {
+        let provider = PendingPlaybackWeatherProvider()
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let environment = AppEnvironment(
+            persistence: PersistenceController(storeURL: directory.appendingPathComponent("library.db")),
+            weatherProvider: provider
+        )
+        try environment.settings.setValue("true", forKey: WeatherRepository.enabledKey)
+        try environment.settings.setValue("celsius", forKey: WeatherRepository.unitsKey)
+        let place = WeatherPlace(placeId: "test:weather", nameZh: "测试城市", nameEn: "Test City", latE7: 0, lonE7: 0, region: "")
+        try await environment.weatherRepository.savePlace(place, followLocation: false)
+        let now = Int(Date().timeIntervalSince1970 * 1000)
+        try await environment.weatherRepository.saveSnapshot(WeatherSnapshot(
+            placeId: place.placeId, conditionCode: "clear", temperatureMilli: 22_000,
+            observedAt: now - 40 * 60_000, fetchedAt: now - 40 * 60_000,
+            expiresAt: now + 20 * 60_000, attributionText: "Open-Meteo.com", attributionURL: "https://open-meteo.com/"
+        ))
+        let context = environment.persistence.container.viewContext
+        let request = NSFetchRequest<NSManagedObject>(entityName: "WeatherSnapshot")
+        request.predicate = NSPredicate(format: "place_id == %@", place.placeId)
+        let cached = try XCTUnwrap(context.fetch(request).first)
+        cached.setValue(NSNumber(value: now - 40 * 60_000), forKey: "fetched_at")
+        try context.save()
+        let frameID = try await environment.frameManager.createFrame(name: "Weather cache")
+        let player = PlayerViewController(environment: environment, frameID: frameID)
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 375, height: 667))
+        window.rootViewController = player
+        window.makeKeyAndVisible()
+        defer {
+            PlayerViewController.dismissActiveIfAny()
+            window.isHidden = true
+        }
+        for _ in 0..<100 {
+            if await provider.requestCount > 0 { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        let requests = await provider.requestCount
+        XCTAssertGreaterThan(requests, 0)
+        let label = try XCTUnwrap(Mirror(reflecting: player).children.first { $0.label == "weatherLabel" }?.value as? UILabel)
+        for _ in 0..<100 where label.isHidden {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertFalse(label.isHidden, "缓存展示不能等待未完成的天气请求")
+        XCTAssertTrue(label.attributedText?.string.contains("22") == true)
+        await provider.release()
+        for _ in 0..<100 where label.attributedText?.string.contains("28") != true {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertFalse(label.isHidden)
+        XCTAssertTrue(label.attributedText?.string.contains("28") == true, "新天气完成后应主动刷新")
+    }
+
+    @MainActor
+    func testWeatherRefreshKeepsCacheWarmAfterRequestingPlayerIsCancelled() async throws {
+        let provider = PendingPlaybackWeatherProvider()
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let environment = AppEnvironment(
+            persistence: PersistenceController(storeURL: directory.appendingPathComponent("library.db")),
+            weatherProvider: provider
+        )
+        let place = WeatherPlace(placeId: "test:weather", nameZh: "测试城市", nameEn: "Test City", latE7: 0, lonE7: 0, region: "")
+        let first = Task { await environment.weatherRefresher.refresh(place: place, manual: false) }
+        for _ in 0..<100 {
+            if await provider.requestCount > 0 { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        first.cancel()
+        await provider.release()
+        _ = await first.value
+        let snapshot = try await environment.weatherRepository.snapshot(placeId: place.placeId)
+        XCTAssertEqual(snapshot?.temperatureMilli, 28_000, "退出播放器不应丢弃已完成的共享天气刷新结果")
+    }
+
+    @MainActor
+    func testConcurrentWeatherRefreshesDoNotDuplicatePendingRequest() async throws {
+        let provider = PendingPlaybackWeatherProvider()
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let environment = AppEnvironment(
+            persistence: PersistenceController(storeURL: directory.appendingPathComponent("library.db")),
+            weatherProvider: provider
+        )
+        let place = WeatherPlace(placeId: "test:weather", nameZh: "测试城市", nameEn: "Test City", latE7: 0, lonE7: 0, region: "")
+        let first = Task { await environment.weatherRefresher.refresh(place: place, manual: false) }
+        for _ in 0..<100 {
+            if await provider.requestCount > 0 { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        let second = Task { await environment.weatherRefresher.refresh(place: place, manual: false) }
+        try await Task.sleep(nanoseconds: 100_000_000)
+        await provider.release()
+        let firstOutcome = await first.value
+        let secondOutcome = await second.value
+        XCTAssertEqual(firstOutcome, .updated)
+        XCTAssertEqual(secondOutcome, .updated)
+        let requests = await provider.requestCount
+        XCTAssertEqual(requests, 1)
+    }
+
+    @MainActor
     func testEmptyQueueClearsPreviouslyDisplayedPhotos() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let environment = AppEnvironment(
@@ -309,5 +408,34 @@ final class PhotoPilotPlaybackTests: XCTestCase {
         XCTAssertEqual("black", PlayerSettings.parse(
             json: String(decoding: data, as: UTF8.self)
         ).restDisplay)
+    }
+}
+
+private actor PendingPlaybackWeatherProvider: WeatherProvider {
+    private(set) var requestCount = 0
+    private var continuation: CheckedContinuation<WeatherSnapshot, Never>?
+    private var released = false
+
+    func fetchCurrent(latE7: Int, lonE7: Int) async throws -> WeatherSnapshot {
+        requestCount += 1
+        if released || requestCount > 1 { return snapshot() }
+        return await withCheckedContinuation { continuation = $0 }
+    }
+
+    func searchPlaces(query: String, language: String) async throws -> [WeatherPlaceCandidate] { [] }
+
+    func release() {
+        released = true
+        continuation?.resume(returning: snapshot())
+        continuation = nil
+    }
+
+    private func snapshot() -> WeatherSnapshot {
+        let now = Int(Date().timeIntervalSince1970 * 1000)
+        return WeatherSnapshot(
+            placeId: "test:weather", conditionCode: "clear", temperatureMilli: 28_000,
+            observedAt: now, fetchedAt: now, expiresAt: now + 60 * 60_000,
+            attributionText: "Open-Meteo.com", attributionURL: "https://open-meteo.com/"
+        )
     }
 }

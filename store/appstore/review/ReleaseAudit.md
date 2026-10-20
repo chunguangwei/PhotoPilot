@@ -49,3 +49,7 @@
 ## v1.1.47 分发收尾补记
 
 2026-10-20 发布前按双端 1.1.47 (47) 再次生成本地未签名 iOS Release 归档：`.build/appstore-audit/PhotoPilot-v1.1.47-unsigned.xcarchive`。隐私清单与完整许可文本仍与当前源文件一致。包含新增大字号侧栏高度/滚动修复；全量 131 项 XCTest 通过。GitHub 的 Android 签名 APK 分发不等于 iOS Distribution 验证或 App Store 提交；上述未完成事项保持。
+
+## v1.1.49 iOS 天气修复补记
+
+2026-10-20 本地未签名 Release 归档 `.build/appstore-audit/PhotoPilot-v1.1.49-unsigned.xcarchive` 成功；全量 134 项 XCTest 与 build/analyze 通过。天气改缓存先显及共享在途请求；日期 full 原已含星期。沿用旧开发签名的本地副本已覆盖安装到 iPhone 13 与 iPad Air 4，版本/启动/进程均验证。此为开发签名安装，尚未完成 Distribution Validate、最终商店截图或上列发布门控；未提交 App Store。

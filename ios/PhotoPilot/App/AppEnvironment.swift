@@ -27,7 +27,7 @@ final class AppEnvironment: @unchecked Sendable {
             .appendingPathComponent("originals", isDirectory: true)
     }
 
-    init(persistence: PersistenceController) {
+    init(persistence: PersistenceController, weatherProvider: (any WeatherProvider)? = nil) {
         self.persistence = persistence
         self.settings = AppSettingsRepository(container: persistence.container)
         self.sources = SourceRepository(container: persistence.container)
@@ -37,13 +37,13 @@ final class AppEnvironment: @unchecked Sendable {
         self.holidayStore = HolidayStore(controller: persistence)
         self.photoLibraryAdapter = PhotoLibrarySourceAdapter()
         self.weatherRepository = WeatherRepository(controller: persistence)
-        self.weatherProvider = FallbackWeatherProvider(
+        self.weatherProvider = weatherProvider ?? FallbackWeatherProvider(
             forecast: [OpenMeteoProvider(), WttrProvider()],
             search: [OpenMeteoProvider(), SystemGeocodingProvider()]
         )
         self.weatherRefresher = WeatherRefresher(
             repository: weatherRepository,
-            provider: weatherProvider
+            provider: self.weatherProvider
         )
     }
 
