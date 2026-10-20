@@ -70,4 +70,4 @@
 
 最终归档的开发签名副本已覆盖安装iPhone13，进程与库112资产/1相框/1来源保留验证通过；iPadAir4在初期52安装后掉线，最终审计包仍待连接安装。Android/Harmony4.3未接入真机，NAS/iCloud实际切网未验收。
 
-SMB锁定源码218文件经独立arm64重建通过、前后哈希不变；[源码交付与重建说明](SMBDistribution.md)提供公开交付地址与步骤，实际发布状态见16。此证据不关闭最终签名商店包替换/重链接、EULA及分发法律结论。正式团队/Distribution Validate、天气标签/供应商证据、审核NAS、定价地区与ASC表单仍未完成，未上传或提交App Store。
+SMB锁定源码218文件经独立arm64重建通过、前后哈希不变；[源码交付与重建说明](SMBDistribution.md)提供公开交付地址与步骤；v1.1.52 Release已公开源码tar与逐文件manifest，公开下载与本地哈希一致，证据见16。此证据不关闭最终签名商店包替换/重链接、EULA及分发法律结论。正式团队/Distribution Validate、天气标签/供应商证据、审核NAS、定价地区与ASC表单仍未完成，未上传或提交App Store。
