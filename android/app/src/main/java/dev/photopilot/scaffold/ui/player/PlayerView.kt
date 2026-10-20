@@ -887,8 +887,7 @@ class PlayerView(
         val accessibility = weatherA11yProvider?.invoke()
         weatherRow.render(place, text, accessibility)
         if (settings.restDisplay == FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER) {
-            if (text != null) restingWeatherRow.render(place, text, accessibility)
-            else restingWeatherRow.render(null, resources.getString(R.string.weather_disabled_notice), null)
+            restingWeatherRow.render(place, text, accessibility)
         } else {
             restingWeatherRow.render(null, null, null)
         }

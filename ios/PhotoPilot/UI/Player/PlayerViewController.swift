@@ -1425,20 +1425,8 @@ final class PlayerViewController: UIViewController {
             }
             guard let (placeName, text, conditionCode) = display else {
                 restWeatherLabel.setPlace("")
-                if !weatherGloballyEnabled {
-                    restWeatherLabel.text = L10n.string("weather.disabled_notice")
-                    restWeatherLabel.isHidden = false
-                    return
-                }
-                let place = await currentWeatherPlace()
-                guard settings.restDisplay == "clock_weather" else {
-                    restWeatherLabel.isHidden = true
-                    return
-                }
-                restWeatherLabel.text = place == nil
-                    ? L10n.string("weather.disabled_notice")
-                    : L10n.string("weather.unavailable")
-                restWeatherLabel.isHidden = false
+                restWeatherLabel.text = nil
+                restWeatherLabel.isHidden = true
                 return
             }
             restWeatherLabel.setPlace(placeName)
@@ -1617,8 +1605,7 @@ final class PlayerViewController: UIViewController {
                   weatherGloballyEnabled else { return }
             guard let snapshot else {
                 weatherLabel.isHidden = true
-                weatherNoteLabel.text = L10n.string("weather.unavailable")
-                weatherNoteLabel.isHidden = false
+                weatherNoteLabel.isHidden = true
                 return
             }
             let now = Int(Date().timeIntervalSince1970 * 1000)
@@ -1648,8 +1635,7 @@ final class PlayerViewController: UIViewController {
                 weatherNoteLabel.isHidden = false
             case .unavailable:
                 weatherLabel.isHidden = true
-                weatherNoteLabel.text = L10n.string("weather.unavailable")
-                weatherNoteLabel.isHidden = false
+                weatherNoteLabel.isHidden = true
             }
             weatherLabel.accessibilityLabel = FormatStrings.string(
                 "a11y.weather_overlay",

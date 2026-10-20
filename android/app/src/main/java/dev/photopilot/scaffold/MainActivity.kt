@@ -3125,7 +3125,7 @@ class MainActivity : Activity() {
                 if (snapshot == null || !WeatherLogic.weatherDataAllowed(snapshot.attribution) ||
                     segment == WeatherLogic.TtlSegment.EXPIRED
                 ) {
-                    Triple(getString(R.string.weather_unavailable), getString(R.string.weather_unavailable), null)
+                    Triple(null, null, null)
                 } else {
                     val imperial = env.settings.rawValue(WeatherLogic.KEY_UNITS) ==
                         WeatherLogic.UNITS_IMPERIAL
@@ -3146,7 +3146,7 @@ class MainActivity : Activity() {
                     val base = if (conditionText != null) "$temp · $conditionText" else temp
                     val withIcon = "${WeatherLogic.conditionIcon(snapshot.conditionCode)} $base"
                     val text = when (segment) {
-                        WeatherLogic.TtlSegment.EXPIRED -> getString(R.string.weather_unavailable)
+                        WeatherLogic.TtlSegment.EXPIRED -> null
                         WeatherLogic.TtlSegment.STALE ->
                             "$withIcon · ${getString(R.string.weather_delayed)}"
                         WeatherLogic.TtlSegment.FRESH -> withIcon
