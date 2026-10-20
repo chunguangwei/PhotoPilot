@@ -6,13 +6,41 @@ final class ScreenshotTests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = true
         app = XCUIApplication()
-        app.launchArguments += ["-AppleLanguages", "(en)", "-uitest.reset"]
+        app.launchArguments += ["-AppleLanguages", "(en)", "-dev.photopilot.appLanguage", "en", "-uitest.reset"]
         app.launch()
     }
 
     override func tearDownWithError() throws {
         XCUIDevice.shared.orientation = .portrait
         app = nil
+    }
+
+    func testLanguageSwitchPersistsAcrossSystemLanguageChange() throws {
+        app.terminate()
+        app.launchArguments = ["-AppleLanguages", "(en)", "-dev.photopilot.appLanguage", "en", "-uitest.reset", "-uitest.onboarded"]
+        app.launch()
+        if app.buttons["launch.skip"].waitForExistence(timeout: 15) { app.buttons["launch.skip"].tap() }
+        let settings = app.buttons["Settings"].firstMatch
+        XCTAssertTrue(settings.waitForExistence(timeout: 20))
+        settings.tap()
+        let chinese = app.buttons["简体中文"].firstMatch
+        if !chinese.exists || !chinese.isHittable { app.buttons["Language"].firstMatch.tap() }
+        XCTAssertTrue(chinese.waitForExistence(timeout: 5))
+        chinese.tap()
+        XCTAssertTrue(app.buttons["设置"].firstMatch.waitForExistence(timeout: 10))
+        let english = app.buttons["English"].firstMatch
+        if !english.exists || !english.isHittable { app.buttons["语言"].firstMatch.tap() }
+        XCTAssertTrue(english.waitForExistence(timeout: 5))
+        english.tap()
+        XCTAssertTrue(app.buttons["Settings"].firstMatch.waitForExistence(timeout: 10))
+        capture("audit-language-English")
+        app.terminate()
+        app.launchArguments = ["-AppleLanguages", "(zh-Hans)"]
+        app.launch()
+        if app.buttons["launch.skip"].waitForExistence(timeout: 15) { app.buttons["launch.skip"].tap() }
+        XCTAssertTrue(app.buttons["Settings"].firstMatch.waitForExistence(timeout: 20))
+        XCTAssertFalse(app.buttons["设置"].exists)
+        capture("audit-language-English-persisted")
     }
 
     func testPrivacyLicensesAndHolidayHours() throws {
@@ -63,7 +91,7 @@ final class ScreenshotTests: XCTestCase {
     func testCaptureSourcesLandscape() throws {
         app.terminate()
         let relaunched = XCUIApplication()
-        relaunched.launchArguments += ["-AppleLanguages", "(en)", "-uitest.reset", "-uitest.onboarded"]
+        relaunched.launchArguments += ["-AppleLanguages", "(en)", "-dev.photopilot.appLanguage", "en", "-uitest.reset", "-uitest.onboarded"]
         relaunched.launch()
         app = relaunched
         let skipButton = app.buttons["launch.skip"]

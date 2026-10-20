@@ -30,7 +30,7 @@ import java.util.concurrent.Executors
 class PlayerEngine(
     context: Context,
     private val env: AppEnvironment,
-    private val frame: FrameEntity,
+    private var frame: FrameEntity,
     private val listener: Listener,
     private val scope: CoroutineScope,
 ) {
@@ -141,8 +141,15 @@ class PlayerEngine(
 
     fun settings(): FramePlaybackSettings = settings
 
+    fun frameId(): String = frame.id
+
     fun reloadSettings(freshFrame: FrameEntity) {
+        if (freshFrame.id != frame.id || stopped) return
+        val orderChanged = freshFrame.orderMode != frame.orderMode
+        frame = freshFrame
         settings = FramePlaybackSettings.parse(freshFrame.settingsJson)
+        updateKeepScreenOn()
+        if (orderChanged) onExternalSelectionChanged()
     }
 
     fun start(fromSnapshot: Boolean) {

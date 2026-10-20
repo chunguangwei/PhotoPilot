@@ -6,16 +6,16 @@ This is a local preparation packet. It has not been submitted to App Review. Loc
 
 ## Suggested review notes
 
-PhotoPilot is an offline photo-frame app for iPhone and iPad. No PhotoPilot account, subscription, purchase, or sign-in is required.
+PhotoPilot is an offline photo-frame app for iPhone and iPad. No PhotoPilot account, subscription, in-app purchase, or sign-in is required.
 
 1. On launch, the brand presentation lasts up to six seconds. **Skip** is available immediately.
 2. **Take a look first** on the welcome screen opens a sample slideshow without requesting photo access. This preview does not import the samples into the library or exercise frame editing.
 3. To test the full workflow, save images from the attached `ReviewPhotos.zip` to Photos or Files. Choose **Choose photos → Photos on this device**, then use the Photos or Files option. With Photos, grant access to the test images; Files provides an alternative without granting access to the photo library.
 4. After import, choose what to display, select a few images, name and save the frame, configure playback, and start the slideshow. Importing images alone does not add them to a displayed frame.
 5. Tap the slideshow to reveal pause, previous/next, and exit controls. Playback settings include transition, image fitting, music and rest hours. Offline playback uses imported local copies.
-6. Weather is optional and initially off. In Settings, enable Weather and choose a city. Location permission is only needed for **Use current location**; choosing a city manually does not require it. Weather failure does not block local photo playback.
+6. Weather is optional and initially off. In Settings, enable Weather and choose a city. Location permission is only needed for **Use current location**; choosing a city manually does not require it. Weather failure does not block local photo playback. When no valid weather is available, the player and rest screen hide the weather row without an unavailable placeholder; still-valid cached weather remains visible.
 7. Settings → About provides the Privacy Policy and scrollable open-source license texts.
-8. NAS sources are optional connections to a server configured by the user. The app does not create an account or scan the LAN. WebDAV and SMB test access must be supplied separately as described below.
+8. Network downloads default to unmetered networks; a user can explicitly disable this restriction in Settings. Local files and already-downloaded photos remain available offline. NAS sources are optional connections to a server configured by the user. The app does not create an account or scan the LAN. WebDAV and SMB test access must be supplied separately as described below.
 
 ## Submission items still to prepare
 
@@ -26,3 +26,18 @@ PhotoPilot is an offline photo-frame app for iPhone and iPad. No PhotoPilot acco
 - Resolve the dependency-distribution and weather-privacy items in `10-合规与上架材料.md` before submitting.
 
 Supporting a review does not require access to the developer's household NAS, personal photo library or personal account.
+
+## Submission worksheet (1.1.52 preparation)
+
+- Bundle ID currently `dev.photopilot.scaffold`; final owning distribution team and Bundle ID decision remain unconfirmed. Development installation is not App Store signing.
+- Native UI languages: English and Simplified Chinese. Traditional Chinese store copy is a listing localization only.
+- Proposed primary category: Photo & Video; no PhotoPilot login, advertising, purchases or public user-content sharing in this build. Pricing remains a user decision.
+- Privacy/support URLs and contact are in the repository README and policy. Verify their final published versions before submission.
+- Age-rating questionnaire: answer from the actual private/local photo-frame features, not arbitrary customer photo content; do not predeclare Apple's resulting age rating.
+- Export compliance: include SMB's non-system cryptographic implementations in the assessment; the archive does not predeclare an encryption exemption.
+- Availability: exclude mainland China as already decided; exact other territories and EU DSA status still need account-level completion.
+- NAS review access must be supplied privately: protocol, externally reachable host, port, share/path, scoped username/password, validity period, six non-private photos and expected import result. No production/household NAS access is needed. Keep the environment available throughout review.
+- Source delivery/rebuild evidence: [SMB distribution record](SMBDistribution.md). The remaining legal/distribution decision is not marked complete.
+- Weather data-flow worksheet: the app's own photo data stays on device; manual city search sends query/language to Open-Meteo geocoding, forecast sends rounded coordinates to Open-Meteo and optional wttr.in fallback. These services see connection IPs. Apple's system geocoder receives original system location or fallback search input. Open-Meteo logs may contain coordinates and remain for 90 days; wttr.in retention/use evidence is still incomplete. Final collected-data categories, linkage, retention and disclosures remain blocked on that evidence. Empty manifest collection arrays cannot settle the App Privacy answers.
+
+These are prepared inputs, not evidence that App Store Connect fields have been submitted or accepted.

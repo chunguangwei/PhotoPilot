@@ -62,3 +62,26 @@ The user approved single-row place+temperature on all platforms, with wide/narro
 - [x] Updated16/design; commit ccb18bc and tag v1.1.51 pushed, Latest published with APK+SHA256SUMS. Authenticated+anonymous latest both51/HTTP200, server digest/size and public download HTTP200 verified.
 
 v1.1.51 actual: iOS153/153, Android379/379; all required build/analyze/lint/Release checks passed; paired devices50→51 install/launch/process and matching DB aggregates verified. 320AX and short-landscape native screenshots inspected. Android native runtime UI unavailable.
+
+
+## 2026-10-21 续轮：无天气静默隐藏发布与商店准备
+
+用户授权：发布此前已实现的隐藏调整，覆盖升级两台现有真机、更新既有 GitHub，再准备 App Store 剩余工作；不执行商店上传/提交。
+
+1. 双端升至 1.1.52(52)，重生成工程，验证检查、iOS build/analyze/测试与 Release 归档、Android build/lint/test 与同证书签名 APK。
+2. 沿用旧开发签名及钥匙串权限，两台真机安装前后只读核验数据库汇总，覆盖升级、版本/启动/进程确认，不卸载或重置。
+3. 提交、tag、既有 GitHub Release/Latest，校验资产 SHA-256 与匿名更新入口。
+4. 更新最终版本商店截图及审核操作材料，补分发许可源码交付/重构建操作证据、天气隐私实际数据流和 ASC 表单准备；外部服务/团队/许可判断不能伪报已完成。
+5. 主线程回填16、复核遗留；定价、SMB范围、审核NAS信息缺口已异步向用户询问，等待期间推进独立工作。
+
+证据与执行进度归档 `.build/releases/v1.1.52/`、`.build/device-install-v1.1.52/` 和 `.build/appstore-audit/`；既有主线已获发布授权，延续原工作区执行，避免生成额外闲置分支或重复方案文件。
+
+### 同轮用户追加：鸿蒙 4.3.0 语言失效与全量检查
+
+- Android旧系统语言/外观兼容、英文界面语言选项误标；iOS同步验证切换与冷启持久化。
+- 已确证并修复中的设置问题：Android重复打开旧实体、顺序队列与暂停常亮；iOS统一时钟/日期/位置/音乐设置应用及设置页天气迟到回写。日期保留系统地区（01 §10.1），不把地区格式误判为语言失效。
+- 网络/存储：双端Wi-Fi偏好接线、可恢复暂停/重试、NAS失败状态、防止清缓存删除任务/分享暂存；未设置Wi-Fi值按PRD默认开启、已有false不改。
+- 新增兼容recreate必须同时核验旧runner退出/新runner恢复的生命周期边界，不能出现两个runner处理同一任务。
+- 本轮初次1.1.52装机已做但未公开发布；最终代码变化后必须重归档/重装/复核，再GitHub发布。此前截图/测试失败保留，不写成最终通过。
+
+未接入统计服务的“分享使用统计”开关从双端现行设置页收起，避免保存后没有实际作用的控件；保留既有数据键及词条，不引入统计SDK或外发。

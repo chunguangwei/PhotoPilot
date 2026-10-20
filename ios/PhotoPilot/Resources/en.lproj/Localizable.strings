@@ -190,7 +190,7 @@
 "import.cancel_keeps_imported" = "Photos already imported will be kept.";
 "import.cancel_and_delete" = "Cancel and delete this batch";
 "import.waiting_network" = "Waiting for network";
-"import.waiting_wifi" = "Waiting for Wi-Fi";
+"import.waiting_wifi" = "Waiting for an unmetered network";
 "import.use_cellular" = "Download over cellular";
 "import.waiting_space" = "Waiting for storage";
 "import.needs_auth" = "Allow access again to continue importing";
@@ -401,7 +401,7 @@
 "settings.appearance_dark" = "Dark";
 "settings.language" = "Language";
 "settings.language_system" = "Match system";
-"settings.language_zh" = "English";
+"settings.language_zh" = "简体中文";
 "settings.language_en" = "English";
 "settings.language_system_note" = "System dialogs use your device’s language settings.";
 "settings.accessibility" = "Accessibility";
@@ -414,7 +414,7 @@
 "settings.storage_low_title" = "Storage is low";
 "settings.storage_threshold" = "Reserved free space";
 "settings.network" = "Network and syncing";
-"settings.wifi_only" = "Download over Wi-Fi only";
+"settings.wifi_only" = "Download only on unmetered networks";
 "settings.auto_play" = "Start playing when the app opens";
 "settings.background_note" = "The system may delay background syncing. You may need to wake the device after it locks.";
 "settings.rest_window" = "Rest hours";
@@ -455,7 +455,7 @@
 "error.perm_photos_denied.body" = "PhotoPilot doesn’t have access to your photos.";
 "error.net_offline.body" = "You’re offline. Downloaded photos keep playing.";
 "error.net_timeout.body" = "The connection timed out.";
-"error.net_metered_not_allowed.body" = "Downloads happen over Wi-Fi only right now.";
+"error.net_metered_not_allowed.body" = "Downloads are currently allowed only on unmetered networks.";
 "error.net_rate_limited.body" = "Too many requests. PhotoPilot will retry shortly.";
 "error.tls_untrusted_cert.body" = "The server’s certificate couldn’t be verified.";
 "error.tls_hostname_mismatch.body" = "The certificate doesn’t match this address.";

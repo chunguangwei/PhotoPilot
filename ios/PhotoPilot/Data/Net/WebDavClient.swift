@@ -132,11 +132,13 @@ final class WebDavClient: @unchecked Sendable {
     }
 
     private let config: Config
+    private let networkPolicy: NasNetworkPolicy?
     private let session: URLSession
     private let tlsPolicy: NasTlsPolicy?
 
-    init(config: Config, session: URLSession, tlsPolicy: NasTlsPolicy? = nil) {
+    init(config: Config, session: URLSession, tlsPolicy: NasTlsPolicy? = nil, networkPolicy: NasNetworkPolicy? = nil) {
         self.config = config
+        self.networkPolicy = networkPolicy
         self.session = session
         self.tlsPolicy = tlsPolicy
     }
@@ -193,7 +195,9 @@ final class WebDavClient: @unchecked Sendable {
                 throw NasTransportError.cleartextBlocked
             }
         }
+        try networkPolicy?.check()
         var request = URLRequest(url: url)
+        request.allowsExpensiveNetworkAccess = !(networkPolicy?.wifiOnly ?? false)
         request.httpMethod = method
         for (key, value) in headers {
             request.setValue(value, forHTTPHeaderField: key)
@@ -217,6 +221,7 @@ final class WebDavClient: @unchecked Sendable {
             }
             return (data, http)
         } catch let error as URLError {
+            if error.code == .cancelled { throw error }
             throw map(urlError: error, url: request.url)
         }
     }
@@ -229,6 +234,7 @@ final class WebDavClient: @unchecked Sendable {
             }
             return (tempURL, http)
         } catch let error as URLError {
+            if error.code == .cancelled { throw error }
             throw map(urlError: error, url: request.url)
         }
     }

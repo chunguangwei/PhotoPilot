@@ -1,0 +1,147 @@
+{
+  "version": "1.1.52",
+  "build": 52,
+  "configuration": "Release simulator; not Distribution-signed App Store build",
+  "nativeLanguages": [
+    "en",
+    "zh-Hans"
+  ],
+  "testEvidence": {
+    "iphone": {
+      "totalTestCount": 6,
+      "passedTests": 6,
+      "failedTests": 0,
+      "result": "Passed"
+    },
+    "ipad": {
+      "totalTestCount": 6,
+      "passedTests": 6,
+      "failedTests": 0,
+      "result": "Passed"
+    }
+  },
+  "screenshots": [
+    {
+      "file": "store/appstore/iphone-6.9/01-home.png",
+      "sha256": "89cd6c6908ea6439c7c2cc00b17cd44022970f70230da0fcf423d67e845d3f15",
+      "pixels": [
+        1320,
+        2868
+      ],
+      "exifOrientation": 1,
+      "sourceAttachment": "3CC91A8E-4E15-4208-AE4E-114576BA090E.png",
+      "sourceResult": ".build/appstore-audit/ui-v1.1.52-iphone-final.xcresult"
+    },
+    {
+      "file": "store/appstore/iphone-6.9/02-player.png",
+      "sha256": "b5c95558d976b485a612530df955486e197fc286de0b7b5e5c91b1714787f704",
+      "pixels": [
+        1320,
+        2868
+      ],
+      "exifOrientation": 1,
+      "sourceAttachment": "A6F76943-4D71-4C27-B10D-670ADF3D5E6D.png",
+      "sourceResult": ".build/appstore-audit/ui-v1.1.52-iphone-final.xcresult"
+    },
+    {
+      "file": "store/appstore/iphone-6.9/03-playback-settings.png",
+      "sha256": "a322ea6043f41bc594824c47c5a82aaf04195fd2a8e265f3732c8f3ee05485de",
+      "pixels": [
+        1320,
+        2868
+      ],
+      "exifOrientation": 1,
+      "sourceAttachment": "0F2CC87C-FC1F-425F-9773-9747E5981CD7.png",
+      "sourceResult": ".build/appstore-audit/ui-v1.1.52-iphone-final.xcresult"
+    },
+    {
+      "file": "store/appstore/iphone-6.9/04-music-picker.png",
+      "sha256": "84ada6461cbe6accc74305b167635357cdbed187d3d9aea05c061feafc3bfc78",
+      "pixels": [
+        1320,
+        2868
+      ],
+      "exifOrientation": 1,
+      "sourceAttachment": "F32F1DD8-0DA1-44D0-A6CE-90296EEFE3F1.png",
+      "sourceResult": ".build/appstore-audit/ui-v1.1.52-iphone-final.xcresult"
+    },
+    {
+      "file": "store/appstore/iphone-6.9/05-sources.png",
+      "sha256": "2427b54b9634a99b2dfe71d133f3ef2c0df8eb3781c1fdfc3f93035391d52a60",
+      "pixels": [
+        1320,
+        2868
+      ],
+      "exifOrientation": 1,
+      "sourceAttachment": "9011C195-92F2-460F-B589-453195A0D11C.png",
+      "sourceResult": ".build/appstore-audit/ui-v1.1.52-iphone-final.xcresult"
+    },
+    {
+      "file": "store/appstore/ipad-13/01-home.png",
+      "sha256": "f23009c35909d4f4e4f9854fe81e17bafc8f35e0f58e841d6b559cdeab2f3cb4",
+      "pixels": [
+        2064,
+        2752
+      ],
+      "exifOrientation": 1,
+      "sourceAttachment": "19855F35-407E-4C66-9C08-9EE0BF68191C.png",
+      "sourceResult": ".build/appstore-audit/ui-v1.1.52-ipad-final.xcresult"
+    },
+    {
+      "file": "store/appstore/ipad-13/02-player.png",
+      "sha256": "47084608cc175be279787040010323048870aa65433ede4d31d041f808eb4d61",
+      "pixels": [
+        2064,
+        2752
+      ],
+      "exifOrientation": 1,
+      "sourceAttachment": "375FBB5F-42F6-4394-8AB5-D627911DDE67.png",
+      "sourceResult": ".build/appstore-audit/ui-v1.1.52-ipad-final.xcresult"
+    },
+    {
+      "file": "store/appstore/ipad-13/03-playback-settings.png",
+      "sha256": "714ad3a33f11da7dc0c8bd636ba8cb47da4270263781bc6e04543de4eec5d848",
+      "pixels": [
+        2064,
+        2752
+      ],
+      "exifOrientation": 1,
+      "sourceAttachment": "8FCE3141-B3EF-47CA-B5CD-223373CB7CAB.png",
+      "sourceResult": ".build/appstore-audit/ui-v1.1.52-ipad-final.xcresult"
+    },
+    {
+      "file": "store/appstore/ipad-13/04-music-picker.png",
+      "sha256": "f86e0f485b48c4f92967f0cb18a5bf1150f1d75e5c0aa104ecca41d5fb3a9e1f",
+      "pixels": [
+        2064,
+        2752
+      ],
+      "exifOrientation": 1,
+      "sourceAttachment": "6441BE44-A76D-4E75-83D4-8FC6BD3951CA.png",
+      "sourceResult": ".build/appstore-audit/ui-v1.1.52-ipad-final.xcresult"
+    },
+    {
+      "file": "store/appstore/ipad-13/05-sources.png",
+      "sha256": "305f5e10ed39c1824aad289dc73106bf9904423f720b6544d71d8e50224391cb",
+      "pixels": [
+        2064,
+        2752
+      ],
+      "exifOrientation": 1,
+      "sourceAttachment": "BFBCF987-6BC3-4F13-B681-6898FD318B76.png",
+      "sourceResult": ".build/appstore-audit/ui-v1.1.52-ipad-final.xcresult"
+    },
+    {
+      "file": "store/appstore/ipad-13/06-sources-landscape.png",
+      "sha256": "20b906d7abe7b00420e24be5c97bff18ef7fa99b74828e121a0bc08a649e7255",
+      "pixels": [
+        2752,
+        2064
+      ],
+      "exifOrientation": 1,
+      "sourceAttachment": "8E5AF4F0-E06A-4FB2-8D9D-3E7B72A252E9.png",
+      "sourceResult": ".build/appstore-audit/ui-v1.1.52-ipad-final.xcresult"
+    }
+  ],
+  "selectionNote": "Landscape sources screenshot replaces the editor capture, whose simulator library also contained OS-provided sample images outside this project asset provenance."
+}

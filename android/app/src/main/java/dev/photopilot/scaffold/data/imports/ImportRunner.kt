@@ -18,12 +18,14 @@ import dev.photopilot.scaffold.data.logic.VideoProbe
 import dev.photopilot.scaffold.data.net.SmbClient
 import dev.photopilot.scaffold.data.net.WebDavClient
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.FileNotFoundException
@@ -33,6 +35,7 @@ class ImportRunner(
     private val db: PhotoPilotDatabase,
     private val coordinator: ImportCoordinator,
     private val adapterResolver: suspend (String) -> SourceAdapter,
+    private val networkAllowed: () -> Boolean = { true },
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
@@ -41,6 +44,25 @@ class ImportRunner(
     private var driveTask: Job? = null
     private var activeJobId: String? = null
     private var activeJobHandle: Job? = null
+
+    private var networkWatcher: Job? = null
+    private val networkPausedJobs = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    init {
+        networkWatcher = scope.launch {
+            while (true) {
+                delay(1_000)
+                if (networkAllowed()) {
+                    networkPausedJobs.toList().forEach { id ->
+                        if (db.importJobDao().getById(id)?.state == ImportJobState.PAUSED_AUTO) {
+                            resume(id)
+                        }
+                        networkPausedJobs.remove(id)
+                    }
+                }
+            }
+        }
+    }
 
     var activeDriverListener: ((Int) -> Unit)? = null
 
@@ -146,7 +168,21 @@ class ImportRunner(
         }
     }
 
+    suspend fun shutdownAndJoin() {
+        scope.coroutineContext[Job]?.cancelAndJoin()
+        networkPausedJobs.clear()
+        queueMutex.withLock {
+            pendingJobIds.clear()
+            activeJobId = null
+            activeJobHandle = null
+            driveTask = null
+            notifyActiveDrivers()
+        }
+    }
+
     fun stopAll() {
+        networkWatcher?.cancel()
+        networkPausedJobs.clear()
         scope.launch {
             queueMutex.withLock {
                 pendingJobIds.clear()
@@ -214,8 +250,27 @@ class ImportRunner(
 
     private suspend fun drive(jobId: String) {
         try {
-            val adapter = adapterResolver(jobId)
             val job = db.importJobDao().getById(jobId) ?: return
+            val source = db.sourceDao().getById(job.sourceId) ?: return
+            val remote = source.type == SourceType.WEBDAV || source.type == SourceType.SMB
+            val rawAdapter = adapterResolver(jobId)
+            val adapter = if (!remote) rawAdapter else object : SourceAdapter by rawAdapter {
+                override suspend fun enumerate(scopeJson: String, cursor: String?): EnumerationPage {
+                    if (!networkAllowed()) throw NasNetworkBlockedException()
+                    return try {
+                        rawAdapter.enumerate(scopeJson, cursor).also {
+                            if (!networkAllowed()) throw NasNetworkBlockedException()
+                        }
+                    } catch (failure: Exception) {
+                        if (!networkAllowed()) throw NasNetworkBlockedException()
+                        throw failure
+                    }
+                }
+                override fun openAsset(remoteKey: String): java.io.InputStream {
+                    if (!networkAllowed()) throw NasNetworkBlockedException()
+                    return NasNetworkPolicy.guardedStream(rawAdapter.openAsset(remoteKey), networkAllowed)
+                }
+            }
             if (job.cursor != ImportCoordinator.CURSOR_DONE) {
                 coordinator.enumerate(jobId, adapter)
                 finalizeNasSync(jobId)
@@ -223,9 +278,19 @@ class ImportRunner(
             while (true) {
                 val current = db.importJobDao().getById(jobId) ?: return
                 if (current.state in DRIVING_STOP_STATES) return
-                val item = nextItem(jobId) ?: return
+                val item = nextItem(jobId)
+                if (item == null) {
+                    val retryAt = db.importItemDao().getByJob(jobId)
+                        .filter { it.state == ImportItemState.FAILED }
+                        .mapNotNull { it.retryAt }.minOrNull() ?: return
+                    delay((retryAt - System.currentTimeMillis()).coerceIn(1L, 1_000L))
+                    continue
+                }
                 processOne(item, adapter)
             }
+        } catch (blocked: NasNetworkBlockedException) {
+            coordinator.signal(jobId, ImportJobAggregate.Signal.AUTO_PAUSE)
+            networkPausedJobs.add(jobId)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Throwable) {
@@ -238,8 +303,10 @@ class ImportRunner(
             it.state == ImportItemState.QUEUED
         }
         if (queued != null) return queued
-        return db.importItemDao().dueForRetry(System.currentTimeMillis())
-            .firstOrNull { it.jobId == jobId }
+        val due = db.importItemDao().dueForRetry(System.currentTimeMillis())
+            .firstOrNull { it.jobId == jobId } ?: return null
+        db.importItemDao().transition(due.id, ImportItemState.QUEUED, null, null, System.currentTimeMillis())
+        return db.importItemDao().getByJob(jobId).firstOrNull { it.id == due.id }
     }
 
     private suspend fun processOne(item: ImportItemEntity, adapter: SourceAdapter) {
@@ -250,12 +317,18 @@ class ImportRunner(
         }
         val metadata = try {
             resolveMetadata(adapter, sourceAsset)
+        } catch (blocked: NasNetworkBlockedException) {
+            throw blocked
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (failure: Throwable) {
             failQuietly(item.id, errorCodeOf(failure), isRetryable(failure))
             return
         }
         try {
             coordinator.processItem(item.id, adapter, metadata)
+        } catch (blocked: NasNetworkBlockedException) {
+            throw blocked
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Throwable) {

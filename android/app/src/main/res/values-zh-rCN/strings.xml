@@ -210,7 +210,7 @@
     <string name="import.cancel_keeps_imported">已导入的照片会保留。</string>
     <string name="import.cancel_and_delete">取消并删除本批已导入</string>
     <string name="import.waiting_network">等待网络</string>
-    <string name="import.waiting_wifi">等待 Wi-Fi</string>
+    <string name="import.waiting_wifi">等待非计费网络</string>
     <string name="import.use_cellular">使用蜂窝数据下载</string>
     <string name="import.waiting_space">等待可用空间</string>
     <string name="import.needs_auth">请重新授权以继续导入</string>
@@ -449,7 +449,7 @@
     <string name="settings.storage_low_title">空间不足</string>
     <string name="settings.storage_threshold">保留可用空间</string>
     <string name="settings.network">网络与同步</string>
-    <string name="settings.wifi_only">仅在 Wi-Fi 下下载</string>
+    <string name="settings.wifi_only">仅在非计费网络下载</string>
     <string name="settings.auto_play">打开应用时自动播放</string>
     <string name="settings.background_note">系统可能延迟后台同步；锁屏后可能需要手动唤醒设备。</string>
     <string name="settings.rest_window">休息时段</string>
@@ -504,7 +504,7 @@
     <string name="error.perm_photos_denied.body">没有照片访问权限。</string>
     <string name="error.net_offline.body">网络已断开。已下载的照片仍会继续播放。</string>
     <string name="error.net_timeout.body">连接超时。</string>
-    <string name="error.net_metered_not_allowed.body">当前仅在 Wi-Fi 下下载。</string>
+    <string name="error.net_metered_not_allowed.body">当前仅允许在非计费网络下载。</string>
     <string name="error.net_rate_limited.body">请求过于频繁，稍后会自动重试。</string>
     <string name="error.tls_untrusted_cert.body">服务器证书无法验证。</string>
     <string name="error.tls_hostname_mismatch.body">证书与该地址不匹配。</string>

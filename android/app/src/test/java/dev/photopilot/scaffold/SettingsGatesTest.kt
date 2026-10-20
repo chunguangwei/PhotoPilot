@@ -10,17 +10,28 @@ import org.junit.Test
 class SettingsGatesTest {
 
     @Test
-    fun appearanceGateRequiresApi31() {
-        assertFalse(SystemFeatureGates.canApplyAppearance(29))
-        assertFalse(SystemFeatureGates.canApplyAppearance(30))
+    fun appearanceWorksOnEverySupportedAndroidVersion() {
+        assertTrue(SystemFeatureGates.canApplyAppearance(29))
+        assertTrue(SystemFeatureGates.canApplyAppearance(30))
         assertTrue(SystemFeatureGates.canApplyAppearance(31))
         assertTrue(SystemFeatureGates.canApplyAppearance(36))
     }
 
     @Test
-    fun languageGateRequiresApi33() {
-        assertFalse(SystemFeatureGates.canApplyLanguage(32))
+    fun languageWorksOnEverySupportedAndroidVersion() {
+        assertTrue(SystemFeatureGates.canApplyLanguage(29))
+        assertTrue(SystemFeatureGates.canApplyLanguage(32))
         assertTrue(SystemFeatureGates.canApplyLanguage(33))
+    }
+
+    @Test
+    fun legacyPreferencesRecreateOnlyWhenTheirEffectiveSelectionChanges() {
+        assertTrue(SystemFeatureGates.needsPreferenceRecreation(29, "system", "dark", "zh", "zh"))
+        assertTrue(SystemFeatureGates.needsPreferenceRecreation(32, "dark", "dark", "zh", "en"))
+        assertTrue(SystemFeatureGates.needsPreferenceRecreation(32, "dark", "dark", "en", "system"))
+        assertFalse(SystemFeatureGates.needsPreferenceRecreation(29, "dark", "dark", "en", "en"))
+        assertFalse(SystemFeatureGates.needsPreferenceRecreation(31, "system", "dark", "en", "en"))
+        assertFalse(SystemFeatureGates.needsPreferenceRecreation(33, "system", "dark", "zh", "en"))
     }
 
     @Test

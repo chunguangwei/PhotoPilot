@@ -217,7 +217,7 @@
     <string name="import.cancel_keeps_imported">Photos already imported will be kept.</string>
     <string name="import.cancel_and_delete">Cancel and delete this batch</string>
     <string name="import.waiting_network">Waiting for network</string>
-    <string name="import.waiting_wifi">Waiting for Wi-Fi</string>
+    <string name="import.waiting_wifi">Waiting for an unmetered network</string>
     <string name="import.use_cellular">Download over cellular</string>
     <string name="import.waiting_space">Waiting for storage</string>
     <string name="import.needs_auth">Allow access again to continue importing</string>
@@ -448,7 +448,7 @@
     <string name="settings.appearance_dark">Dark</string>
     <string name="settings.language">Language</string>
     <string name="settings.language_system">Match system</string>
-    <string name="settings.language_zh">English</string>
+    <string name="settings.language_zh">简体中文</string>
     <string name="settings.language_en">English</string>
     <string name="settings.language_system_note">System dialogs use your device’s language settings.</string>
     <string name="settings.accessibility">Accessibility</string>
@@ -461,7 +461,7 @@
     <string name="settings.storage_low_title">Storage is low</string>
     <string name="settings.storage_threshold">Reserved free space</string>
     <string name="settings.network">Network and syncing</string>
-    <string name="settings.wifi_only">Download over Wi-Fi only</string>
+    <string name="settings.wifi_only">Download only on unmetered networks</string>
     <string name="settings.auto_play">Start playing when the app opens</string>
     <string name="settings.background_note">The system may delay background syncing. You may need to wake the device after it locks.</string>
     <string name="settings.rest_window">Rest hours</string>
@@ -516,7 +516,7 @@
     <string name="error.perm_photos_denied.body">PhotoPilot doesn’t have access to your photos.</string>
     <string name="error.net_offline.body">You’re offline. Downloaded photos keep playing.</string>
     <string name="error.net_timeout.body">The connection timed out.</string>
-    <string name="error.net_metered_not_allowed.body">Downloads happen over Wi-Fi only right now.</string>
+    <string name="error.net_metered_not_allowed.body">Downloads are currently allowed only on unmetered networks.</string>
     <string name="error.net_rate_limited.body">Too many requests. PhotoPilot will retry shortly.</string>
     <string name="error.tls_untrusted_cert.body">The server’s certificate couldn’t be verified.</string>
     <string name="error.tls_hostname_mismatch.body">The certificate doesn’t match this address.</string>

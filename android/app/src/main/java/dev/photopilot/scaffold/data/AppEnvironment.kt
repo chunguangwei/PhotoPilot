@@ -87,6 +87,46 @@ class AppEnvironment private constructor(
 
     companion object {
 
+        private val processScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO)
+        @Volatile private var processOwner: ProcessResourceOwner<AppEnvironment>? = null
+
+        private fun owner(context: Context): ProcessResourceOwner<AppEnvironment> =
+            processOwner ?: synchronized(this) {
+                processOwner ?: run {
+                    val appContext = context.applicationContext
+                    var database: PhotoPilotDatabase? = null
+                    ProcessResourceOwner(processScope) {
+                        val db = database ?: dev.photopilot.scaffold.data.db.DatabaseFactory.builder(appContext).build()
+                            .also { database = it }
+                        val environment = create(appContext, db)
+                        try {
+                            environment.runner.markInterruptedJobsRecoverable()
+                            environment.deletedSweeper.sweepExpired(System.currentTimeMillis())
+                            environment.runner.resumeInterruptedJobs()
+                            environment
+                        } catch (failure: Throwable) {
+                            environment.runner.shutdownAndJoin()
+                            throw failure
+                        }
+                    }.also { processOwner = it }
+                }
+            }
+
+        suspend fun shared(context: Context): AppEnvironment = owner(context).get()
+
+        suspend fun clearAllAndReset(context: Context): AppEnvironment {
+            val appContext = context.applicationContext
+            return owner(appContext).reset { environment ->
+                environment.runner.shutdownAndJoin()
+                File(appContext.filesDir, "originals").deleteRecursively()
+                File(appContext.filesDir, "credentials").deleteRecursively()
+                File(appContext.cacheDir, "picked").deleteRecursively()
+                File(appContext.cacheDir, "import-tmp").deleteRecursively()
+                File(appContext.cacheDir, "diagnostics").deleteRecursively()
+                environment.database.clearAllTables()
+            }
+        }
+
         internal fun newNasTlsPolicy(tofuPins: TofuPinStore): NasTlsPolicy = NasTlsPolicy(
             pinLookup = { key -> runBlocking { tofuPins.pinFor(key) } },
             cleartextHosts = { runBlocking { tofuPins.cleartextHosts() } },
@@ -195,6 +235,18 @@ class AppEnvironment private constructor(
                     database,
                     coordinator,
                     adapterResolver,
+                    networkAllowed = {
+                        val manager = appContext.getSystemService(android.net.ConnectivityManager::class.java)
+                        val capabilities = manager.getNetworkCapabilities(manager.activeNetwork)
+                        val wifiOnly = kotlinx.coroutines.runBlocking {
+                            appSettings.isWifiOnly()
+                        }
+                        dev.photopilot.scaffold.data.imports.NasNetworkPolicy.allows(
+                            capabilities != null,
+                            capabilities?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED) == true,
+                            wifiOnly,
+                        )
+                    },
                 ).apply {
                     activeDriverListener = { count ->
                         if (count > 0) {

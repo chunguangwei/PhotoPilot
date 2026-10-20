@@ -25,6 +25,7 @@ final class SettingsViewController: UIViewController {
     private let weatherErrorLabel = UILabel()
     private lazy var weatherRetryButton = ActionButton(titleKey: "common.retry", style: .secondary)
     private var weatherPlace: WeatherPlace?
+    private var weatherRefreshGeneration = 0
 
     init(environment: AppEnvironment) {
         self.environment = environment
@@ -256,7 +257,6 @@ final class SettingsViewController: UIViewController {
             titleKey: "settings.privacy",
             rows: [
                 makeNote(key: "settings.privacy_summary"),
-                makeSwitchRow(labelKey: "settings.share_statistics", toggle: shareStatisticsSwitch, action: #selector(handleShareStatistics)),
             ]
         ))
 
@@ -354,7 +354,7 @@ final class SettingsViewController: UIViewController {
                 .firstIndex(of: appearance) ?? 0
             wifiOnlySwitch.isOn = (try? environment.settings.value(
                 forKey: AppSettingsRepository.wifiOnlyKey
-            )) == "true"
+            )) != "false"
             autoPlaySwitch.isOn = (try? environment.settings.value(
                 forKey: AppSettingsRepository.playbackAutoPlayKey
             )) != "false"
@@ -483,6 +483,8 @@ final class SettingsViewController: UIViewController {
     }
 
     private func refreshWeatherLine(manual: Bool) async {
+        weatherRefreshGeneration += 1
+        let generation = weatherRefreshGeneration
         weatherErrorLabel.isHidden = true
         weatherErrorLabel.textColor = ThemeColor.statusError
         weatherErrorLabel.text = L10n.string("weather.unavailable")
@@ -492,7 +494,11 @@ final class SettingsViewController: UIViewController {
             return
         }
         let outcome = await environment.weatherRefresher.refresh(place: place, manual: manual)
+        guard generation == weatherRefreshGeneration,
+              weatherEnabledSwitch.isOn, weatherPlace?.placeId == place.placeId else { return }
         let snapshot = try? await environment.weatherRepository.snapshot(placeId: place.placeId)
+        guard generation == weatherRefreshGeneration,
+              weatherEnabledSwitch.isOn, weatherPlace?.placeId == place.placeId else { return }
         let now = Int(Date().timeIntervalSince1970 * 1000)
         let freshness = snapshot.map {
             WeatherRepository.freshness(observedAtMillis: $0.observedAt, nowMillis: now)

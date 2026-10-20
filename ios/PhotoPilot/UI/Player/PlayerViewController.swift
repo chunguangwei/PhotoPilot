@@ -247,8 +247,7 @@ final class PlayerViewController: UIViewController {
     private var holidayTask: Task<Void, Never>?
     private var frameChangeTask: Task<Void, Never>?
     private var foregroundTask: Task<Void, Never>?
-    private var brightnessTask: Task<Void, Never>?
-    private var musicSettingsTask: Task<Void, Never>?
+    private var settingsReloadTask: Task<Void, Never>?
     private var holidayNoticeTask: Task<Void, Never>?
 
     private let backgroundView = UIImageView()
@@ -287,6 +286,7 @@ final class PlayerViewController: UIViewController {
     private var controlsPresented = false
     private var weatherTask: Task<Void, Never>?
     private var weatherRenderGeneration = 0
+    private var restWeatherRenderGeneration = 0
     private let clockStack = UIStackView()
     private var clockConstraintsByPosition: [String: [NSLayoutConstraint]] = [:]
 
@@ -446,9 +446,8 @@ final class PlayerViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         guard controllerState == PlaybackController.idle else {
-            reloadBrightnessFromStore()
+            reloadPlaybackSettingsFromStore()
             checkRevocation()
-            reloadMusicSettings()
             startWeatherTask()
             dispatch(PlaybackEvent(type: "selection_changed"))
             return
@@ -467,6 +466,7 @@ final class PlayerViewController: UIViewController {
             pendingSnapshot = try? await environment.frameManager.playbackSnapshot(frameID: frameID)
             guard !Task.isCancelled else { return }
             updateClockVisibility()
+            updateClock()
             startWeatherTask()
             if restActiveNow(), !skipRestOnce {
                 controllerState = PlaybackController.resting
@@ -1412,6 +1412,9 @@ final class PlayerViewController: UIViewController {
     }
 
     private func updateRestWeather() {
+        restWeatherRenderGeneration += 1
+        let generation = restWeatherRenderGeneration
+        let weatherGeneration = weatherRenderGeneration
         guard settings.restDisplay == "clock_weather" else {
             restWeatherLabel.isHidden = true
             return
@@ -1419,13 +1422,23 @@ final class PlayerViewController: UIViewController {
         Task { [weak self] in
             guard let self else { return }
             let display = await currentWeatherDisplay()
-            guard settings.restDisplay == "clock_weather" else {
+            guard !Task.isCancelled, generation == restWeatherRenderGeneration,
+                  weatherGeneration == weatherRenderGeneration else { return }
+            guard settings.restDisplay == "clock_weather", weatherGloballyEnabled else {
                 restWeatherLabel.isHidden = true
                 return
             }
-            guard let (placeName, text, conditionCode) = display else {
+            guard let (placeID, placeName, text, conditionCode) = display else {
                 restWeatherLabel.setPlace("")
                 restWeatherLabel.text = nil
+                restWeatherLabel.isHidden = true
+                return
+            }
+            let selectedID = await currentWeatherPlace()?.placeId
+            guard !Task.isCancelled, generation == restWeatherRenderGeneration,
+                  weatherGeneration == weatherRenderGeneration else { return }
+            guard selectedID == placeID, weatherGloballyEnabled,
+                  settings.restDisplay == "clock_weather" else {
                 restWeatherLabel.isHidden = true
                 return
             }
@@ -1439,7 +1452,7 @@ final class PlayerViewController: UIViewController {
         }
     }
 
-    private func currentWeatherDisplay() async -> (String, String, String)? {
+    private func currentWeatherDisplay() async -> (String, String, String, String)? {
         guard weatherGloballyEnabled else { return nil }
         guard let place = await currentWeatherPlace() else { return nil }
         guard let snapshot = try? await environment.weatherRepository.snapshot(placeId: place.placeId)
@@ -1455,7 +1468,7 @@ final class PlayerViewController: UIViewController {
         let condition = conditionText(for: snapshot.conditionCode)
         let placeName = place.compactName(chinese: AppLanguage.preferChinese)
         let weatherText = condition.map { "\(temperature) \($0)" } ?? temperature
-        return (placeName, weatherText, snapshot.conditionCode)
+        return (place.placeId, placeName, weatherText, snapshot.conditionCode)
     }
 
     private func currentTimeText(_ date: Date) -> String {
@@ -1493,32 +1506,6 @@ final class PlayerViewController: UIViewController {
             musicPlayer.resume()
         } else {
             startMusicIfNeeded()
-        }
-    }
-
-    private func reloadMusicSettings() {
-        musicSettingsTask?.cancel()
-        let requestedFrameID = frameID
-        musicSettingsTask = Task { [weak self] in
-            guard let self,
-                  let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: frameID)
-            else { return }
-            guard !Task.isCancelled, frameID == requestedFrameID else { return }
-            let updated = PlayerSettings.parse(json: bundle.settingsJSON)
-            guard updated.music != settings.music else {
-                if controllerState == PlaybackController.holding
-                    || controllerState == PlaybackController.transitioning {
-                    resumeOrStartMusic()
-                }
-                return
-            }
-            settings.music = updated.music
-            switch controllerState {
-            case PlaybackController.paused, PlaybackController.resting:
-                musicPlayer.stop()
-            default:
-                startMusicIfNeeded()
-            }
         }
     }
 
@@ -1748,16 +1735,32 @@ final class PlayerViewController: UIViewController {
         UIScreen.main.brightness = CGFloat(min(max(brightness, 0), 1))
     }
 
-    func reloadBrightnessFromStore() {
-        brightnessTask?.cancel()
+    func reloadPlaybackSettingsFromStore() {
+        settingsReloadTask?.cancel()
         let requestedFrameID = frameID
-        brightnessTask = Task { [weak self] in
+        settingsReloadTask = Task { [weak self] in
             guard let self,
                   let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: frameID) else { return }
             guard !Task.isCancelled, frameID == requestedFrameID else { return }
-            settings = PlayerSettings.parse(json: bundle.settingsJSON)
+            let updated = PlayerSettings.parse(json: bundle.settingsJSON)
+            let musicChanged = updated.music != settings.music
+            settings = updated
             applyBrightness()
+            updateClockVisibility()
+            updateClock()
             updateStateChrome()
+            if musicChanged {
+                if controllerState == PlaybackController.paused
+                    || controllerState == PlaybackController.resting
+                    || controllerState == PlaybackController.suspended {
+                    musicPlayer.stop()
+                } else {
+                    startMusicIfNeeded()
+                }
+            } else if controllerState == PlaybackController.holding
+                || controllerState == PlaybackController.transitioning {
+                resumeOrStartMusic()
+            }
         }
     }
 
@@ -2141,8 +2144,7 @@ final class PlayerViewController: UIViewController {
         controlsHideTask?.cancel()
         frameChangeTask?.cancel()
         foregroundTask?.cancel()
-        brightnessTask?.cancel()
-        musicSettingsTask?.cancel()
+        settingsReloadTask?.cancel()
         restClockTask?.cancel()
     }
 
@@ -2157,8 +2159,7 @@ final class PlayerViewController: UIViewController {
 
     @objc private func handleBackground() {
         foregroundTask?.cancel()
-        brightnessTask?.cancel()
-        musicSettingsTask?.cancel()
+        settingsReloadTask?.cancel()
         musicPlayingBeforeBackground = musicPlayer.isPlaying
         musicPlayer.stop()
         videoPlayingBeforeBackground = videoPlayer != nil && videoPlayer?.rate != 0

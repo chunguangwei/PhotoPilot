@@ -61,3 +61,13 @@
 ## v1.1.51 同行排版补记
 
 2026-10-20 双端版本 1.1.51(51)，仅变更播放/休息的地点与温度同行和宽窄屏布局，全球地点/坐标/天气服务逻辑未改。iOS 最终 Release archive、build/analyze 与153项 XCTest 通过，Android379项测试及签名构建通过；iPhone13/iPadAir4 开发签名覆盖安装与启动/库汇总核验完成。隐私清单仍与源文件一致；前述 Distribution/截图/全球网络真机QA等商店门控未关闭，未上传商店。
+
+## v1.1.52 全量审计与商店准备补记
+
+2026-10-21 最终本地未签名归档 `.build/appstore-audit/PhotoPilot-v1.1.52-submit-prep-unsigned.xcarchive` 成功。实读版本1.1.52(52)、dev.photopilot.scaffold、最低iOS15、SDK iphoneos27.1、设备族1/2；隐私清单四类理由与完整ThirdPartyNotices均与源文件逐字节一致。en/zh-Hans资源含正确语言选项与非计费网络说明。
+
+最终iOS166项、Android387项测试通过，双端构建/静态检查与Android签名Release通过。Release模拟器iPhone与iPad各6项UI回归通过，11张商店截图已更新并目检；[截图证据](ScreenshotEvidence.json)记录文件哈希、像素与xcresult来源。横屏改用来源页真实2752×2064像素，移除含未核权OS图库样片的编辑页素材；不是合成App界面。模拟器素材不等于Distribution或真机完整验收。
+
+最终归档的开发签名副本已覆盖安装iPhone13，进程与库112资产/1相框/1来源保留验证通过；iPadAir4在初期52安装后掉线，最终审计包仍待连接安装。Android/Harmony4.3未接入真机，NAS/iCloud实际切网未验收。
+
+SMB锁定源码218文件经独立arm64重建通过、前后哈希不变；[源码交付与重建说明](SMBDistribution.md)提供公开交付地址与步骤，实际发布状态见16。此证据不关闭最终签名商店包替换/重链接、EULA及分发法律结论。正式团队/Distribution Validate、天气标签/供应商证据、审核NAS、定价地区与ASC表单仍未完成，未上传或提交App Store。

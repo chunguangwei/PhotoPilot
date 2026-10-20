@@ -47,6 +47,8 @@ See [LICENSE](LICENSE).
 
 第三方组件保留各自许可：SMBJ / Room / Kotlin（Apache-2.0）、slf4j-api / mbassador（MIT）、Bouncy Castle（Bouncy Castle License）、SQLite（Public Domain）、AMSMB2（MIT）、libsmb2（LGPL-2.1，动态链接）；天气数据由 Open-Meteo 提供（CC-BY 4.0）。
 
+SMB 锁定源码、下载与独立重建记录见 [SMB 分发材料](store/appstore/review/SMBDistribution.md)。该记录不代表 App Store 分发许可已完成确认。
+
 ## 隐私政策 / Privacy Policy
 
 见根目录 [PRIVACY.md](PRIVACY.md)（中英双语）。核心承诺：照片只在本机处理，不上传、无广告、不需要账号。

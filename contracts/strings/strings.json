@@ -1500,8 +1500,8 @@
       "key": "import.waiting_wifi",
       "section": "4.6 导入任务（S08）",
       "platform": "all",
-      "zh": "等待 Wi-Fi",
-      "en": "Waiting for Wi-Fi"
+      "zh": "等待非计费网络",
+      "en": "Waiting for an unmetered network"
     },
     {
       "key": "import.use_cellular",
@@ -3099,7 +3099,7 @@
       "section": "9. 设置（S15、S17）",
       "platform": "all",
       "zh": "简体中文",
-      "en": "English"
+      "en": "简体中文"
     },
     {
       "key": "settings.language_en",
@@ -3192,8 +3192,8 @@
       "key": "settings.wifi_only",
       "section": "9. 设置（S15、S17）",
       "platform": "all",
-      "zh": "仅在 Wi-Fi 下下载",
-      "en": "Download over Wi-Fi only"
+      "zh": "仅在非计费网络下载",
+      "en": "Download only on unmetered networks"
     },
     {
       "key": "settings.auto_play",
@@ -3589,8 +3589,8 @@
       "key": "error.net_metered_not_allowed.body",
       "section": "10. 错误码文案",
       "platform": "all",
-      "zh": "当前仅在 Wi-Fi 下下载。",
-      "en": "Downloads happen over Wi-Fi only right now."
+      "zh": "当前仅允许在非计费网络下载。",
+      "en": "Downloads are currently allowed only on unmetered networks."
     },
     {
       "key": "error.net_rate_limited.body",

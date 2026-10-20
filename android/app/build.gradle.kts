@@ -48,8 +48,14 @@ android {
         applicationId = "dev.photopilot.scaffold"
         minSdk = 29
         targetSdk = 36
-        versionCode = 51
-        versionName = "1.1.51"
+        versionCode = 52
+        versionName = "1.1.52"
+    }
+
+    bundle {
+        language {
+            enableSplit = false
+        }
     }
 
     signingConfigs {

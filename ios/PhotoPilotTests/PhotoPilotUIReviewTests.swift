@@ -4,6 +4,18 @@ import UIKit
 
 @MainActor
 final class PhotoPilotUIReviewTests: XCTestCase {
+    func testLanguageChoicesRemainDistinctInBothUILanguages() {
+        let previous = AppLanguage.overrideValue
+        defer { AppLanguage.configure(value: previous) }
+        for language in [AppLanguage.zhValue, AppLanguage.enValue] {
+            AppLanguage.configure(value: language)
+            let titles = AppLanguage.values.map { AppLanguage.titleValue(for: $0) }
+            XCTAssertEqual(Set(titles).count, titles.count)
+            XCTAssertEqual(AppLanguage.titleValue(for: AppLanguage.zhValue), "简体中文")
+            XCTAssertEqual(AppLanguage.titleValue(for: AppLanguage.enValue), "English")
+        }
+    }
+
     func testEmptyGridKeepsCloseButtonHittable() async throws {
         let controller = AssetGridViewController(
             environment: makeEnvironment(), headerTitle: "Empty folder", showsCloseButton: true
@@ -402,6 +414,100 @@ final class PhotoPilotUIReviewTests: XCTestCase {
         try? image.pngData()?.write(to: directory.appendingPathComponent(name + ".png"))
     }
 
+    func testPlaybackSettingsReloadUpdatesOverlayVisibilityAndPosition() async throws {
+        let environment = makeEnvironment()
+        let frameID = try await environment.frameManager.createFrame(name: "Settings reload")
+        let controller = PlayerViewController(environment: environment, frameID: frameID)
+        controller.loadViewIfNeeded()
+        controller.controllerState = PlaybackController.paused
+        defer {
+            _ = controller.perform(NSSelectorFromString("handleExit"))
+            controller.viewDidDisappear(false)
+        }
+        try await environment.frameManager.updateSettingsJSON(
+            frameID: frameID,
+            settingsJSON: "{\"clock\":{\"enabled\":false,\"position\":\"top_trailing\"},\"date\":{\"enabled\":false}}"
+        )
+        controller.reloadPlaybackSettingsFromStore()
+        let task = try XCTUnwrap(Mirror(reflecting: controller).children.first { $0.label == "settingsReloadTask" }?.value as? Task<Void, Never>)
+        await task.value
+        let values = Mirror(reflecting: controller).children
+        let clock = try XCTUnwrap(values.first { $0.label == "clockLabel" }?.value as? UILabel)
+        let date = try XCTUnwrap(values.first { $0.label == "dateLabel" }?.value as? UILabel)
+        XCTAssertTrue(clock.isHidden)
+        XCTAssertTrue(date.isHidden)
+        XCTAssertEqual(clock.textAlignment, .right)
+    }
+
+    func testPlaybackSettingsReloadReplacesAndStopsExistingMusic() async throws {
+        let environment = makeEnvironment()
+        let frameID = try await environment.frameManager.createFrame(name: "Music reload")
+        let controller = PlayerViewController(environment: environment, frameID: frameID)
+        controller.loadViewIfNeeded()
+        controller.controllerState = PlaybackController.holding
+        defer {
+            _ = controller.perform(NSSelectorFromString("handleExit"))
+            controller.viewDidDisappear(false)
+        }
+        let music = try XCTUnwrap(Mirror(reflecting: controller).children.first { $0.label == "musicPlayer" }?.value as? MusicPlayer)
+        let first = try XCTUnwrap(MusicCatalog.tracks.first)
+        let second = try XCTUnwrap(MusicCatalog.tracks.dropFirst().first)
+        music.start(url: try XCTUnwrap(MusicCatalog.builtinURL(trackId: first.id)))
+        for trackID in [second.id, ""] {
+            let json = trackID.isEmpty
+                ? "{\"music\":{\"enabled\":false}}"
+                : "{\"music\":{\"enabled\":true,\"source\":\"builtin\",\"trackId\":\"\(trackID)\"}}"
+            try await environment.frameManager.updateSettingsJSON(frameID: frameID, settingsJSON: json)
+            controller.reloadPlaybackSettingsFromStore()
+            let task = try XCTUnwrap(Mirror(reflecting: controller).children.first { $0.label == "settingsReloadTask" }?.value as? Task<Void, Never>)
+            await task.value
+            let actualURL = Mirror(reflecting: music).children.first { $0.label == "url" }?.value as? URL
+            if trackID.isEmpty {
+                XCTAssertFalse(music.hasPlayableContent)
+                XCTAssertNil(actualURL)
+            } else {
+                XCTAssertEqual(actualURL, MusicCatalog.builtinURL(trackId: trackID))
+            }
+        }
+    }
+
+    func testSettingsWeatherDoesNotReappearWhenDisabledDuringRefresh() async throws {
+        let provider = DelayedSettingsWeatherProvider()
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let environment = AppEnvironment(
+            persistence: PersistenceController(storeURL: directory.appendingPathComponent("library.db")),
+            weatherProvider: provider
+        )
+        try await environment.weatherRepository.savePlace(WeatherPlace(
+            placeId: "settings-test", nameZh: "北京", nameEn: "Beijing", latE7: 1, lonE7: 2, region: ""
+        ))
+        try environment.settings.setValue("true", forKey: WeatherRepository.enabledKey)
+        let controller = SettingsViewController(environment: environment)
+        controller.loadViewIfNeeded()
+        controller.viewWillAppear(false)
+        for _ in 0..<100 {
+            if await provider.hasRequest { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        let requested = await provider.hasRequest
+        XCTAssertTrue(requested)
+        let values = Mirror(reflecting: controller).children
+        let toggle = try XCTUnwrap(values.first { $0.label == "weatherEnabledSwitch" }?.value as? UISwitch)
+        let observed = try XCTUnwrap(values.first { $0.label == "weatherObservedLabel" }?.value as? UILabel)
+        toggle.isOn = false
+        toggle.sendActions(for: .valueChanged)
+        try await Task.sleep(nanoseconds: 20_000_000)
+        await provider.finish()
+        for _ in 0..<100 {
+            if try await environment.weatherRepository.snapshot(placeId: "settings-test") != nil { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        try await Task.sleep(nanoseconds: 100_000_000)
+        XCTAssertTrue(observed.isHidden)
+        let attribution = try XCTUnwrap(values.first { $0.label == "weatherAttributionLabel" }?.value as? UILabel)
+        XCTAssertTrue(attribution.isHidden)
+    }
+
     private func makeEnvironment() -> AppEnvironment {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         return AppEnvironment(persistence: PersistenceController(storeURL: directory.appendingPathComponent("library.db")))
@@ -436,4 +542,26 @@ final class PhotoPilotUIReviewTests: XCTestCase {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try? image.pngData()?.write(to: directory.appendingPathComponent(name + ".png"))
     }
+}
+
+private actor DelayedSettingsWeatherProvider: WeatherProvider {
+    private var continuation: CheckedContinuation<WeatherSnapshot, Error>?
+
+    var hasRequest: Bool { continuation != nil }
+
+    func fetchCurrent(latE7: Int, lonE7: Int) async throws -> WeatherSnapshot {
+        try await withCheckedThrowingContinuation { continuation = $0 }
+    }
+
+    func finish() {
+        let now = Int(Date().timeIntervalSince1970 * 1000)
+        continuation?.resume(returning: WeatherSnapshot(
+            placeId: "", conditionCode: "clear", temperatureMilli: 20_000,
+            observedAt: now, fetchedAt: now, expiresAt: now + 3_600_000,
+            attributionText: "test", attributionURL: nil
+        ))
+        continuation = nil
+    }
+
+    func searchPlaces(query: String, language: String) async throws -> [WeatherPlaceCandidate] { [] }
 }

@@ -11,10 +11,12 @@ enum PhotoLibraryAccess: String, Sendable {
 final class PhotoLibrarySourceAdapter: SourceAdapter {
     static let fingerprint = "ios.photolibrary.images:v1"
 
+    private let networkPolicy: (any ImportNetworkPolicy)?
     private let pageSize: Int
     private let tempDirectory: URL
 
-    init(pageSize: Int = 100, tempDirectory: URL? = nil) {
+    init(pageSize: Int = 100, tempDirectory: URL? = nil, networkPolicy: (any ImportNetworkPolicy)? = nil) {
+        self.networkPolicy = networkPolicy
         self.pageSize = pageSize
         self.tempDirectory = tempDirectory
             ?? FileManager.default.temporaryDirectory.appendingPathComponent("photopilot-photo-payload", isDirectory: true)
@@ -95,14 +97,61 @@ final class PhotoLibrarySourceAdapter: SourceAdapter {
         try FileManager.default.removeItem(at: tempDirectory)
     }
 
-    private func exportOriginal(asset: PHAsset, to fileURL: URL) async throws {        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+    final class NetworkRequestState: @unchecked Sendable {
+        let networkAccessAllowed: Bool
+        private let policy: (any ImportNetworkPolicy)?
+        private let lock = NSLock()
+        private var blocked = false
+
+        init(policy: (any ImportNetworkPolicy)?) {
+            self.policy = policy
+            self.networkAccessAllowed = policy?.allowsTransfer ?? true
+        }
+
+        func shouldStopTransfer() -> Bool {
+            guard policy?.allowsTransfer == false else { return false }
+            lock.lock()
+            blocked = true
+            lock.unlock()
+            return true
+        }
+
+        func failure(error: Error?, isInCloud: Bool) -> Error? {
+            lock.lock()
+            let wasBlocked = blocked
+            lock.unlock()
+            if wasBlocked { return NasNetworkBlockedError() }
+            let failure = error as NSError?
+            let networkRequired = failure?.domain == PHPhotosErrorDomain
+                && failure?.code == PHPhotosError.Code.networkAccessRequired.rawValue
+            if (isInCloud || networkRequired), !networkAccessAllowed || policy?.allowsTransfer == false {
+                return NasNetworkBlockedError()
+            }
+            return error
+        }
+    }
+
+    private func exportOriginal(asset: PHAsset, to fileURL: URL) async throws {
+        let state = NetworkRequestState(policy: networkPolicy)
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let options = PHImageRequestOptions()
-            options.isNetworkAccessAllowed = true
+            options.isNetworkAccessAllowed = state.networkAccessAllowed
             options.deliveryMode = .highQualityFormat
             options.isSynchronous = false
+            options.progressHandler = { _, _, stop, _ in
+                if state.shouldStopTransfer() { stop.pointee = true }
+            }
             PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, _, _, info in
-                if let error = info?[PHImageErrorKey] as? Error {
+                let error = state.failure(
+                    error: info?[PHImageErrorKey] as? Error,
+                    isInCloud: info?[PHImageResultIsInCloudKey] as? Bool == true
+                )
+                if let error {
                     continuation.resume(throwing: error)
+                    return
+                }
+                if info?[PHImageCancelledKey] as? Bool == true {
+                    continuation.resume(throwing: CancellationError())
                     return
                 }
                 guard let data else {

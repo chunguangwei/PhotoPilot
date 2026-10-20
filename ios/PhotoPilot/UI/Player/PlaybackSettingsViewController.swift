@@ -1009,7 +1009,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
             }
             dirty = false
             if let player = PlayerViewController.activePlayer {
-                player.reloadBrightnessFromStore()
+                player.reloadPlaybackSettingsFromStore()
             } else {
                 restoreBrightnessPreview()
             }

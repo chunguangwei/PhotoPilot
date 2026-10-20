@@ -6,7 +6,7 @@ final class KeyboardAvoidanceTests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = true
         app = XCUIApplication()
-        app.launchArguments += ["-AppleLanguages", "(zh-Hans)", "-uitest.reset"]
+        app.launchArguments += ["-AppleLanguages", "(zh-Hans)", "-dev.photopilot.appLanguage", "zh", "-uitest.reset"]
         app.launch()
     }
 

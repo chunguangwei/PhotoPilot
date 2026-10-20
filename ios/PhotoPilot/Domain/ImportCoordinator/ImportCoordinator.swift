@@ -146,6 +146,7 @@ actor ImportCoordinator {
             do {
                 page = try await adapter.enumerateAssets(cursor: cursor)
             } catch {
+                if Self.isCancellation(error) || error is NasNetworkBlockedError { throw error }
                 importLog.error("enumerateAssets failed jobID=\(jobID, privacy: .public) code=\((error as NSError).code)")
                 throw ImportFailureCode.srcUnavailable
             }
@@ -491,10 +492,10 @@ actor ImportCoordinator {
         do {
             payload = try await adapter.assetPayload(remoteID: ref.remoteKey)
         } catch {
-            if Self.isCancellation(error) { throw error }
-            let code = Self.failureCode(for: error).code
-            try await markItemFailed(itemID: itemID, code: code, retryable: code == .mediaTruncated)
-            throw code
+            if Self.isCancellation(error) || error is NasNetworkBlockedError { throw error }
+            let mapped = Self.failureCode(for: error)
+            try await markItemFailed(itemID: itemID, code: mapped.code, retryable: mapped.retryable)
+            throw mapped.code
         }
         let stagedURL = stagedFileURL(jobID: ref.jobId, itemID: itemID)
         do {
@@ -543,7 +544,7 @@ actor ImportCoordinator {
         do {
             payload = try await adapter.assetPayload(remoteID: ref.remoteKey)
         } catch {
-            if Self.isCancellation(error) { throw error }
+            if Self.isCancellation(error) || error is NasNetworkBlockedError { throw error }
             let mapped = Self.failureCode(for: error)
             try await markItemFailed(itemID: itemID, code: mapped.code, retryable: mapped.retryable)
             return
@@ -606,7 +607,7 @@ actor ImportCoordinator {
         do {
             payload = try await adapter.assetPayload(remoteID: ref.remoteKey)
         } catch {
-            if Self.isCancellation(error) { throw error }
+            if Self.isCancellation(error) || error is NasNetworkBlockedError { throw error }
             let mapped = Self.failureCode(for: error)
             try await markItemFailed(itemID: itemID, code: mapped.code, retryable: mapped.retryable)
             throw mapped.code
@@ -938,6 +939,25 @@ actor ImportCoordinator {
             request.predicate = NSPredicate(format: "state == %@", state)
             request.sortDescriptors = [NSSortDescriptor(key: "created_at", ascending: true)]
             return try context.fetch(request).map(Self.jobDTO)
+        }
+    }
+
+    func scopeJSON(jobID: String) async throws -> String {
+        let context = makeContext()
+        return try await context.perform {
+            let job = try Self.fetchJob(context: context, jobID: jobID)
+            return job.value(forKey: "scope_json") as? String ?? "{}"
+        }
+    }
+
+    func nextRetryAt(jobID: String) async throws -> Int? {
+        let context = makeContext()
+        return try await context.perform {
+            let request = NSFetchRequest<NSManagedObject>(entityName: "ImportItem")
+            request.predicate = NSPredicate(format: "job.id == %@ AND state == %@ AND retry_at != nil", jobID, ImportItemState.failed.rawValue)
+            request.sortDescriptors = [NSSortDescriptor(key: "retry_at", ascending: true)]
+            request.fetchLimit = 1
+            return (try context.fetch(request).first?.value(forKey: "retry_at") as? NSNumber)?.intValue
         }
     }
 

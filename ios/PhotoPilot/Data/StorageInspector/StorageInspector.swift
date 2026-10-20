@@ -37,23 +37,5 @@ enum StorageInspector {
     static func clearRebuildableCache() {
         ThumbnailLoader.clearMemoryCache()
         PlayerImageLoader.clearMemoryCache()
-        let fileManager = FileManager.default
-        if let contents = try? fileManager.contentsOfDirectory(
-            at: fileManager.temporaryDirectory,
-            includingPropertiesForKeys: nil
-        ) {
-            for url in contents {
-                try? fileManager.removeItem(at: url)
-            }
-        }
-        let staging = PersistenceController.temporaryDirectoryURL()
-        if let contents = try? fileManager.contentsOfDirectory(
-            at: staging,
-            includingPropertiesForKeys: nil
-        ) {
-            for url in contents {
-                try? fileManager.removeItem(at: url)
-            }
-        }
     }
 }

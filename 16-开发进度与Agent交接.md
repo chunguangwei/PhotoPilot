@@ -1,5 +1,7 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**本轮（2026-10-21 v1.1.52 全量检查与发布收尾）**：用户追加鸿蒙4.3.0英文设置失效、类似设置及全量代码/UI检查。已修复Android旧API语言/外观与系统跟随、语言选项误标、播放设置旧实体/排序/暂停常亮、进程唯一导入环境及清数据等待；iOS统一播放设置/音乐应用、天气异步旧响应守卫。双端网络下载按系统非计费状态判定，缺省开启但保留已有false；NAS恢复/重试、PhotoKit按需联网与离线本地图、安全清缓存均已补回归。隐藏无效天气与未接入统计服务的开关。**最终验证**：iOS166/166、build/analyze/Release archive通过；Android387/387、Debug/签名Release、lint0 errors/183warnings通过；Release模拟器iPhone/iPad各6项UI测试通过；11张实际UI商店截图与哈希已更新，iPad横屏真实2752×2064、无EXIF旋转。日志 `.build/v1.1.52-final-*`、`v1.1.52-ui-*-final.log`，截图证据 `store/appstore/review/ScreenshotEvidence.json`。**真机**：iPhone13已覆盖安装最终审计包，启动/进程/数据库quick_check正常，112资产/1相框/1来源不变；iPadAir4仅装过本轮初期52，之后掉线，最终修复包尚未装，不将初期副本算最终验收。证据 `.build/device-install-v1.1.52/` 与 `-initial/` 分开。SMB218文件独立arm64重建成功，源码交付说明与上架工作单已补。**残留**：鸿蒙/Android无接入真机；NAS/iCloud切网、最低系统/完整首次使用与Distribution验证未完成。App Store未上传/提交，正式团队、定价、天气供应商隐私、SMB/EULA及审核NAS仍待外部确认。GitHub发布状态待下方收尾记录。
+
 **最新工作（2026-10-21 无有效天气静默隐藏，基于 v1.1.51 未升版发布）**：用户要求天气暂不可用时不显示提示。双端播放与休息屏在天气关闭、无地点/缓存、缓存过期或无可展示数据时隐藏地点/天气整行及不可用/禁用占位；有效缓存、延迟标记、刷新恢复路径不变，设置和城市搜索保留失败反馈。Android 同时移除休息屏 null 天气回退成禁用说明，iOS 无数据清空休息天气文本。PRD、02、设计增量与10审核备注同步。**验证**：iOS build/analyze 成功，WeatherProviderTests/WeatherLocationFollowTests/PhotoPilotRenderTests 定向回归 30/30 通过（非本轮完整153项）；Android build/lint/test 成功，379/379、0失败/错误/跳过，lint 0 errors/182既有warnings；make check43通过，git diff检查通过。日志 `.build/weather-hide-*`；xcresult `.build/ios/Logs/Test/Test-PhotoPilot-2026.10.21_00-50-47-+0800.xcresult`。此为小范围可逆显示调整，未新增镜像实现的测试；未进行真机目检、覆盖安装、新安装包发布或 App Store 操作。
 
 **最新审计（2026-10-20 App Store 差距复核）**：依据最终 v1.1.51 未签名归档、现有装机证据及 Apple/Open-Meteo 官方规则，汇总见 10 §13.9。当前主要未闭环项为正式团队/分发链路（工程与既有装机 Team 不同，账号云端状态未核实）、天气隐私/备用供应商与商业模式、SMB LGPL 分发及素材权利、审核员可达 NAS、最终发布包首次安装/拒权/离线等复测、最终版本截图与 ASC 表单。已有四类 required-reason API 与 SDK/版本归档证据，不能继续沿用历史“三类/无归档”的口径；商店截图仍为 1.1.46。未操作 ASC、未上传或提交审核，未改变授权门控；本轮 `make check`（43 工具测试）、`make docs-check`（18 份链接）与 `git diff --check` 通过；未重跑应用测试。
@@ -266,6 +268,7 @@ android-build/android-lint/ios-generate/ios-build/ios-analyze 首轮 2026-10-04 
 | 2026-10-20 全球双语天气地点 v1.1.50＋文件清理 | 可选双语结构化地点/完整上下文/保守升级；同名与同网格城镇身份隔离；旧查询/迟到定位守卫；地点和温度分行、RTL/AX 休息布局。双端版本 1.1.50(50) | iOS 150、Android 374 测试通过；build/analyze/lint/Release 与 make check 43 项通过；iPhone/iPad 覆盖安装启动及库汇总一致；旧缓存清理约 2.8 GiB。Android 真机 UI、全球供应商覆盖、M0/App Store 仍未验收；分发补记见最新工作 |
 
 | 2026-10-20 天气地点与气温同行 v1.1.51 | 播放/休息屏同行、实测宽度分配、地点单行省略、完整气温优先，时钟同向对齐与完整无障碍；选城/缓存/坐标不变 | iOS 153、Android 379 测试通过；build/analyze/lint/Release 与 make check43通过；iPhone/iPad 覆盖安装51、进程与库汇总核实。Android 运行时 UI、iOS 真机旋转/设计验收、M0/App Store 保持未完成；分发见最新工作 |
+| v1.1.52 全量检查（2026-10-21） | 旧API语言/外观、播放设置应用、天气竞态、进程唯一导入、非计费网络恢复、PhotoKit按需联网及安全清缓存；更新11张商店截图与SMB重建说明 | iOS166/166、Android387/387、UI双设备各6/6，build/analyze/lint/签名构建通过；iPhone最终包已装且库112/1/1保留；iPad最终包待重连；Android/Harmony真机、Distribution与App Store门控仍未完成 |
 
 ## 3. R01–R19 闭环摘要（2026-10-04 裁决）
 

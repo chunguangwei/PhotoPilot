@@ -22,6 +22,13 @@ class ThumbnailLoader(
     private val cache = LruCache<String, Bitmap>(cacheEntries.coerceAtLeast(1))
     private val main = Handler(Looper.getMainLooper())
 
+    init {
+        synchronized(liveCaches) {
+            liveCaches.removeAll { it.get() == null }
+            liveCaches.add(java.lang.ref.WeakReference(cache))
+        }
+    }
+
     fun load(asset: AssetEntity, sizePx: Int, key: String, callback: Callback) {
         val cached = cache.get(key)
         if (cached != null) {
@@ -72,6 +79,18 @@ class ThumbnailLoader(
     companion object {
         const val DECODE_THREADS = 2
         const val FIRST_FRAME_TIME_US = 500_000L
+
+        private val liveCaches = mutableListOf<java.lang.ref.WeakReference<LruCache<String, Bitmap>>>()
+
+        fun clearMemoryCaches() {
+            synchronized(liveCaches) {
+                liveCaches.removeAll { reference ->
+                    val cache = reference.get()
+                    cache?.evictAll()
+                    cache == null
+                }
+            }
+        }
 
         private val sharedExecutor = Executors.newFixedThreadPool(DECODE_THREADS)
 

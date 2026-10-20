@@ -207,9 +207,6 @@ class SettingsView(context: Context) : ScrollView(context) {
 
         val privacyGroup = section(R.string.settings_privacy)
         addHelp(privacyGroup, R.string.settings_privacy_summary)
-        addSwitchRow(privacyGroup, R.string.settings_share_statistics, model.shareStatistics) {
-            onToggleShareStatistics?.invoke(it)
-        }
 
         val diagnosticsGroup = section(R.string.settings_diagnostics)
         addHelp(diagnosticsGroup, R.string.settings_diagnostics_help)

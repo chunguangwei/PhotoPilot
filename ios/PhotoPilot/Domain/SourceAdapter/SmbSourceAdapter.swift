@@ -17,6 +17,7 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
     static let capabilityFlags = 83
     static let pageSize = 100
 
+    private let networkPolicy: NasNetworkPolicy?
     private let config: SmbConfig
     private let directories: [String]
     private let recursive: Bool
@@ -29,8 +30,10 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
         directories: [String],
         recursive: Bool = true,
         pageSize: Int = SmbSourceAdapter.pageSize,
-        tempDirectory: URL? = nil
+        tempDirectory: URL? = nil,
+        networkPolicy: NasNetworkPolicy? = nil
     ) {
+        self.networkPolicy = networkPolicy
         self.config = config
         self.directories = directories
         self.recursive = recursive
@@ -360,8 +363,14 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
                 at: tempDirectory,
                 withIntermediateDirectories: true
             )
-            try await client.downloadItem(atPath: resolved.subpath, to: fileURL) { _, _ in true }
+            try networkPolicy?.check()
+            let policy = networkPolicy
+            try await client.downloadItem(atPath: resolved.subpath, to: fileURL) { _, _ in
+                policy?.allowsTransfer ?? true
+            }
+            try networkPolicy?.check()
         } catch {
+            try networkPolicy?.check()
             smbLog.error("download failed code=\((error as NSError).code)")
             throw Self.mapError(error, phase: .read)
         }

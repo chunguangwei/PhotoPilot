@@ -1,4 +1,5 @@
 import CoreData
+import Photos
 import XCTest
 @testable import PhotoPilot
 
@@ -646,6 +647,192 @@ final class PhotoPilotImportTests: XCTestCase {
                 }
             }
         }
+    }
+
+    private struct UnavailableAdapter: SourceAdapter {
+        func enumerateAssets(cursor: String?) async throws -> SourceAssetPage {
+            throw NasTransportError.unavailable
+        }
+        func assetPayload(remoteID: String) async throws -> LocalAssetPayload {
+            throw NasTransportError.unavailable
+        }
+    }
+
+    private final class MutableNetworkPolicy: ImportNetworkPolicy, @unchecked Sendable {
+        private let lock = NSLock()
+        private var allowed = false
+        var allowsTransfer: Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            return allowed
+        }
+        var wifiOnly: Bool { true }
+        func setAllowed(_ value: Bool) {
+            lock.lock()
+            allowed = value
+            lock.unlock()
+        }
+        func check() throws {
+            if !allowsTransfer { throw NasNetworkBlockedError() }
+        }
+    }
+
+    private struct OnePhotoAdapter: SourceAdapter {
+        let fixture: LocalFilesFixtureAdapter
+        let policy: MutableNetworkPolicy?
+        func enumerateAssets(cursor: String?) async throws -> SourceAssetPage {
+            SourceAssetPage(assets: cursor == nil ? [SourceAssetDescriptor(
+                remoteID: "F01/baseline.jpg", revision: "1", byteSize: nil, remoteTakenAtMillis: nil
+            )] : [], nextCursor: nil, totalKnown: 1)
+        }
+        func assetPayload(remoteID: String) async throws -> LocalAssetPayload {
+            try policy?.check()
+            return try await fixture.assetPayload(remoteID: remoteID)
+        }
+    }
+
+    func testPhotoKitRequestAllowsLocalResultWhileCloudIsBlocked() {
+        let policy = MutableNetworkPolicy()
+        let request = PhotoLibrarySourceAdapter.NetworkRequestState(policy: policy)
+        XCTAssertFalse(request.networkAccessAllowed)
+        XCTAssertNil(request.failure(error: nil, isInCloud: false))
+        XCTAssertTrue(request.failure(error: nil, isInCloud: true) is NasNetworkBlockedError)
+        let required = NSError(domain: PHPhotosErrorDomain, code: PHPhotosError.Code.networkAccessRequired.rawValue)
+        XCTAssertTrue(request.failure(error: required, isInCloud: false) is NasNetworkBlockedError)
+    }
+
+    func testPhotoKitProgressStopsMeteredTransferAndPreservesReasonAfterReconnect() {
+        let policy = MutableNetworkPolicy()
+        policy.setAllowed(true)
+        let request = PhotoLibrarySourceAdapter.NetworkRequestState(policy: policy)
+        XCTAssertTrue(request.networkAccessAllowed)
+        XCTAssertFalse(request.shouldStopTransfer())
+        policy.setAllowed(false)
+        XCTAssertTrue(request.shouldStopTransfer())
+        policy.setAllowed(true)
+        XCTAssertTrue(request.failure(error: nil, isInCloud: false) is NasNetworkBlockedError)
+    }
+
+    func testOfflineLocalPhotoImportIsNotBlockedByNetworkPolicy() async throws {
+        let policy = MutableNetworkPolicy()
+        _ = seedSource(id: "offline-local")
+        try save()
+        let coordinator = ImportCoordinator(controller: controller, adapter: OnePhotoAdapter(fixture: adapter, policy: nil))
+        let job = try await coordinator.createJob(sourceID: "offline-local", scopeJSON: "{}")
+        let runner = ImportRunner(coordinator: coordinator, jobID: job.id, networkPolicy: policy, requiresNetwork: false)
+        await runner.start()
+        for _ in 0..<100 {
+            if try await coordinator.fetchJob(id: job.id)?.state == "completed" { return }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTFail("a local photo must import while offline")
+        try await runner.cancel()
+    }
+
+    func testCloudPhotoPausesAndResumesSameJobWhenPolicyAllowsTransfer() async throws {
+        let policy = MutableNetworkPolicy()
+        _ = seedSource(id: "cloud-local")
+        try save()
+        let coordinator = ImportCoordinator(controller: controller, adapter: OnePhotoAdapter(fixture: adapter, policy: policy))
+        let job = try await coordinator.createJob(sourceID: "cloud-local", scopeJSON: "{}")
+        let runner = ImportRunner(coordinator: coordinator, jobID: job.id, networkPolicy: policy, requiresNetwork: false)
+        await runner.start()
+        var paused = false
+        for _ in 0..<100 {
+            if try await coordinator.fetchJob(id: job.id)?.state == "paused_auto" { paused = true; break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertTrue(paused)
+        let pending = try await coordinator.nextQueuedItemID(jobID: job.id)
+        XCTAssertNotNil(pending)
+        policy.setAllowed(true)
+        for _ in 0..<300 {
+            if try await coordinator.fetchJob(id: job.id)?.state == "completed" { return }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTFail("the paused cloud photo must resume in the original job")
+        try await runner.cancel()
+    }
+
+    private struct BlockedEnumerationAdapter: SourceAdapter {
+        func enumerateAssets(cursor: String?) async throws -> SourceAssetPage {
+            throw NasNetworkBlockedError()
+        }
+        func assetPayload(remoteID: String) async throws -> LocalAssetPayload {
+            throw NasNetworkBlockedError()
+        }
+    }
+
+    func testEnumerationPreservesNetworkPauseSignalAcrossNetworkFlap() async throws {
+        let source = seedSource(id: "blocked-source")
+        try save()
+        let coordinator = ImportCoordinator(controller: controller, adapter: BlockedEnumerationAdapter())
+        let job = try await coordinator.createJob(sourceID: source.value(forKey: "id") as! String, scopeJSON: "{}")
+        do {
+            _ = try await coordinator.enqueueItems(jobID: job.id)
+            XCTFail("expected network block")
+        } catch is NasNetworkBlockedError {
+        } catch {
+            XCTFail("network pause signal was replaced: \(error)")
+        }
+        let current = try await coordinator.fetchJob(id: job.id)
+        XCTAssertNil(current?.cursor)
+        let paused = try await coordinator.handleSignal(jobID: job.id, signal: .autoPause)
+        XCTAssertEqual(paused.state, "paused_auto")
+    }
+
+    func testStageNetworkFailureSchedulesBoundedRetry() async throws {
+        let source = seedSource(id: "network-source")
+        let sourceAsset = seedSourceAsset(id: "network-asset", source: source, remoteKey: "test.jpg")
+        let job = seedJob(id: "network-job", source: source)
+        seedItem(id: "network-item", job: job, sourceAsset: sourceAsset)
+        try save()
+        let failing = ImportCoordinator(controller: controller, adapter: UnavailableAdapter())
+        do {
+            try await failing.stageItem(itemID: "network-item")
+            XCTFail("expected source failure")
+        } catch {}
+        let fetched = try await failing.fetchItem(id: "network-item")
+        let item = try XCTUnwrap(fetched)
+        XCTAssertEqual(item.failureCode, "SRC_UNAVAILABLE")
+        XCTAssertEqual(item.retryCount, 1)
+        XCTAssertNotNil(item.retryAt)
+    }
+
+    func testRunnerEnumerationFailureStopsAsFailed() async throws {
+        let source = seedSource(id: "enum-source")
+        try save()
+        let failing = ImportCoordinator(controller: controller, adapter: UnavailableAdapter())
+        let job = try await failing.createJob(sourceID: source.value(forKey: "id") as! String, scopeJSON: "{}")
+        let runner = ImportRunner(coordinator: failing, jobID: job.id)
+        await runner.start()
+        for _ in 0..<100 {
+            if try await failing.fetchJob(id: job.id)?.state == "failed" { return }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTFail("enumeration failure must not leave the job running")
+    }
+
+    func testClearCachePreservesImportAndSharedTemporaryFiles() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let staging = PersistenceController.temporaryDirectoryURL().appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: staging.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data([1, 2, 3]).write(to: file)
+        try Data([4, 5, 6]).write(to: staging)
+        defer {
+            try? FileManager.default.removeItem(at: file)
+            try? FileManager.default.removeItem(at: staging)
+        }
+        StorageInspector.clearRebuildableCache()
+        XCTAssertEqual(try Data(contentsOf: file), Data([1, 2, 3]))
+        XCTAssertEqual(try Data(contentsOf: staging), Data([4, 5, 6]))
+    }
+
+    func testNasNetworkDecisionHonorsOfflineAndCellularPreference() {
+        XCTAssertFalse(NasNetworkPolicy.allows(connected: false, unmetered: true, wifiOnly: false))
+        XCTAssertFalse(NasNetworkPolicy.allows(connected: true, unmetered: false, wifiOnly: true))
+        XCTAssertTrue(NasNetworkPolicy.allows(connected: true, unmetered: true, wifiOnly: true))
+        XCTAssertTrue(NasNetworkPolicy.allows(connected: true, unmetered: false, wifiOnly: false))
     }
 
     func testRetryableFailureSchedulesBackoffAndRetryRequeues() async throws {

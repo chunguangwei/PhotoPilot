@@ -5,6 +5,7 @@ final class AppEnvironment: @unchecked Sendable {
 
     let persistence: PersistenceController
     let settings: AppSettingsRepository
+    let nasNetworkPolicy: NasNetworkPolicy
     let sources: SourceRepository
     let assets: AssetRepository
     let frames: FrameRepository
@@ -29,13 +30,16 @@ final class AppEnvironment: @unchecked Sendable {
 
     init(persistence: PersistenceController, weatherProvider: (any WeatherProvider)? = nil) {
         self.persistence = persistence
-        self.settings = AppSettingsRepository(container: persistence.container)
+        let settings = AppSettingsRepository(container: persistence.container)
+        self.settings = settings
+        let networkPolicy = NasNetworkPolicy(settings: settings)
+        self.nasNetworkPolicy = networkPolicy
         self.sources = SourceRepository(container: persistence.container)
         self.assets = AssetRepository(controller: persistence)
         self.frames = FrameRepository(controller: persistence)
         self.frameManager = FrameManager(controller: persistence)
         self.holidayStore = HolidayStore(controller: persistence)
-        self.photoLibraryAdapter = PhotoLibrarySourceAdapter()
+        self.photoLibraryAdapter = PhotoLibrarySourceAdapter(networkPolicy: networkPolicy)
         self.weatherRepository = WeatherRepository(controller: persistence)
         self.weatherProvider = weatherProvider ?? FallbackWeatherProvider(
             forecast: [OpenMeteoProvider(), WttrProvider()],
@@ -51,7 +55,7 @@ final class AppEnvironment: @unchecked Sendable {
         let sourceID = try sources.ensureLocalPhotosSource()
         let coordinator = ImportCoordinator(controller: persistence, adapter: photoLibraryAdapter)
         let job = try await coordinator.createJob(sourceID: sourceID, scopeJSON: Self.defaultScopeJSON)
-        let runner = registerRunner(coordinator: coordinator, jobID: job.id)
+        let runner = registerRunner(coordinator: coordinator, jobID: job.id, networkPolicy: nasNetworkPolicy, requiresNetwork: false)
         await runner.start()
         return runner
     }
@@ -75,7 +79,11 @@ final class AppEnvironment: @unchecked Sendable {
             controller: persistence,
             adapter: adapter ?? photoLibraryAdapter
         )
-        return registerRunner(coordinator: coordinator, jobID: jobID)
+        return registerRunner(
+            coordinator: coordinator, jobID: jobID,
+            networkPolicy: adapter == nil ? nasNetworkPolicy : nil,
+            requiresNetwork: false
+        )
     }
 
     func latestLocalPhotosJob() async throws -> ImportJobDTO? {
@@ -83,7 +91,7 @@ final class AppEnvironment: @unchecked Sendable {
         return try await coordinator.fetchLatestJob(sourceID: SourceRepository.localPhotosID)
     }
 
-    func startWebDavImport(sourceID: String) async throws -> ImportRunner {
+    func startWebDavImport(sourceID: String, resumingJobID: String? = nil) async throws -> ImportRunner {
         guard let info = try sources.webdavSources().first(where: { $0.id == sourceID }),
               let endpointKey = info.endpointKey,
               let endpoint = NasAddress.parseFingerprint(endpointKey) else {
@@ -111,24 +119,40 @@ final class AppEnvironment: @unchecked Sendable {
                 cleartextPermitted: cleartextPermitted
             ),
             session: session,
-            tlsPolicy: policy
+            tlsPolicy: policy,
+            networkPolicy: nasNetworkPolicy
         )
-        guard let scopeJSON = NasScope.scopeJSON(info.directories) else {
-            throw ImportFailureCode.srcUnavailable
+        let scopeJSON: String
+        if let resumingJobID {
+            let lookup = ImportCoordinator(controller: persistence, adapter: photoLibraryAdapter)
+            guard let job = try await lookup.fetchJob(id: resumingJobID), job.sourceId == sourceID,
+                  job.state == ImportJobState.pausedAuto.rawValue else { throw ImportFailureCode.srcUnavailable }
+            scopeJSON = try await lookup.scopeJSON(jobID: resumingJobID)
+        } else {
+            guard let scope = NasScope.scopeJSON(info.directories) else { throw ImportFailureCode.srcUnavailable }
+            scopeJSON = scope
         }
         let adapter = WebDavSourceAdapter(
             client: client,
             scopeJSON: scopeJSON,
             recursive: info.recursive
         )
-        let coordinator = ImportCoordinator(controller: persistence, adapter: adapter)
+        let coordinator = ImportCoordinator(
+            controller: persistence,
+            adapter: NetworkGuardedSourceAdapter(underlying: adapter, policy: nasNetworkPolicy)
+        )
+        if let resumingJobID {
+            let runner = registerRunner(coordinator: coordinator, jobID: resumingJobID, networkPolicy: nasNetworkPolicy)
+            try await runner.resume()
+            return runner
+        }
         let job = try await coordinator.createJob(sourceID: sourceID, scopeJSON: scopeJSON)
-        let runner = registerRunner(coordinator: coordinator, jobID: job.id)
+        let runner = registerRunner(coordinator: coordinator, jobID: job.id, networkPolicy: nasNetworkPolicy)
         await runner.start()
         return runner
     }
 
-    func startSmbImport(sourceID: String) async throws -> ImportRunner {
+    func startSmbImport(sourceID: String, resumingJobID: String? = nil) async throws -> ImportRunner {
         guard let info = try sources.webdavSources().first(where: { $0.id == sourceID }),
               let endpointKey = info.endpointKey,
               let endpoint = NasAddress.parseFingerprint(endpointKey) else {
@@ -143,6 +167,16 @@ final class AppEnvironment: @unchecked Sendable {
             throw NasTransportError.cleartextBlocked
         }
         let split = NasPath.splitShare(credential?.path ?? endpoint.path)
+        let scopeJSON: String
+        if let resumingJobID {
+            let lookup = ImportCoordinator(controller: persistence, adapter: photoLibraryAdapter)
+            guard let job = try await lookup.fetchJob(id: resumingJobID), job.sourceId == sourceID,
+                  job.state == ImportJobState.pausedAuto.rawValue else { throw ImportFailureCode.srcUnavailable }
+            scopeJSON = try await lookup.scopeJSON(jobID: resumingJobID)
+        } else {
+            guard let scope = NasScope.scopeJSON(info.directories) else { throw ImportFailureCode.srcUnavailable }
+            scopeJSON = scope
+        }
         let adapter = SmbSourceAdapter(
             config: SmbConfig(
                 host: endpoint.host,
@@ -152,16 +186,22 @@ final class AppEnvironment: @unchecked Sendable {
                 password: credential?.password ?? ""
             ),
             directories: split.subpath.isEmpty
-                ? info.directories
-                : [split.subpath] + info.directories,
-            recursive: info.recursive
+                ? WebDavSourceAdapter.parseScope(scopeJSON)
+                : [split.subpath] + WebDavSourceAdapter.parseScope(scopeJSON),
+            recursive: info.recursive,
+            networkPolicy: nasNetworkPolicy
         )
-        guard let scopeJSON = NasScope.scopeJSON(info.directories) else {
-            throw ImportFailureCode.srcUnavailable
+        let coordinator = ImportCoordinator(
+            controller: persistence,
+            adapter: NetworkGuardedSourceAdapter(underlying: adapter, policy: nasNetworkPolicy)
+        )
+        if let resumingJobID {
+            let runner = registerRunner(coordinator: coordinator, jobID: resumingJobID, networkPolicy: nasNetworkPolicy)
+            try await runner.resume()
+            return runner
         }
-        let coordinator = ImportCoordinator(controller: persistence, adapter: adapter)
         let job = try await coordinator.createJob(sourceID: sourceID, scopeJSON: scopeJSON)
-        let runner = registerRunner(coordinator: coordinator, jobID: job.id)
+        let runner = registerRunner(coordinator: coordinator, jobID: job.id, networkPolicy: nasNetworkPolicy)
         await runner.start()
         return runner
     }
@@ -185,6 +225,14 @@ final class AppEnvironment: @unchecked Sendable {
             } else if let adapter = PickedFilesSourceAdapter.restore(jobID: job.id) {
                 let runner = openRunner(jobID: job.id, adapter: adapter)
                 try? await runner.resume()
+            } else if let source = try? sources.webdavSources().first(where: { $0.id == job.sourceId }),
+                      source.status == "active", let endpointKey = source.endpointKey,
+                      credentialStore.load(fingerprint: endpointKey) != nil {
+                if source.type == "smb" {
+                    _ = try? await startSmbImport(sourceID: source.id, resumingJobID: job.id)
+                } else {
+                    _ = try? await startWebDavImport(sourceID: source.id, resumingJobID: job.id)
+                }
             }
         }
     }
@@ -193,19 +241,27 @@ final class AppEnvironment: @unchecked Sendable {
 
     func autoSyncWebDavSources() async {
         let now = Int(Date().timeIntervalSince1970 * 1000)
+        let lookup = ImportCoordinator(controller: persistence, adapter: photoLibraryAdapter)
+        let activeJobs = ((try? await lookup.fetchJobs(withState: ImportJobState.running.rawValue)) ?? [])
+            + ((try? await lookup.fetchJobs(withState: ImportJobState.pausedAuto.rawValue)) ?? [])
         for source in (try? sources.webdavSources()) ?? [] where source.status == "active" {
+            guard !activeJobs.contains(where: { $0.sourceId == source.id }) else { continue }
             guard let endpointKey = source.endpointKey,
                   credentialStore.load(fingerprint: endpointKey) != nil else { continue }
             let key = "nas.last_auto_sync:\(source.id)"
             let last = (try? settings.value(forKey: key)).flatMap(Int.init) ?? 0
             guard now - last >= Self.autoSyncThrottleMillis else { continue }
             try? settings.setValue("\(now)", forKey: key)
-            _ = try? await startWebDavImport(sourceID: source.id)
+            if source.type == "smb" {
+                _ = try? await startSmbImport(sourceID: source.id)
+            } else {
+                _ = try? await startWebDavImport(sourceID: source.id)
+            }
         }
     }
 
-    private func registerRunner(coordinator: ImportCoordinator, jobID: String) -> ImportRunner {
-        let runner = ImportRunner(coordinator: coordinator, jobID: jobID)
+    private func registerRunner(coordinator: ImportCoordinator, jobID: String, networkPolicy: NasNetworkPolicy? = nil, requiresNetwork: Bool = true) -> ImportRunner {
+        let runner = ImportRunner(coordinator: coordinator, jobID: jobID, networkPolicy: networkPolicy, requiresNetwork: requiresNetwork)
         Task {
             await runner.setOnTerminal { [weak self] finishedJobID in
                 self?.runners.removeValue(forKey: finishedJobID)

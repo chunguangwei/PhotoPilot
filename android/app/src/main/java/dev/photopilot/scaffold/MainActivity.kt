@@ -1,5 +1,6 @@
 package dev.photopilot.scaffold
 
+import androidx.room.withTransaction
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
@@ -7,6 +8,9 @@ import android.app.LocaleManager
 import android.app.UiModeManager
 import android.Manifest
 import android.content.Intent
+import android.content.Context
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.location.Location
@@ -136,6 +140,10 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 class MainActivity : Activity() {
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(dev.photopilot.scaffold.ui.UiPreferenceOverrides.wrap(newBase))
+    }
+
     private val scope = CoroutineScope(
         SupervisorJob() + Dispatchers.Main +
             kotlinx.coroutines.CoroutineExceptionHandler { _, _ ->
@@ -149,6 +157,14 @@ class MainActivity : Activity() {
     private var pendingSectionRestore = -1
     private var pendingOverlayRestore: String? = null
     private var coldStart = false
+    private var configurationReceiverRegistered = false
+    private val configurationReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (dev.photopilot.scaffold.ui.UiPreferenceOverrides.followsSystemAppearance(this@MainActivity)) {
+                applyAppearancePreference(AppSettingsRepository.VALUE_SYSTEM)
+            }
+        }
+    }
     private val overlayMeta = mutableListOf<Pair<View, Map<String, String>>>()
 
     private fun pushOverlayTracked(view: View, meta: Map<String, String>?) {
@@ -216,7 +232,7 @@ class MainActivity : Activity() {
                             env.database.frameDao().getById(id)
                         }
                         if (frame != null) {
-                            openPlaybackSettings(frame)
+                            showPlaybackSettings(frame)
                         }
                     }
                     "holiday" -> if (permissionOnly) continue else {
@@ -293,6 +309,12 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (SystemFeatureGates.usesNativeAppearance(Build.VERSION.SDK_INT)) {
+            val filter = IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED)
+            if (Build.VERSION.SDK_INT >= 33) registerReceiver(configurationReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            else registerReceiver(configurationReceiver, filter)
+            configurationReceiverRegistered = true
+        }
         if (android.os.Build.VERSION.SDK_INT >= 30) {
             window.setDecorFitsSystemWindows(false)
         }
@@ -315,6 +337,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        if (configurationReceiverRegistered) unregisterReceiver(configurationReceiver)
         updateHandler.removeCallbacks(updatePollRunnable)
         updateProgressDialog?.dismiss()
         updateProgressDialog = null
@@ -360,20 +383,16 @@ class MainActivity : Activity() {
         setBaseTracked(launchView)
         scope.launch {
             try {
-                val (db, completed) = withContext(Dispatchers.IO) {
-                    val db = DatabaseFactory.builder(this@MainActivity).build()
-                    val settings = AppSettingsRepository(db.settingsKvDao())
-                    val completed = settings.isOnboardingCompleted()
-                    db to completed
-                }
-                database = db
-                val env = AppEnvironment.create(this@MainActivity, db)
+                val env = AppEnvironment.shared(applicationContext)
+                database = env.database
                 environment = env
-                val preferences = withContext(Dispatchers.IO) {
-                    env.runner.markInterruptedJobsRecoverable()
-                    env.deletedSweeper.sweepExpired(System.currentTimeMillis())
-                    env.runner.resumeInterruptedJobs()
-                    env.settings.appearance() to env.settings.language()
+                val (completed, preferences) = withContext(Dispatchers.IO) {
+                    env.settings.isOnboardingCompleted() to
+                        (env.settings.appearance() to env.settings.language())
+                }
+                if (dev.photopilot.scaffold.ui.UiPreferenceOverrides.update(this@MainActivity, preferences.first, preferences.second)) {
+                    recreate()
+                    return@launch
                 }
                 applyAppearancePreference(preferences.first)
                 applyLanguagePreference(preferences.second)
@@ -645,12 +664,20 @@ class MainActivity : Activity() {
     @SuppressLint("NewApi")
     private fun applyAppearancePreference(value: String) {
         if (!SystemFeatureGates.canApplyAppearance(Build.VERSION.SDK_INT)) return
+        if (dev.photopilot.scaffold.ui.UiPreferenceOverrides.update(this, appearance = value)) {
+            recreate()
+            return
+        }
+        if (!SystemFeatureGates.usesNativeAppearance(Build.VERSION.SDK_INT)) return
         val manager = getSystemService(UiModeManager::class.java) ?: return
         manager.setApplicationNightMode(
             when (value) {
                 AppSettingsRepository.VALUE_LIGHT -> UiModeManager.MODE_NIGHT_NO
                 AppSettingsRepository.VALUE_DARK -> UiModeManager.MODE_NIGHT_YES
-                else -> UiModeManager.MODE_NIGHT_AUTO
+                else -> manager.nightMode.takeIf { it in 0..3 }
+                    ?: if ((android.content.res.Resources.getSystem().configuration.uiMode and
+                        android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                    ) UiModeManager.MODE_NIGHT_YES else UiModeManager.MODE_NIGHT_NO
             },
         )
     }
@@ -658,6 +685,11 @@ class MainActivity : Activity() {
     @SuppressLint("NewApi")
     private fun applyLanguagePreference(value: String) {
         if (!SystemFeatureGates.canApplyLanguage(Build.VERSION.SDK_INT)) return
+        if (dev.photopilot.scaffold.ui.UiPreferenceOverrides.update(this, language = value)) {
+            recreate()
+            return
+        }
+        if (!SystemFeatureGates.usesNativeLanguage(Build.VERSION.SDK_INT)) return
         val manager = getSystemService(LocaleManager::class.java) ?: return
         manager.applicationLocales = when (value) {
             AppSettingsRepository.VALUE_ZH -> LocaleList.forLanguageTags("zh-CN")
@@ -673,8 +705,7 @@ class MainActivity : Activity() {
             .setPositiveButton(R.string.common_delete) { _, _ ->
                 scope.launch {
                     withContext(Dispatchers.IO) {
-                        File(cacheDir, "picked").deleteRecursively()
-                        File(cacheDir, "import-tmp").deleteRecursively()
+                        dev.photopilot.scaffold.ui.library.ThumbnailLoader.clearMemoryCaches()
                     }
                     reloadSettingsModel(view)
                 }
@@ -708,26 +739,27 @@ class MainActivity : Activity() {
     }
 
     private fun clearAllData() {
-        val env = environment ?: return
+        environment ?: return
         scope.launch {
             if (playerView != null) {
                 closePlayer()
             }
-            env.runner.stopAll()
-            withContext(Dispatchers.IO) {
-                File(filesDir, "originals").deleteRecursively()
-                File(filesDir, "credentials").deleteRecursively()
-                File(cacheDir, "picked").deleteRecursively()
-                File(cacheDir, "import-tmp").deleteRecursively()
-                File(cacheDir, "diagnostics").deleteRecursively()
-                env.database.clearAllTables()
-            }
-            environment = AppEnvironment.create(this@MainActivity, env.database)
+            environment = AppEnvironment.clearAllAndReset(applicationContext)
+            database = environment?.database
             lastLibraryVersionJson = null
             framesDirty = true
             progressView = null
             progressJobId = null
             permissionOverlay = null
+            val recreatePreferences = dev.photopilot.scaffold.ui.UiPreferenceOverrides.update(
+                this@MainActivity, AppSettingsRepository.VALUE_SYSTEM, AppSettingsRepository.VALUE_SYSTEM,
+            )
+            if (recreatePreferences) {
+                recreate()
+                return@launch
+            }
+            applyAppearancePreference(AppSettingsRepository.VALUE_SYSTEM)
+            applyLanguagePreference(AppSettingsRepository.VALUE_SYSTEM)
             showWelcome()
         }
     }
@@ -2120,6 +2152,16 @@ class MainActivity : Activity() {
 
     private fun openPlaybackSettings(frame: FrameEntity) {
         val env = environment ?: return
+        scope.launch {
+            val latest = withContext(Dispatchers.IO) {
+                env.database.frameDao().getById(frame.id)
+            } ?: return@launch
+            if (playbackSettingsView == null) showPlaybackSettings(latest)
+        }
+    }
+
+    private fun showPlaybackSettings(frame: FrameEntity) {
+        val env = environment ?: return
         val view = PlaybackSettingsView(this)
         playbackSettingsView = view
         view.onBack = { hasChanges -> handleSettingsBack(view, hasChanges) }
@@ -2259,24 +2301,25 @@ class MainActivity : Activity() {
             view.showError(error)
             return
         }
+        if (playbackSettingsView !== view) return
         scope.launch {
-            val merged = PlaybackSettingsEdit.merge(frame.settingsJson, draft)
-            withContext(Dispatchers.IO) {
-                env.frameManager.updateSettings(frame.id, merged)
-                if (orderMode != frame.orderMode) {
-                    env.frameManager.updateOrderMode(frame.id, orderMode)
+            val fresh = withContext(Dispatchers.IO) {
+                env.database.withTransaction {
+                    val current = env.database.frameDao().getById(frame.id) ?: return@withTransaction null
+                    current.copy(
+                        settingsJson = PlaybackSettingsEdit.merge(current.settingsJson, draft),
+                        orderMode = orderMode,
+                        updatedAt = System.currentTimeMillis(),
+                    ).also { env.database.frameDao().update(it) }
                 }
             }
-            val fresh = withContext(Dispatchers.IO) {
-                env.database.frameDao().getById(frame.id)
-            }
-            if (fresh != null && playerView != null && playerEngine != null && fresh.id == frame.id) {
+            if (fresh != null && playerEngine?.frameId() == fresh.id) {
                 playerEngine?.reloadSettings(fresh)
                 playerView?.reloadSettings(fresh)
                 view.commitBrightnessPreview()
             }
             framesDirty = true
-            closePlaybackSettings()
+            if (playbackSettingsView === view) closePlaybackSettings()
             refreshJobUi()
         }
     }

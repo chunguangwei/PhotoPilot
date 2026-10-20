@@ -33,7 +33,7 @@ class AppSettingsRepository(
 
     suspend fun setLanguage(value: String) = put(KEY_UI_LANGUAGE, value)
 
-    suspend fun isWifiOnly(): Boolean = dao.get(KEY_NETWORK_WIFI_ONLY)?.valueJson == VALUE_TRUE
+    suspend fun isWifiOnly(): Boolean = dao.get(KEY_NETWORK_WIFI_ONLY)?.valueJson != VALUE_FALSE
 
     suspend fun setWifiOnly(enabled: Boolean) =
         put(KEY_NETWORK_WIFI_ONLY, if (enabled) VALUE_TRUE else VALUE_FALSE)

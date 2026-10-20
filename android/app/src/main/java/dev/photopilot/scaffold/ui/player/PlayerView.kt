@@ -39,7 +39,7 @@ import java.util.Locale
 
 class PlayerView(
     context: Context,
-    private val frame: FrameEntity,
+    private var frame: FrameEntity,
 ) : FrameLayout(context), PlayerEngine.Listener {
 
     var engine: PlayerEngine? = null
@@ -783,6 +783,8 @@ class PlayerView(
     }
 
     fun reloadSettings(freshFrame: FrameEntity) {
+        if (freshFrame.id != frame.id) return
+        frame = freshFrame
         settings = FramePlaybackSettings.parse(freshFrame.settingsJson)
         musicFailedSelection = null
         clockLine.visibility = if (settings.clockEnabled) View.VISIBLE else View.GONE
