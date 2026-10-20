@@ -14,6 +14,29 @@ final class ScreenshotTests: XCTestCase {
         app = nil
     }
 
+    func testCaptureSourcesLandscape() throws {
+        app.terminate()
+        let relaunched = XCUIApplication()
+        relaunched.launchArguments += ["-AppleLanguages", "(en)", "-uitest.reset", "-uitest.onboarded"]
+        relaunched.launch()
+        app = relaunched
+        let skipButton = app.buttons["launch.skip"]
+        if skipButton.waitForExistence(timeout: 15) {
+            skipButton.tap()
+        }
+        let sourcesTab = app.buttons["Sources"].firstMatch
+        XCTAssertTrue(sourcesTab.waitForExistence(timeout: 30), "main container not reached")
+        sourcesTab.tap()
+        let addSource = app.staticTexts["Add a photo source"]
+        XCTAssertTrue(addSource.waitForExistence(timeout: 15), "sources screen not reached")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        sleep(3)
+        capture("07-sources-landscape")
+        XCUIDevice.shared.orientation = .portrait
+        sleep(2)
+        capture("08-sources-portrait")
+    }
+
     func testCaptureAppStoreScreenshots() throws {
         let skipButton = app.buttons["launch.skip"]
         if skipButton.waitForExistence(timeout: 15) {

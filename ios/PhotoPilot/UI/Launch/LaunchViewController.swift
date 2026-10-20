@@ -98,6 +98,9 @@ final class LaunchViewController: UIViewController {
                         throw PersistenceError.dbMigrationFailed
                     }
                     let settings = AppSettingsRepository(container: persistence.container)
+                    if CommandLine.arguments.contains("-uitest.onboarded") {
+                        try? settings.setOnboardingCompleted(true)
+                    }
                     let completed = try settings.isOnboardingCompleted()
                     var autoPlayFrameID: String?
                     if completed,
@@ -271,8 +274,14 @@ final class LaunchViewController: UIViewController {
         scroll.addSubview(stack)
         view.addSubview(scroll)
         contentScroll = scroll
-        let readable = stack.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
-        readable.priority = .defaultHigh
+        let readable = stack.widthAnchor.constraint(
+            lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
+        )
+        let fillWidth = stack.widthAnchor.constraint(
+            equalTo: scroll.frameLayoutGuide.widthAnchor,
+            constant: -2 * ThemeMetrics.contentInsetCompact
+        )
+        fillWidth.priority = .defaultHigh
         let verticalCenter = stack.centerYAnchor.constraint(equalTo: scroll.frameLayoutGuide.centerYAnchor)
         verticalCenter.priority = .defaultLow
         NSLayoutConstraint.activate([
@@ -298,6 +307,7 @@ final class LaunchViewController: UIViewController {
                 constant: -ThemeMetrics.contentInsetCompact
             ),
             readable,
+            fillWidth,
             verticalCenter
         ])
         contentStack = stack

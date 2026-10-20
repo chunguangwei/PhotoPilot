@@ -100,8 +100,14 @@ final class PhotoDetailViewController: UIViewController {
         undoBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(undoBar)
 
-        let readable = metadataStack.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
-        readable.priority = .defaultHigh
+        let readable = metadataStack.widthAnchor.constraint(
+            lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
+        )
+        let fillWidth = metadataStack.widthAnchor.constraint(
+            equalTo: view.safeAreaLayoutGuide.widthAnchor,
+            constant: -2 * ThemeMetrics.contentInsetCompact
+        )
+        fillWidth.priority = .defaultHigh
         NSLayoutConstraint.activate([
             backRow.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             backRow.leadingAnchor.constraint(
@@ -139,6 +145,7 @@ final class PhotoDetailViewController: UIViewController {
                 constant: -ThemeMetrics.contentInset
             ),
             readable,
+            fillWidth,
             metadataStack.bottomAnchor.constraint(
                 equalTo: actionsStack.topAnchor,
                 constant: -ThemeMetrics.space16

@@ -55,8 +55,14 @@ final class MusicPickerViewController: UIViewController, UIDocumentPickerDelegat
         scrollView.addSubview(formStack)
         view.addSubview(scrollView)
 
-        let readable = formStack.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
-        readable.priority = .defaultHigh
+        let readable = formStack.widthAnchor.constraint(
+            lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
+        )
+        let fillWidth = formStack.widthAnchor.constraint(
+            equalTo: scrollView.frameLayoutGuide.widthAnchor,
+            constant: -2 * ThemeMetrics.contentInsetCompact
+        )
+        fillWidth.priority = .defaultHigh
         NSLayoutConstraint.activate([
             topBar.topAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.topAnchor,
@@ -92,6 +98,7 @@ final class MusicPickerViewController: UIViewController, UIDocumentPickerDelegat
                 constant: -ThemeMetrics.contentInset
             ),
             readable,
+            fillWidth
         ])
 
         offButton.addTarget(self, action: #selector(handleOff), for: .touchUpInside)

@@ -104,8 +104,14 @@ final class PhotoPermissionViewController: UIViewController {
         stack.spacing = ThemeMetrics.space16
         stack.translatesAutoresizingMaskIntoConstraints = false
         contentScroll.addSubview(stack)
-        let readable = stack.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
-        readable.priority = .defaultHigh
+        let readable = stack.widthAnchor.constraint(
+            lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
+        )
+        let fillWidth = stack.widthAnchor.constraint(
+            equalTo: contentScroll.frameLayoutGuide.widthAnchor,
+            constant: -2 * ThemeMetrics.contentInsetCompact
+        )
+        fillWidth.priority = .defaultHigh
         let verticalCenter = stack.centerYAnchor.constraint(equalTo: contentScroll.frameLayoutGuide.centerYAnchor)
         verticalCenter.priority = .defaultLow
         NSLayoutConstraint.activate([
@@ -127,6 +133,7 @@ final class PhotoPermissionViewController: UIViewController {
                 constant: -ThemeMetrics.contentInsetCompact
             ),
             readable,
+            fillWidth,
             verticalCenter
         ])
         contentStack = stack

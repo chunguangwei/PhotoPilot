@@ -145,8 +145,14 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
         scrollView.addSubview(form)
         view.addSubview(scrollView)
 
-        let readable = form.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
-        readable.priority = .defaultHigh
+        let readable = form.widthAnchor.constraint(
+            lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
+        )
+        let fillWidth = form.widthAnchor.constraint(
+            equalTo: scrollView.frameLayoutGuide.widthAnchor,
+            constant: -2 * ThemeMetrics.contentInsetCompact
+        )
+        fillWidth.priority = .defaultHigh
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
@@ -171,6 +177,7 @@ final class HolidayEditViewController: UIViewController, UITextFieldDelegate {
                 constant: -ThemeMetrics.space8
             ),
             readable,
+            fillWidth
         ])
 
         enableKeyboardDismissal()

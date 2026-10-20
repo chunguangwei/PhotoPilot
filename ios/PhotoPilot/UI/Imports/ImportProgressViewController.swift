@@ -106,8 +106,14 @@ final class ImportProgressViewController: UIViewController {
         scrollView.addSubview(stack)
         view.addSubview(scrollView)
 
-        let readable = stack.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
-        readable.priority = .defaultHigh
+        let readable = stack.widthAnchor.constraint(
+            lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
+        )
+        let fillWidth = stack.widthAnchor.constraint(
+            equalTo: scrollView.frameLayoutGuide.widthAnchor,
+            constant: -2 * ThemeMetrics.contentInsetCompact
+        )
+        fillWidth.priority = .defaultHigh
         let verticalCenter = stack.centerYAnchor.constraint(equalTo: scrollView.frameLayoutGuide.centerYAnchor)
         verticalCenter.priority = .defaultLow
         NSLayoutConstraint.activate([
@@ -139,6 +145,7 @@ final class ImportProgressViewController: UIViewController {
                 constant: -ThemeMetrics.contentInset
             ),
             readable,
+            fillWidth,
             verticalCenter
         ])
     }

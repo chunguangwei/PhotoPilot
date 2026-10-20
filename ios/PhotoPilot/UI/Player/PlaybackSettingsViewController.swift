@@ -169,8 +169,14 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         bottomBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(bottomBar)
 
-        let readable = formStack.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
-        readable.priority = .defaultHigh
+        let readable = formStack.widthAnchor.constraint(
+            lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
+        )
+        let fillWidth = formStack.widthAnchor.constraint(
+            equalTo: scrollView.frameLayoutGuide.widthAnchor,
+            constant: -2 * ThemeMetrics.contentInsetCompact
+        )
+        fillWidth.priority = .defaultHigh
         NSLayoutConstraint.activate([
             topBar.topAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.topAnchor,
@@ -206,6 +212,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
                 constant: -ThemeMetrics.contentInset
             ),
             readable,
+            fillWidth,
             bottomBar.leadingAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.leadingAnchor,
                 constant: ThemeMetrics.contentInset

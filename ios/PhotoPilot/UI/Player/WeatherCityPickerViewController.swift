@@ -95,8 +95,14 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
         locationRow.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(locationRow)
 
-        let readable = searchField.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
-        readable.priority = .defaultHigh
+        let readable = searchField.widthAnchor.constraint(
+            lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
+        )
+        let fillWidth = searchField.widthAnchor.constraint(
+            equalTo: view.safeAreaLayoutGuide.widthAnchor,
+            constant: -2 * ThemeMetrics.contentInsetCompact
+        )
+        fillWidth.priority = .defaultHigh
         NSLayoutConstraint.activate([
             topBar.topAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.topAnchor,
@@ -131,6 +137,7 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
                 constant: -ThemeMetrics.contentInset
             ),
             readable,
+            fillWidth,
             statusLabel.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: ThemeMetrics.space8),
             statusLabel.centerXAnchor.constraint(equalTo: searchField.centerXAnchor),
             table.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: ThemeMetrics.space8),

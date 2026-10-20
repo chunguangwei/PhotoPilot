@@ -176,8 +176,14 @@ final class ManualOrderViewController: UIViewController,
         doneButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(doneButton)
 
-        let readable = header.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
-        readable.priority = .defaultHigh
+        let readable = header.widthAnchor.constraint(
+            lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
+        )
+        let fillWidth = header.widthAnchor.constraint(
+            equalTo: view.safeAreaLayoutGuide.widthAnchor,
+            constant: -2 * ThemeMetrics.contentInsetCompact
+        )
+        fillWidth.priority = .defaultHigh
         NSLayoutConstraint.activate([
             header.topAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.topAnchor,
@@ -193,6 +199,7 @@ final class ManualOrderViewController: UIViewController,
                 constant: -ThemeMetrics.contentInsetCompact
             ),
             readable,
+            fillWidth,
             grid.topAnchor.constraint(equalTo: header.bottomAnchor, constant: ThemeMetrics.space12),
             grid.leadingAnchor.constraint(equalTo: header.leadingAnchor),
             grid.trailingAnchor.constraint(equalTo: header.trailingAnchor),

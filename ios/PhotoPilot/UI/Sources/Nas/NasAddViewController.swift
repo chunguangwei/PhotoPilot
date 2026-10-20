@@ -173,8 +173,14 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         scrollView.addSubview(form)
         view.addSubview(scrollView)
 
-        let readable = form.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
-        readable.priority = .defaultHigh
+        let readable = form.widthAnchor.constraint(
+            lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
+        )
+        let fillWidth = form.widthAnchor.constraint(
+            equalTo: scrollView.frameLayoutGuide.widthAnchor,
+            constant: -2 * ThemeMetrics.contentInsetCompact
+        )
+        fillWidth.priority = .defaultHigh
         NSLayoutConstraint.activate([
             topBar.topAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.topAnchor,
@@ -210,6 +216,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
                 constant: -ThemeMetrics.contentInset
             ),
             readable,
+            fillWidth
         ])
         formScrollView = scrollView
         NotificationCenter.default.addObserver(

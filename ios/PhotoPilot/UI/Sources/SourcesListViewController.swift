@@ -93,8 +93,14 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         scrollView.addSubview(contentStack)
         view.addSubview(scrollView)
 
-        let readable = headerStack.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
-        readable.priority = .defaultHigh
+        let readable = contentStack.widthAnchor.constraint(
+            lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
+        )
+        let fillWidth = contentStack.widthAnchor.constraint(
+            equalTo: scrollView.frameLayoutGuide.widthAnchor,
+            constant: -2 * ThemeMetrics.contentInsetCompact
+        )
+        fillWidth.priority = .defaultHigh
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -126,7 +132,8 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
                 lessThanOrEqualTo: contentStack.trailingAnchor,
                 constant: -ThemeMetrics.contentInsetCompact
             ),
-            readable
+            readable,
+            fillWidth
         ])
     }
 
@@ -323,7 +330,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         mirrorLabel.numberOfLines = 0
         mirrorLabel.setContentHuggingPriority(.required, for: .horizontal)
         mirrorLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-        let mirrorRow = UIStackView(arrangedSubviews: [mirrorLabel, mirrorSwitch])
+        let mirrorRow = UIStackView(arrangedSubviews: [mirrorLabel, UIView(), mirrorSwitch])
         mirrorRow.axis = .horizontal
         mirrorRow.alignment = .center
         mirrorRow.spacing = ThemeMetrics.space8
@@ -332,14 +339,16 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
             greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
         ).isActive = true
 
-        let actions = UIStackView(arrangedSubviews: [syncButton, reconfigureButton, disconnectButton, mirrorRow])
-        actions.axis = .vertical
-        actions.spacing = ThemeMetrics.space4
+        let buttonsRow = UIStackView(arrangedSubviews: [syncButton, reconfigureButton, disconnectButton, UIView()])
+        buttonsRow.axis = .horizontal
+        buttonsRow.alignment = .center
+        buttonsRow.spacing = ThemeMetrics.space8
+        buttonsRow.isHidden = source.status == "disconnected"
 
-        let content = UIStackView(arrangedSubviews: [textStack, actions])
-        content.axis = .horizontal
-        content.alignment = .center
-        content.spacing = ThemeMetrics.space12
+        let content = UIStackView(arrangedSubviews: [textStack, buttonsRow, mirrorRow])
+        content.axis = .vertical
+        content.alignment = .fill
+        content.spacing = ThemeMetrics.space8
         content.translatesAutoresizingMaskIntoConstraints = false
         row.addSubview(content)
         NSLayoutConstraint.activate([
