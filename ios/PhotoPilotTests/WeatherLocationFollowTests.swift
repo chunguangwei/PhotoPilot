@@ -109,7 +109,7 @@ final class WeatherLocationFollowTests: XCTestCase {
     }
 
     @MainActor
-    func testWeatherTextKeepsConditionsVisibleWithLongRTLAndLargeFont() {
+    func testInlineWeatherKeepsConditionsVisibleWithLongRTLAndLargeFont() {
         for category in [UIContentSizeCategory.large, .accessibilityExtraExtraExtraLarge] {
         for width in [320.0, 375.0, 1024.0] {
             let weather = WeatherTextView()
@@ -120,10 +120,12 @@ final class WeatherLocationFollowTests: XCTestCase {
             weather.text = "24°C Clear"
             weather.frame = CGRect(x: 0, y: 0, width: width, height: 500)
             weather.layoutIfNeeded()
-            XCTAssertEqual(weather.placeLabel.numberOfLines, 2)
+            XCTAssertEqual(weather.placeLabel.numberOfLines, 1)
             XCTAssertGreaterThan(weather.conditionLabel.frame.height, 0)
             XCTAssertLessThanOrEqual(weather.conditionLabel.frame.maxX, width + 1)
-            XCTAssertGreaterThanOrEqual(weather.conditionLabel.frame.minY, weather.placeLabel.frame.maxY)
+            XCTAssertEqual(weather.conditionLabel.frame.midY, weather.placeLabel.frame.midY, accuracy: 1)
+            XCTAssertLessThanOrEqual(weather.placeLabel.frame.maxX, weather.conditionLabel.frame.minX)
+            XCTAssertGreaterThanOrEqual(weather.placeLabel.bounds.width, width * 0.3)
             XCTAssertLessThanOrEqual(weather.conditionLabel.frame.maxY, weather.bounds.height)
             let attachment = XCTAttachment(image: UIGraphicsImageRenderer(bounds: weather.bounds).image { weather.layer.render(in: $0.cgContext) })
             attachment.name = "weather-\(Int(width))-\(category.rawValue)"
@@ -133,6 +135,60 @@ final class WeatherLocationFollowTests: XCTestCase {
             XCTAssertTrue(weather.accessibilityLabel?.contains("Reykjavík") == true)
         }
         }
+    }
+
+    @MainActor
+    func testInlineWeatherReservesCompleteTemperatureAtLargestText() {
+        let weather = WeatherTextView()
+        weather.font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge))
+        weather.setPlace(String(repeating: "Reykjavík · ديرة ", count: 10))
+        weather.text = "−148°F Thunderstorm"
+        weather.frame = CGRect(x: 0, y: 0, width: 288, height: 100)
+        weather.layoutIfNeeded()
+        let minimum = ("−148°F" as NSString).size(withAttributes: [.font: weather.font!]).width
+        XCTAssertGreaterThanOrEqual(weather.conditionLabel.bounds.width, minimum)
+        XCTAssertGreaterThan(weather.placeLabel.bounds.width, 20)
+        XCTAssertEqual(weather.conditionLabel.frame.midY, weather.placeLabel.frame.midY, accuracy: 1)
+        XCTAssertLessThanOrEqual(weather.conditionLabel.frame.maxX, weather.bounds.width)
+        XCTAssertEqual(weather.conditionLabel.numberOfLines, 1)
+        XCTAssertTrue(weather.accessibilityLabel?.contains("Thunderstorm") == true)
+    }
+
+    @MainActor
+    func testInlineWeatherOmitsDescriptionAndIconBeforeTruncatingTemperature() throws {
+        let weather = WeatherTextView()
+        weather.font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge))
+        weather.setPlace("北京 · 海淀区")
+        let icon = NSTextAttachment()
+        icon.image = try XCTUnwrap(UIImage(systemName: "cloud.sun.fill", withConfiguration: UIImage.SymbolConfiguration(font: weather.font)))
+        let content = NSMutableAttributedString(attachment: icon)
+        content.append(NSAttributedString(string: " −148°F Thunderstorm"))
+        weather.attributedText = content
+        weather.frame = CGRect(x: 0, y: 0, width: 288, height: 100)
+        weather.layoutIfNeeded()
+        XCTAssertEqual(weather.conditionLabel.attributedText?.string, "−148°F")
+        XCTAssertGreaterThanOrEqual(weather.conditionLabel.bounds.width, ("−148°F" as NSString).size(withAttributes: [.font: weather.font!]).width)
+        XCTAssertGreaterThanOrEqual(weather.placeLabel.bounds.width, 44)
+        XCTAssertEqual(weather.attributedText?.string, content.string)
+        XCTAssertTrue(weather.accessibilityLabel?.contains("Thunderstorm") == true)
+    }
+
+    @MainActor
+    func testInlineWeatherCentersCompleteShortTextOnWideScreens() {
+        let weather = WeatherTextView()
+        weather.font = .systemFont(ofSize: 17)
+        weather.textAlignment = .center
+        weather.setPlace("北京 · 海淀区")
+        weather.text = "24°C 晴"
+        weather.frame = CGRect(x: 0, y: 0, width: 1024, height: 60)
+        weather.layoutIfNeeded()
+        XCTAssertGreaterThanOrEqual(weather.placeLabel.bounds.width, weather.placeLabel.intrinsicContentSize.width)
+        XCTAssertGreaterThanOrEqual(weather.conditionLabel.bounds.width, weather.conditionLabel.intrinsicContentSize.width)
+        XCTAssertEqual((weather.placeLabel.frame.minX + weather.conditionLabel.frame.maxX) / 2, 512, accuracy: 1)
+        weather.setPlace("")
+        weather.layoutIfNeeded()
+        XCTAssertTrue(weather.placeLabel.isHidden)
+        XCTAssertEqual(weather.conditionLabel.frame.midX, 512, accuracy: 1)
     }
 
     func testSparseMetadataCannotReplaceLegacyFriendlyName() {

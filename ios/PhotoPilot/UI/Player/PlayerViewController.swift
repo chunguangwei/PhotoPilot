@@ -1748,6 +1748,7 @@ final class PlayerViewController: UIViewController {
             clockLabel.textAlignment = .left
             dateLabel.textAlignment = .left
         }
+        weatherLabel.textAlignment = clockLabel.textAlignment
     }
 
     private func applyBrightness() {
@@ -1838,11 +1839,6 @@ final class PlayerViewController: UIViewController {
         ])
     }
 
-    override func viewWillLayoutSubviews() {
-        super.viewWillLayoutSubviews()
-        restWeatherLabel.placeLabel.numberOfLines = view.bounds.height < 400 && restWeatherLabel.font.pointSize >= 32 ? 1 : 2
-    }
-
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         controlsCapsule.layer.cornerRadius = controlsCapsule.bounds.height / 2
@@ -1916,7 +1912,6 @@ final class PlayerViewController: UIViewController {
         restWeatherLabel.adjustsFontForContentSizeCategory = true
         restWeatherLabel.textColor = ThemeColor.textOnPhoto
         restWeatherLabel.textAlignment = .center
-        restWeatherLabel.numberOfLines = 0
         restWeatherLabel.isHidden = true
         restStack.axis = .vertical
         restStack.alignment = .center
@@ -2280,25 +2275,23 @@ final class PlayerViewController: UIViewController {
     }
 }
 
-final class WeatherTextView: UIStackView {
+final class WeatherTextView: UIView {
     let placeLabel = UILabel()
     let conditionLabel = UILabel()
     private var fullPlace = ""
+    private var rowAlignment: NSTextAlignment = .natural
+    private var fullCondition: NSAttributedString?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        axis = .vertical
-        spacing = ThemeMetrics.space4
-        alignment = .fill
-        placeLabel.numberOfLines = 2
-        placeLabel.lineBreakMode = .byTruncatingTail
-        conditionLabel.numberOfLines = 0
-        conditionLabel.setContentCompressionResistancePriority(.required, for: .vertical)
-        placeLabel.isAccessibilityElement = false
-        conditionLabel.isAccessibilityElement = false
+        [placeLabel, conditionLabel].forEach {
+            $0.numberOfLines = 1
+            $0.lineBreakMode = .byTruncatingTail
+            $0.isAccessibilityElement = false
+            addSubview($0)
+        }
+        setContentCompressionResistancePriority(.required, for: .vertical)
         isAccessibilityElement = true
-        addArrangedSubview(placeLabel)
-        addArrangedSubview(conditionLabel)
     }
 
     @available(*, unavailable)
@@ -2308,7 +2301,7 @@ final class WeatherTextView: UIStackView {
 
     var font: UIFont! {
         get { conditionLabel.font }
-        set { placeLabel.font = newValue; conditionLabel.font = newValue }
+        set { placeLabel.font = newValue; conditionLabel.font = newValue; refreshLayout() }
     }
 
     var textColor: UIColor! {
@@ -2322,23 +2315,60 @@ final class WeatherTextView: UIStackView {
     }
 
     var textAlignment: NSTextAlignment {
-        get { conditionLabel.textAlignment }
-        set { placeLabel.textAlignment = newValue; conditionLabel.textAlignment = newValue }
-    }
-
-    var numberOfLines: Int {
-        get { conditionLabel.numberOfLines }
-        set { conditionLabel.numberOfLines = newValue }
+        get { rowAlignment }
+        set { rowAlignment = newValue; setNeedsLayout() }
     }
 
     var text: String? {
-        get { conditionLabel.text }
-        set { conditionLabel.text = newValue; updateAccessibility() }
+        get { fullCondition?.string }
+        set { fullCondition = newValue.map { NSAttributedString(string: $0) }; conditionLabel.attributedText = fullCondition; updateAccessibility(); refreshLayout() }
     }
 
     var attributedText: NSAttributedString? {
-        get { conditionLabel.attributedText }
-        set { conditionLabel.attributedText = newValue; updateAccessibility() }
+        get { fullCondition }
+        set { fullCondition = newValue?.copy() as? NSAttributedString; conditionLabel.attributedText = fullCondition; updateAccessibility(); refreshLayout() }
+    }
+
+    override var intrinsicContentSize: CGSize {
+        let place = placeLabel.isHidden ? CGSize.zero : placeLabel.intrinsicContentSize
+        let condition = measured(fullCondition)
+        return CGSize(width: max(0, place.width) + max(0, condition.width) + (place.width > 0 && condition.width > 0 ? ThemeMetrics.space8 : 0),
+                      height: max(place.height, condition.height, 0))
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let placeSize = placeLabel.isHidden ? CGSize.zero : placeLabel.intrinsicContentSize
+        let placeFull = max(0, placeSize.width)
+        let fullSize = measured(fullCondition)
+        let gap = placeFull > 0 && fullSize.width > 0 ? min(ThemeMetrics.space8, bounds.width) : 0
+        let available = max(0, bounds.width - gap)
+        let placeFloor = min(placeFull, 44, available)
+        let display = conditionContent(available: max(0, available - placeFloor))
+        conditionLabel.attributedText = display.text
+        conditionLabel.lineBreakMode = display.temperatureOnly ? .byClipping : .byTruncatingTail
+        let conditionSize = measured(display.text)
+        let conditionFull = conditionSize.width
+        let conditionFloor = min(display.minimum, available)
+        var conditionWidth = min(conditionFull, available, max(conditionFloor, placeFull > 0 ? available / 2 : available))
+        let placeWidth = min(placeFull, max(0, available - conditionWidth))
+        conditionWidth = min(conditionFull, max(0, available - placeWidth))
+        let width = placeWidth + conditionWidth + gap
+        let origin: CGFloat
+        switch rowAlignment {
+        case .center: origin = max(0, (bounds.width - width) / 2)
+        case .right: origin = max(0, bounds.width - width)
+        default: origin = 0
+        }
+        placeLabel.frame = CGRect(x: origin, y: (bounds.height - max(0, placeSize.height)) / 2,
+                                  width: placeWidth, height: max(0, placeSize.height))
+        conditionLabel.frame = CGRect(x: origin + placeWidth + gap, y: (bounds.height - max(0, conditionSize.height)) / 2,
+                                      width: conditionWidth, height: max(0, conditionSize.height))
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        refreshLayout()
     }
 
     func setPlace(_ text: String) {
@@ -2346,9 +2376,46 @@ final class WeatherTextView: UIStackView {
         placeLabel.text = text.isEmpty ? nil : "\u{2068}\(text)\u{2069}"
         placeLabel.isHidden = text.isEmpty
         updateAccessibility()
+        refreshLayout()
+    }
+
+    private func measured(_ content: NSAttributedString?) -> CGSize {
+        guard let content, content.length > 0 else { return .zero }
+        let measured = NSMutableAttributedString(string: content.string, attributes: [.font: conditionLabel.font ?? UIFont.systemFont(ofSize: 17)])
+        content.enumerateAttributes(in: NSRange(location: 0, length: content.length)) { attributes, range, _ in
+            measured.addAttributes(attributes, range: range)
+        }
+        let size = measured.size()
+        return CGSize(width: ceil(size.width), height: ceil(size.height))
+    }
+
+    private func conditionContent(available: CGFloat) -> (text: NSAttributedString?, minimum: CGFloat, temperatureOnly: Bool) {
+        guard let fullCondition,
+              let range = fullCondition.string.range(of: #"[+−-]?\d+(?:[.,]\d+)?\s*[°℃℉](?:[CF])?"#, options: .regularExpression) else {
+            return (fullCondition, 0, false)
+        }
+        let temperature = NSRange(range, in: fullCondition.string)
+        let prefixLength = temperature.location + temperature.length
+        let prefix = fullCondition.attributedSubstring(from: NSRange(location: 0, length: prefixLength))
+        let hasDescription = prefixLength < fullCondition.length
+        let ellipsis = NSAttributedString(string: "…", attributes: prefix.attributes(at: max(0, prefix.length - 1), effectiveRange: nil))
+        let minimum = measured(prefix).width + (hasDescription ? measured(ellipsis).width : 0)
+        guard measured(fullCondition).width > available, minimum > available else {
+            return (fullCondition, minimum, false)
+        }
+        if measured(prefix).width > available, temperature.location > 0 {
+            let temperatureText = fullCondition.attributedSubstring(from: temperature)
+            return (temperatureText, measured(temperatureText).width, true)
+        }
+        return (prefix, measured(prefix).width, true)
+    }
+
+    private func refreshLayout() {
+        invalidateIntrinsicContentSize()
+        setNeedsLayout()
     }
 
     private func updateAccessibility() {
-        accessibilityLabel = [fullPlace, conditionLabel.text ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")
+        accessibilityLabel = [fullPlace, fullCondition?.string ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")
     }
 }

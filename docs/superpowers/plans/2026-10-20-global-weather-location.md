@@ -51,3 +51,14 @@ Files: native Player views, test screenshots, contracts/vectors/weather-place-di
 - [x] Updated actual results; commit 0f3c74c/tag v1.1.50 pushed, GitHub Latest published with APK+SHA256SUMS; remote digest/size/HTTP200 verified. Authenticated updater metadata verified; local anonymous API rate-limited403, not claimed passing.
 
 Actual verification: iOS150/150, Android374/374; Debug/Release/build/analyze/lint passed (Android182warnings0errors); paired iPhone/iPad49→50 install/launch/process and DB aggregate preservation verified. Native layout fixture evidence has no hardware safe insets, worldwide service coverage remains unverified.
+
+## User revision v1.1.51: inline place and temperature
+
+The user approved single-row place+temperature on all platforms, with wide/narrow adaptation. This supersedes Task2's vertical-row design; geographic data and service rules stay unchanged.
+
+- [x] Observe native layout regressions RED: same row, wide complete centered group, narrow/max font full temperature, long/RTL names ellipsized with complete accessibility.
+- [x] Use independent same-row labels: reserve temperature prefix width, let place and condition description tailtruncate when needed, no infinite font shrink or change to stored text.
+- [x] Run iOS full tests/build/analyze/Release and Android full tests/build/lint/signed Release, then sign/install both paired devices and verify stored library counts.
+- [ ] Update actual 16/design results, commit/push/tag v1.1.51, publish APK+SHA256SUMS and verify latest/download digest.
+
+v1.1.51 actual: iOS153/153, Android379/379; all required build/analyze/lint/Release checks passed; paired devices50→51 install/launch/process and matching DB aggregates verified. 320AX and short-landscape native screenshots inspected. Android native runtime UI unavailable.

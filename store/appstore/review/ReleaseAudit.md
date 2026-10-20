@@ -57,3 +57,7 @@
 ## v1.1.50 全球双语天气地点补记
 
 2026-10-20 双端版本 1.1.50(50)。iOS 本地未签名 Release 归档 `.build/appstore-audit/PhotoPilot-v1.1.50-unsigned.xcarchive`、build/analyze 及 150 项 XCTest 通过；开发签名副本沿用旧应用/钥匙串权限，iPhone 13/iPad Air 4 覆盖安装、启动与库汇总保留已验证。隐私清单与源文件一致，本轮未更换天气服务或额外存储精确坐标。全球双语地点与 AX 布局夹具不等于全球网络/真机完整 QA，商店截图仍须按最终 Distribution 构建核对；前述 App Store 门控未关闭，未上传商店。
+
+## v1.1.51 同行排版补记
+
+2026-10-20 双端版本 1.1.51(51)，仅变更播放/休息的地点与温度同行和宽窄屏布局，全球地点/坐标/天气服务逻辑未改。iOS 最终 Release archive、build/analyze 与153项 XCTest 通过，Android379项测试及签名构建通过；iPhone13/iPadAir4 开发签名覆盖安装与启动/库汇总核验完成。隐私清单仍与源文件一致；前述 Distribution/截图/全球网络真机QA等商店门控未关闭，未上传商店。
