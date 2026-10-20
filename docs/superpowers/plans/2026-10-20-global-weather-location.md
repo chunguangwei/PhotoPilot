@@ -48,6 +48,6 @@ Files: native Player views, test screenshots, contracts/vectors/weather-place-di
 - [x] Audited tracked references and removed 96 obsolete Xcode cache/intermediate directories (2,984,221,922 logical bytes); current build caches, products, signing, history and evidence retained. Exact allowlist/result in .build/cleanup-result-v1.1.50.json.
 - [x] Set both native versions 1.1.50/build50, regenerate Xcode project, create signed Android Release and iOS Release archive.
 - [x] Sign iOS local archive with same certificate/profile/application+keychain entitlements; cover install both paired devices, query versions and running processes.
-- [ ] Update 16 actual outcomes and remaining limits; commit, tag v1.1.50, push main+tag and GitHub Release APK+SHA256SUMS; verify remote asset digest/updater metadata.
+- [x] Updated actual results; commit 0f3c74c/tag v1.1.50 pushed, GitHub Latest published with APK+SHA256SUMS; remote digest/size/HTTP200 verified. Authenticated updater metadata verified; local anonymous API rate-limited403, not claimed passing.
 
 Actual verification: iOS150/150, Android374/374; Debug/Release/build/analyze/lint passed (Android182warnings0errors); paired iPhone/iPad49→50 install/launch/process and DB aggregate preservation verified. Native layout fixture evidence has no hardware safe insets, worldwide service coverage remains unverified.
