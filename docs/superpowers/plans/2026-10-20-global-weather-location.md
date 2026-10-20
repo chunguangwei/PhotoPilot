@@ -59,6 +59,6 @@ The user approved single-row place+temperature on all platforms, with wide/narro
 - [x] Observe native layout regressions RED: same row, wide complete centered group, narrow/max font full temperature, long/RTL names ellipsized with complete accessibility.
 - [x] Use independent same-row labels: reserve temperature prefix width, let place and condition description tailtruncate when needed, no infinite font shrink or change to stored text.
 - [x] Run iOS full tests/build/analyze/Release and Android full tests/build/lint/signed Release, then sign/install both paired devices and verify stored library counts.
-- [ ] Update actual 16/design results, commit/push/tag v1.1.51, publish APK+SHA256SUMS and verify latest/download digest.
+- [x] Updated16/design; commit ccb18bc and tag v1.1.51 pushed, Latest published with APK+SHA256SUMS. Authenticated+anonymous latest both51/HTTP200, server digest/size and public download HTTP200 verified.
 
 v1.1.51 actual: iOS153/153, Android379/379; all required build/analyze/lint/Release checks passed; paired devices50→51 install/launch/process and matching DB aggregates verified. 320AX and short-landscape native screenshots inspected. Android native runtime UI unavailable.
