@@ -28,7 +28,10 @@ object WeatherLogic {
         weatherEnabled && followsLocation
 
     fun preserveLocatedPlace(existing: StoredPlace?, candidate: StoredPlace): StoredPlace =
-        if (existing != null && existing.placeId == candidate.placeId) existing else candidate
+        if (existing != null && existing.placeId == candidate.placeId) existing.copy(
+            displayZh = enrich(existing.displayZh, candidate.displayZh, existing.nameZh),
+            displayEn = enrich(existing.displayEn, candidate.displayEn, existing.nameEn),
+        ) else candidate
 
     fun segmentOf(observedAt: Long, nowMs: Long): TtlSegment {
         val age = nowMs - observedAt
@@ -115,11 +118,93 @@ object WeatherLogic {
     fun weatherDataAllowed(attributionJson: String?): Boolean =
         attributionText(attributionJson) != null
 
-    data class StoredPlace(        val placeId: String,
+    data class DisplayFields(
+        val locality: String? = null,
+        val subLocality: String? = null,
+        val subAdminArea: String? = null,
+        val adminArea: String? = null,
+        val country: String? = null,
+    )
+
+    private fun clean(value: String?): String? = value?.trim()?.takeIf { it.isNotEmpty() }
+
+    fun compact(fields: DisplayFields?, fallback: String, language: String): String {
+        if (fields == null) return fallback.trim()
+        val city = clean(fields.locality)
+        val district = clean(fields.subLocality)?.takeUnless { it.equals(city, ignoreCase = true) }
+        if (city != null) return if (language == "zh") {
+            listOfNotNull(city, district).joinToString(" · ")
+        } else {
+            listOfNotNull(district, city).joinToString(", ")
+        }
+        return clean(fields.subLocality) ?: clean(fields.subAdminArea) ?: clean(fields.adminArea)
+            ?: clean(fields.country) ?: fallback.trim()
+    }
+
+    fun context(fields: DisplayFields?, language: String): String {
+        if (fields == null) return ""
+        val shown = compact(fields, "", language)
+        val values = listOfNotNull(clean(fields.subAdminArea), clean(fields.adminArea), clean(fields.country))
+            .filterNot { it.equals(clean(fields.locality), true) || it.equals(clean(fields.subLocality), true) || it == shown }
+            .distinctBy { it.lowercase(java.util.Locale.ROOT) }
+        return values.joinToString(", ")
+    }
+
+    private fun displayFields(place: StoredPlace, language: String): DisplayFields? {
+        val preferred = if (language == "zh") place.displayZh else place.displayEn
+        val other = if (language == "zh") place.displayEn else place.displayZh
+        return preferred?.takeIf { compact(it, "", language).isNotBlank() } ?: other
+    }
+
+    fun displayName(place: StoredPlace, language: String): String = compact(
+        displayFields(place, language),
+        if (language == "zh") place.nameZh.ifBlank { place.nameEn } else place.nameEn.ifBlank { place.nameZh },
+        language,
+    )
+
+    fun detailedName(place: StoredPlace, language: String): String {
+        val fields = displayFields(place, language)
+        val other = if (language == "zh") place.displayEn else place.displayZh
+        val region = context(fields, language).ifBlank { context(other, language) }
+        return listOf(displayName(place, language), region).filter { it.isNotBlank() }
+            .joinToString(if (language == "zh") " · " else ", ")
+    }
+
+    private fun enrich(old: DisplayFields?, fresh: DisplayFields?, rawName: String): DisplayFields? {
+        if (fresh == null) return old
+        if (old == null) return fresh.takeIf {
+            clean(it.locality) != null || clean(it.subLocality) != null ||
+                compact(it, "", "en").equals(rawName.trim(), ignoreCase = true)
+        }
+        val oldCity = clean(old.locality)
+        val newCity = clean(fresh.locality)
+        val oldDistrict = clean(old.subLocality)
+        val newDistrict = clean(fresh.subLocality)
+        if (oldCity != null && newCity != null && !oldCity.equals(newCity, ignoreCase = true)) return old
+        if (oldDistrict != null && newDistrict != null && !oldDistrict.equals(newDistrict, ignoreCase = true)) return old
+        if (oldCity == null && newCity != null && oldDistrict != null &&
+            !oldDistrict.equals(newDistrict, ignoreCase = true)) return old
+        if (oldDistrict == null && newDistrict != null && oldCity != null &&
+            !oldCity.equals(newCity, ignoreCase = true)) return old
+        return DisplayFields(
+            oldCity ?: newCity,
+            oldDistrict ?: newDistrict,
+            clean(old.subAdminArea) ?: clean(fresh.subAdminArea),
+            clean(old.adminArea) ?: clean(fresh.adminArea),
+            clean(old.country) ?: clean(fresh.country),
+        )
+    }
+
+    fun mayApplyAutoLocation(startId: String?, currentId: String?, follows: Boolean): Boolean =
+        follows && startId == currentId
+
+    data class StoredPlace(val placeId: String,
         val nameZh: String,
         val nameEn: String,
         val latE7: Int,
         val lonE7: Int,
+        val displayZh: DisplayFields? = null,
+        val displayEn: DisplayFields? = null,
     ) {
         val latitude: Double get() = latE7 / 10_000_000.0
         val longitude: Double get() = lonE7 / 10_000_000.0
@@ -133,9 +218,22 @@ object WeatherLogic {
                     "nameEn" to p.nameEn,
                     "latE7" to p.latE7.toDouble(),
                     "lonE7" to p.lonE7.toDouble(),
+                    "displayZh" to encodeDisplay(p.displayZh),
+                    "displayEn" to encodeDisplay(p.displayEn),
                 )
             },
         )
+
+    private fun encodeDisplay(fields: DisplayFields?): Map<String, String?>? = fields?.let {
+        mapOf("locality" to it.locality, "subLocality" to it.subLocality,
+            "subAdminArea" to it.subAdminArea, "adminArea" to it.adminArea, "country" to it.country)
+    }
+
+    private fun decodeDisplay(value: Any?): DisplayFields? {
+        val fields = value as? Map<*, *> ?: return null
+        return DisplayFields(fields["locality"] as? String, fields["subLocality"] as? String,
+            fields["subAdminArea"] as? String, fields["adminArea"] as? String, fields["country"] as? String)
+    }
 
     fun decodePlaces(json: String?): Map<String, StoredPlace> {
         val root = JsonMini.parseObject(json)
@@ -151,6 +249,8 @@ object WeatherLogic {
                 nameEn = nameEn,
                 latE7 = latE7,
                 lonE7 = lonE7,
+                displayZh = decodeDisplay(map["displayZh"]),
+                displayEn = decodeDisplay(map["displayEn"]),
             )
         }.toMap()
     }

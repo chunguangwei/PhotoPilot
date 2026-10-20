@@ -5,7 +5,6 @@ import Foundation
 final class WeatherAutoLocator: NSObject, @preconcurrency CLLocationManagerDelegate {
     private let repository: WeatherRepository
     private let manager = CLLocationManager()
-    private let geocoder = CLGeocoder()
     private var awaitingAuthorization = false
     private var locating = false
     var onPlaceUpdated: (() -> Void)?
@@ -52,30 +51,11 @@ final class WeatherAutoLocator: NSObject, @preconcurrency CLLocationManagerDeleg
         locating = false
         guard let location = locations.first else { return }
         Task {
-            let coarse = OpenMeteoProvider.coarsenE7(
-                latitude: location.coordinate.latitude,
-                longitude: location.coordinate.longitude
-            )
-            async let zh = reverseName(for: location, locale: Locale(identifier: "zh_CN"))
-            async let en = reverseName(for: location, locale: Locale(identifier: "en"))
-            let fallback = String(
-                format: "%.1f, %.1f",
-                Double(coarse.latE7) / 10_000_000.0,
-                Double(coarse.lonE7) / 10_000_000.0
-            )
-            let nameZh = await zh
-            let nameEn = await en
-            let candidate = WeatherPlace(
-                placeId: "geo:\(coarse.latE7),\(coarse.lonE7)",
-                nameZh: nameZh ?? nameEn ?? fallback,
-                nameEn: nameEn ?? nameZh ?? fallback,
-                latE7: coarse.latE7,
-                lonE7: coarse.lonE7,
-                region: ""
-            )
-            let existing = (try? await repository.places())?.first(where: { $0.placeId == candidate.placeId })
-            let place = WeatherRepository.preserveLocatedPlace(existing: existing, candidate: candidate)
-            try? await repository.savePlace(place)
+            let selectedID = try? await repository.selectedPlace()?.placeId
+            guard (try? await repository.followsLocation()) == true else { return }
+            let candidate = await WeatherReverseGeocoder.place(for: location)
+            guard (try? await repository.saveAutomaticPlace(candidate, expectedSelectedID: selectedID)) == true else { return }
+
             onPlaceUpdated?()
         }
     }
@@ -84,21 +64,32 @@ final class WeatherAutoLocator: NSObject, @preconcurrency CLLocationManagerDeleg
         locating = false
     }
 
-    private func reverseName(for location: CLLocation, locale: Locale) async -> String? {
-        await withCheckedContinuation { continuation in
-            geocoder.reverseGeocodeLocation(location, preferredLocale: locale) { placemarks, _ in
-                guard let placemark = placemarks?.first else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-                let name = [
-                    placemark.subLocality,
-                    placemark.locality,
-                    placemark.subAdministrativeArea,
-                    placemark.administrativeArea,
-                ].compactMap { $0 }.first { !$0.isEmpty }
-                    ?? placemark.name
-                continuation.resume(returning: name?.isEmpty == true ? nil : name)
+}
+
+@MainActor
+enum WeatherReverseGeocoder {
+    nonisolated static func display(_ placemark: CLPlacemark) -> WeatherPlaceDisplay {
+        WeatherPlaceDisplay(locality: placemark.locality, subLocality: placemark.subLocality,
+                            subAdminArea: placemark.subAdministrativeArea,
+                            adminArea: placemark.administrativeArea, country: placemark.country)
+    }
+
+    static func place(for location: CLLocation) async -> WeatherPlace {
+        let coarse = OpenMeteoProvider.coarsenE7(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
+        let zh = await reverse(location, language: "zh_CN")
+        let en = await reverse(location, language: "en")
+        let fallback = String(format: "%.1f, %.1f", Double(coarse.latE7) / 10_000_000, Double(coarse.lonE7) / 10_000_000)
+        return WeatherPlace(placeId: "geo:\(coarse.latE7),\(coarse.lonE7)",
+                            nameZh: zh?.primary ?? en?.primary ?? fallback,
+                            nameEn: en?.primary ?? zh?.primary ?? fallback,
+                            latE7: coarse.latE7, lonE7: coarse.lonE7, region: "", displayZh: zh, displayEn: en)
+    }
+
+    private static func reverse(_ location: CLLocation, language: String) async -> WeatherPlaceDisplay? {
+        let geocoder = CLGeocoder()
+        return await withCheckedContinuation { continuation in
+            geocoder.reverseGeocodeLocation(location, preferredLocale: Locale(identifier: language)) { placemarks, _ in
+                continuation.resume(returning: placemarks?.first.map(display))
             }
         }
     }

@@ -1,6 +1,8 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
-**最新工作（2026-10-20 iOS 天气缓存快显与重播请求修复，v1.1.49）**：核实 iOS 没有 Android 30s tick 延迟，但确有本地快照需刷新时先等网络后显示的问题。播放器改为刷新前先读快照、刷新完成再绘制，返回设置后重启天气任务；异步绘制以 generation 防旧结果回写。WeatherRefresher 按城市合并正在进行的请求，退出播放器不取消共享刷新及快照落库，重播可等待同一请求并显示新结果。正常/休息屏日期原本均使用 full 格式含星期，无需修改。新增真实仓库与阻塞 provider 回归：缓存先显、并发请求合并、调用方取消后仍落库；均已观察修复前失败。**验证**：最终全量 XCTest 134/134，ios-build/analyze、未签名 Release archive 成功，make check 43 项；证据 `.build/v1.1.49-*`、`.build/ios-weather-red-verified.log`、`.build/ios-weather-cancel-red.log`。iPhone 13 与 iPad Air 4 已沿用旧签名及 application/keychain entitlements 覆盖安装 1.1.49(49)，两机安装、版本、启动与进程存活实证在 `.build/device-install-v1.1.49/`，未卸载/重置。**边界**：真机天气慢网/重播视觉仍待用户复验；首次无可用缓存仍须网络，60/180min 过期降级规则不变；非全量 UI/M0 验收。Android 保持 1.1.48(48)，本轮仅推送 iOS tag，不新建无 APK 的 GitHub Latest Release，保留 Android 更新入口。App Store 门控保持未完成，未上传商店。
+**最新工作（2026-10-20 全球双语天气地点 v1.1.50＋文件清理，双机已装）**：用户批准地点设计增量并授权更新发布、两台真机安装，追加清理无用文件。双端新增可选 `displayZh/displayEn` 结构化信息，按全球可用层级显示城市/聚落与片区（中文大→小、英文小→大），不采集街道/门牌、不推断行政层级；搜索与设置保留地区/国家上下文，缺译名回退原文。既有地点原始名称、身份及天气坐标保留，成功定位可补充显示信息，失败/部分结果不降级；冲突城市/片区及未确认层级整体拒绝合并。修复 iOS 英文独有搜索遗漏、双端旧查询回写、迟到自动定位覆盖手动选城、同 ID 重选丢译名与 iOS 回调显示未合并候选。翻译仅按稳定 `om:` ID 配对；原生正向搜索以归一化结构化字段/语言/粗坐标 JSON 的哈希区分同网格城镇，不额外持久化精确坐标；既有/自动定位 `geo:` 身份不迁移。播放/休息地点与温度分行、RTL 隔离，地点最多两行；iOS 短横屏大字号约束休息内容边界，时钟最小 48pt，必要时地点一行省略而无障碍保留全文。**验证**：共享 14 项全球格式向量；iOS 最终全量 XCTest **150/150**、build/analyze、Release archive 成功；Android Debug/签名 Release/lint/test 成功，**374 测试零失败/错误**，Lint 0 errors / 182 warnings；`make check` 43 项。真实 RED→GREEN 覆盖快照显示元数据丢失、稀疏结果降级、双语回退/重选保留、搜索竞态、原生 ID 碰撞、冲突层级与 AX 温度越界/时钟过小；日志 `.build/v1.1.50-*`，原生布局 9 PNG 与清单 `.build/v1.1.50-ui/ios-weather/`，主 Agent 已目检短横屏 AX 温度和时钟。**真机**：iPhone 13 与 iPad Air 4 从 1.1.49(49) 覆盖升至 **1.1.50(50)**，沿用旧签名、application/keychain entitlements；安装/版本/启动/进程存活均核实，未卸载重置。安装前后只读库核验均 quick_check OK：iPhone 112 资产/1 相框/1 来源、iPad 796/2/2，汇总一致；临时库副本已清除，证据 `.build/device-install-v1.1.50/`。**清理**：引用审计未发现可确认无用的跟踪源码/资料；删除 96 个旧 Xcode 缓存/中间目录，共 2,984,221,922 逻辑字节（约 2.8 GiB），清单 `.build/cleanup-result-v1.1.50.json`。保留当前缓存、产品、签名、许可、设计、夹具与历史证据。**边界**：Android 无连接真机/可用模拟器，未做其运行时 UI 验收；iOS 布局夹具不等于真机旋转/全功能验收；未宣称世界各地区供应商/译名均实测通过。首次无天气缓存仍需网络；App Store/M0 门控未关闭，未上传商店。**发布**：签名 APK `PhotoPilot-v1.1.50-50.apk`，SHA-256 `b774464a3c09dbb1b83fbcddaec2bbba931d89b9f08fba319652e251dd424859`，与 v1.1.48 同证书；Git 提交/tag/Release 结果待执行补记。
+
+**上一轮（2026-10-20 iOS 天气缓存快显与重播请求修复，v1.1.49）**：核实 iOS 没有 Android 30s tick 延迟，但确有本地快照需刷新时先等网络后显示的问题。播放器改为刷新前先读快照、刷新完成再绘制，返回设置后重启天气任务；异步绘制以 generation 防旧结果回写。WeatherRefresher 按城市合并正在进行的请求，退出播放器不取消共享刷新及快照落库，重播可等待同一请求并显示新结果。正常/休息屏日期原本均使用 full 格式含星期，无需修改。新增真实仓库与阻塞 provider 回归：缓存先显、并发请求合并、调用方取消后仍落库；均已观察修复前失败。**验证**：最终全量 XCTest 134/134，ios-build/analyze、未签名 Release archive 成功，make check 43 项；证据 `.build/v1.1.49-*`、`.build/ios-weather-red-verified.log`、`.build/ios-weather-cancel-red.log`。iPhone 13 与 iPad Air 4 已沿用旧签名及 application/keychain entitlements 覆盖安装 1.1.49(49)，两机安装、版本、启动与进程存活实证在 `.build/device-install-v1.1.49/`，未卸载/重置。**边界**：真机天气慢网/重播视觉仍待用户复验；首次无可用缓存仍须网络，60/180min 过期降级规则不变；非全量 UI/M0 验收。Android 保持 1.1.48(48)，本轮仅推送 iOS tag，不新建无 APK 的 GitHub Latest Release，保留 Android 更新入口。App Store 门控保持未完成，未上传商店。
 
 **本轮设计补记（2026-10-20）**：用户要求天气地点支持全球与中英文；已核实 Android 城市优先/iOS 区或街道优先的粒度差异、Android 手动选城丢 region、iOS 英文独有搜索回退条件错误。设计草案见 [天气地点增量 v1.3](design/weather-location-v1.3.md)，包括紧凑播放与完整搜索上下文、当地名称回退、原始选城不变及老数据补充策略。本次只完成设计，地点 UI/存储尚未改动，待确认后实现。iOS v1.1.49 修复提交 `2f1ec5f` 与 annotated tag 已推送；GitHub Latest 仍为 Android v1.1.48。
 
@@ -85,6 +87,8 @@
 更新时间：2026-10-20（上架材料刷新＋iPad 横屏宽度塌缩根治轮，iOS v1.1.46 双机已装；前轮=iOS 每日时段开关拉齐 v1.1.45）｜当前阶段：**M2 服务开发进行中（M1 已闭环）**（2026-10-05「开始全线开发」→ 2026-10-07 授权 NAS → 2026-10-08 批准 SMB 装库＋授权天气，stage=`m2_services_development`）。已完成并全量复验：**M1 全切片**（T1.2 数据层、R11 系列对齐、AssetRepository/ImportCoordinator、SelectionResolver、来源 adapter、播放器领域层、渲染管线、UI T2.1–T2.7、模拟器 E2E 三轮＋十缺陷修复、T3/T4 提前与收尾项）；**NAS N1–N8**（阶段守卫、4 向量纯逻辑、Keychain/Keystore 凭证、TLS/TOFU、WebDAV 适配器、S06 系列 UI＋五轮 E2E、增量同步七条冻结＋第七轮 E2E）；**SMB 集成**（SMBJ/AMSMB2 装库+适配器，LGPL 动态链接形态成立，M0 实测待验）；**天气 M2-W1**（Open-Meteo 直连决议、weather_snapshot 双端补表＋parity 零豁免、管线+S13/S15/播放器叠字 UI）；**RAW 运行时探测**（视频支持 2026-10-16 移除，见 §2.1 末行）；**休息屏时钟化**；**批次R 残留清偿＋多轮 review**（M2-R2/R3/R3b，2026-10-09 闭环，Android 237/237、lint 0 error、`make check` 36 项 OK、iOS build/analyze/build-for-testing 全 SUCCEEDED…
 
 ## 1. 用户最终指令与停止边界
+
+**当前执行授权（2026-10-20）**：用户已确认全球地区、中英文天气地点设计并要求实现更新、GitHub 发布与两台配对 iPhone/iPad 覆盖安装；同轮要求清理本项目无用文件。既有仓库内提交/推送/tag/Release 已授权。App Store 实际提交、Google/Live Photo、大型 SDK 与未执行的 M0 验收仍不在本轮范围。下文旧阶段描述按历史保留，不覆盖此授权。
 
 此前任务：全量文档评审、基础脚手架、进度交接，完成后等待开发。
 
@@ -252,6 +256,8 @@ android-build/android-lint/ios-generate/ios-build/ios-analyze 首轮 2026-10-04 
 
 
 | 2026-10-20 iOS 天气缓存快显与重播请求修复 | 播放器缓存先显再刷新；按城市共享在途请求，退出后保留刷新落库，重播复用；generation 守卫异步 UI。日期 full 已含星期。iOS 1.1.49/build 49，Android 保持 48 | 134 项 XCTest、ios-build/analyze、Release archive、make check 43 项通过；iPhone 13/iPad Air 4 覆盖安装并查询 49/启动存活；慢网天气视觉待用户复验，未作全量 UI/M0 或商店提交；Git 推送结果见最新工作补记 |
+
+| 2026-10-20 全球双语天气地点 v1.1.50＋文件清理 | 可选双语结构化地点/完整上下文/保守升级；同名与同网格城镇身份隔离；旧查询/迟到定位守卫；地点和温度分行、RTL/AX 休息布局。双端版本 1.1.50(50) | iOS 150、Android 374 测试通过；build/analyze/lint/Release 与 make check 43 项通过；iPhone/iPad 覆盖安装启动及库汇总一致；旧缓存清理约 2.8 GiB。Android 真机 UI、全球供应商覆盖、M0/App Store 仍未验收；分发补记见最新工作 |
 
 ## 3. R01–R19 闭环摘要（2026-10-04 裁决）
 

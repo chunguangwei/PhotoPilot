@@ -271,7 +271,7 @@ final class PlayerViewController: UIViewController {
     private let restingScreen = UIView()
     private let flipClock = FlipClockView()
     private let restDateLabel = UILabel()
-    private let restWeatherLabel = UILabel()
+    private let restWeatherLabel = WeatherTextView()
     private let restStack = UIStackView()
     private var videoPlayer: AVPlayer?
     private var videoLayer: AVPlayerLayer?
@@ -282,7 +282,7 @@ final class PlayerViewController: UIViewController {
     private var musicPausedForRest = false
     private var musicPlayingBeforeBackground = false
     private var videoPlayingBeforeBackground = false
-    private let weatherLabel = UILabel()
+    private let weatherLabel = WeatherTextView()
     private let weatherNoteLabel = UILabel()
     private var controlsPresented = false
     private var weatherTask: Task<Void, Never>?
@@ -418,6 +418,11 @@ final class PlayerViewController: UIViewController {
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         view.addGestureRecognizer(tap)
 
+        NSLayoutConstraint.activate([
+            clockStack.widthAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.widthAnchor, constant: -2 * ThemeMetrics.contentInset),
+            clockStack.widthAnchor.constraint(lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth),
+            weatherLabel.widthAnchor.constraint(equalTo: clockStack.widthAnchor),
+        ])
         buildClockConstraints()
 
         NotificationCenter.default.addObserver(
@@ -1418,7 +1423,8 @@ final class PlayerViewController: UIViewController {
                 restWeatherLabel.isHidden = true
                 return
             }
-            guard let (text, conditionCode) = display else {
+            guard let (placeName, text, conditionCode) = display else {
+                restWeatherLabel.setPlace("")
                 if !weatherGloballyEnabled {
                     restWeatherLabel.text = L10n.string("weather.disabled_notice")
                     restWeatherLabel.isHidden = false
@@ -1435,6 +1441,7 @@ final class PlayerViewController: UIViewController {
                 restWeatherLabel.isHidden = false
                 return
             }
+            restWeatherLabel.setPlace(placeName)
             restWeatherLabel.attributedText = weatherOverlayText(
                 text,
                 conditionCode: conditionCode,
@@ -1444,7 +1451,7 @@ final class PlayerViewController: UIViewController {
         }
     }
 
-    private func currentWeatherDisplay() async -> (String, String)? {
+    private func currentWeatherDisplay() async -> (String, String, String)? {
         guard weatherGloballyEnabled else { return nil }
         guard let place = await currentWeatherPlace() else { return nil }
         guard let snapshot = try? await environment.weatherRepository.snapshot(placeId: place.placeId)
@@ -1458,9 +1465,9 @@ final class PlayerViewController: UIViewController {
         }
         let temperature = temperatureText(milliCelsius: snapshot.temperatureMilli)
         let condition = conditionText(for: snapshot.conditionCode)
-        let placeName = AppLanguage.preferChinese ? place.nameZh : place.nameEn
+        let placeName = place.compactName(chinese: AppLanguage.preferChinese)
         let weatherText = condition.map { "\(temperature) \($0)" } ?? temperature
-        return (placeName.isEmpty ? weatherText : "\(placeName) · \(weatherText)", snapshot.conditionCode)
+        return (placeName, weatherText, snapshot.conditionCode)
     }
 
     private func currentTimeText(_ date: Date) -> String {
@@ -1617,9 +1624,10 @@ final class PlayerViewController: UIViewController {
             let now = Int(Date().timeIntervalSince1970 * 1000)
             let temperature = temperatureText(milliCelsius: snapshot.temperatureMilli)
             let condition = conditionText(for: snapshot.conditionCode)
-            let placeName = AppLanguage.preferChinese ? place.nameZh : place.nameEn
+            let placeName = place.compactName(chinese: AppLanguage.preferChinese)
             let weatherText = condition.map { "\(temperature) \($0)" } ?? temperature
-            let display = placeName.isEmpty ? weatherText : "\(placeName) · \(weatherText)"
+            let display = weatherText
+            weatherLabel.setPlace(placeName)
             switch WeatherRepository.freshness(observedAtMillis: snapshot.observedAt, nowMillis: now) {
             case .normal:
                 weatherLabel.attributedText = weatherOverlayText(
@@ -1646,7 +1654,7 @@ final class PlayerViewController: UIViewController {
             weatherLabel.accessibilityLabel = FormatStrings.string(
                 "a11y.weather_overlay",
                 condition ?? "",
-                display
+                "\(placeName), \(display)"
             )
         }
     }
@@ -1658,7 +1666,7 @@ final class PlayerViewController: UIViewController {
         return text == key ? nil : text
     }
 
-    private func applyOverlayShadow(_ label: UILabel) {
+    private func applyOverlayShadow(_ label: UIView) {
         label.layer.shadowColor = UIColor.black.cgColor
         label.layer.shadowOpacity = 0.55
         label.layer.shadowOffset = CGSize(width: 0, height: 1)
@@ -1830,6 +1838,11 @@ final class PlayerViewController: UIViewController {
         ])
     }
 
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        restWeatherLabel.placeLabel.numberOfLines = view.bounds.height < 400 && restWeatherLabel.font.pointSize >= 32 ? 1 : 2
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         controlsCapsule.layer.cornerRadius = controlsCapsule.bounds.height / 2
@@ -1884,7 +1897,8 @@ final class PlayerViewController: UIViewController {
         restingScreen.backgroundColor = ThemeColor.restSurface
         restingScreen.isHidden = true
         restingScreen.translatesAutoresizingMaskIntoConstraints = false
-        restingScreen.isAccessibilityElement = true
+        restingScreen.isAccessibilityElement = false
+        restStack.isAccessibilityElement = false
         restingScreen.accessibilityLabel = L10n.string("player.resting_title")
         restingScreen.accessibilityHint = L10n.string("player.resting_resume")
         restingScreen.accessibilityTraits = [.button]
@@ -1895,6 +1909,9 @@ final class PlayerViewController: UIViewController {
         restDateLabel.textColor = ThemeColor.textOnPhoto
         restDateLabel.textAlignment = .center
         flipClock.translatesAutoresizingMaskIntoConstraints = false
+        flipClock.isAccessibilityElement = true
+        flipClock.accessibilityTraits = [.button]
+        flipClock.accessibilityHint = L10n.string("player.resting_resume")
         restWeatherLabel.font = ThemeFont.body()
         restWeatherLabel.adjustsFontForContentSizeCategory = true
         restWeatherLabel.textColor = ThemeColor.textOnPhoto
@@ -1910,10 +1927,12 @@ final class PlayerViewController: UIViewController {
         restStack.translatesAutoresizingMaskIntoConstraints = false
         restingScreen.addSubview(restStack)
         let flipHeight = flipClock.heightAnchor.constraint(equalToConstant: 180)
-        flipHeight.priority = .defaultHigh
+        flipHeight.priority = .defaultLow
         NSLayoutConstraint.activate([
             restStack.centerXAnchor.constraint(equalTo: restingScreen.centerXAnchor),
             restStack.centerYAnchor.constraint(equalTo: restingScreen.centerYAnchor),
+            restStack.topAnchor.constraint(greaterThanOrEqualTo: restingScreen.safeAreaLayoutGuide.topAnchor),
+            restStack.bottomAnchor.constraint(lessThanOrEqualTo: restingScreen.safeAreaLayoutGuide.bottomAnchor),
             restStack.leadingAnchor.constraint(
                 equalTo: restingScreen.leadingAnchor,
                 constant: ThemeMetrics.contentInset
@@ -1922,7 +1941,9 @@ final class PlayerViewController: UIViewController {
                 equalTo: restingScreen.trailingAnchor,
                 constant: -ThemeMetrics.contentInset
             ),
+            restWeatherLabel.widthAnchor.constraint(equalTo: restStack.widthAnchor),
             flipClock.widthAnchor.constraint(equalTo: restStack.widthAnchor),
+            flipClock.heightAnchor.constraint(greaterThanOrEqualToConstant: 48),
             flipClock.heightAnchor.constraint(
                 lessThanOrEqualTo: restingScreen.heightAnchor,
                 multiplier: 0.28
@@ -2256,5 +2277,78 @@ final class PlayerViewController: UIViewController {
             blue: CGFloat(value & 0xFF) / 255,
             alpha: 1
         )
+    }
+}
+
+final class WeatherTextView: UIStackView {
+    let placeLabel = UILabel()
+    let conditionLabel = UILabel()
+    private var fullPlace = ""
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        axis = .vertical
+        spacing = ThemeMetrics.space4
+        alignment = .fill
+        placeLabel.numberOfLines = 2
+        placeLabel.lineBreakMode = .byTruncatingTail
+        conditionLabel.numberOfLines = 0
+        conditionLabel.setContentCompressionResistancePriority(.required, for: .vertical)
+        placeLabel.isAccessibilityElement = false
+        conditionLabel.isAccessibilityElement = false
+        isAccessibilityElement = true
+        addArrangedSubview(placeLabel)
+        addArrangedSubview(conditionLabel)
+    }
+
+    @available(*, unavailable)
+    required init(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
+    var font: UIFont! {
+        get { conditionLabel.font }
+        set { placeLabel.font = newValue; conditionLabel.font = newValue }
+    }
+
+    var textColor: UIColor! {
+        get { conditionLabel.textColor }
+        set { placeLabel.textColor = newValue; conditionLabel.textColor = newValue }
+    }
+
+    var adjustsFontForContentSizeCategory: Bool {
+        get { conditionLabel.adjustsFontForContentSizeCategory }
+        set { placeLabel.adjustsFontForContentSizeCategory = newValue; conditionLabel.adjustsFontForContentSizeCategory = newValue }
+    }
+
+    var textAlignment: NSTextAlignment {
+        get { conditionLabel.textAlignment }
+        set { placeLabel.textAlignment = newValue; conditionLabel.textAlignment = newValue }
+    }
+
+    var numberOfLines: Int {
+        get { conditionLabel.numberOfLines }
+        set { conditionLabel.numberOfLines = newValue }
+    }
+
+    var text: String? {
+        get { conditionLabel.text }
+        set { conditionLabel.text = newValue; updateAccessibility() }
+    }
+
+    var attributedText: NSAttributedString? {
+        get { conditionLabel.attributedText }
+        set { conditionLabel.attributedText = newValue; updateAccessibility() }
+    }
+
+    func setPlace(_ text: String) {
+        fullPlace = text
+        placeLabel.text = text.isEmpty ? nil : "\u{2068}\(text)\u{2069}"
+        placeLabel.isHidden = text.isEmpty
+        updateAccessibility()
+    }
+
+    private func updateAccessibility() {
+        accessibilityLabel = [fullPlace, conditionLabel.text ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")
     }
 }

@@ -47,6 +47,7 @@ class PlayerView(
     var onEmptyChoose: ((FrameEntity) -> Unit)? = null
     var onEmptyDownloads: (() -> Unit)? = null
     var onPlaybackSettings: ((FrameEntity) -> Unit)? = null
+    var weatherPlaceProvider: (() -> String?)? = null
     var weatherTextProvider: (() -> String?)? = null
     var weatherA11yProvider: (() -> String?)? = null
 
@@ -70,6 +71,8 @@ class PlayerView(
     private lateinit var restingDate: TextView
     private lateinit var restingWeather: TextView
     private lateinit var weatherLine: TextView
+    private lateinit var weatherPlaceLine: TextView
+    private lateinit var restingWeatherPlace: TextView
     private val overlayColumn: LinearLayout
     private val controlsBar: HorizontalScrollView
     private val pauseButton: ImageButton
@@ -189,6 +192,14 @@ class PlayerView(
         }
         overlayColumn.addView(clockLine, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
         overlayColumn.addView(dateLine, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
+        weatherPlaceLine = overlayText(R.dimen.pp_text_meta).apply {
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            textDirection = View.TEXT_DIRECTION_FIRST_STRONG
+            visibility = View.GONE
+            importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+        overlayColumn.addView(weatherPlaceLine, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         weatherLine = overlayText(R.dimen.pp_text_meta).apply {
             visibility = View.GONE
         }
@@ -847,6 +858,8 @@ class PlayerView(
                 lp.bottomMargin = controlsClearance
             }
         }
+        lp.marginStart = inset
+        lp.marginEnd = inset
         overlayColumn.layoutParams = lp
     }
 
@@ -880,6 +893,12 @@ class PlayerView(
     }
 
     fun refreshWeather() {
+        val place = weatherPlaceProvider?.invoke()
+        weatherPlaceLine.text = place
+        weatherPlaceLine.visibility = if (place.isNullOrBlank()) View.GONE else View.VISIBLE
+        restingWeatherPlace.text = place
+        restingWeatherPlace.visibility = if (settings.restDisplay == FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER &&
+            !place.isNullOrBlank()) View.VISIBLE else View.GONE
         val restWeatherText = if (settings.restDisplay == FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER) {
             weatherTextProvider?.invoke()
         } else {
@@ -887,6 +906,7 @@ class PlayerView(
         }
         if (restWeatherText != null) {
             restingWeather.text = restWeatherText
+            restingWeather.contentDescription = weatherA11yProvider?.invoke() ?: restWeatherText
             restingWeather.visibility = View.VISIBLE
         } else if (settings.restDisplay == FramePlaybackSettings.REST_DISPLAY_CLOCK_WEATHER) {
             restingWeather.text = resources.getString(R.string.weather_disabled_notice)
@@ -1011,10 +1031,18 @@ class PlayerView(
             visibility = if (settings.dateEnabled) View.VISIBLE else View.GONE
             importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
         }
+        restingWeatherPlace = overlayText(R.dimen.pp_text_body).apply {
+            gravity = Gravity.CENTER
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            textDirection = View.TEXT_DIRECTION_FIRST_STRONG
+            visibility = View.GONE
+            importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
         restingWeather = overlayText(R.dimen.pp_text_body).apply {
             gravity = Gravity.CENTER
             visibility = View.GONE
-            importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+            importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
         }
         restingOverlay.isClickable = true
         restingOverlay.isFocusable = true
@@ -1027,6 +1055,7 @@ class PlayerView(
         restingOverlay.addView(
             centered(restingDate, R.dimen.pp_space_8),
         )
+        restingOverlay.addView(centered(restingWeatherPlace, R.dimen.pp_space_8))
         restingOverlay.addView(
             centered(restingWeather, R.dimen.pp_space_8),
         )
@@ -1044,12 +1073,14 @@ class PlayerView(
                 restingClock.visibility = View.GONE
                 restingDate.visibility = View.GONE
                 restingWeather.visibility = View.GONE
+                restingWeatherPlace.visibility = View.GONE
             }
             FramePlaybackSettings.REST_DISPLAY_BLACK -> {
                 restingOverlay.setBackgroundColor(context.getColor(R.color.pp_surface_rest))
                 restingClock.visibility = View.GONE
                 restingDate.visibility = View.GONE
                 restingWeather.visibility = View.GONE
+                restingWeatherPlace.visibility = View.GONE
             }
             else -> {
                 restingOverlay.setBackgroundColor(context.getColor(R.color.pp_surface_rest))

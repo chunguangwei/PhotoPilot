@@ -28,7 +28,30 @@ data class PlaceResult(
     val region: String,
     val latE7: Int,
     val lonE7: Int,
-)
+    val display: WeatherLogic.DisplayFields? = null,
+    val language: String? = null,
+) {
+    fun stored(language: String, translation: PlaceResult?): WeatherLogic.StoredPlace {
+        val selectedLanguage = this.language ?: language
+        val other = translation?.takeIf { placeId.startsWith("om:") && it.placeId == placeId }
+        return WeatherLogic.StoredPlace(placeId,
+            if (selectedLanguage == "zh") name else other?.name ?: name,
+            if (selectedLanguage == "zh") other?.name ?: name else name,
+            latE7, lonE7,
+            if (selectedLanguage == "zh") display else other?.display,
+            if (selectedLanguage == "zh") other?.display else display)
+    }
+
+    companion object {
+        fun mergeLocalized(preferred: List<PlaceResult>, other: List<PlaceResult>, language: String): List<PlaceResult> {
+            val otherLanguage = if (language == "zh") "en" else "zh"
+            val preferredIds = preferred.map { it.placeId }.toSet()
+            return preferred.map { it.copy(language = language) } + other
+                .filterNot { it.placeId.startsWith("om:") && it.placeId in preferredIds }
+                .map { it.copy(language = otherLanguage) }
+        }
+    }
+}
 
 class WeatherException(val code: String, val retryAfterMs: Long? = null) : IOException("weather: $code") {
 
@@ -138,6 +161,8 @@ class OpenMeteoProvider(
                 map["country"] as? String,
             ).joinToString(", ")
             PlaceResult(
+                display = WeatherLogic.DisplayFields(locality = name, subAdminArea = admin2,
+                    adminArea = admin1, country = map["country"] as? String),
                 placeId = "om:$id",
                 name = name,
                 region = region,

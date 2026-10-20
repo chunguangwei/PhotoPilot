@@ -53,3 +53,7 @@
 ## v1.1.49 iOS 天气修复补记
 
 2026-10-20 本地未签名 Release 归档 `.build/appstore-audit/PhotoPilot-v1.1.49-unsigned.xcarchive` 成功；全量 134 项 XCTest 与 build/analyze 通过。天气改缓存先显及共享在途请求；日期 full 原已含星期。沿用旧开发签名的本地副本已覆盖安装到 iPhone 13 与 iPad Air 4，版本/启动/进程均验证。此为开发签名安装，尚未完成 Distribution Validate、最终商店截图或上列发布门控；未提交 App Store。
+
+## v1.1.50 全球双语天气地点补记
+
+2026-10-20 双端版本 1.1.50(50)。iOS 本地未签名 Release 归档 `.build/appstore-audit/PhotoPilot-v1.1.50-unsigned.xcarchive`、build/analyze 及 150 项 XCTest 通过；开发签名副本沿用旧应用/钥匙串权限，iPhone 13/iPad Air 4 覆盖安装、启动与库汇总保留已验证。隐私清单与源文件一致，本轮未更换天气服务或额外存储精确坐标。全球双语地点与 AX 布局夹具不等于全球网络/真机完整 QA，商店截图仍须按最终 Distribution 构建核对；前述 App Store 门控未关闭，未上传商店。

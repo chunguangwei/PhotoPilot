@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "truth": "2026-10-20 user-approved global bilingual display v1.3. Optional levels, no street, never infer country hierarchy. Context excludes primary/subLocality and duplicates, joining available subAdminArea/adminArea/country with comma. All formatter outputs remain raw Unicode; bidi isolation belongs to UI text boundaries."
+  },
+  "cases": [
+    {
+      "id": "CN",
+      "fields": {
+        "locality": "北京",
+        "subLocality": "海淀区",
+        "adminArea": "北京",
+        "country": "中国"
+      },
+      "zh": "北京 · 海淀区",
+      "en": "海淀区, 北京",
+      "context": "中国"
+    },
+    {
+      "id": "US",
+      "fields": {
+        "locality": "New York",
+        "subLocality": "Manhattan",
+        "subAdminArea": "New York County",
+        "adminArea": "New York",
+        "country": "United States"
+      },
+      "zh": "New York · Manhattan",
+      "en": "Manhattan, New York",
+      "context": "New York County, United States"
+    },
+    {
+      "id": "JP",
+      "fields": {
+        "locality": "東京",
+        "subLocality": "新宿区",
+        "adminArea": "東京",
+        "country": "日本"
+      },
+      "zh": "東京 · 新宿区",
+      "en": "新宿区, 東京",
+      "context": "日本"
+    },
+    {
+      "id": "SG",
+      "fields": {
+        "locality": "Singapore",
+        "subLocality": "Singapore",
+        "adminArea": "Singapore",
+        "country": "Singapore"
+      },
+      "zh": "Singapore",
+      "en": "Singapore",
+      "context": ""
+    },
+    {
+      "id": "FR",
+      "fields": {
+        "locality": "Paris",
+        "adminArea": "Île-de-France",
+        "country": "France"
+      },
+      "zh": "Paris",
+      "en": "Paris",
+      "context": "Île-de-France, France"
+    },
+    {
+      "id": "RURAL",
+      "fields": {
+        "subAdminArea": "Skaftárhreppur",
+        "adminArea": "Southern Region",
+        "country": "Iceland"
+      },
+      "zh": "Skaftárhreppur",
+      "en": "Skaftárhreppur",
+      "context": "Southern Region, Iceland"
+    },
+    {
+      "id": "COUNTRY",
+      "fields": {
+        "country": "Maldives"
+      },
+      "zh": "Maldives",
+      "en": "Maldives",
+      "context": ""
+    },
+    {
+      "id": "NO_CITY",
+      "fields": {
+        "subLocality": "Little Hamlet",
+        "adminArea": "West Region"
+      },
+      "zh": "Little Hamlet",
+      "en": "Little Hamlet",
+      "context": "West Region"
+    },
+    {
+      "id": "DUPLICATE",
+      "fields": {
+        "locality": " Berlin ",
+        "subLocality": "berlin",
+        "adminArea": "Berlin",
+        "country": "Deutschland"
+      },
+      "zh": "Berlin",
+      "en": "Berlin",
+      "context": "Deutschland"
+    },
+    {
+      "id": "ACCENT",
+      "fields": {
+        "locality": "Reykjavík",
+        "country": "Ísland"
+      },
+      "zh": "Reykjavík",
+      "en": "Reykjavík",
+      "context": "Ísland"
+    },
+    {
+      "id": "RTL",
+      "fields": {
+        "locality": "دبي",
+        "subLocality": "ديرة",
+        "country": "الإمارات العربية المتحدة"
+      },
+      "zh": "دبي · ديرة",
+      "en": "ديرة, دبي",
+      "context": "الإمارات العربية المتحدة"
+    },
+    {
+      "id": "COMMA",
+      "fields": {
+        "locality": "Boca, Local",
+        "country": "Example"
+      },
+      "zh": "Boca, Local",
+      "en": "Boca, Local",
+      "context": "Example"
+    },
+    {
+      "id": "BLANK",
+      "fields": {
+        "locality": "  ",
+        "subLocality": null,
+        "adminArea": "Region"
+      },
+      "zh": "Region",
+      "en": "Region",
+      "context": ""
+    },
+    {
+      "id": "EMPTY",
+      "fields": {},
+      "zh": "",
+      "en": "",
+      "context": ""
+    }
+  ]
+}

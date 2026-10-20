@@ -44,7 +44,7 @@ final class PhotoPilotPlaybackTests: XCTestCase {
         }
         let requests = await provider.requestCount
         XCTAssertGreaterThan(requests, 0)
-        let label = try XCTUnwrap(Mirror(reflecting: player).children.first { $0.label == "weatherLabel" }?.value as? UILabel)
+        let label = try XCTUnwrap(Mirror(reflecting: player).children.first { $0.label == "weatherLabel" }?.value as? WeatherTextView)
         for _ in 0..<100 where label.isHidden {
             try await Task.sleep(nanoseconds: 10_000_000)
         }

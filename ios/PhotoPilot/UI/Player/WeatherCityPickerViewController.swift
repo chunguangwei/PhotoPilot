@@ -12,8 +12,9 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
     private var results: [WeatherPlace] = []
     private var searchTask: Task<Void, Never>?
     private let locationManager = CLLocationManager()
-    private let geocoder = CLGeocoder()
     private var awaitingLocation = false
+    private var locationGeneration = 0
+    private var requestedLocationGeneration: Int?
     private let locationButton = ActionButton(titleKey: "weather.use_current_location", style: .secondary)
     private let locationRow = UIStackView()
 
@@ -168,6 +169,9 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
     }
 
     @objc private func handleUseCurrentLocation() {
+        locationGeneration += 1
+        requestedLocationGeneration = locationGeneration
+        searchTask?.cancel()
         guard CLLocationManager.locationServicesEnabled() else {
             statusLabel.text = L10n.string("weather.unavailable")
             return
@@ -186,7 +190,7 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
     }
 
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        guard awaitingLocation else { return }
+        guard awaitingLocation, requestedLocationGeneration == locationGeneration else { return }
         switch status {
         case .authorizedWhenInUse, .authorizedAlways:
             awaitingLocation = false
@@ -200,33 +204,26 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let generation = requestedLocationGeneration, generation == locationGeneration else { return }
+        requestedLocationGeneration = nil
         guard let location = locations.first else {
             statusLabel.text = L10n.string("weather.unavailable")
             return
         }
-        let coarse = OpenMeteoProvider.coarsenE7(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
+        searchTask?.cancel()
         Task { [weak self] in
             guard let self else { return }
-            let zh = await self.reverseName(for: location, locale: Locale(identifier: "zh_CN"))
-            let en = await self.reverseName(for: location, locale: Locale(identifier: "en"))
-            let fallback = String(
-                format: "%.1f, %.1f",
-                Double(coarse.latE7) / 10_000_000.0,
-                Double(coarse.lonE7) / 10_000_000.0
-            )
-            let candidate = WeatherPlace(
-                placeId: "geo:\(coarse.latE7),\(coarse.lonE7)",
-                nameZh: zh ?? en ?? fallback,
-                nameEn: en ?? zh ?? fallback,
-                latE7: coarse.latE7,
-                lonE7: coarse.lonE7,
-                region: ""
-            )
-            let existing = (try? await self.environment.weatherRepository.places())?
-                .first(where: { $0.placeId == candidate.placeId })
-            let place = WeatherRepository.preserveLocatedPlace(existing: existing, candidate: candidate)
-            try? await self.environment.weatherRepository.savePlace(place, followLocation: true)
-            self.onPick(place)
+            let candidate = await WeatherReverseGeocoder.place(for: location)
+            guard generation == self.locationGeneration, self.viewIfLoaded?.window != nil else { return }
+            let place = candidate
+            do {
+                try await self.environment.weatherRepository.savePlace(place, followLocation: true)
+                guard let stored = try await self.environment.weatherRepository.selectedPlace(),
+                      stored.placeId == place.placeId, generation == self.locationGeneration else { return }
+                self.onPick(stored)
+            } catch {
+                self.statusLabel.text = L10n.string("weather.unavailable")
+            }
         }
     }
 
@@ -234,27 +231,8 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
         statusLabel.text = L10n.string("weather.unavailable")
     }
 
-    private func reverseName(for location: CLLocation, locale: Locale) async -> String? {
-        await withCheckedContinuation { continuation in
-            geocoder.reverseGeocodeLocation(location, preferredLocale: locale) { placemarks, _ in
-                guard let placemark = placemarks?.first else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-                let name = [
-                    placemark.thoroughfare,
-                    placemark.subLocality,
-                    placemark.locality,
-                    placemark.subAdministrativeArea,
-                    placemark.administrativeArea,
-                ].compactMap { $0 }.first { !$0.isEmpty }
-                    ?? placemark.name
-                continuation.resume(returning: name?.isEmpty == true ? nil : name)
-            }
-        }
-    }
-
     @objc private func handleSearchChanged() {
+        locationGeneration += 1
         searchTask?.cancel()
         searchTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: Self.searchDebounceNanos)
@@ -276,32 +254,8 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
         async let enSearch = environment.weatherProvider.searchPlaces(query: query, language: "en")
         let zhResults = (try? await zhSearch) ?? []
         let enResults = (try? await enSearch) ?? []
-        var namesEn: [String: String] = [:]
-        for candidate in enResults {
-            namesEn[candidate.placeId] = candidate.name
-        }
-        results = zhResults.map { candidate in
-            WeatherPlace(
-                placeId: candidate.placeId,
-                nameZh: candidate.name,
-                nameEn: namesEn[candidate.placeId] ?? candidate.name,
-                latE7: candidate.latE7,
-                lonE7: candidate.lonE7,
-                region: candidate.region
-            )
-        }
-        if results.isEmpty, zhResults.isEmpty, enResults.isEmpty {
-            results = enResults.map { candidate in
-                WeatherPlace(
-                    placeId: candidate.placeId,
-                    nameZh: candidate.name,
-                    nameEn: candidate.name,
-                    latE7: candidate.latE7,
-                    lonE7: candidate.lonE7,
-                    region: candidate.region
-                )
-            }
-        }
+        guard !Task.isCancelled, query == (searchField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+        results = WeatherPlace.mergeCandidates(zh: zhResults, en: enResults)
         statusLabel.text = results.isEmpty
             ? L10n.string("library.search_no_result")
             : nil
@@ -316,10 +270,10 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
         let cell = tableView.dequeueReusableCell(withIdentifier: "CityCell", for: indexPath)
         let place = results[indexPath.row]
         var content = cell.defaultContentConfiguration()
-        content.text = AppLanguage.preferChinese ? place.nameZh : place.nameEn
+        content.text = WeatherPlaceDisplay.clean(AppLanguage.preferChinese ? place.nameZh : place.nameEn) ?? place.compactName(chinese: AppLanguage.preferChinese)
         content.textProperties.font = ThemeFont.body()
         content.textProperties.color = ThemeColor.textPrimary
-        content.secondaryText = place.region
+        content.secondaryText = place.context(chinese: AppLanguage.preferChinese)
         content.secondaryTextProperties.font = ThemeFont.meta()
         content.secondaryTextProperties.color = ThemeColor.textSecondary
         cell.contentConfiguration = content
@@ -329,11 +283,20 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        locationGeneration += 1
         tableView.deselectRow(at: indexPath, animated: true)
         let place = results[indexPath.row]
+        let generation = locationGeneration
         Task { [weak self] in
-            try? await self?.environment.weatherRepository.savePlace(place, followLocation: false)
-            self?.onPick(place)
+            guard let self else { return }
+            do {
+                try await self.environment.weatherRepository.savePlace(place, followLocation: false)
+                guard let stored = try await self.environment.weatherRepository.selectedPlace(),
+                      stored.placeId == place.placeId, generation == self.locationGeneration else { return }
+                self.onPick(stored)
+            } catch {
+                self.statusLabel.text = L10n.string("weather.unavailable")
+            }
         }
     }
 
@@ -346,13 +309,15 @@ final class WeatherCityPickerViewController: UIViewController, UITableViewDataSo
     }
 
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        locationGeneration += 1
         textField.resignFirstResponder()
         searchTask?.cancel()
-        Task { await search() }
+        searchTask = Task { await search() }
         return true
     }
 
     @objc private func handleBack() {
+        locationGeneration += 1
         dismiss(animated: true)
     }
 }

@@ -1,4 +1,5 @@
 import CoreLocation
+import CryptoKit
 import Foundation
 import OSLog
 
@@ -10,6 +11,7 @@ struct WeatherPlaceCandidate: Sendable, Equatable {
     let region: String
     let latE7: Int
     let lonE7: Int
+    var display: WeatherPlaceDisplay? = nil
 }
 
 enum WeatherFetchError: Error, Equatable {
@@ -175,7 +177,8 @@ final class OpenMeteoProvider: WeatherProvider {
                 name: name,
                 region: region,
                 latE7: Int((lat * 10_000_000).rounded()),
-                lonE7: Int((lon * 10_000_000).rounded())
+                lonE7: Int((lon * 10_000_000).rounded()),
+                display: WeatherPlaceDisplay(locality: name, subAdminArea: admin2, adminArea: admin1, country: entry["country"] as? String)
             )
         }
     }
@@ -298,6 +301,15 @@ final class WttrProvider: WeatherProvider {
 }
 
 final class SystemGeocodingProvider: WeatherProvider {
+    static func placeID(display: WeatherPlaceDisplay, language: String, latE7: Int, lonE7: Int) -> String {
+        let fields = [display.locality, display.subLocality, display.subAdminArea, display.adminArea, display.country]
+            .map { WeatherPlaceDisplay.clean($0)?.precomposedStringWithCanonicalMapping.lowercased() ?? "" }
+        let identity = [language.lowercased(), "\(latE7),\(lonE7)"] + fields
+        let data = (try? JSONSerialization.data(withJSONObject: identity)) ?? Data()
+        let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        return "native:\(digest)"
+    }
+
     func fetchCurrent(latE7: Int, lonE7: Int) async throws -> WeatherSnapshot {
         throw WeatherFetchError.unavailable
     }
@@ -324,13 +336,10 @@ final class SystemGeocodingProvider: WeatherProvider {
                         latitude: location.coordinate.latitude,
                         longitude: location.coordinate.longitude
                     )
-                    let placeId = "geo:\(coarse.latE7),\(coarse.lonE7)"
+                    let display = WeatherReverseGeocoder.display(placemark)
+                    let placeId = Self.placeID(display: display, language: language, latE7: coarse.latE7, lonE7: coarse.lonE7)
                     guard seen.insert(placeId).inserted else { return nil }
-                    let name = placemark.locality
-                        ?? placemark.subAdministrativeArea
-                        ?? placemark.administrativeArea
-                        ?? placemark.name
-                        ?? ""
+                    let name = display.primary ?? ""
                     guard !name.isEmpty else { return nil }
                     let region = [placemark.administrativeArea, placemark.country]
                         .compactMap { $0 }
@@ -341,7 +350,8 @@ final class SystemGeocodingProvider: WeatherProvider {
                         name: name,
                         region: region,
                         latE7: coarse.latE7,
-                        lonE7: coarse.lonE7
+                        lonE7: coarse.lonE7,
+                        display: display
                     )
                 }
                 continuation.resume(returning: Array(candidates.prefix(8)))

@@ -1,7 +1,7 @@
 {
   "meta": {
     "truth": "2026-10-19 用户硬要求：任何情况下，播放时不能丢失时间/天气的位置与坐标。定位刷新得到同一粗化坐标（placeId 相同）时，必须保留已存地点记录，禁止用新一轮结果覆盖名称与坐标——防止离线/无 GMS 环境下逆地理编码失败把友好地名降级为裸坐标文本。",
-    "note": "双端测试必须消费本文件，禁止各自另写期望值。preserve_located_place(existing, candidate) 语义：existing 非空且 existing.place_id == candidate.place_id 时返回 existing（名称与坐标原样保留，整条记录不重写）；否则返回 candidate。坐标是否变化由 placeId（粗化坐标）表达，无需额外比较。"
+    "note": "双端测试必须消费本文件，禁止各自另写期望值。preserve_located_place(existing, candidate) 语义：existing 非空且 existing.place_id == candidate.place_id 时返回 existing（名称与坐标原样保留，整条记录不重写）；否则返回 candidate。坐标是否变化由 placeId（粗化坐标）表达，无需额外比较。 2026-10-20 用户批准 v1.3：保留规则继续约束原始名称、身份、坐标；新增可选 displayZh/displayEn 允许在不降级既有信息时补充，不改变本文件的原字段期望。"
   },
   "cases": [
     {

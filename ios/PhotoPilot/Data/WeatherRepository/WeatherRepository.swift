@@ -12,6 +12,56 @@ struct WeatherSnapshot: Sendable, Equatable {
     let attributionURL: String?
 }
 
+struct WeatherPlaceDisplay: Sendable, Equatable, Codable {
+    var locality: String? = nil
+    var subLocality: String? = nil
+    var subAdminArea: String? = nil
+    var adminArea: String? = nil
+    var country: String? = nil
+
+    static func clean(_ value: String?) -> String? {
+        guard let text = value?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
+        return text
+    }
+
+    var primary: String? {
+        [locality, subLocality, subAdminArea, adminArea, country].compactMap(Self.clean).first
+    }
+
+    func compact(chinese: Bool) -> String {
+        guard let primary else { return "" }
+        guard Self.clean(locality) != nil, let secondary = Self.clean(subLocality),
+              primary.caseInsensitiveCompare(secondary) != .orderedSame else { return primary }
+        return chinese ? "\(primary) · \(secondary)" : "\(secondary), \(primary)"
+    }
+
+    var context: String {
+        var seen = Set([primary, Self.clean(subLocality)].compactMap { $0?.lowercased() })
+        return [subAdminArea, adminArea, country].compactMap(Self.clean).filter {
+            seen.insert($0.lowercased()).inserted
+        }.joined(separator: ", ")
+    }
+
+    func enriching(with newer: WeatherPlaceDisplay?) -> WeatherPlaceDisplay {
+        guard let newer else { return self }
+        let currentCity = Self.clean(locality)
+        let currentDistrict = Self.clean(subLocality)
+        let nextCity = Self.clean(newer.locality)
+        let nextDistrict = Self.clean(newer.subLocality)
+        let cityMatches = currentCity != nil && nextCity != nil && currentCity?.caseInsensitiveCompare(nextCity!) == .orderedSame
+        let districtMatches = currentDistrict != nil && nextDistrict != nil && currentDistrict?.caseInsensitiveCompare(nextDistrict!) == .orderedSame
+        if currentCity != nil, nextCity != nil, !cityMatches { return self }
+        if currentDistrict != nil, nextDistrict != nil, !districtMatches { return self }
+        if currentCity == nil, nextCity != nil, currentDistrict != nil, !districtMatches { return self }
+        if currentDistrict == nil, nextDistrict != nil, currentCity != nil, !cityMatches { return self }
+        return WeatherPlaceDisplay(locality: Self.clean(locality) ?? Self.clean(newer.locality),
+                                   subLocality: Self.clean(subLocality) ?? Self.clean(newer.subLocality),
+                                   subAdminArea: Self.clean(subAdminArea) ?? Self.clean(newer.subAdminArea),
+                                   adminArea: Self.clean(adminArea) ?? Self.clean(newer.adminArea),
+                                   country: Self.clean(country) ?? Self.clean(newer.country))
+    }
+}
+
 struct WeatherPlace: Sendable, Equatable {
     let placeId: String
     let nameZh: String
@@ -19,6 +69,36 @@ struct WeatherPlace: Sendable, Equatable {
     let latE7: Int
     let lonE7: Int
     let region: String
+    var displayZh: WeatherPlaceDisplay? = nil
+    var displayEn: WeatherPlaceDisplay? = nil
+
+    func compactName(chinese: Bool) -> String {
+        let preferred = chinese ? displayZh : displayEn
+        let fallback = chinese ? displayEn : displayZh
+        return WeatherPlaceDisplay.clean(preferred?.compact(chinese: chinese))
+            ?? WeatherPlaceDisplay.clean(fallback?.compact(chinese: chinese))
+            ?? WeatherPlaceDisplay.clean(chinese ? nameZh : nameEn)
+            ?? WeatherPlaceDisplay.clean(chinese ? nameEn : nameZh) ?? ""
+    }
+
+    func context(chinese: Bool) -> String {
+        WeatherPlaceDisplay.clean((chinese ? displayZh : displayEn)?.context)
+            ?? WeatherPlaceDisplay.clean((chinese ? displayEn : displayZh)?.context) ?? region
+    }
+
+    static func mergeCandidates(zh: [WeatherPlaceCandidate], en: [WeatherPlaceCandidate]) -> [WeatherPlace] {
+        let zhByID = Dictionary(zh.map { ($0.placeId, $0) }, uniquingKeysWith: { first, _ in first })
+        let enByID = Dictionary(en.map { ($0.placeId, $0) }, uniquingKeysWith: { first, _ in first })
+        var seen = Set<String>()
+        return (zh + en).filter { seen.insert($0.placeId).inserted }.map { candidate in
+            let chinese = zhByID[candidate.placeId]
+            let english = candidate.placeId.hasPrefix("om:") || chinese == nil ? enByID[candidate.placeId] : nil
+            return WeatherPlace(placeId: candidate.placeId, nameZh: chinese?.name ?? candidate.name,
+                                nameEn: english?.name ?? candidate.name, latE7: candidate.latE7,
+                                lonE7: candidate.lonE7, region: candidate.region,
+                                displayZh: chinese?.display, displayEn: english?.display)
+        }
+    }
 }
 
 enum WeatherFreshness: String, Sendable {
@@ -137,7 +217,9 @@ actor WeatherRepository {
                     nameEn: entry["nameEn"] as? String ?? "",
                     latE7: entry["latE7"] as? Int ?? 0,
                     lonE7: entry["lonE7"] as? Int ?? 0,
-                    region: entry["region"] as? String ?? ""
+                    region: entry["region"] as? String ?? "",
+                    displayZh: Self.display(from: entry["displayZh"]),
+                    displayEn: Self.display(from: entry["displayEn"])
                 )
             }
             .sorted { $0.placeId < $1.placeId }
@@ -149,6 +231,7 @@ actor WeatherRepository {
     }
 
     private func savePlaceInternal(_ place: WeatherPlace, followLocation: Bool?) throws {
+        let place = Self.preserveLocatedPlace(existing: try places().first { $0.placeId == place.placeId }, candidate: place)
         let context = makeContext()
         let now = Int(Date().timeIntervalSince1970 * 1000)
         try context.performAndWait {
@@ -169,6 +252,8 @@ actor WeatherRepository {
                 "lonE7": place.lonE7,
                 "region": place.region,
             ]
+            if let display = place.displayZh { map[place.placeId]?["displayZh"] = Self.dictionary(display) }
+            if let display = place.displayEn { map[place.placeId]?["displayEn"] = Self.dictionary(display) }
             guard let data = try? JSONSerialization.data(withJSONObject: map, options: [.sortedKeys]) else {
                 return
             }
@@ -235,8 +320,41 @@ actor WeatherRepository {
     }
 
     static func preserveLocatedPlace(existing: WeatherPlace?, candidate: WeatherPlace) -> WeatherPlace {
-        if let existing, existing.placeId == candidate.placeId { return existing }
+        if var existing, existing.placeId == candidate.placeId {
+            existing.displayZh = enrich(existing.displayZh, candidate.displayZh, rawName: existing.nameZh)
+            existing.displayEn = enrich(existing.displayEn, candidate.displayEn, rawName: existing.nameEn)
+            return existing
+        }
         return candidate
+    }
+
+    private static func enrich(_ existing: WeatherPlaceDisplay?, _ candidate: WeatherPlaceDisplay?, rawName: String) -> WeatherPlaceDisplay? {
+        if let existing { return existing.enriching(with: candidate) }
+        guard let candidate else { return nil }
+        if WeatherPlaceDisplay.clean(candidate.locality) != nil || WeatherPlaceDisplay.clean(candidate.subLocality) != nil {
+            return candidate
+        }
+        guard let primary = candidate.primary, primary.caseInsensitiveCompare(rawName.trimmingCharacters(in: .whitespacesAndNewlines)) == .orderedSame else { return nil }
+        return candidate
+    }
+
+    private static func display(from value: Any?) -> WeatherPlaceDisplay? {
+        guard let value, JSONSerialization.isValidJSONObject(value),
+              let data = try? JSONSerialization.data(withJSONObject: value) else { return nil }
+        return try? JSONDecoder().decode(WeatherPlaceDisplay.self, from: data)
+    }
+
+    private static func dictionary(_ display: WeatherPlaceDisplay) -> [String: Any] {
+        guard let data = try? JSONEncoder().encode(display),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [:] }
+        return object
+    }
+
+    func saveAutomaticPlace(_ candidate: WeatherPlace, expectedSelectedID: String?) throws -> Bool {
+        guard try followsLocation(), try selectedPlace()?.placeId == expectedSelectedID else { return false }
+        let existing = try places().first { $0.placeId == candidate.placeId }
+        try savePlaceInternal(Self.preserveLocatedPlace(existing: existing, candidate: candidate), followLocation: nil)
+        return true
     }
 
     static func followsLocation(storedFlag: String?, selectedPlaceID: String?) -> Bool {

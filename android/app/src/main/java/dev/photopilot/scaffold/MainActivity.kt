@@ -120,6 +120,8 @@ import java.io.File
 import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -598,9 +600,7 @@ class MainActivity : Activity() {
                     ),
                     weatherEnabledDefault = settings.rawValue(WeatherLogic.KEY_ENABLED_DEFAULT) ==
                         AppSettingsRepository.VALUE_TRUE,
-                    weatherPlaceName = env.weather.places().values.firstOrNull()?.let {
-                        if (weatherLang() == "zh") it.nameZh else it.nameEn
-                    },
+                    weatherPlaceName = env.weather.selectedPlace()?.let { WeatherLogic.detailedName(it, weatherLang()) },
                     weatherUnitsIndex = when (settings.rawValue(WeatherLogic.KEY_UNITS)) {
                         WeatherLogic.UNITS_METRIC -> 1
                         WeatherLogic.UNITS_IMPERIAL -> 2
@@ -1853,6 +1853,7 @@ class MainActivity : Activity() {
     }
 
     private var weatherTextCache: String? = null
+    private var weatherPlaceCache: String? = null
     private var weatherA11yCache: String? = null
     private var weatherRefreshJob: Job? = null
 
@@ -2015,6 +2016,7 @@ class MainActivity : Activity() {
         view.onExit = { closePlayer() }
         view.onPlaybackSettings = { frame -> openPlaybackSettings(frame) }
         view.weatherTextProvider = { weatherTextCache }
+        view.weatherPlaceProvider = { weatherPlaceCache }
         view.weatherA11yProvider = { weatherA11yCache }
         view.onEmptyChoose = { target ->
             closePlayer()
@@ -2290,51 +2292,58 @@ class MainActivity : Activity() {
         val env = environment ?: return
         val view = WeatherCitySearchView(this)
         weatherSearchView = view
+        var generation = 0L
         view.onBack = {
+            generation++
             weatherSearchView = null
             popOverlayTracked()
         }
         view.onSearch = { query ->
+            val request = ++generation
             view.showSearching()
             scope.launch {
                 val lang = weatherLang()
                 val results = withContext(Dispatchers.IO) {
-                    runCatching { env.weatherProviderSearch(query, lang) }
+                    val otherLang = if (lang == "zh") "en" else "zh"
+                    val (preferred, other) = coroutineScope {
+                        val preferredRequest = async { runCatching { env.weatherProviderSearch(query, lang) } }
+                        val otherRequest = async { runCatching { env.weatherProviderSearch(query, otherLang) } }
+                        preferredRequest.await() to otherRequest.await()
+                    }
+                    if (preferred.isFailure && other.isFailure) preferred else Result.success(
+                        dev.photopilot.scaffold.data.net.PlaceResult.mergeLocalized(
+                            preferred.getOrDefault(emptyList()), other.getOrDefault(emptyList()), lang))
                 }
-                if (weatherSearchView !== view) return@launch
+                if (weatherSearchView !== view || request != generation) return@launch
                 results.onSuccess { view.showResults(it) }
                 results.onFailure { view.showError(R.string.weather_unavailable) }
             }
         }
         view.onSelect = { place ->
+            val request = ++generation
             scope.launch {
                 val stored = withContext(Dispatchers.IO) {
-                    val lang = weatherLang()
+                    val lang = place.language ?: weatherLang()
                     val otherLang = if (lang == "zh") "en" else "zh"
-                    val nameOther = runCatching {
+                    val other = if (place.placeId.startsWith("om:")) runCatching {
                         env.weatherProviderSearch(place.name, otherLang)
-                            .firstOrNull { it.placeId == place.placeId }?.name
-                    }.getOrNull() ?: place.name
-                    val stored = WeatherLogic.StoredPlace(
-                        placeId = place.placeId,
-                        nameZh = if (lang == "zh") place.name else nameOther,
-                        nameEn = if (lang == "zh") nameOther else place.name,
-                        latE7 = place.latE7,
-                        lonE7 = place.lonE7,
-                    )
-                    env.weather.putPlace(stored, followLocation = false)
-                    stored
+                            .firstOrNull { it.placeId == place.placeId }
+                    }.getOrNull() else null
+                    place.stored(lang, other)
                 }
-                if (weatherSearchView === view) {
+                if (weatherSearchView !== view || request != generation) return@launch
+                env.weather.putPlace(stored, followLocation = false)
+                if (weatherSearchView === view && request == generation) {
                     weatherSearchView = null
                     popOverlayTracked()
-                    val name = if (weatherLang() == "zh") stored.nameZh else stored.nameEn
+                    val name = WeatherLogic.detailedName(stored, weatherLang())
                     onSelected(stored, name)
                 }
             }
         }
         view.onSelectCurrentLocation = {
-            useCurrentLocation(view, onSelected)
+            val request = ++generation
+            useCurrentLocation(view, onSelected) { request == generation }
         }
         root.pushOverlay(view)
     }
@@ -2342,7 +2351,9 @@ class MainActivity : Activity() {
     private fun useCurrentLocation(
         view: WeatherCitySearchView,
         onSelected: (WeatherLogic.StoredPlace, String) -> Unit,
+        isCurrent: () -> Boolean,
     ) {
+        if (!isCurrent() || weatherSearchView !== view) return
         val env = environment ?: return
         view.showSearching()
         val granted = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
@@ -2350,7 +2361,7 @@ class MainActivity : Activity() {
             checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ==
             PackageManager.PERMISSION_GRANTED
         if (!granted) {
-            pendingLocationAction = { useCurrentLocation(view, onSelected) }
+            pendingLocationAction = { useCurrentLocation(view, onSelected, isCurrent) }
             requestPermissions(
                 arrayOf(
                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -2368,7 +2379,7 @@ class MainActivity : Activity() {
             } catch (error: Throwable) {
                 null
             }
-            if (weatherSearchView !== view) return@launch
+            if (weatherSearchView !== view || !isCurrent()) return@launch
             if (stored == null) {
                 view.showError(R.string.weather_unavailable)
                 return@launch
@@ -2376,7 +2387,7 @@ class MainActivity : Activity() {
             env.weather.putPlace(stored, followLocation = true)
             weatherSearchView = null
             popOverlayTracked()
-            val name = if (weatherLang() == "zh") stored.nameZh else stored.nameEn
+            val name = WeatherLogic.detailedName(stored, weatherLang())
             onSelected(stored, name)
         }
     }
@@ -2421,8 +2432,10 @@ class MainActivity : Activity() {
         val fallback = String.format(Locale.US, "%.1f, %.1f", lat, lon)
         val candidate = WeatherLogic.StoredPlace(
             placeId = "${WeatherLogic.PLACE_ID_LOCATION_PREFIX}$latE7,$lonE7",
-            nameZh = names.first ?: names.second ?: fallback,
-            nameEn = names.second ?: names.first ?: fallback,
+            nameZh = WeatherLogic.compact(names.first ?: names.second, fallback, "zh"),
+            nameEn = WeatherLogic.compact(names.second ?: names.first, fallback, "en"),
+            displayZh = names.first,
+            displayEn = names.second,
             latE7 = latE7,
             lonE7 = lonE7,
         )
@@ -2430,21 +2443,20 @@ class MainActivity : Activity() {
         return WeatherLogic.preserveLocatedPlace(existing, candidate)
     }
 
-    private suspend fun reverseGeocodeNames(lat: Double, lon: Double): Pair<String?, String?> =
+    private suspend fun reverseGeocodeNames(lat: Double, lon: Double): Pair<WeatherLogic.DisplayFields?, WeatherLogic.DisplayFields?> =
         withContext(Dispatchers.IO) {
             if (!Geocoder.isPresent()) return@withContext (null to null)
-            val zh = geocodeExecutor.submit<String?> { reverseGeocodeName(lat, lon, Locale("zh")) }
-            val en = geocodeExecutor.submit<String?> { reverseGeocodeName(lat, lon, Locale.ENGLISH) }
+            val zh = geocodeExecutor.submit<WeatherLogic.DisplayFields?> { reverseGeocodeName(lat, lon, Locale("zh")) }
+            val en = geocodeExecutor.submit<WeatherLogic.DisplayFields?> { reverseGeocodeName(lat, lon, Locale.ENGLISH) }
             val zhName = runCatching { zh.get(GEOCODE_TIMEOUT_MS, TimeUnit.MILLISECONDS) }.getOrNull()
             val enName = runCatching { en.get(GEOCODE_TIMEOUT_MS, TimeUnit.MILLISECONDS) }.getOrNull()
             zhName to enName
         }
 
-    private fun reverseGeocodeName(lat: Double, lon: Double, locale: Locale): String? =
+    private fun reverseGeocodeName(lat: Double, lon: Double, locale: Locale): WeatherLogic.DisplayFields? =
         runCatching {
             Geocoder(this, locale).getFromLocation(lat, lon, 1)?.firstOrNull()?.let { address ->
-                listOfNotNull(address.locality, address.adminArea, address.subAdminArea, address.thoroughfare)
-                    .firstOrNull { it.isNotBlank() }
+                dev.photopilot.scaffold.data.net.NativeGeocoderProvider.displayFields(address)
             }
         }.getOrNull()
 
@@ -2471,6 +2483,7 @@ class MainActivity : Activity() {
                 }
                 return@launch
             }
+            val startingPlaceId = env.weather.selectedPlace()?.placeId
             val place = try {
                 withContext(Dispatchers.IO) { currentLocationPlace() }
             } catch (cancellation: CancellationException) {
@@ -2478,7 +2491,7 @@ class MainActivity : Activity() {
             } catch (error: Throwable) {
                 null
             } ?: return@launch
-            env.weather.putPlace(place, followLocation = true)
+            if (!env.weather.putLocatedPlace(place, startingPlaceId)) return@launch
             refreshWeatherLine()
         }
     }
@@ -3096,13 +3109,14 @@ class MainActivity : Activity() {
         val targetView = playerView
         if (engine == null || targetView == null) {
             weatherTextCache = null
+            weatherPlaceCache = null
             weatherA11yCache = null
             return
         }
         val placeId = env.weather.selectedPlace()?.placeId
         val weatherOn = env.settings.rawValue(WeatherLogic.KEY_ENABLED_DEFAULT) ==
             AppSettingsRepository.VALUE_TRUE
-        val presentation: Pair<String?, String?> = if (weatherOn && placeId != null) {
+        val presentation: Triple<String?, String?, String?> = if (weatherOn && placeId != null) {
             withContext(Dispatchers.IO) {
                 val snapshot = env.weather.snapshot(placeId)
                 val segment = snapshot?.let {
@@ -3111,7 +3125,7 @@ class MainActivity : Activity() {
                 if (snapshot == null || !WeatherLogic.weatherDataAllowed(snapshot.attribution) ||
                     segment == WeatherLogic.TtlSegment.EXPIRED
                 ) {
-                    getString(R.string.weather_unavailable) to getString(R.string.weather_unavailable)
+                    Triple(getString(R.string.weather_unavailable), getString(R.string.weather_unavailable), null)
                 } else {
                     val imperial = env.settings.rawValue(WeatherLogic.KEY_UNITS) ==
                         WeatherLogic.UNITS_IMPERIAL
@@ -3127,27 +3141,27 @@ class MainActivity : Activity() {
                         temp
                     }
                     val placeName = env.weather.places()[placeId]?.let {
-                        if (weatherLang() == "zh") it.nameZh else it.nameEn
+                        WeatherLogic.displayName(it, weatherLang())
                     }
                     val base = if (conditionText != null) "$temp · $conditionText" else temp
-                    val prefixed = if (placeName.isNullOrEmpty()) base else "$placeName · $base"
-                    val withIcon = "${WeatherLogic.conditionIcon(snapshot.conditionCode)} $prefixed"
+                    val withIcon = "${WeatherLogic.conditionIcon(snapshot.conditionCode)} $base"
                     val text = when (segment) {
                         WeatherLogic.TtlSegment.EXPIRED -> getString(R.string.weather_unavailable)
                         WeatherLogic.TtlSegment.STALE ->
                             "$withIcon · ${getString(R.string.weather_delayed)}"
                         WeatherLogic.TtlSegment.FRESH -> withIcon
                     }
-                    text to a11y
+                    Triple(text, listOfNotNull(placeName, a11y).joinToString(", "), placeName)
                 }
             }
         } else {
-            null to null
+            Triple(null, null, null)
         }
         if (env.weather.selectedPlace()?.placeId != placeId) return
         if (playerEngine !== engine || playerView !== targetView) return
         weatherTextCache = presentation.first
         weatherA11yCache = presentation.second
+        weatherPlaceCache = presentation.third
         targetView.refreshWeather()
         if (weatherOn && placeId != null && weatherRefreshJob?.isActive != true) {
             weatherRefreshJob = scope.launch {

@@ -376,7 +376,7 @@ final class SettingsViewController: UIViewController {
                 .firstIndex(of: AppLanguage.overrideValue) ?? 0
             if let place = try? await environment.weatherRepository.selectedPlace() {
                 weatherPlace = place
-                weatherCityLabel.text = AppLanguage.preferChinese ? place.nameZh : place.nameEn
+                weatherCityLabel.text = [place.compactName(chinese: AppLanguage.preferChinese), place.context(chinese: AppLanguage.preferChinese)].filter { !$0.isEmpty }.joined(separator: "\n")
             } else {
                 weatherCityLabel.text = L10n.string("weather.choose_city")
             }
@@ -541,7 +541,7 @@ final class SettingsViewController: UIViewController {
         let picker = WeatherCityPickerViewController(environment: environment) { [weak self] place in
             guard let self else { return }
             weatherPlace = place
-            weatherCityLabel.text = AppLanguage.preferChinese ? place.nameZh : place.nameEn
+            weatherCityLabel.text = [place.compactName(chinese: AppLanguage.preferChinese), place.context(chinese: AppLanguage.preferChinese)].filter { !$0.isEmpty }.joined(separator: "\n")
             dismiss(animated: true)
         }
         picker.modalPresentationStyle = .fullScreen

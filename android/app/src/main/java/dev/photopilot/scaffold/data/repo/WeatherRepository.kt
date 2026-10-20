@@ -34,19 +34,29 @@ class WeatherRepository(
 
     override suspend fun place(placeId: String): WeatherLogic.StoredPlace? = places()[placeId]
 
-    suspend fun putPlace(place: WeatherLogic.StoredPlace) = placeMutex.withLock {
+    private suspend fun savePlace(place: WeatherLogic.StoredPlace, followLocation: Boolean?) {
         val current = places().toMutableMap()
-        current[place.placeId] = place
+        current[place.placeId] = WeatherLogic.preserveLocatedPlace(current[place.placeId], place)
         settings.putRaw(WeatherLogic.KEY_PLACES, WeatherLogic.encodePlaces(current))
         settings.putRaw(WeatherLogic.KEY_SELECTED_PLACE, place.placeId)
+        if (followLocation != null) settings.putRaw(WeatherLogic.KEY_FOLLOW_LOCATION,
+            if (followLocation) AppSettingsRepository.VALUE_TRUE else AppSettingsRepository.VALUE_FALSE)
     }
 
-    suspend fun putPlace(place: WeatherLogic.StoredPlace, followLocation: Boolean) {
-        putPlace(place)
-        settings.putRaw(
-            WeatherLogic.KEY_FOLLOW_LOCATION,
-            if (followLocation) AppSettingsRepository.VALUE_TRUE else AppSettingsRepository.VALUE_FALSE,
-        )
+    suspend fun putPlace(place: WeatherLogic.StoredPlace) = placeMutex.withLock {
+        savePlace(place, null)
+    }
+
+    suspend fun putPlace(place: WeatherLogic.StoredPlace, followLocation: Boolean) = placeMutex.withLock {
+        savePlace(place, followLocation)
+    }
+
+    suspend fun putLocatedPlace(place: WeatherLogic.StoredPlace, expectedSelectedId: String?): Boolean = placeMutex.withLock {
+        if (!WeatherLogic.mayApplyAutoLocation(expectedSelectedId, selectedPlace()?.placeId, followsLocation())) {
+            return@withLock false
+        }
+        savePlace(WeatherLogic.preserveLocatedPlace(this.place(place.placeId), place), true)
+        true
     }
 
     suspend fun followsLocation(): Boolean =
