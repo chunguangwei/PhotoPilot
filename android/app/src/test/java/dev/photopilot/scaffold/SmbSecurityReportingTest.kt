@@ -1,13 +1,17 @@
 package dev.photopilot.scaffold
 
 import dev.photopilot.scaffold.data.net.SmbClient
+import dev.photopilot.scaffold.data.net.NasTlsPolicy
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SmbSecurityReportingTest {
 
     private fun clientWith(dialect: String, encrypted: Boolean, signing: Boolean = true) =
-        SmbClient("nas.local", 445, "share", "", "").apply {
+        SmbClient(
+            "192.168.1.10", 445, "share", "", "",
+            tlsPolicy = NasTlsPolicy(pinLookup = { null }, cleartextHosts = { setOf("192.168.1.10:445") }),
+        ).apply {
             dialectProbe = { dialect }
             encryptionProbe = { encrypted }
             signingProbe = { signing }

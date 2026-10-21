@@ -1,14 +1,14 @@
 # SMB corresponding sources and rebuild record
 
-PhotoPilot 1.1.52 embeds the dynamically linked AMSMB2 framework, which includes libsmb2. The Swift wrapper uses MIT terms; libsmb2 uses LGPL-2.1. The PhotoPilot non-commercial license does not replace third-party licenses. This document records technical preparation; it is not a legal conclusion about App Store distribution.
+PhotoPilot 1.1.53 embeds the dynamically linked AMSMB2 framework, which includes libsmb2. The Swift wrapper uses MIT terms; libsmb2 uses LGPL-2.1. The PhotoPilot non-commercial license does not replace third-party licenses. This document records technical preparation; it is not a legal conclusion about App Store distribution.
 
 ## Exact corresponding sources
 
-- [AMSMB2 4.0.3 source archive](https://github.com/chunguangwei/PhotoPilot/releases/download/v1.1.52/AMSMB2-4.0.3-source.tar.gz), including the checked-out libsmb2 submodule, original license texts and build files.
+- [AMSMB2 4.0.3 source archive](https://github.com/chunguangwei/PhotoPilot/releases/download/v1.1.53/AMSMB2-4.0.3-source.tar.gz), including the checked-out libsmb2 submodule, original license texts and build files.
 - AMSMB2 commit: `1726aaaf7adf63d7d1d2a0c5d1b0e635028215c0`.
 - libsmb2 commit: `aff9fa6ba9f41cfd3c15d184554601ec3f6d8d03`.
 - Archive SHA-256: `0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077`.
-- [Per-file source manifest](https://github.com/chunguangwei/PhotoPilot/releases/download/v1.1.52/SMBSourceManifest.json): 218 original files. The archive has no local source modifications, credentials, private keys or user photos.
+- [Per-file source manifest](https://github.com/chunguangwei/PhotoPilot/releases/download/v1.1.53/SMBSourceManifest.json): 218 original files. The archive has no local source modifications, credentials, private keys or user photos.
 
 ## Independently rebuilding the framework
 

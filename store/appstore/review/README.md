@@ -20,14 +20,14 @@ PhotoPilot is an offline photo-frame app for iPhone and iPad. No PhotoPilot acco
 ## Submission items still to prepare
 
 - Confirm these notes and all button labels against the final Release binary and its chosen language.
-- Supply a reachable, isolated NAS test environment with only non-private images, scoped review credentials, protocol, host, port, share/path, and expected result. Do not put credentials in this repository. If this cannot be provided, agree a verification method with App Review; do not claim the sample slideshow covers NAS.
+- Privately enter the prepared read-only NAS environment details (see NASEnvironment.md): protocol, host, port, share/path, scoped credentials and six-image expected result. Recheck reachability and the final submitted binary before submission. Do not put credentials in this repository; the bundled sample slideshow does not cover NAS.
 - Verify the online privacy policy matches the submitted binary and is readable without authentication.
 - Complete the actual App Store Connect privacy, age-rating, encryption, territory and review-contact fields.
 - Resolve the dependency-distribution and weather-privacy items in `10-合规与上架材料.md` before submitting.
 
 Supporting a review does not require access to the developer's household NAS, personal photo library or personal account.
 
-## Submission worksheet (1.1.52 preparation)
+## Submission worksheet (1.1.53 preparation)
 
 - Bundle ID currently `dev.photopilot.scaffold`; final owning distribution team and Bundle ID decision remain unconfirmed. Development installation is not App Store signing.
 - Native UI languages: English and Simplified Chinese. Traditional Chinese store copy is a listing localization only.

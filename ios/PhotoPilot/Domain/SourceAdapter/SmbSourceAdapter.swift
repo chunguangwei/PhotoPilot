@@ -5,6 +5,16 @@ import OSLog
 
 private let smbLog = Logger(subsystem: "com.photopilot", category: "smb")
 
+protocol SmbTransport: Sendable {
+    func connectShare(name: String, encrypted: Bool) async throws
+    func disconnectShare(gracefully: Bool) async throws
+    func listShares(enumerateHidden: Bool) async throws -> [(name: String, comment: String)]
+    func contentsOfDirectory(atPath path: String, recursive: Bool) async throws -> [[URLResourceKey: Any]]
+    func downloadItem(atPath path: String, to url: URL, progress: SMB2Manager.ReadProgressHandler) async throws
+}
+
+extension SMB2Manager: SmbTransport {}
+
 struct SmbConfig: Sendable {
     let host: String
     let port: Int
@@ -17,6 +27,8 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
     static let capabilityFlags = 83
     static let pageSize = 100
 
+    private let managerFactory: (() -> (any SmbTransport)?)?
+    private let cleartextPermitted: Bool
     private let networkPolicy: NasNetworkPolicy?
     private let config: SmbConfig
     private let directories: [String]
@@ -31,8 +43,12 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
         recursive: Bool = true,
         pageSize: Int = SmbSourceAdapter.pageSize,
         tempDirectory: URL? = nil,
-        networkPolicy: NasNetworkPolicy? = nil
+        networkPolicy: NasNetworkPolicy? = nil,
+        cleartextPermitted: Bool = false,
+        managerFactory: (() -> (any SmbTransport)?)? = nil
     ) {
+        self.managerFactory = managerFactory
+        self.cleartextPermitted = cleartextPermitted
         self.networkPolicy = networkPolicy
         self.config = config
         self.directories = directories
@@ -133,7 +149,8 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
         }
     }
 
-    private func makeManager() -> SMB2Manager? {
+    private func makeManager() -> (any SmbTransport)? {
+        if let managerFactory { return managerFactory() }
         let credential = config.username.isEmpty
             ? nil
             : URLCredential(
@@ -149,7 +166,7 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
         return SMB2Manager(url: url, credential: credential)
     }
 
-    private func connectedClient(share: String) async throws -> SMB2Manager {
+    private func connectedClient(share: String) async throws -> any SmbTransport {
         guard let preferred = makeManager() else {
             throw NasTransportError.unavailable
         }
@@ -161,6 +178,14 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
         } catch {
             sessionEncrypted = false
             smbLog.error("connectShare encrypted failed code=\((error as NSError).code)")
+            guard let posix = error as? POSIXError,
+                  posix.code == .EOPNOTSUPP || (
+                    posix.code == .ENOMEM && posix.userInfo[NSLocalizedDescriptionKey] as? String
+                        == "Error code 12: Encryption requested but server does not support encryption."
+                  ) else {
+                throw await Self.mapConnectError(error, host: config.host, port: config.port)
+            }
+            try requireCleartextPermission()
         }
         guard let fallback = makeManager() else {
             throw NasTransportError.unavailable
@@ -175,11 +200,19 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
         }
     }
 
-    private func connectedClient() async throws -> SMB2Manager {
+    private func connectedClient() async throws -> any SmbTransport {
         try await connectedClient(share: config.share)
     }
 
+    private func requireCleartextPermission() throws {
+        guard NasAddress.isPrivateEligible(host: config.host), cleartextPermitted else {
+            throw NasTransportError.cleartextBlocked
+        }
+    }
+
     func listShares() async throws -> [String] {
+        try requireCleartextPermission()
+        sessionEncrypted = false
         guard let manager = makeManager() else {
             throw NasTransportError.unavailable
         }
@@ -209,7 +242,7 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
         } else {
             state = WebDavSourceAdapter.EnumState(dirs: directories, skip: 0)
         }
-        var client: SMB2Manager?
+        var client: (any SmbTransport)?
         var clientShare: String?
         if !config.share.isEmpty {
             client = try await connectedClient(share: config.share)
@@ -218,7 +251,7 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
         var assets: [SourceAssetDescriptor] = []
         defer {
             let current = client
-            Task { try? await current?.disconnectShare() }
+            Task { try? await current?.disconnectShare(gracefully: false) }
         }
         while !state.dirs.isEmpty, assets.count < pageSize {
             let directory = state.dirs[0]
@@ -233,7 +266,7 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
             }
             if clientShare != resolved.share {
                 if let client {
-                    try? await client.disconnectShare()
+                    try? await client.disconnectShare(gracefully: false)
                 }
                 client = try await connectedClient(share: resolved.share)
                 clientShare = resolved.share
@@ -332,7 +365,7 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
         }
         let resolved = NasPath.splitShare(path)
         let client = try await connectedClient(share: resolved.share)
-        defer { Task { try? await client.disconnectShare() } }
+        defer { Task { try? await client.disconnectShare(gracefully: false) } }
         let entries: [[URLResourceKey: Any]]
         do {
             entries = try await client.contentsOfDirectory(

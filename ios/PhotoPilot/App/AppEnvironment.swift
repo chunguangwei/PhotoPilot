@@ -163,9 +163,6 @@ final class AppEnvironment: @unchecked Sendable {
             host: endpoint.host,
             pinStore: tofuPins
         )
-        guard permitted else {
-            throw NasTransportError.cleartextBlocked
-        }
         let split = NasPath.splitShare(credential?.path ?? endpoint.path)
         let scopeJSON: String
         if let resumingJobID {
@@ -189,7 +186,8 @@ final class AppEnvironment: @unchecked Sendable {
                 ? WebDavSourceAdapter.parseScope(scopeJSON)
                 : [split.subpath] + WebDavSourceAdapter.parseScope(scopeJSON),
             recursive: info.recursive,
-            networkPolicy: nasNetworkPolicy
+            networkPolicy: nasNetworkPolicy,
+            cleartextPermitted: permitted
         )
         let coordinator = ImportCoordinator(
             controller: persistence,

@@ -963,8 +963,8 @@ class MainActivity : Activity() {
             val shareName = path.substringBefore('/').ifEmpty { return null }
             val pathInShare = path.substringAfter('/', "")
             val fingerprint = NasAddress.sourceFingerprint("smb", host, port, path)
-            val smbClient = SmbClient(host, port, shareName, username, password)
             val policy = env.nasTlsPolicy()
+            val smbClient = SmbClient(host, port, shareName, username, password, tlsPolicy = policy)
             return NasConnection(
                 form = form,
                 protocol = "smb",
@@ -977,7 +977,7 @@ class MainActivity : Activity() {
                 tlsContext = null,
                 browseRoot = pathInShare,
                 testConnection = {
-                    policy.cleartextError(host, port) ?: runCatching {
+                    runCatching {
                         smbClient.security()
                         if (pathInShare.isNotEmpty()) {
                             smbClient.list(pathInShare)

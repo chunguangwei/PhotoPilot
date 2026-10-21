@@ -30,3 +30,20 @@
 ## Review focus
 
 Wrong password/guest denied; path traversal cannot access private paths; DAV/SMB writes denied; TLS trust/expiry correct; only intended listeners/services added. Closing review services must not stop existing nginx/Docker services.
+
+## Reviewer-path audit follow-up
+
+- [x] Fresh external HTTPS/browser/DAV and SMB permission/download checks, including share discovery, range/metadata and connection recovery.
+- [x] Release iPhone/iPad real UI: first launch, NAS fields, test connection, folder/recursive selection, six-image import, explicit curation, save and playback.
+- [x] Independent read-only server/operation/review-note audit; apply verified corrections.
+- [x] Record final checks and private exact-field review notes; exclude credentials from Git and public test artifacts.
+
+
+## Confirmed application defect from the reviewer walkthrough
+
+The production iOS NAS UI unconditionally applies the private-network/plaintext exception gate before attempting any SMB connection. The live encrypted SMB adapter test passes, but the same public review endpoint is blocked in the actual app by the unencrypted-public-address warning. This contradicts the existing encrypted-by-default requirement in01 §NAS/03 §SMB; the private-only restriction applies to plaintext fallback. The adapter also needs inspection because its existing fallback is unconditional. Fix and test encryption-first/public-no-plaintext across UI, folder discovery, import and sync; audit Android independently. Do not weaken the existing private-only/explicit-opt-in rule for plaintext.
+
+- [x] Fix the confirmed iOS encryption gate with meaningful failing/passing tests; audit Android's corresponding paths and fix confirmed issues.
+- [x] Rebuild and rerun both live review workflows after application fixes, then run required platform checks and update actual evidence.
+
+Final result: four device/protocol Release simulator reviewer workflows passed, with preliminary harness failures retained separately. See store/appstore/review/NASEnvironment.md for exact bundles and remaining Distribution/physical-device limitations.

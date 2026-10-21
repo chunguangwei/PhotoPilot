@@ -250,7 +250,7 @@ final class NasFolderPickerViewController: UIViewController, UITableViewDataSour
     private func updateBottomBar() {
         let count = selection.paths.count
         countLabel.text = String(
-            format: L10n.string("frames.selected_count"),
+            format: L10n.string("sources.folders_count"),
             count
         )
         confirmButton.isEnabled = count > 0

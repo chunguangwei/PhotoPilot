@@ -504,23 +504,6 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
     }
 
     private func handleSmbTest(endpoint: NasEndpoint) {
-        if !NasAddress.isPrivateEligible(host: endpoint.host) {
-            present(NasCleartextViewController(
-                host: endpoint.host,
-                privateEligible: false
-            ) {}, animated: true)
-            return
-        }
-        if !environment.tofuPins.allowsCleartext(host: endpoint.host) {
-            present(NasCleartextViewController(
-                host: endpoint.host,
-                privateEligible: true
-            ) { [weak self] in
-                self?.environment.tofuPins.setCleartext(host: endpoint.host, allowed: true)
-                self?.handleTest()
-            }, animated: true)
-            return
-        }
         testing = true
         statusLabel.text = L10n.string("source.nas.testing")
         statusLabel.textColor = ThemeColor.textSecondary
@@ -541,7 +524,10 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
                 username: credential.username,
                 password: credential.password
             ),
-            directories: []
+            directories: [],
+            cleartextPermitted: NasTlsPolicy.isCleartextPermitted(
+                host: endpoint.host, pinStore: environment.tofuPins
+            )
         )
         Task { [weak self] in
             guard let self else { return }
@@ -726,6 +712,14 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         Task { [weak self] in
             guard let self else { return }
             do {
+                guard environment.credentialStore.save(
+                    fingerprint: fingerprint,
+                    credential: credential
+                ) else {
+                    showError(key: "error.src_unavailable.body")
+                    navigationController?.popToViewController(self, animated: true)
+                    return
+                }
                 let sourceID = isSmbSelected
                     ? try environment.sources.ensureSmbSource(
                         endpointKey: fingerprint,
@@ -739,10 +733,6 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
                         recursive: recursive,
                         directories: normalized
                     )
-                _ = environment.credentialStore.save(
-                    fingerprint: fingerprint,
-                    credential: credential
-                )
                 if let prefillEndpoint {
                     let oldKey = NasAddress.sourceFingerprint(
                         scheme: prefillEndpoint.scheme,

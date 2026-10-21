@@ -33,6 +33,7 @@ class SmbClient(
     private val password: String,
     internal var encryptionProbe: (() -> Boolean)? = null,
     internal var dialectProbe: (() -> String)? = null,
+    private val tlsPolicy: NasTlsPolicy? = null,
 ) : SmbShare {
 
     data class Security(
@@ -47,7 +48,6 @@ class SmbClient(
     private var connection: com.hierynomus.smbj.connection.Connection? = null
     private var session: com.hierynomus.smbj.session.Session? = null
     private var share: DiskShare? = null
-    private var encryptedSession = false
     internal var signingProbe: (() -> Boolean)? = null
 
     override fun security(): Security {
@@ -55,9 +55,11 @@ class SmbClient(
         val dialect = dialectProbe
         val signing = signingProbe
         if (encryption != null && dialect != null && signing != null) {
+            val encrypted = encryption.invoke()
+            requireAllowedSession(encrypted)
             return Security(
                 dialect = dialect.invoke(),
-                encrypted = encryption.invoke(),
+                encrypted = encrypted,
                 signing = signing.invoke(),
             )
         }
@@ -126,16 +128,17 @@ class SmbClient(
     }
 
     private fun ensureConnected() {
-        if (share != null) return
-        val encrypted = runCatching {
-            openWith(SmbConfig.builder().withEncryptData(true).build())
-        }
-        if (encrypted.isSuccess) {
-            encryptedSession = isSessionEncrypted()
+        if (share != null) {
+            requireAllowedSession(isSessionEncrypted())
             return
         }
-        openWith(SmbConfig.builder().build())
-        encryptedSession = isSessionEncrypted()
+        openWith(SmbConfig.builder().withEncryptData(true).build())
+    }
+
+    private fun requireAllowedSession(encrypted: Boolean) {
+        if (encrypted) return
+        val policy = tlsPolicy ?: throw SmbException(NasTlsPolicy.ERR_CLEARTEXT_BLOCKED)
+        policy.cleartextError(host, port)?.let { throw SmbException(it) }
     }
 
     private fun isSessionEncrypted(): Boolean =
@@ -164,6 +167,7 @@ class SmbClient(
             } catch (e: Throwable) {
                 throw mapAuthError(e)
             }
+            requireAllowedSession(session.shouldEncryptData())
             val diskShare = try {
                 session.connectShare(shareName) as DiskShare
             } catch (e: Throwable) {

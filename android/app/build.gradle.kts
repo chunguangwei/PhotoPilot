@@ -48,8 +48,8 @@ android {
         applicationId = "dev.photopilot.scaffold"
         minSdk = 29
         targetSdk = 36
-        versionCode = 52
-        versionName = "1.1.52"
+        versionCode = 53
+        versionName = "1.1.53"
     }
 
     bundle {

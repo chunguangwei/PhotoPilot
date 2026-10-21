@@ -150,7 +150,7 @@ class AppEnvironment private constructor(
             if (protocol == "smb") {
                 val shareName = path.substringBefore('/').ifEmpty { return null }
                 return SmbSourceAdapter(
-                    share = SmbClient(host, port, shareName, username, password),
+                    share = SmbClient(host, port, shareName, username, password, tlsPolicy = newNasTlsPolicy(tofuPins)),
                     sourceFingerprint = endpointKey,
                     recursive = dev.photopilot.scaffold.data.logic.NasSourceLifecycle
                         .recursiveFromSettings(source.settingsJson),

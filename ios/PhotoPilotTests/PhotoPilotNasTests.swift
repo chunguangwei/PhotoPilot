@@ -1,3 +1,4 @@
+import AMSMB2
 import XCTest
 @testable import PhotoPilot
 
@@ -329,4 +330,210 @@ final class PhotoPilotNasTests: XCTestCase {
             .unavailable
         )
     }
+    func testPublicSmbDoesNotFallBackToPlaintext() async throws {
+        let transport = SmbSecurityTransport()
+        transport.encryptedFailure = POSIXError(.EOPNOTSUPP)
+        let adapter = smbSecurityAdapter(host: "203.0.113.8", allowed: true, transport: transport)
+        do {
+            _ = try await adapter.listSubdirectories(path: "")
+            XCTFail("Public SMB must not open an unencrypted session")
+        } catch {
+            XCTAssertEqual(error as? NasTransportError, .cleartextBlocked)
+        }
+        XCTAssertEqual(transport.connections, [true])
+    }
+
+    func testPrivateSmbRequiresConsentOnlyWhenEncryptionUnsupported() async throws {
+        let transport = SmbSecurityTransport()
+        let adapter = smbSecurityAdapter(host: "192.168.1.8", allowed: false, transport: transport)
+        let folders = try await adapter.listSubdirectories(path: "")
+        XCTAssertEqual(folders, ["photos"])
+        XCTAssertTrue(adapter.sessionEncrypted)
+        transport.encryptedFailure = POSIXError(.EOPNOTSUPP)
+        do {
+            _ = try await adapter.listSubdirectories(path: "")
+            XCTFail("Private plaintext requires host consent")
+        } catch {
+            XCTAssertEqual(error as? NasTransportError, .cleartextBlocked)
+        }
+        XCTAssertEqual(transport.connections, [true, true])
+    }
+
+    func testPrivateSmbMayFallBackWithConsent() async throws {
+        let transport = SmbSecurityTransport()
+        transport.encryptedFailure = POSIXError(.EOPNOTSUPP)
+        let adapter = smbSecurityAdapter(host: "192.168.1.8", allowed: true, transport: transport)
+        let folders = try await adapter.listSubdirectories(path: "")
+        XCTAssertEqual(folders, ["photos"])
+        XCTAssertEqual(transport.connections, [true, false])
+        XCTAssertFalse(adapter.sessionEncrypted)
+    }
+
+    func testSmbAuthenticationFailureDoesNotTriggerPlaintextConsent() async throws {
+        let transport = SmbSecurityTransport()
+        transport.encryptedFailure = POSIXError(.EPERM)
+        let adapter = smbSecurityAdapter(host: "192.168.1.8", allowed: true, transport: transport)
+        do {
+            _ = try await adapter.listSubdirectories(path: "")
+            XCTFail("Bad credentials must be surfaced")
+        } catch {
+            XCTAssertEqual(error as? NasTransportError, .authFailed)
+        }
+        XCTAssertEqual(transport.connections, [true])
+    }
+
+    func testPublicSmbShareDiscoveryNeverUsesUnencryptedLibraryRPC() async throws {
+        let transport = SmbSecurityTransport()
+        let adapter = smbSecurityAdapter(host: "203.0.113.8", allowed: true, transport: transport)
+        do {
+            _ = try await adapter.listShares()
+            XCTFail("Library share discovery is unencrypted")
+        } catch {
+            XCTAssertEqual(error as? NasTransportError, .cleartextBlocked)
+        }
+        XCTAssertEqual(transport.shareDiscoveryCount, 0)
+    }
+
+    func testPrivateSmbShareDiscoveryRequiresConsent() async throws {
+        let transport = SmbSecurityTransport()
+        let blocked = smbSecurityAdapter(host: "192.168.1.8", allowed: false, transport: transport)
+        do {
+            _ = try await blocked.listShares()
+            XCTFail("Unencrypted discovery requires consent")
+        } catch {
+            XCTAssertEqual(error as? NasTransportError, .cleartextBlocked)
+        }
+        XCTAssertEqual(transport.shareDiscoveryCount, 0)
+        let allowed = smbSecurityAdapter(host: "192.168.1.8", allowed: true, transport: transport)
+        let shares = try await allowed.listShares()
+        XCTAssertEqual(shares, ["reviewphotos"])
+        XCTAssertFalse(allowed.sessionEncrypted)
+        XCTAssertEqual(transport.shareDiscoveryCount, 1)
+    }
+
+    func testPublicSmbEncryptedDirectoryAccessDoesNotRequirePlaintextConsent() async throws {
+        let transport = SmbSecurityTransport()
+        let adapter = smbSecurityAdapter(host: "203.0.113.8", allowed: false, transport: transport)
+        let folders = try await adapter.listFolders(path: "")
+        XCTAssertEqual(folders, ["photos"])
+        XCTAssertTrue(adapter.sessionEncrypted)
+        XCTAssertEqual(transport.connections, [true])
+    }
+
+    func testSmbNetworkAndUnknownErrorsNeverDowngrade() async throws {
+        let failures: [(Error, NasTransportError)] = [
+            (POSIXError(.ETIMEDOUT), .timeout),
+            (POSIXError(.EHOSTUNREACH), .unreachable),
+            (POSIXError(.EACCES), .shareNotFound),
+            (POSIXError(.EINVAL), .unavailable),
+            (POSIXError(.ENOMEM), .unavailable),
+            (POSIXError(.ENOMEM, userInfo: [NSLocalizedDescriptionKey: "Out of memory"]), .unavailable),
+            (POSIXError(.EINVAL, userInfo: [
+                NSLocalizedDescriptionKey: "Error code 12: Encryption requested but server does not support encryption."
+            ]), .unavailable),
+            (NSError(domain: "SMB", code: 102), .unavailable)
+        ]
+        for (failure, expected) in failures {
+            let transport = SmbSecurityTransport()
+            transport.encryptedFailure = failure
+            let adapter = smbSecurityAdapter(host: "192.168.1.8", allowed: true, transport: transport)
+            do {
+                _ = try await adapter.listSubdirectories(path: "")
+                XCTFail("Only an explicit POSIX unsupported result permits fallback")
+            } catch {
+                XCTAssertEqual(error as? NasTransportError, expected)
+            }
+            XCTAssertEqual(transport.connections, [true])
+        }
+    }
+
+    func testPublicSmbImportAndPayloadUseTheSameEncryptionGate() async throws {
+        for operation in 0..<3 {
+            let transport = SmbSecurityTransport()
+            transport.encryptedFailure = POSIXError(.EOPNOTSUPP)
+            let adapter = smbSecurityAdapter(host: "203.0.113.8", allowed: true, transport: transport)
+            do {
+                switch operation {
+                case 0: _ = try await adapter.enumerateAssets(cursor: nil)
+                case 1: _ = try await adapter.assetPayload(remoteID: "photo.jpg")
+                default: _ = try await adapter.listFolders(path: "photos")
+                }
+                XCTFail("Every SMB data path must reject a public plaintext fallback")
+            } catch {
+                XCTAssertEqual(error as? NasTransportError, .cleartextBlocked)
+            }
+            XCTAssertEqual(transport.connections, [true])
+        }
+    }
+
+    func testLibraryUnsupportedEncryptionMemoryCodeStillRequiresPrivateConsent() async throws {
+        let cases: [(host: String, allowed: Bool, mayFallback: Bool)] = [
+            ("192.168.1.8", true, true),
+            ("192.168.1.8", false, false),
+            ("203.0.113.8", true, false),
+            ("203.0.113.8", false, false)
+        ]
+        for testCase in cases {
+            let transport = SmbSecurityTransport()
+            transport.encryptedFailure = POSIXError(.ENOMEM, userInfo: [
+                NSLocalizedDescriptionKey: "Error code 12: Encryption requested but server does not support encryption."
+            ])
+            let adapter = smbSecurityAdapter(
+                host: testCase.host, allowed: testCase.allowed, transport: transport
+            )
+            if testCase.mayFallback {
+                let folders = try await adapter.listSubdirectories(path: "")
+                XCTAssertEqual(folders, ["photos"])
+                XCTAssertEqual(transport.connections, [true, false])
+                XCTAssertFalse(adapter.sessionEncrypted)
+            } else {
+                do {
+                    _ = try await adapter.listSubdirectories(path: "")
+                    XCTFail("Unsupported encryption never bypasses private host consent")
+                } catch {
+                    XCTAssertEqual(error as? NasTransportError, .cleartextBlocked)
+                }
+                XCTAssertEqual(transport.connections, [true])
+            }
+        }
+    }
+
+    private func smbSecurityAdapter(
+        host: String, allowed: Bool, transport: SmbSecurityTransport
+    ) -> SmbSourceAdapter {
+        SmbSourceAdapter(
+            config: SmbConfig(host: host, port: 445, share: "reviewphotos", username: "", password: ""),
+            directories: [],
+            cleartextPermitted: allowed,
+            managerFactory: { transport }
+        )
+    }
+
+}
+
+
+private final class SmbSecurityTransport: SmbTransport, @unchecked Sendable {
+    var encryptedFailure: Error?
+    var connections: [Bool] = []
+    var shareDiscoveryCount = 0
+
+    func connectShare(name: String, encrypted: Bool = false) async throws {
+        connections.append(encrypted)
+        if encrypted, let encryptedFailure { throw encryptedFailure }
+    }
+
+    func contentsOfDirectory(atPath path: String, recursive: Bool = false) async throws
+        -> [[URLResourceKey: Any]] {
+        [[.nameKey: "photos", .isDirectoryKey: true]]
+    }
+
+    func listShares(enumerateHidden: Bool = false) async throws
+        -> [(name: String, comment: String)] {
+        shareDiscoveryCount += 1
+        return [(name: "reviewphotos", comment: "")]
+    }
+
+    func disconnectShare(gracefully: Bool) async throws {}
+
+    func downloadItem(atPath path: String, to url: URL, progress: SMB2Manager.ReadProgressHandler) async throws {}
 }
