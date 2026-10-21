@@ -32,3 +32,9 @@ Dedicated service logs rotate daily with up to seven retained rotations, maxage7
 ## Remaining review work
 
 Paste actual endpoints/credentials only into private App Review information, verify labels against the final submitted language/build, and test the final Distribution build's full import/curation/playback UI. Server accessibility from the developer's external network does not guarantee every reviewer network permits every port. If App Review cannot reach SMB, communicate the observed constraint and agree a verification path; do not claim WebDAV substitutes for all SMB testing.
+
+## Browser directory access follow-up
+
+The owner reported browser GET /photos/ returning404 after successful authentication. Reproduced root/subdirectory GET404 while PROPFIND207 and direct PNG GET200 confirmed protocol access still worked. The server had no browser directory-index module/options; the earlier protocol checks did not cover browser directory listing.
+
+Enabled authenticated autoindex only inside the existing sample-photo directory; no new files, credentials or write methods added. Final checks: root and album browser GET200 with image links, direct PNG200/hash match, root and slashless album PROPFIND207, anonymous401, write403 and parent-directory403. Evidence `.build/review-environment/browser-index/verification.json`. This server-only correction requires no app version update. Existing no-redirect PROPFIND behaviour is preserved.

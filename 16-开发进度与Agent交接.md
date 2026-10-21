@@ -1,5 +1,8 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**最新修复（2026-10-21 审核WebDAV浏览器目录404）**：用户截图反馈浏览器登录后/photos/显示Not Found。实测GET根/album目录404，但PROPFIND207及PNG200，确认为先前仅验证协议、漏配浏览器目录索引。已在专用Apache的受认证样图目录启用autoindex，未增加源文件/权限；最终根与album浏览器GET200、图片200/哈希匹配、根和无尾斜杠album PROPFIND207；未登录401、写入及父目录403。证据`.build/review-environment/browser-index/verification.json`；服务器配置检查通过、仅重载专用WebDAV。无生产客户端源码/版本变更，不将本次HTTP核验称为新一轮完整App验收。
+
+
 **最新续轮（2026-10-21 云端审核NAS与材料）**：用户确认首版免费/无广告/无内购，未来收费另议；授权SSH现有云服务器、检查5005/5006/445、创建testuser随机密码并上传审核合成图。已搭建独立只读SMB/WebDAV服务，六张图分根目录/album；最终SMB5005、HTTPS5006，445虽监听但当前外网超时。两协议六图哈希、匿名/错密及写入删除拒绝均实证；iOS实际适配器与修改库运行联测三项通过，修改后库的unsigned Release应用重建成功且嵌入符号/rpath验证。独立审核证书至2027-01-19，经TLS-ALPN443签发；原Nginx证书哈希、Nginx/Docker服务保留，专用日常续期检查和关闭脚本已备。凭证仅本机`~/.config/photopilot/`私密文件与私下交付，不入Git；公开材料见10 §13.12及store/appstore/review。当前续轮无生产客户端代码改动/版本升级。仍缺真实分发主体/ASC、供应商隐私及最终许可结论；未上传提交商店。证据`.build/review-environment/`；新证书下iOS实际适配器/修改库三项再次通过；新证书下完整协议最终串行复核通过，43工具检查及diff检查通过；文档已回填，提交推送结果以Git历史为准。独立证书签发与服务初检已实证，不宣称未来续期或App Review已通过。独立文档复核两处表述不一致已核实修正（审核证书来源、英文删除范围），未发现凭证误入或法务/App Store通过的虚假结论。
 
 
