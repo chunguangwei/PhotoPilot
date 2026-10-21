@@ -1,5 +1,9 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**最新续轮（2026-10-21，按用户顺序先iPhone/iPad、安卓最后）**：设备UI自动化已恢复；Mac DevToolsSecurity仍disabled但不再构成iOS阻塞，不需继续索取管理员认证。原iPhone应用无reset导航1/1通过。最终55应用复制为唯一ID/Keychain的`dev.photopilot.physicalnasuiflow`独立测试沙箱，未替换或清空个人应用；iPhone公网加密SMB与可信HTTPS WebDAV完整UI2/2通过，iPad初组合SMB通过/WebDAV驱动触达失败，修正私有驱动滚动后独立WebDAV重跑1/1通过；期间系统解锁preflight阻塞不算通过。四条均真实完成递归导入6图→明确选择6图→建相框→播放→退出，iPhone早期hosted克隆Wi-Fi拒绝不再代表网络残留。
+
+双机语言切换及重启保持、隐私许可/节日页与竖屏键盘用例通过；iPhone第三方输入法不在app.keyboards树下，驱动断言失败不等于键盘未显示。来源旋转请求及“landscape”命名用例不代表真实横屏：iPad SMB图原像素2360×1640但EXIF orientation8，显示为1640×2360；主Agent已目检4播放图均竖屏，**实际横屏/稳定转场布局/大字号/天气失败/拒权仍未完成**。已异步请求关闭方向锁定。双机独立测试App的清除全部均重跑1/1通过，注入音乐目录不存在、DB照片/相框/来源0/0/0；测试App与runner均卸载，3份私密夹具与复制DB已清理、3份日志脱敏。原55重新启动，主Agent独立post-ui核验quick_check OK、iPhone112/1/1与iPad796/2/2不变，临时个人DB副本已删。随后最后检查Android：adb与macOS USB均空，55装机/实际客户端/UI仍未执行，未清个人数据；证据`android/android-last-order-final-check.json`。无生产业务改动/新版本/商店上传；具体证据与仍待执行见[PhysicalRegression.md](store/appstore/review/PhysicalRegression.md)。下述旧UI初始化失败/未执行为历史状态，以本段和矩阵为准，不能将新通过扩展为全部真机或M0验收。
+
 **最新续轮（2026-10-21 v1.1.55隐私许可定稿＋真机回归受阻，未全量通过）**：用户授权Agent完成三台真机回归及许可/隐私，正式上线共同完成。双端生产天气链移除自动wttr.in，仅Open-Meteo，缓存与系统地名回退保留。PRIVACY.md按55双语定稿，补导入音频、GitHub更新及主动支持邮件；采用Apple标准EULA＋UserTerms.md第三方/LGPL权限补充，LICENSE与入包notices同步，不伪造正式Distribution或法律审批。旧Qwen生成演示图改为8张本地原创插画（`tools/gen_demo_art.py`，固定种子、双端同字节、已目检）；生日/圣诞/七夕3首不明范围旋律改为程序原创，保留ID与精确时长；其余11首保留具体来源登记。AssetEvidence与来源摘要同步，未声称历史模型素材必然侵权。详见10 §13.14和store/appstore/review。
 
 隐私审计实证双端erase-all遗漏导入音乐目录，已补删除；iOS删除失败提示并中止后续，音乐目录设置排除备份。Android提取文件清理器，review发现删除返回值未检查导致假清空，已补失败/残留检测、可见提示及不清DB；继续查出失败reset不能重试，已补恢复及并发/重试测试。所有清空用例仅临时目录或模拟器，**未清空个人真机**。实际RED/GREEN证据`.build/physical-regression-2026-10-21/{ios-music-clear,android-clear,android-reset}-*.log`；独立review初P2已核实修复并复核无其他重要问题。
