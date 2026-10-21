@@ -45,3 +45,7 @@
 **Files:** versions/build artifacts, review packet and16.
 - [ ] Build final signed packages, install in place and verify versions and data preservation where devices permit.
 - [ ] Update review evidence, commit/push authorized repository and publish any necessary update; no App Store submission.
+
+## Execution status — 2026-10-21
+
+Task2 complete: provider wiring, bilingual policy, standard EULA/third-party permissions, original asset replacements, erase-all fixes and failure/retry regressions verified. Task3 package/source/GitHub delivery complete; iOS55 installed in place, Android55 installation is blocked by USB. Physical hosted177 tests pass on each Apple device and iPad's3 live adapter/library checks pass. Task1 personal-app end-to-end UI remains blocked by automation-mode authorisation and unstable Android USB; no personal library was reset. See PhysicalRegression.md and16 for exact outcomes, initial failed runs and remaining steps. App Store upload/submission remains for the joint online stage.
