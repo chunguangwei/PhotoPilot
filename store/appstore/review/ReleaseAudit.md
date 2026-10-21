@@ -77,4 +77,6 @@ SMB锁定源码218文件经独立arm64重建通过、前后哈希不变；[源�
 
 2026-10-21 本地最终未签名归档 `.build/appstore-audit/PhotoPilot-v1.1.53-final-unsigned.xcarchive` 成功；实读1.1.53(53)、设备族1/2、最低iOS15、iphoneos27.1 SDK。PrivacyInfo与ThirdPartyNotices逐字节匹配源文件，未包含私密审核凭证fixture。双端SMB加密先行与明文例外限制、iOS凭证保存失败处理和目录计数文案已修复；176项iOS全量测试、19项NAS专项及build/analyze、393项Android测试与build/lint/签名Release通过。真实Android两协议客户端六图云端哈希校验通过；完整Release UI结果详见[NAS记录](NASEnvironment.md)。
 
-最终归档使用既有开发身份覆盖安装到当前iPhone，版本/启动均实证；照片112/相框1/来源1及DB quick_check在安装前后不变。iPad真机离线，不能宣称已更新或完成NAS真机验收。未验证Apple正式Distribution签名/Validate/上传，也未关闭SMB许可、天气隐私与ASC资料等外部缺口。现有商店截图仍为1.1.52可见页面，提交前须对照最终分发包复核；不能将本次NAS模拟器证据称为新商店截图。
+最终归档使用既有开发身份覆盖安装到当前iPhone，版本/启动均实证；照片112/相框1/来源1及DB quick_check在安装前后不变。随后同日iPadAir4与iPhone13均已覆盖安装最终1.1.53(53)并启动；安装前后DB quick_check OK，iPad796资产/2相框/2来源与iPhone112/1/1不变，证据`.build/device-install-v1.1.53-both/`。仅为安装与库完整性验证，不作为NAS完整真机验收。未验证Apple正式Distribution签名/Validate/上传，也未关闭SMB许可、天气隐私与ASC资料等外部缺口。现有商店截图仍为1.1.52可见页面，提交前须对照最终分发包复核；不能将本次NAS模拟器证据称为新商店截图。
+
+2026-10-21 Android-only1.1.54/code54补充：添加NAS时本地保存失败改为中英文可见提示，保留目录选择，协程取消不误报。393项单元测试、Debug/签名Release和lint通过（0error/181warning），签名沿用旧证书；adb无接入真机。iOS仍为已装双真机的1.1.53(53)，未重新构建或上传商店；上述Distribution与外部资料缺口不因此关闭。

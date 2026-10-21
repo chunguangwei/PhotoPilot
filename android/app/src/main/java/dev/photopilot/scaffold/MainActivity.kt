@@ -1267,7 +1267,14 @@ class MainActivity : Activity() {
                 settingsJson = settingsJson,
                 scopeJson = scopeJson,
             )
-        }.getOrNull() ?: return
+        }.getOrElse { error ->
+            if (error is CancellationException) throw error
+            AlertDialog.Builder(this)
+                .setMessage(R.string.error_store_write_failed_body)
+                .setPositiveButton(R.string.common_close, null)
+                .show()
+            return
+        } ?: return
         val editContext = nasEditContext
         nasEditContext = null
         if (editContext != null && editContext.endpointKey != conn.fingerprint) {
