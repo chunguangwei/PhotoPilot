@@ -31,7 +31,7 @@ Supporting a review does not require access to the developer's household NAS, pe
 
 - Bundle ID currently `dev.photopilot.scaffold`; final owning distribution team and Bundle ID decision remain unconfirmed. Development installation is not App Store signing.
 - Native UI languages: English and Simplified Chinese. Traditional Chinese store copy is a listing localization only.
-- Proposed primary category: Photo & Video; no PhotoPilot login, advertising, purchases or public user-content sharing in this build. Pricing remains a user decision.
+- Proposed primary category: Photo & Video; no PhotoPilot login, advertising, purchases or public user-content sharing in this build. The user confirmed on 2026-10-21: free download, no advertising and no In-App Purchases/subscriptions in this release. Future monetisation is not implemented and requires a new service-licensing/privacy/pricing review before activation.
 - Privacy/support URLs and contact are in the repository README and policy. Verify their final published versions before submission.
 - Age-rating questionnaire: answer from the actual private/local photo-frame features, not arbitrary customer photo content; do not predeclare Apple's resulting age rating.
 - Export compliance: include SMB's non-system cryptographic implementations in the assessment; the archive does not predeclare an encryption exemption.
@@ -41,3 +41,13 @@ Supporting a review does not require access to the developer's household NAS, pe
 - Weather data-flow worksheet: the app's own photo data stays on device; manual city search sends query/language to Open-Meteo geocoding, forecast sends rounded coordinates to Open-Meteo and optional wttr.in fallback. These services see connection IPs. Apple's system geocoder receives original system location or fallback search input. Open-Meteo logs may contain coordinates and remain for 90 days; wttr.in retention/use evidence is still incomplete. Final collected-data categories, linkage, retention and disclosures remain blocked on that evidence. Empty manifest collection arrays cannot settle the App Privacy answers.
 
 These are prepared inputs, not evidence that App Store Connect fields have been submitted or accepted.
+
+
+## Prepared supporting documents
+
+- [Submission materials and remaining decisions](SubmissionMaterials.md): business model, App Store statistics, form inputs and specific unverified items.
+- [Privacy data-flow evidence](WeatherPrivacyEvidence.md): per-provider processing and proposed privacy-label inputs; not a submitted questionnaire.
+- [User terms draft](UserTermsDraft.md): non-commercial app/source terms, Apple minimum EULA items and third-party rights; missing legal publisher identity/contact fields remain explicit.
+- [NAS environment verification](NASEnvironment.md): credential-free technical evidence. Live access details are delivered privately and must be pasted only into private review information.
+
+- [Rights evidence register](RightsRegister.md): source/licence/provenance inputs and remaining scope checks.
