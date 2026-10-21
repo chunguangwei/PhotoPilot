@@ -38,6 +38,9 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     var onBack: ((Boolean) -> Unit)? = null
     var onSave: ((PlaybackSettingsEdit.Draft, FrameOrderMode) -> Unit)? = null
 
+    private val controlRefreshers = mutableListOf<() -> Unit>()
+    private var bindingControls = false
+
     private var initialDraft: PlaybackSettingsEdit.Draft? = null
     private var initialOrder: FrameOrderMode = FrameOrderMode.CAPTURED_ASC
     private var reduceMotion = false
@@ -236,7 +239,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         }
         initialOrder = frame.orderMode
         brightnessFollow = s.brightness == null
-        brightnessPercent = ((s.brightness ?: 0.5f) * 100).toInt().coerceIn(0, 100)
+        brightnessPercent = PlaybackSettingsEdit.brightnessPercent(s.brightness)
         keepAwakePaused = s.keepAwakeWhenPaused
         restEnabled = s.restEnabled
         restStartMinute = s.restStartMinute
@@ -458,7 +461,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         column.addView(
             optionGroup(
                 HOLD_PRESETS.map { R.string.format_seconds_short } + R.string.common_custom,
-                holdPresetIndex,
+                { holdPresetIndex },
             ) { index ->
                 holdPresetIndex = index
                 updateHoldCustomVisibility()
@@ -491,7 +494,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         customRow.addView(holdCustomInput, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
         holdUnitControl = optionGroup(
             listOf(R.string.playback_unit_seconds, R.string.playback_unit_minutes),
-            0,
+            { if (holdCustomMinutes) 1 else 0 },
         ) { index -> holdCustomMinutes = index == 1 }
         customRow.addView(
             holdUnitControl,
@@ -561,7 +564,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                 R.string.playback_solid_black,
                 R.string.playback_solid_warm_white,
             ),
-            solidIndex,
+            { solidIndex },
         ) { index ->
             solidIndex = index
             renderPreview()
@@ -571,8 +574,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         cropWarning = addHelp(column, R.string.playback_fit_crop_warning)
         cropWarning.visibility = View.GONE
 
-        addSwitch(column, R.string.playback_clock, clockEnabled) { clockEnabled = it }
-        addSwitch(column, R.string.playback_date, dateEnabled) { dateEnabled = it }
+        addSwitch(column, R.string.playback_clock, { clockEnabled }) { clockEnabled = it }
+        addSwitch(column, R.string.playback_date, { dateEnabled }) { dateEnabled = it }
         addLabel(column, R.string.playback_overlay_position, R.dimen.pp_space_12)
         column.addView(
             optionGroup(
@@ -584,7 +587,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                     R.string.playback_position_bottom_center,
                     R.string.playback_position_bottom_trailing,
                 ),
-                positionIndex,
+                { positionIndex },
                 singleRow = false,
             ) { positionIndex = it },
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
@@ -597,7 +600,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                     R.string.playback_hour_24,
                     R.string.playback_hour_12,
                 ),
-                hourFormatIndex,
+                { hourFormatIndex },
             ) { hourFormatIndex = it },
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
         )
@@ -610,13 +613,13 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                     R.string.playback_order_random,
                     R.string.playback_order_manual,
                 ),
-                orderIndex,
+                { orderIndex },
             ) { orderIndex = it },
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
         )
 
         addLabel(column, R.string.playback_brightness, R.dimen.pp_space_24)
-        addSwitch(column, R.string.settings_appearance_system, brightnessFollow) { follow ->
+        addSwitch(column, R.string.settings_appearance_system, { brightnessFollow }) { follow ->
             brightnessFollow = follow
             brightnessSeek.isEnabled = !follow
             if (follow) {
@@ -642,9 +645,9 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         }
         column.addView(brightnessSeek, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         addHelp(column, R.string.playback_brightness_restore_help)
-        addSwitch(column, R.string.playback_keep_awake_paused, keepAwakePaused) { keepAwakePaused = it }
+        addSwitch(column, R.string.playback_keep_awake_paused, { keepAwakePaused }) { keepAwakePaused = it }
 
-        addSwitch(column, R.string.settings_rest_window, restEnabled) { enabled ->
+        addSwitch(column, R.string.settings_rest_window, { restEnabled }) { enabled ->
             restEnabled = enabled
             refreshRestState()
         }
@@ -720,7 +723,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                     R.string.playback_quality_balanced,
                     R.string.playback_quality_low,
                 ),
-                qualityIndex,
+                { qualityIndex },
             ) { qualityIndex = it },
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
         )
@@ -740,6 +743,12 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
     }
 
     private fun refreshAll() {
+        bindingControls = true
+        try {
+            controlRefreshers.forEach { it() }
+        } finally {
+            bindingControls = false
+        }
         transitionSeek.progress = transitionTenths - TRANSITION_TENTHS_MIN
         brightnessSeek.progress = brightnessPercent
         brightnessSeek.isEnabled = !brightnessFollow
@@ -1065,16 +1074,17 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         return view
     }
 
-    private fun addSwitch(parent: LinearLayout, textRes: Int, checked: Boolean, onToggle: (Boolean) -> Unit) {
+    private fun addSwitch(parent: LinearLayout, textRes: Int, checked: () -> Boolean, onToggle: (Boolean) -> Unit) {
         val res = resources
         val view = Switch(context).apply {
             text = res.getString(textRes)
-            isChecked = checked
+            isChecked = checked()
             setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
             setTextColor(context.getColor(R.color.pp_text_primary))
             minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-            setOnCheckedChangeListener { _, isChecked -> onToggle(isChecked) }
+            setOnCheckedChangeListener { _, isChecked -> if (!bindingControls) onToggle(isChecked) }
         }
+        controlRefreshers += { view.isChecked = checked() }
         parent.addView(
             view,
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
@@ -1085,7 +1095,7 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
 
     private fun optionGroup(
         labelResList: List<Int>,
-        selected: Int,
+        selected: () -> Int,
         singleRow: Boolean = true,
         onSelect: (Int) -> Unit,
     ): dev.photopilot.scaffold.ui.widget.SegmentedControl {
@@ -1098,7 +1108,10 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             textSizeRes = R.dimen.pp_text_meta,
             autoSize = true,
             singleRow = singleRow,
-        ).apply { setItems(labels, selected, onSelect) }
+        ).apply {
+            setItems(labels, selected(), onSelect)
+            controlRefreshers += { setSelected(selected()) }
+        }
     }
 
     private fun slotArgs(labelRes: Int, index: Int): Array<Any> =

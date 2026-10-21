@@ -953,7 +953,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         let transition = Self.transitionWireValues[safe: transitionIndex]
             ?? PlaybackTiming.transitionCrossfade
         settings["transition"] = transition
-        settings["transitionSeconds"] = Double(Self.quantized(durationSlider.value))
+        settings["transitionSeconds"] = (Double(durationSlider.value) * 10).rounded() / 10
         settings["fitMode"] = Self.fitWireValues[safe: fitIndex] ?? "fit_blur"
         let solidValue = Self.solidWireValues[safe: solidSegmented.selectedSegmentIndex] ?? ""
         settings["solidColor"] = solidValue.isEmpty ? NSNull() : solidValue

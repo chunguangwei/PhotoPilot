@@ -22,6 +22,15 @@ struct PlayerSettings: Sendable {
     var brightness: Double?
     var music = MusicSelection()
 
+    private static func restoredTransitionSeconds(_ seconds: Double) -> Double? {
+        guard seconds.isFinite, seconds > 0, seconds < 4 else { return nil }
+        let canonical = (seconds * 10).rounded() / 10
+        guard PlaybackTiming.isValidTransitionSeconds(canonical),
+              PlaybackTiming.isValidTransitionSeconds(seconds)
+                || seconds == Double(Float(canonical)) else { return nil }
+        return canonical
+    }
+
     static func parse(json: String) -> PlayerSettings {
         var settings = PlayerSettings()
         guard let data = json.data(using: .utf8),
@@ -36,8 +45,8 @@ struct PlayerSettings: Sendable {
             settings.transition = transition
         }
         if let seconds = object["transitionSeconds"] as? Double,
-           PlaybackTiming.isValidTransitionSeconds(seconds) {
-            settings.transitionSeconds = seconds
+           let restored = restoredTransitionSeconds(seconds) {
+            settings.transitionSeconds = restored
         }
         if let fitMode = object["fitMode"] as? String,
            ["fit_blur", "fit_color", "fill_crop"].contains(fitMode) {

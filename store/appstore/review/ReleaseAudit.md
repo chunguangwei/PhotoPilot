@@ -89,3 +89,10 @@ iOS177 full Release simulator tests, final build/analyze and unsigned Release ar
 
 
 2026-10-21 physical UI follow-up: device automation became available without enabling Mac DevToolsSecurity. Isolated copies of the final55 app on iPhone13/iPadAir4 completed both public NAS import→explicit selection→frame→playback workflows. Language persistence and privacy/licence pages also passed. Initial driver failures and the independent iPad WebDAV retry are retained in [PhysicalRegression.md](PhysicalRegression.md); actual landscape, weather failure, large-text and final Distribution cases remain open. Personal apps were never reset. No production app code or version changed for these private test-driver corrections.
+
+
+## 1.1.56 settings reopening correction
+
+Android now synchronizes seven segmented-control groups and five switches from the loaded frame settings; programmatic switch updates do not invoke user-action callbacks. Saved Android brightness53%/59% no longer truncates to52%/58%; every integer percentage0–100 passes a real JSON/Float conversion regression. iOS serializes transition durations in Double tenths and recovers exact legacy Float representations instead of falling back to0.8; arbitrary invalid fractions remain rejected. Six-position iOS saved-control round trips did not reproduce the reported clock default. No data-flow, permissions, vendor or licence changes were made.
+
+iOS179 Release simulator tests and build/analyze/archive passed; Android400 JVM tests, Debug/signedRelease, lint0error/181warning and a dependency-free native Instrumentation APK build passed. That native test was not executed because adb has no device. Version56 archive device families, notices/privacy-source equality and absence of private fixtures were verified. Physical installation/start and limitations are tracked in PhysicalRegression.md; no Distribution/App Store acceptance is claimed.

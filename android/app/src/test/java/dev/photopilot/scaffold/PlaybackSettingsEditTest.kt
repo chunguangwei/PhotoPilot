@@ -35,6 +35,14 @@ class PlaybackSettingsEditTest {
     )
 
     @Test
+    fun savedBrightnessRestoresEveryWholePercent() {
+        for (percent in 0..100) {
+            val parsed = FramePlaybackSettings.parse("{\"brightness\":${percent / 100.0}}")
+            assertEquals("saved $percent percent", percent, PlaybackSettingsEdit.brightnessPercent(parsed.brightness))
+        }
+    }
+
+    @Test
     fun mergePreservesUnknownTopAndNestedFields() {
         val original = "{\"holdSeconds\":10,\"futureField\":42," +
             "\"clock\":{\"enabled\":true,\"futureFlag\":\"keep\"},\"weather\":{\"enabled\":true}}"

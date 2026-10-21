@@ -430,6 +430,62 @@ final class PhotoPilotUIReviewTests: XCTestCase {
         try? image.pngData()?.write(to: directory.appendingPathComponent(name + ".png"))
     }
 
+    func testPlaybackSettingsRestoresLegacySliderDurationsWithoutAcceptingArbitraryFractions() {
+        for tenth in 2...30 {
+            let expected = Double(tenth) / 10
+            let oldValue = Double(Float(expected))
+            let settings = PlayerSettings.parse(json: "{\"transitionSeconds\":\(oldValue)}")
+            XCTAssertEqual(settings.transitionSeconds, expected, accuracy: 1e-9)
+        }
+        XCTAssertEqual(PlayerSettings.parse(json: "{\"transitionSeconds\":1.71}").transitionSeconds, 0.8)
+        XCTAssertEqual(PlayerSettings.parse(json: "{\"transitionSeconds\":3.1}").transitionSeconds, 0.8)
+    }
+
+    func testPlaybackSettingsReopenRestoresAllSavedControls() async throws {
+        let environment = makeEnvironment()
+        let frameID = try await environment.frameManager.createFrame(name: "Saved controls")
+        let positions = ["top_leading", "top_center", "top_trailing", "bottom_leading", "bottom_center", "bottom_trailing"]
+        let titleKeys = ["playback.position_top_leading", "playback.position_top_center", "playback.position_top_trailing", "playback.position_bottom_leading", "playback.position_bottom_center", "playback.position_bottom_trailing"]
+        for (position, titleKey) in zip(positions, titleKeys) {
+            let json = """
+            {"holdSeconds":120,"transition":"slide","transitionSeconds":1.7,"fitMode":"fit_color","solidColor":"warm_white","clock":{"enabled":false,"position":"\(position)","hour24":false},"date":{"enabled":false},"keepAwakeWhenPaused":false,"qualityLevel":"low","brightness":0.3,"rest":{"enabled":true,"startMinute":60,"endMinute":120,"display":"black"},"music":{"enabled":false}}
+            """
+            try await environment.frameManager.updateSettingsJSON(frameID: frameID, settingsJSON: json)
+            for _ in 0..<2 {
+                let controller = PlaybackSettingsViewController(environment: environment, frameID: frameID)
+                controller.loadViewIfNeeded()
+                func value<T>(_ name: String, as type: T.Type) throws -> T {
+                    try XCTUnwrap(Mirror(reflecting: controller).children.first { $0.label == name }?.value as? T)
+                }
+                for _ in 0..<100 {
+                    if try value("qualitySegmented", as: UISegmentedControl.self).selectedSegmentIndex == 2 { break }
+                    try await Task.sleep(nanoseconds: 20_000_000)
+                }
+                XCTAssertEqual(try value("positionMenuButton", as: UIButton.self).configuration?.title, L10n.string(titleKey))
+                for name in ["clockSwitch", "dateSwitch", "keepAwakeSwitch"] {
+                    XCTAssertFalse(try value(name, as: UISwitch.self).isOn, name)
+                }
+                XCTAssertTrue(try value("restSwitch", as: UISwitch.self).isOn)
+                XCTAssertEqual(try value("customField", as: UITextField.self).text, "120")
+                XCTAssertEqual(try value("hourSegmented", as: UISegmentedControl.self).selectedSegmentIndex, 1)
+                XCTAssertEqual(try value("qualitySegmented", as: UISegmentedControl.self).selectedSegmentIndex, 2)
+                XCTAssertEqual(try value("solidSegmented", as: UISegmentedControl.self).selectedSegmentIndex, 2)
+                XCTAssertEqual(try value("durationSlider", as: UISlider.self).value, 1.7, accuracy: 0.01)
+                XCTAssertEqual(try value("brightnessSlider", as: UISlider.self).value, 0.3, accuracy: 0.01)
+                _ = controller.perform(NSSelectorFromString("handleSave"))
+                try await Task.sleep(nanoseconds: 100_000_000)
+                let saved = try await environment.frameManager.framePlaybackBundle(frameID: frameID)
+                let parsed = PlayerSettings.parse(json: saved.settingsJSON)
+                XCTAssertEqual(parsed.clockPosition, position)
+                XCTAssertEqual(parsed.holdSeconds, 120)
+                XCTAssertEqual(parsed.restDisplay, "black")
+                XCTAssertFalse(parsed.clockEnabled)
+                XCTAssertFalse(parsed.dateEnabled)
+                XCTAssertFalse(parsed.keepAwakeWhenPaused)
+            }
+        }
+    }
+
     func testPlaybackSettingsReloadUpdatesOverlayVisibilityAndPosition() async throws {
         let environment = makeEnvironment()
         let frameID = try await environment.frameManager.createFrame(name: "Settings reload")

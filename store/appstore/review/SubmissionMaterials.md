@@ -1,6 +1,6 @@
 # Submission materials — 2026-10-21
 
-This packet describes the prepared 1.1.55 build, not an App Store submission or approval. Facts marked unverified are not to be copied as completed form answers.
+This packet describes the prepared 1.1.56 build, not an App Store submission or approval. Facts marked unverified are not to be copied as completed form answers.
 
 ## Confirmed business model
 
@@ -16,7 +16,7 @@ Sources: [Analytics overview](https://developer.apple.com/help/app-store-connect
 
 ## Ready inputs
 
-- Current binary: iOS1.1.55(55), iPhone/iPad, minimum iOS15, English/Simplified Chinese. Traditional Chinese listing copy is not native UI support.
+- Current binary: iOS1.1.56(56), iPhone/iPad, minimum iOS15, English/Simplified Chinese. Traditional Chinese listing copy is not native UI support.
 - Proposed category Photo & Video; no PhotoPilot registration/login, social feed, advertising or purchases.
 - Public support and privacy URLs are in the main README. Contact email chunguangwee@gmail.com. Keep the policy consistent with the final submitted binary.
 - Eleven current Release simulator screenshots, six synthetic review images, English review steps, source notices and SMB corresponding sources are prepared in this folder and public GitHub Releases. These are not Distribution-build acceptance evidence.

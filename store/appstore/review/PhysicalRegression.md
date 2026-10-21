@@ -4,8 +4,8 @@ This record separates installation, runtime checks and full workflows. NOT_RUN i
 
 | Check | iPhone13 | iPadAir4 | HuaweiICL-AL20 |
 |---|---|---|---|
-| Installed version | 1.1.55(55), in-place | 1.1.55(55), in-place | 1.1.54(54) verified;55 install blocked by USB |
-| Start/process | PASS | PASS | PASS, WARM launch54 |
+| Installed version | 1.1.56(56), in-place | 1.1.56(56), in-place | 1.1.54(54) verified;55 install blocked by USB |
+| Start/process | PASS56 | 56 blocked by screen lock;55 previously PASS | PASS, WARM launch54 |
 | Existing library integrity | quick_check OK;112 assets/1frame/1source unchanged | quick_check OK;796/2/2 unchanged | NOT_RUN, Release app DB not read |
 | Native unit/controller/fixture suite | PASS177/177 on isolated physical host | PASS177/177 on isolated physical host | JVM399/399 only; physical instrumentation NOT_RUN |
 | Actual client/modified-library checks | Marker PASS;2network tests failed due isolated-app Wi-Fi denial | PASS3/3: encrypted SMB+HTTPS WebDAV6-photo hashes and modified-library marker | NOT_RUN; signed14,208-byte read-only testAPK prepared, no USB installation |
@@ -64,3 +64,7 @@ A paired capture diagnosed an automation artifact: at the same instant, `app.scr
 Evidence: `.build/physical-regression-2026-10-21/ios-nas-ui/Landscape/`, `ipad-landscape.xcresult`3/3, `ipad-player-screen.xcresult`1/1, normalized `screenshots/*-screen-retry.png` and paired geometry attachments. These remain development-signed hardware tests, not Distribution acceptance, performance/frame-rate certification, weather-failure or maximum-text coverage.
 
 The first post-playback cleanup driver could not find Settings after relaunch and failed before erase; this is retained as `ipad-cleanup.xcresult`0/1. A guarded reset of only the isolated clone's fixture DB, followed by the explicit erase UI, passed1/1 in `ipad-cleanup-retry.xcresult`. Both test app and runner were then uninstalled successfully, the original55 launched, and aggregate-only DB verification again found quick_check OK with796 assets/2frames/2sources unchanged. Two credential fixture copies were removed; four text logs were redacted, restricted diagnostic result bundles remain private, and the operator access file is retained. No personal reset or production code/version change occurred.
+
+## 1.1.56 installation after settings corrections
+
+iPhone56 installed in place and launched; before/after quick_check OK and112/1/1 unchanged. iPad56 installed in place; before/after quick_check OK and796/2/2 unchanged, but launch was denied by the operating system because the screen was locked. Unlock/start retry remains pending. Earlier native177-case and full NAS UI hardware evidence above is for55; the new179-case settings tests passed on the56 simulator. Android remains54 on the last connected hardware;56 native Instrumentation APK compilation and400 JVM passes do not establish actual56 hardware behaviour. No personal reset was performed.

@@ -1,6 +1,10 @@
 package dev.photopilot.scaffold.data.logic
 
+import kotlin.math.roundToInt
+
 object PlaybackSettingsEdit {
+
+    fun brightnessPercent(value: Float?): Int = ((value ?: 0.5f) * 100).roundToInt().coerceIn(0, 100)
 
     data class Draft(
         val holdSeconds: Int,
