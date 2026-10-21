@@ -12,7 +12,8 @@ This record separates installation, runtime checks and full workflows. NOT_RUN i
 | Public encrypted SMB UI import/select/play | PASS, isolated55 app on hardware | PASS, isolated55 app on hardware | NOT_RUN, USB disconnected |
 | Public trusted HTTPS WebDAV UI import/select/play | PASS, isolated55 app on hardware | PASS, independent retry after driver correction | NOT_RUN, same blocker |
 | Language persistence / privacy and licence pages | PASS on isolated55 app | PASS on isolated55 app | NOT_RUN |
-| Weather / actual rotation / large-text physical workflow | NOT_RUN | NOT_RUN | NOT_RUN |
+| Actual landscape sources / focused NAS fields / player | NOT_RUN | PASS, follow-up below | NOT_RUN |
+| Weather failure / large-text physical workflow | NOT_RUN | NOT_RUN | NOT_RUN |
 | Fresh/denied/limited-permission physical workflow | NOT_RUN; use an isolated test installation, never erase the personal app | NOT_RUN; same safeguard | NOT_RUN |
 | Erase-all private audio cleanup | PASS on isolated55 app; injected music deleted, DB0/0/0 | PASS on isolated55 app after corrected-driver retry; music deleted, DB0/0/0 | Temporary-directory unit regression only; no physical erase |
 
@@ -53,3 +54,13 @@ Both isolated apps passed guarded erase-all including saved connections after sy
 Cleanup and preservation were verified after this UI session: both isolated apps and their runners were uninstalled successfully; three private credential fixture copies and copied clone databases were removed, and three text logs were redacted. The operator access file remains private and intact. Original55 applications launched again; post-ui DB quick_check was OK and counts remained iPhone112/1/1, iPad796/2/2. Aggregate-only evidence is in `.build/device-install-v1.1.55/*post-ui*`; temporary copied personal databases were deleted.
 
 Android was checked last, as requested. Both adb and macOS USB enumeration were empty, so there was no55 installation or physical client/UI execution. Evidence: `android/android-last-order-final-check.json`. A device connection and actual orientation availability are still needed to finish the outstanding hardware cases; no further polling or personal-data changes were made.
+
+## iPad actual landscape follow-up
+
+After the owner made iPad landscape available, the isolated55 app passed three targeted cases with explicit width>height assertions: NAS port/password field visibility, sources landscape→portrait navigation, and live HTTPS WebDAV six-photo import/select/frame/play/exit. Sources and focused-field screenshots normalize to2360×1640 and were visually inspected. The player-only repeat passed1/1; its accessibility window was1180×820 points, and normalized whole-screen captures were2360×1640. The clock/date were fully visible, and captures8 and18 seconds later showed different synthetic photos advancing automatically without the suspected black/clipped layout.
+
+A paired capture diagnosed an automation artifact: at the same instant, `app.screenshot()` produced2360×1640 pixels tagged EXIF8 (normalizing to portrait), whereas `XCUIScreen.main.screenshot()` produced1640×2360 pixels tagged EXIF8 (normalizing to the actual landscape). The whole-screen images and1180×820 accessibility window agree. Thus the local app snapshot alone cannot establish player orientation or an app layout defect; the earlier portrait classification of those player snapshots is not sufficient evidence that the actual device stayed portrait. No production code change was needed. iPhone actual landscape remains unverified.
+
+Evidence: `.build/physical-regression-2026-10-21/ios-nas-ui/Landscape/`, `ipad-landscape.xcresult`3/3, `ipad-player-screen.xcresult`1/1, normalized `screenshots/*-screen-retry.png` and paired geometry attachments. These remain development-signed hardware tests, not Distribution acceptance, performance/frame-rate certification, weather-failure or maximum-text coverage.
+
+The first post-playback cleanup driver could not find Settings after relaunch and failed before erase; this is retained as `ipad-cleanup.xcresult`0/1. A guarded reset of only the isolated clone's fixture DB, followed by the explicit erase UI, passed1/1 in `ipad-cleanup-retry.xcresult`. Both test app and runner were then uninstalled successfully, the original55 launched, and aggregate-only DB verification again found quick_check OK with796 assets/2frames/2sources unchanged. Two credential fixture copies were removed; four text logs were redacted, restricted diagnostic result bundles remain private, and the operator access file is retained. No personal reset or production code/version change occurred.
