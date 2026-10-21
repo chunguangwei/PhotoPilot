@@ -1,10 +1,12 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**源码与准备包已推送（2026-10-21）**：提交`9eb65e5`已推送origin/main，含58候选源修复、问卷/地区/商店文案与真实未测清单；无tag58/无GitHub58Release，公开Latest仍57。补核Android无缓存真实失败隐藏→联网恢复完整PASS，父Agent已目检恢复PNG及有效城市/on/新cache聚合。安卓设备脚本/截图/日志已删、混杂其他App诊断已删、14份input XML脱敏、含凭证连接PNG删除、临时hostcloneDB副本0；仅隔离clone与私有候选APK保留待续，Applefixture/runner仍保留且iPhone网络待用户恢复。最终handoff `.build/device-functional-completion-android/final-handoff.json` 与 `.build/apple-functional58/apple-control-handoff.json`。本轮43工具检查、18文档检查与准备包额外21本地链接通过；新/改公开文件无配置NAS/签名密码。余下设备动作请求已明确，不宣称全量功能验收或正式上架完成。
+
 **本轮安全暂停核验（2026-10-21）**：Android未获本地安装确认，已取消认证提示并终止pending install；原生产57 HOT启动Statusok/134ms，firstInstallTime保持，未装58/未reset/uninstall。8项系统设置before=after（WiFi/mobile1/1、font1、旋转/加速度0/0、原搜狗、a11y服务空/0），adb usb关闭TCP、port0实读、host断开，仅原USBserial在线，无test包/instrumentation。隔离57 clone force-stop保留4/1/1/3/1weather及私有旧RED/fixGREEN APK待续，不称清理完成。Apple控制已返root：iPhone网络仍需用户取消验证提示、关飞行开WiFi，iPad需解锁；未再次操作设备/安装58。剩余功能是真实外部操作阻塞，下面已完成项不扩成全量通过。候选58暂不tag/release、Latest仍57；源码/工作单提交推送待本轮最终实证。
 
 **本轮功能补测/非大陆上架问卷（2026-10-21，58候选，未发布）**：用户明确“功能补测试全，稳定性我来测试；先非大陆，隐私加密问卷由Agent准备”。没有启动24h测试。首发按全部实际可选非大陆商店拟定，港澳台单列纳入，不擅缩US-only或默删法国/EU。新增ListingMetadata/AppPrivacyQuestionnaire/ExportComplianceQuestionnaire/TerritoryPlan四份可照填工作单，更新SubmissionMaterials/README/WeatherPrivacyEvidence与10 §13.2/§13.15；修旧wttr备用/音乐泛称，副标题9/9/28字符和关键词97/97/80 UTF-8字节已核。支持/隐私/ReviewPhotos匿名HEAD200。Apple/BIS/ANSSI/Microsoft官方规则联网核实；隐私天气三类App Functionality、linked=yes、tracking=no保守申报，支持收集保留实际运营条件；加密按额外标准算法，不误填OS-only，法国声明/真实主体DSA/真实审核姓名电话和最终Distribution仍缺，未编造或保存ASC字段。
 
-**已实际新增通过**：iPhone57隔离clone六种时钟位置保存重开UI1/1；Android真实系统照片权限拒绝安全返回、SMB3.1.1加密递归6导入0失败；有效北京/天气on/真实cache调4h后完全断网、Active default network:none，地点天气整行静默隐藏，联网后真实新天气恢复。无缓存失败隐藏已观察，但其独立恢复仍未完成。API31不支持Android14有限照片权限，不以拒权代替有限授权。Android临时改用本地受授权ADB TCP解决USB反复断，最终恢复状态见独立handoff。个人App未重置/卸载/清数据。
+**已实际新增通过**：iPhone57隔离clone六种时钟位置保存重开UI1/1；Android真实系统照片权限拒绝安全返回、SMB3.1.1加密递归6导入0失败；有效北京/天气on/真实cache调4h后完全断网、Active default network:none，地点天气整行静默隐藏，联网后真实新天气恢复。无缓存失败隐藏及实际联网新cache恢复也已完成，父Agent独立目检恢复图+读取final聚合，不能与6图SMB case混为同一数据集。API31不支持Android14有限照片权限，不以拒权代替有限授权。Android临时改用本地受授权ADB TCP解决USB反复断，最终恢复状态见独立handoff。个人App未重置/卸载/清数据。
 
 **新实证问题与候选修复**：Android首格反复触摸不选、6图仅选5；AOSP证据显示每次new AbsListView.LayoutParams丢掉GridView测量首格forceAdd，首格未真正window attached，现FrameEdit/Library/ManualOrder三处保留原LP只更新尺寸。另18:58:04实际旋转崩溃layoutHorizontal null array，定位overlay下层PlaybackSettings底栏在onSizeChanged才切横向、跳过横向measure；现applyWidthTier移到super.onMeasure之前。新增隔离包限定的真实Activity/window六图触摸测试与中英/两字体/首宽/宽窄循环layout测试，已编译但未运行（Huawei本地安装密码确认未处理）；不得称native RED/GREEN通过。iPhone实拍最大字号底栏裁切，已显式trait缩放15→20pt、按实际宽度重算高度/trait变化失效，支持完整AX和系统长按放大。完整bar测试旧10失败→全183 Debug模拟器零失败、analyze通过；实际sim系统AXXXL冷启截图四label完整，系统字号已恢复large。物理修后最大字号/长按未验收。独立代码复核无重要阻塞。
 
