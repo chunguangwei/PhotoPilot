@@ -14,7 +14,11 @@ final class NavItemButton: UIControl {
     private var labelHeight: NSLayoutConstraint?
 
     var requiredContentHeight: CGFloat {
-        let width = bounds.width > 8 ? bounds.width - 8 : 80
+        requiredContentHeight(for: bounds.width)
+    }
+
+    func requiredContentHeight(for availableWidth: CGFloat) -> CGFloat {
+        let width = availableWidth > 8 ? availableWidth - 8 : 80
         let labelSize = titleLabel.sizeThatFits(CGSize(width: width, height: CGFloat.greatestFiniteMagnitude))
         let chromeHeight = style == .rail
             ? max(28, ceil(iconView.intrinsicContentSize.height)) + 3 * ThemeMetrics.space4
@@ -58,7 +62,13 @@ final class NavItemButton: UIControl {
             content.axis = .vertical
             content.spacing = ThemeMetrics.space4
             iconView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 24, weight: .regular)
-            titleLabel.font = ThemeFont.caption()
+            titleLabel.adjustsFontForContentSizeCategory = false
+            updateBottomBarFont()
+            showsLargeContentViewer = true
+            largeContentTitle = titleLabel.text
+            largeContentImage = iconView.image
+            scalesLargeContentImage = true
+            addInteraction(UILargeContentViewerInteraction())
             titleLabel.numberOfLines = 0
             titleLabel.lineBreakMode = .byCharWrapping
             titleLabel.textAlignment = .center
@@ -136,6 +146,24 @@ final class NavItemButton: UIControl {
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) is not supported")
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if style == .bottomBar,
+           previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory {
+            updateBottomBarFont()
+            setNeedsLayout()
+            superview?.setNeedsLayout()
+        }
+    }
+
+    private func updateBottomBarFont() {
+        titleLabel.font = UIFontMetrics(forTextStyle: .subheadline).scaledFont(
+            for: UIFont.systemFont(ofSize: 15, weight: .regular),
+            maximumPointSize: 20,
+            compatibleWith: traitCollection
+        )
     }
 
     override func layoutSubviews() {

@@ -961,10 +961,14 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             else -> previewEdge ?: context.getColor(R.color.pp_surface_rest)
         }
 
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        applyWidthTier(MeasureSpec.getSize(widthMeasureSpec))
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+    }
+
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         if (w > 0) {
-            applyWidthTier(w)
             val previewWidth = (w - contentColumn.paddingLeft - contentColumn.paddingRight).coerceAtLeast(1)
             val lp = previewFrame.layoutParams
             val target = previewWidth * PREVIEW_HEIGHT_NUM / PREVIEW_HEIGHT_DEN

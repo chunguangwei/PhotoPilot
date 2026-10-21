@@ -160,7 +160,13 @@ class ManualOrderView(
             val cell = (convertView as? OrderCellView) ?: OrderCellView(context)
             val asset = getItem(position)
             val size = cellSizePx.coerceAtLeast(1)
-            cell.layoutParams = AbsListView.LayoutParams(size, size)
+            val params = cell.layoutParams as? AbsListView.LayoutParams
+            if (params == null) {
+                cell.layoutParams = AbsListView.LayoutParams(size, size)
+            } else {
+                params.width = size
+                params.height = size
+            }
             cell.tag = position
             cell.bind(asset, size, newItemIds.contains(asset.id), loader)
             cell.setOnClickListener { showItemMenu(cell, position) }

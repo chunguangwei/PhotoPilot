@@ -767,7 +767,13 @@ class LibraryView(
         override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
             val cell = (convertView as? CellView) ?: CellView(context, radiusPx)
             val size = cellSizePx.coerceAtLeast(1)
-            cell.layoutParams = AbsListView.LayoutParams(size, size)
+            val params = cell.layoutParams as? AbsListView.LayoutParams
+            if (params == null) {
+                cell.layoutParams = AbsListView.LayoutParams(size, size)
+            } else {
+                params.width = size
+                params.height = size
+            }
             when (val item = getItem(position)) {
                 is SourceAssetEntity -> cell.bindPending(item)
                 is AssetEntity -> cell.bind(item, size, loader, selecting && selectedIds.contains(item.id))

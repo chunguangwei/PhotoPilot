@@ -27,7 +27,9 @@ PhotoPilot is an offline photo-frame app for iPhone and iPad. No PhotoPilot acco
 
 Supporting a review does not require access to the developer's household NAS, personal photo library or personal account.
 
-## Submission worksheet (1.1.55 preparation)
+## Submission worksheet (1.1.57 preparation)
+
+Offline entry drafts are ready: [App Privacy](AppPrivacyQuestionnaire.md), [export compliance](ExportComplianceQuestionnaire.md) and [non-mainland territory plan](TerritoryPlan.md). They separate code facts from conservative reporting choices and real-owner decisions. No ASC account login, write, upload or submission was performed. The export worksheet records actual57 unsigned-archive hashes; final Distribution evidence is still separate.
 
 - Bundle ID currently `dev.photopilot.scaffold`; final owning distribution team and Bundle ID decision remain unconfirmed. Development installation is not App Store signing.
 - Native UI languages: English and Simplified Chinese. Traditional Chinese store copy is a listing localization only.
@@ -53,3 +55,5 @@ These are prepared inputs, not evidence that App Store Connect fields have been 
 - [Rights evidence register](RightsRegister.md): source/licence/provenance inputs and remaining scope checks.
 
 - [Physical regression record](PhysicalRegression.md): version/launch/library checks and exact NOT_RUN blockers; no personal-data reset.
+
+- [Current listing metadata and age-rating facts](ListingMetadata.md): three store localizations; only English/Simplified Chinese native UI.

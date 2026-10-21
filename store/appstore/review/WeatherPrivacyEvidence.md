@@ -1,6 +1,6 @@
 # Weather and privacy evidence — 2026-10-21
 
-Scope: PhotoPilot 1.1.55 iOS/iPadOS and Android source. Version 1.1.53/1.1.54 used automatic wttr.in fallback; 1.1.55 active provider wiring uses Open-Meteo only. This record supports the final policy and the later online App Privacy form; it does not claim the form has been submitted.
+Scope: PhotoPilot 1.1.55–1.1.57 iOS/iPadOS and Android source; active iOS wiring rechecked at57. Version 1.1.53/1.1.54 used automatic wttr.in fallback; since1.1.55 active provider wiring uses Open-Meteo only. This record supports the final policy and the later online App Privacy form; it does not claim the form has been submitted. The full57 entry worksheet, including every category and conditional support handling, is [AppPrivacyQuestionnaire.md](AppPrivacyQuestionnaire.md).
 
 | Actual flow | Leaves device / recipient | Purpose and evidence |
 |---|---|---|
@@ -28,3 +28,5 @@ Open-Meteo says its technical IP information is not linked to user identities. I
 Source inspection: `ios/PhotoPilot/App/AppEnvironment.swift`, `ios/PhotoPilot/Data/Net/WeatherProvider.swift`, `ios/PhotoPilot/Data/WeatherRepository/WeatherAutoLocator.swift`; Android `data/AppEnvironment.kt`, `data/net/OpenMeteoProvider.kt`, `data/net/NativeGeocoderProvider.kt`, `MainActivity.kt`, `data/update/UpdateChecker.kt` and `UpdateDownloader.kt`.
 
 Other primary evidence: [Apple location privacy](https://www.apple.com/legal/privacy/data/en/location-services/), [Apple usage metrics](https://developer.apple.com/help/app-store-connect-analytics/engagement/app-usage), [GitHub privacy](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement). Final policy: [PRIVACY.md](../../../PRIVACY.md).
+
+Candidate58 synchronises Coarse Location, Search History and Other Diagnostic Data in the app privacy manifest, App Functionality/linked=true/tracking=false. This changes declarations, not the weather request flow. Actual ASC entries and final Distribution validation remain pending.

@@ -93,6 +93,81 @@ final class PhotoPilotUIReviewTests: XCTestCase {
         XCTAssertTrue(hit === back || hit.isDescendant(of: back))
     }
 
+    func testBottomNavigationFitsCompleteBarAtMaximumSizeOnColdAndRuntimeChanges() throws {
+        let previousLanguage = AppLanguage.overrideValue
+        defer { AppLanguage.configure(value: previousLanguage) }
+        let maximum = UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge)
+        for language in [AppLanguage.zhValue, AppLanguage.enValue] {
+            AppLanguage.configure(value: language)
+            for cold in [true, false] {
+                let controller = UIViewController()
+                let host = UIViewController()
+                host.addChild(controller)
+                host.view.addSubview(controller.view)
+                controller.didMove(toParent: host)
+                controller.view.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    controller.view.leadingAnchor.constraint(equalTo: host.view.leadingAnchor),
+                    controller.view.trailingAnchor.constraint(equalTo: host.view.trailingAnchor),
+                    controller.view.topAnchor.constraint(equalTo: host.view.topAnchor),
+                    controller.view.bottomAnchor.constraint(equalTo: host.view.bottomAnchor)
+                ])
+                host.setOverrideTraitCollection(cold ? maximum : UITraitCollection(preferredContentSizeCategory: .large), forChild: controller)
+                var bar: BottomNavBar!
+                controller.traitCollection.performAsCurrent {
+                    bar = BottomNavBar(items: ["nav.frames", "nav.library", "nav.sources", "nav.settings"].map {
+                        NavItem(titleKey: $0, symbolName: "gearshape")
+                    })
+                }
+                controller.view.addSubview(bar)
+                bar.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    bar.leadingAnchor.constraint(equalTo: controller.view.leadingAnchor),
+                    bar.trailingAnchor.constraint(equalTo: controller.view.trailingAnchor),
+                    bar.bottomAnchor.constraint(equalTo: controller.view.bottomAnchor)
+                ])
+                let window = show(host, size: CGSize(width: 375, height: 667))
+                defer { window.isHidden = true }
+                let navigationStack = try XCTUnwrap(bar.subviews.first as? UIStackView)
+                let firstContent = try XCTUnwrap(navigationStack.arrangedSubviews.first?.subviews.compactMap { $0 as? UIStackView }.first)
+                let firstLabel = try XCTUnwrap(firstContent.arrangedSubviews.compactMap { $0 as? UILabel }.first)
+                let initialFontSize = firstLabel.font.pointSize
+                if !cold { host.setOverrideTraitCollection(maximum, forChild: controller) }
+                window.layoutIfNeeded()
+                controller.view.layoutIfNeeded()
+                bar.layoutIfNeeded()
+                XCTAssertLessThanOrEqual(bar.bounds.height, 140, "Navigation must leave room for content")
+                let stack = try XCTUnwrap(bar.subviews.first as? UIStackView)
+                XCTAssertEqual(stack.arrangedSubviews.count, 4)
+                for button in stack.arrangedSubviews {
+                    let content = try XCTUnwrap(button.subviews.compactMap { $0 as? UIStackView }.first)
+                    let label = try XCTUnwrap(content.arrangedSubviews.compactMap { $0 as? UILabel }.first)
+                    XCTAssertEqual(button.traitCollection.preferredContentSizeCategory, .accessibilityExtraExtraExtraLarge)
+                    let rect = label.convert(label.bounds, to: bar)
+                    XCTAssertGreaterThanOrEqual(rect.minX, 0)
+                    XCTAssertLessThanOrEqual(rect.maxX, bar.bounds.width)
+                    XCTAssertGreaterThanOrEqual(rect.minY, 0)
+                    XCTAssertLessThanOrEqual(rect.maxY, bar.bounds.height)
+                    let paragraph = NSMutableParagraphStyle()
+                    paragraph.lineBreakMode = label.lineBreakMode
+                    let needed = (label.text! as NSString).boundingRect(
+                        with: CGSize(width: label.bounds.width, height: .greatestFiniteMagnitude),
+                        options: [.usesLineFragmentOrigin, .usesFontLeading],
+                        attributes: [.font: label.font!, .paragraphStyle: paragraph], context: nil
+                    )
+                    XCTAssertGreaterThanOrEqual(label.bounds.height + 1, needed.height, "\(language) cold=\(cold) \(label.text!)")
+                    if !cold { XCTAssertGreaterThan(label.font.pointSize, initialFontSize) }
+                    XCTAssertEqual(button.accessibilityLabel, label.text)
+                    XCTAssertTrue(button.showsLargeContentViewer)
+                    XCTAssertEqual(button.largeContentTitle, label.text)
+                    XCTAssertNotNil(button.largeContentImage)
+                    XCTAssertTrue(button.interactions.contains { $0 is UILargeContentViewerInteraction })
+                }
+                saveSnapshot(window, name: "bottom-navigation-\(language)-cold\(cold)-AXXXL")
+            }
+        }
+    }
+
     func testNavigationLabelsFitAtAccessibilitySize() throws {
         let previousLanguage = AppLanguage.overrideValue
         defer { AppLanguage.configure(value: previousLanguage) }

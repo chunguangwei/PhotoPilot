@@ -38,8 +38,17 @@ final class BottomNavBar: UIView, NavChromeBar {
         fatalError("init(coder:) is not supported")
     }
 
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory {
+            setNeedsLayout()
+        }
+    }
+
     override func layoutSubviews() {
-        let required = buttons.map(\.requiredContentHeight).max() ?? NavChromeMetrics.bottomBarContentHeight
+        let availableWidth = max(0, bounds.width - safeAreaInsets.left - safeAreaInsets.right)
+        let buttonWidth = availableWidth / CGFloat(max(1, buttons.count))
+        let required = buttons.map { $0.requiredContentHeight(for: buttonWidth) }.max() ?? NavChromeMetrics.bottomBarContentHeight
         if contentHeight?.constant != required { contentHeight?.constant = required }
         super.layoutSubviews()
     }

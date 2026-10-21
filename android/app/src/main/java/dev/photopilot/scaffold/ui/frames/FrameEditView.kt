@@ -632,7 +632,13 @@ class FrameEditView(
             val cell = (convertView as? SelectCellView) ?: SelectCellView(context)
             val asset = getItem(position)
             val size = cellSizePx.coerceAtLeast(1)
-            cell.layoutParams = AbsListView.LayoutParams(size, size)
+            val params = cell.layoutParams as? AbsListView.LayoutParams
+            if (params == null) {
+                cell.layoutParams = AbsListView.LayoutParams(size, size)
+            } else {
+                params.width = size
+                params.height = size
+            }
             cell.bind(asset, size, selectedAssetIds.contains(asset.id), displayCoverId == asset.id, loader)
             cell.onCoverTap = { showCoverPreview(asset) }
             cell.setOnClickListener {
