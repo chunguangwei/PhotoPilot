@@ -21,8 +21,8 @@ settings:
     SWIFT_VERSION: "6.0"
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     TARGETED_DEVICE_FAMILY: "2"
-    MARKETING_VERSION: "1.1.53"
-    CURRENT_PROJECT_VERSION: "53"
+    MARKETING_VERSION: "1.1.55"
+    CURRENT_PROJECT_VERSION: "55"
 targets:
   PhotoPilot:
     type: application
@@ -60,6 +60,9 @@ targets:
     platform: iOS
     sources:
       - path: PhotoPilotTests
+      - path: ../tests/fixtures/smoke-v1
+        type: folder
+        buildPhase: resources
       - path: ../contracts/vectors/import-job-aggregate.json
         buildPhase: resources
       - path: ../contracts/vectors/import-signal-effects.json

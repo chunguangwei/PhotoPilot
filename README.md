@@ -10,7 +10,7 @@ Turn a spare iPad or Android tablet into a digital photo frame: import from the 
 - NAS 来源：WebDAV（HTTPS/HTTP 私网）与 SMB，凭证安全存储（Keychain / Keystore）、TLS TOFU 证书信任、增量同步与墓碑删除保护
 - 天气叠字（Open-Meteo，CC-BY 4.0 署名）、时钟与休息时段、节日专属播放
 - RAW 照片按系统解码能力支持
-- 背景音乐：14 首内置循环曲（8 首公有领域节日旋律自有合成编曲 + 6 首氛围原创）或本地音频文件，随播放/暂停/休息联动
+- 背景音乐：14 首内置循环曲（5 首历史旋律自有合成编曲 + 9 首程序原创）或本地音频文件，随播放/暂停/休息联动
 - 照片只在本机处理；不上传、不记录照片名与路径
 - Android 内置 GitHub 更新检查（断点续传 + 前台保活下载）
 
@@ -44,6 +44,9 @@ make android-test     # JVM 单元测试
 This application and its source code are licensed for **non-commercial use only**.
 Commercial use requires prior written permission — contact chunguangwee@gmail.com.
 See [LICENSE](LICENSE).
+
+产品使用条款与 LGPL 权限例外 / Product terms and LGPL permission exception:
+[UserTerms.md](store/appstore/review/UserTerms.md)。App Store 渠道拟采用 Apple 标准 EULA。
 
 第三方组件保留各自许可：SMBJ / Room / Kotlin（Apache-2.0）、slf4j-api / mbassador（MIT）、Bouncy Castle（Bouncy Castle License）、SQLite（Public Domain）、AMSMB2（MIT）、libsmb2（LGPL-2.1，动态链接）；天气数据由 Open-Meteo 提供（CC-BY 4.0）。
 

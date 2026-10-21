@@ -38,3 +38,11 @@
 |---|---|---|---|---|
 | `../../tools/gen_music.py` 及其产物 `music_<id>.m4a`（birthday_01 / wedding_01 / spring_festival_01 / christmas_01 / qixi_01 / valentine_01 / festive_01 / classical_01 / travel_01 / coffee_01 / lounge_01 / morning_01 / night_01 / nature_01，双端应用包内各一份） | 本项目专用合成脚本：numpy 加法/ Karplus-Strong 合成，固定种子确定性生成 WAV（全链路种子化、字节级可复算），经 afconvert 转 AAC 96kbps；不采样、不复制任何既有录音。八首节日/纪念日曲目旋律取自公有领域乐曲（生日快乐歌，2016 年美国法院裁决进入公有领域；帕赫贝尔《卡农》约 1700；《新年好》曲调即 Clementine 1884；《We Wish You a Merry Christmas》英国传统颂歌；《茉莉花》清代民歌；《绿袖子》16 世纪英格兰民谣；《铃儿响叮当》1857；贝多芬《欢乐颂》1824），编曲与合成为本项目原创；其余六首氛围曲旋律为程序生成原创 | 2026-10-14 | 应用内置背景音乐（PRD §7.6），随应用一同分发 | AI 辅助编写的原创合成/编曲；无第三方音频素材、无采样；公有领域旋律仅使用旋律本身，不复制任何受保护的编曲或录音；随应用非商业许可一同授权，不是 CC0 声明 |
 | 首次启动演示照片 `demo_*.jpg` ×8（iOS `PhotoPilot/Resources/Demo/`、Android `assets/demo/`，原 PNG 未入库） | AI 图像模型（Qwen-Image-2.1，私有化部署）按本项目撰写的提示词生成：山湖/海边日落/森林/城市夜景/花田/金毛犬/咖啡静物/雪山；无真人、无商标、无文字 | 2026-10-15 | 首次启动「先看看」演示内容（PRD §5 欢迎页），不进入用户资料库 | AI 生成图像；无第三方照片素材；随应用非商业许可一同授权；上架演示可用，不冒充真实用户照片 |
+
+## v1.1.55 发布素材替换（2026-10-21）
+
+双端8张`demo_*.jpg`由`tools/gen_demo_art.py`使用Pillow几何图元、渐变和固定种子在本机原创绘制，分别为湖景、日落、森林、城市、花田、小狗、咖啡和雪山插画。不读取任何用户或网络图像，不调用图像模型，不含第三方商标、真人肖像或字体文件。新素材替代此前Qwen生成副本；保留稳定演示ID、离线预览功能，演示不进入资料库。`python3 tools/gen_demo_art.py --check`可校验双端字节复现，实际包哈希见AssetEvidence.json。素材按项目非商业许可随应用分发，不声明CC0，也不追溯改写历史模型使用权限。
+
+## v1.1.55 音乐登记修订（2026-10-21）
+
+上表2026-10-14音乐与Qwen演示图登记描述历史版本，不代表1.1.55仍含相同素材，也不构成全球公有领域保证。1.1.55将birthday_01、christmas_01、qixi_01替换为`tools/gen_music.py`固定种子101/113/114生成的项目原创旋律，移除HAPPY_BIRTHDAY、WE_WISH_YOU、MOLIHUA音符数组；保留曲目ID、节日主题、音色、种子与编码时长，双端文件相同。其余六首程序生成氛围曲及五首历史旋律自制编曲不变。全部14首不使用采样、已有录音、人声或歌词。五首历史旋律为Canon、Clementine、Greensleeves、Jingle Bells、Ode to Joy，仅使用曲调；具体历史来源与本轮替换理由见`store/appstore/review/RightsRegister.md`，不将某一国家结论当成全球权利证明。

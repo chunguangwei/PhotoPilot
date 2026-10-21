@@ -3,13 +3,13 @@
   "assets": [
     {
       "path": "ios/PhotoPilot/Resources/Music/music_birthday_01.m4a",
-      "sha256": "096c68aa420849e85be95b094782ab60f104475fa0df0da54d25a65515407b2b",
-      "bytes": 389228
+      "sha256": "3e51cf16ea8f9b57b0e00b301f45409feda7f1fdfcadd8bee0a11aeba736d8ee",
+      "bytes": 388235
     },
     {
       "path": "ios/PhotoPilot/Resources/Music/music_christmas_01.m4a",
-      "sha256": "dbfb005555e4cdff21cf7dcda8255b874cf2d9393662afdfa72135352e1ca78f",
-      "bytes": 274624
+      "sha256": "ac02055c8b365933b095d19aca34ac08a3433ed70b6e7c015c7240a8c83c1ade",
+      "bytes": 269032
     },
     {
       "path": "ios/PhotoPilot/Resources/Music/music_classical_01.m4a",
@@ -48,8 +48,8 @@
     },
     {
       "path": "ios/PhotoPilot/Resources/Music/music_qixi_01.m4a",
-      "sha256": "af7a564e141caa93b8c9e44a051b0197bd54fd622865d1b8093cadf26edac51f",
-      "bytes": 567922
+      "sha256": "b0ddf17361ab88d0f2b00cb01fe933bf81f8cf72c5e7c14e8522de92cac0d53d",
+      "bytes": 580697
     },
     {
       "path": "ios/PhotoPilot/Resources/Music/music_spring_festival_01.m4a",
@@ -73,43 +73,43 @@
     },
     {
       "path": "ios/PhotoPilot/Resources/Demo/demo_city.jpg",
-      "sha256": "3ca9d7fb4bbae956edc262ca64ed4ab590c38b2f28821867367e269e09daad6b",
-      "bytes": 337387
+      "sha256": "a29a701f10a9d91a92f2af6734a0e1a93e0d1fae8a51a799196fd5df94c019bf",
+      "bytes": 294448
     },
     {
       "path": "ios/PhotoPilot/Resources/Demo/demo_coffee.jpg",
-      "sha256": "e73e91bb68867d76bd3b95095201f4a97db6e1c15834223d906c45612d1b42c8",
-      "bytes": 276398
+      "sha256": "c4d1350607c13f911cab1facf60bd09aa380e3f81ec34f5239c3024842c75b1a",
+      "bytes": 99324
     },
     {
       "path": "ios/PhotoPilot/Resources/Demo/demo_dog.jpg",
-      "sha256": "372491537d065b20d3a2a9894f29deb94841422a12abad09c6e7e85481c5be28",
-      "bytes": 416847
+      "sha256": "2d9797e37b0bce5d436468145bbbc74580257425c7e392126f31a81466087298",
+      "bytes": 96626
     },
     {
       "path": "ios/PhotoPilot/Resources/Demo/demo_flowers.jpg",
-      "sha256": "096cbb64b987c93f7057eb796a2389c8ab67cb30cc5fea51728fbc7ff153fb05",
-      "bytes": 505380
+      "sha256": "911970581bd38ab840112e4aed96195ab85e9067f61cb84edf3741937923d186",
+      "bytes": 307977
     },
     {
       "path": "ios/PhotoPilot/Resources/Demo/demo_forest.jpg",
-      "sha256": "9e56c14e387736e47489a18f17d018cbe240968739039004b1d8ae99cced714e",
-      "bytes": 707199
+      "sha256": "ba18c27dcee50733a5d08782c6fddcfd921472acca55f2bf1d6185e494bd57d2",
+      "bytes": 188084
     },
     {
       "path": "ios/PhotoPilot/Resources/Demo/demo_lake.jpg",
-      "sha256": "06783af56321a1b0fcb90b106a1edcf21951f3ff307771dff05f5157b697e072",
-      "bytes": 247271
+      "sha256": "0c6b6d6e614571c5c0a198e60ffcb6a60606625169253367359c997c0c521229",
+      "bytes": 138248
     },
     {
       "path": "ios/PhotoPilot/Resources/Demo/demo_snow.jpg",
-      "sha256": "d311621fc5431f6f68d995bc29695b7a743d42f6ef3877bda8b5a521ba82c44a",
-      "bytes": 480489
+      "sha256": "0cc36c801df37c935fdd9ba85ea1d9cd71f937ad449166a4a5605d878fb076da",
+      "bytes": 106097
     },
     {
       "path": "ios/PhotoPilot/Resources/Demo/demo_sunset.jpg",
-      "sha256": "b4152b197818b21eaadccd29ca2633d1f393eb51785b7b778ad83150474a3c2a",
-      "bytes": 332461
+      "sha256": "36e44bd0cdbbb34e856f2065a37f932569cc79e08f5505ecd91ac497644b8527",
+      "bytes": 169663
     }
   ]
 }

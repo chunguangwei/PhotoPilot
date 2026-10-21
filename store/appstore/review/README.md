@@ -27,7 +27,7 @@ PhotoPilot is an offline photo-frame app for iPhone and iPad. No PhotoPilot acco
 
 Supporting a review does not require access to the developer's household NAS, personal photo library or personal account.
 
-## Submission worksheet (1.1.53 preparation)
+## Submission worksheet (1.1.55 preparation)
 
 - Bundle ID currently `dev.photopilot.scaffold`; final owning distribution team and Bundle ID decision remain unconfirmed. Development installation is not App Store signing.
 - Native UI languages: English and Simplified Chinese. Traditional Chinese store copy is a listing localization only.
@@ -37,8 +37,8 @@ Supporting a review does not require access to the developer's household NAS, pe
 - Export compliance: include SMB's non-system cryptographic implementations in the assessment; the archive does not predeclare an encryption exemption.
 - Availability: exclude mainland China as already decided; exact other territories and EU DSA status still need account-level completion.
 - NAS review access must be supplied privately: protocol, externally reachable host, port, share/path, scoped username/password, validity period, six non-private photos and expected import result. No production/household NAS access is needed. Keep the environment available throughout review.
-- Source delivery/rebuild evidence: [SMB distribution record](SMBDistribution.md). The remaining legal/distribution decision is not marked complete.
-- Weather data-flow worksheet: the app's own photo data stays on device; manual city search sends query/language to Open-Meteo geocoding, forecast sends rounded coordinates to Open-Meteo and optional wttr.in fallback. These services see connection IPs. Apple's system geocoder receives original system location or fallback search input. Open-Meteo logs may contain coordinates and remain for 90 days; wttr.in retention/use evidence is still incomplete. Final collected-data categories, linkage, retention and disclosures remain blocked on that evidence. Empty manifest collection arrays cannot settle the App Privacy answers.
+- Source delivery/rebuild evidence: [SMB distribution record](SMBDistribution.md). Standard EULA/third-party permissions and source/rebuild delivery are prepared; the final signed modified-library distribution route remains a release-stage verification.
+- Weather data-flow worksheet: the app's own photo data stays on device; manual city search sends query/language to Open-Meteo geocoding, forecast sends coordinates rounded to0.1° to Open-Meteo. Version55 removes the automatic wttr.in fallback. These services see connection IPs. Apple's system geocoder receives original system location or fallback search input. Open-Meteo logs may contain coordinates and remain for90days; use the prepared conservative category/linkage worksheet in WeatherPrivacyEvidence.md when completing the actual ASC form. Empty manifest collection arrays cannot settle the App Privacy answers.
 
 These are prepared inputs, not evidence that App Store Connect fields have been submitted or accepted.
 
@@ -47,7 +47,9 @@ These are prepared inputs, not evidence that App Store Connect fields have been 
 
 - [Submission materials and remaining decisions](SubmissionMaterials.md): business model, App Store statistics, form inputs and specific unverified items.
 - [Privacy data-flow evidence](WeatherPrivacyEvidence.md): per-provider processing and proposed privacy-label inputs; not a submitted questionnaire.
-- [User terms draft](UserTermsDraft.md): non-commercial app/source terms, Apple minimum EULA items and third-party rights; missing legal publisher identity/contact fields remain explicit.
+- [User terms](UserTerms.md): non-commercial app/source terms, Apple Standard EULA and explicit third-party/LGPL permissions; real publisher/account fields are completed at release.
 - [NAS environment verification](NASEnvironment.md): credential-free technical evidence. Live access details are delivered privately and must be pasted only into private review information.
 
 - [Rights evidence register](RightsRegister.md): source/licence/provenance inputs and remaining scope checks.
+
+- [Physical regression record](PhysicalRegression.md): version/launch/library checks and exact NOT_RUN blockers; no personal-data reset.

@@ -4,6 +4,22 @@ import UIKit
 
 @MainActor
 final class PhotoPilotUIReviewTests: XCTestCase {
+    func testEraseImportedMusicRemovesCopiesAndPartialFilesOnly() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let music = root.appendingPathComponent("music", isDirectory: true)
+        try FileManager.default.createDirectory(at: music, withIntermediateDirectories: true)
+        try Data([1, 2, 3]).write(to: music.appendingPathComponent("import.m4a"))
+        try Data([4, 5]).write(to: music.appendingPathComponent("abandoned.part"))
+        let unrelated = root.appendingPathComponent("keep.bin")
+        try Data([6]).write(to: unrelated)
+        try MusicCatalog.eraseImportedMusic(applicationSupportDirectory: root)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: music.path))
+        XCTAssertEqual(try Data(contentsOf: unrelated), Data([6]))
+        try MusicCatalog.eraseImportedMusic(applicationSupportDirectory: root)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: music.path))
+    }
+
     func testLanguageChoicesRemainDistinctInBothUILanguages() {
         let previous = AppLanguage.overrideValue
         defer { AppLanguage.configure(value: previous) }

@@ -48,3 +48,16 @@ Third-party libraries included with this application remain under their own
 licenses (for example: AMSMB2 Swift sources — MIT; AMSMB2 with libsmb2 — LGPL-2.1;
 Room — Apache-2.0; Kotlin — Apache-2.0;
 SQLite — Public Domain). 本应用包含的第三方库仍适用各自的许可证。
+
+For a PhotoPilot combination containing an LGPL-covered library, you may
+modify the combination for your own use and reverse engineer it to debug
+those modifications, as required by the applicable LGPL. To that necessary
+extent, this exception prevails over restrictions in PhotoPilot's own terms.
+It does not grant general commercial redistribution rights to independently
+licensed PhotoPilot code. Rights independently granted by third-party licences
+are not restricted by PhotoPilot's non-commercial condition.
+
+对于包含 LGPL 库的 PhotoPilot 组合，您可以按适用 LGPL 的要求，为自己使用而
+修改组合，并为调试该修改进行逆向工程。在此必要范围内，本例外优先于
+PhotoPilot 自有条款中的限制，但不授予 PhotoPilot 独立许可代码的一般商业
+再分发权。第三方许可独立授予的权利不受 PhotoPilot 非商业条件缩减。

@@ -41,9 +41,21 @@ enum MusicCatalog {
 
     static func musicDirectory() -> URL {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let directory = support.appendingPathComponent("music", isDirectory: true)
+        var directory = support.appendingPathComponent("music", isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try? directory.setResourceValues(values)
         return directory
+    }
+
+    static func eraseImportedMusic(applicationSupportDirectory: URL? = nil) throws {
+        let support = applicationSupportDirectory
+            ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let directory = support.appendingPathComponent("music", isDirectory: true)
+        if FileManager.default.fileExists(atPath: directory.path) {
+            try FileManager.default.removeItem(at: directory)
+        }
     }
 
     static func localURL(localPath: String) -> URL? {

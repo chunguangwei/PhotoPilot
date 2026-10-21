@@ -6,6 +6,47 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ProcessResourceOwnerTest {
+    @Test fun failedCleanupCanBeRetriedWithFreshResources() = runBlocking {
+        val process = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            var count = 0
+            var removals = 0
+            val owner = ProcessResourceOwner(process) { ++count }
+            assertEquals(1, owner.get())
+            val failure = java.io.IOException("synthetic cleanup failure")
+            try {
+                owner.reset { throw failure }
+                fail("Cleanup failure must reach the caller")
+            } catch (actual: java.io.IOException) {
+                assertEquals(failure.message, actual.message)
+            }
+
+            assertEquals(3, owner.reset { resource ->
+                assertEquals(2, resource)
+                removals++
+            })
+            assertEquals(1, removals)
+            assertEquals(3, owner.get())
+        } finally { process.cancel() }
+    }
+
+    @Test fun sharedAccessRecoversAfterCleanupFailureWithoutHidingOriginalFailure() = runBlocking {
+        val process = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            var count = 0
+            val owner = ProcessResourceOwner(process) { ++count }
+            assertEquals(1, owner.get())
+            try {
+                owner.reset { throw java.io.IOException("synthetic cleanup failure") }
+                fail("Cleanup failure must reach the caller")
+            } catch (_: java.io.IOException) {
+            }
+
+            assertEquals(2, owner.get())
+            assertEquals(2, owner.get())
+        } finally { process.cancel() }
+    }
+
     @Test fun recreatedAndConcurrentActivitiesShareOneInitialization() = runBlocking {
         val process = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         try {

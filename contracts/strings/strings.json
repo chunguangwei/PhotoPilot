@@ -2782,7 +2782,7 @@
       "platform": "all",
       "zh": "圣诞快乐",
       "en": "Merry Christmas",
-      "note": "内置曲目：We Wish You a Merry Christmas（公有领域颂歌）"
+      "note": "内置曲目：本项目原创程序合成圣诞主题音乐"
     },
     {
       "key": "music.track_spring_festival",
@@ -2798,7 +2798,7 @@
       "platform": "all",
       "zh": "七夕相会",
       "en": "Qixi Festival",
-      "note": "内置曲目：茉莉花（公有领域民歌）"
+      "note": "内置曲目：本项目原创程序合成七夕主题音乐"
     },
     {
       "key": "music.track_valentine",

@@ -744,7 +744,17 @@ class MainActivity : Activity() {
             if (playerView != null) {
                 closePlayer()
             }
-            environment = AppEnvironment.clearAllAndReset(applicationContext)
+            environment = try {
+                AppEnvironment.clearAllAndReset(applicationContext)
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Exception) {
+                AlertDialog.Builder(this@MainActivity)
+                    .setMessage(R.string.error_store_write_failed_body)
+                    .setPositiveButton(R.string.common_close, null)
+                    .show()
+                return@launch
+            }
             database = environment?.database
             lastLibraryVersionJson = null
             framesDirty = true

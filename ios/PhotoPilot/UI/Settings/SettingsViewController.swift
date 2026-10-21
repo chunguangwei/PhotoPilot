@@ -609,6 +609,18 @@ final class SettingsViewController: UIViewController {
             for runner in environment.runners.values {
                 try? await runner.cancel()
             }
+            do {
+                try MusicCatalog.eraseImportedMusic()
+            } catch {
+                let alert = UIAlertController(
+                    title: nil,
+                    message: L10n.string("error.store_write_failed.body"),
+                    preferredStyle: .alert
+                )
+                alert.addAction(UIAlertAction(title: L10n.string("common.close"), style: .default))
+                present(alert, animated: true)
+                return
+            }
             environment.credentialStore.deleteAll()
             let persistence = environment.persistence
             let storeDirectory = persistence.storeURL.deletingLastPathComponent()

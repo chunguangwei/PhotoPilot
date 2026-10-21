@@ -17,12 +17,23 @@ The example programs are not included in the PhotoPilot app target.
 以下许可原文来自锁定版本的实际源文件。上游区分 Swift 源码的 MIT 标注
 与包含 libsmb2 的 LGPL 分发。PhotoPilot 自有代码的非商业许可不替代第三方许可。
 
-This notice does not establish completion of LGPL distribution obligations.
-Corresponding source delivery, replacement/relinking materials and instructions,
-and compatibility with the final signed App Store distribution require separate
-verification. Those materials have not been provided by this notice.
-本声明不代表 LGPL 分发义务已完成；对应源码交付、替换/重链接材料及说明、
-与最终 App Store 签名分发的兼容性仍待核验。本文件不提供这些重链接材料。
+PhotoPilot's non-commercial terms do not restrict permissions independently
+provided by third-party licences. For a combination containing an LGPL library,
+you may modify the combination for your own use and reverse engineer it to debug
+those modifications, as required by the applicable LGPL; this permission prevails
+over conflicting PhotoPilot restrictions to that necessary extent.
+PhotoPilot 非商业条款不缩减第三方许可独立授予的权利。按适用 LGPL 的要求，
+你可以为自己使用而修改组合，并为调试该修改进行逆向工程；在此必要范围内，
+本权限优先于 PhotoPilot 自有条款中的冲突限制。
+
+Corresponding sources, public downloads and rebuild instructions:
+https://github.com/chunguangwei/PhotoPilot/blob/main/store/appstore/review/SMBDistribution.md
+Product terms:
+https://github.com/chunguangwei/PhotoPilot/blob/main/store/appstore/review/UserTerms.md
+Source and unsigned rebuild evidence are prepared. Final signed App Store
+replacement/relinking verification remains a separate release-stage check.
+对应源码及未签名重建证据已准备；最终 App Store 签名分发的替换/重链接实证
+属于正式上线阶段的独立检查，本声明不冒称该检查已经通过。
 
 
 ========================================================================

@@ -42,7 +42,7 @@ final class AppEnvironment: @unchecked Sendable {
         self.photoLibraryAdapter = PhotoLibrarySourceAdapter(networkPolicy: networkPolicy)
         self.weatherRepository = WeatherRepository(controller: persistence)
         self.weatherProvider = weatherProvider ?? FallbackWeatherProvider(
-            forecast: [OpenMeteoProvider(), WttrProvider()],
+            forecast: [OpenMeteoProvider()],
             search: [OpenMeteoProvider(), SystemGeocodingProvider()]
         )
         self.weatherRefresher = WeatherRefresher(

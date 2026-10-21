@@ -17,9 +17,9 @@ class ProcessResourceOwner<T>(private val scope: CoroutineScope, private val fac
 
     suspend fun reset(cleanup: suspend (T) -> Unit): T {
         val task = synchronized(lock) {
-            val previous = pending
+            val previous = pending?.takeUnless { it.isCancelled }
             scope.async {
-                previous?.await()?.let { cleanup(it) }
+                cleanup(previous?.await() ?: factory())
                 factory()
             }.also { pending = it }
         }

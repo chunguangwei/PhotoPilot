@@ -8,6 +8,7 @@ check:
 	python3 tools/check_fixtures.py
 	python3 tools/check_design_assets.py
 	python3 tools/generate_brand_assets.py --check
+	python3 tools/gen_demo_art.py --check
 	python3 tools/check_doc_links.py
 	python3 -m unittest discover -s tools/tests -v
 

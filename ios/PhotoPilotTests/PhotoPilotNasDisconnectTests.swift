@@ -142,11 +142,7 @@ final class PhotoPilotNasDisconnectTests: XCTestCase {
     }
 
     private var fixtureRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("tests/fixtures/smoke-v1")
+        Bundle(for: Self.self).resourceURL!.appendingPathComponent("smoke-v1")
     }
 
     func testSourceAssetUpsertIsFetchFirst() async throws {

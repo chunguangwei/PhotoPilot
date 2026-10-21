@@ -22,7 +22,6 @@ import dev.photopilot.scaffold.data.net.FallbackWeatherProvider
 import dev.photopilot.scaffold.data.net.NativeGeocoderProvider
 import dev.photopilot.scaffold.data.net.OpenMeteoProvider
 import dev.photopilot.scaffold.data.net.WebDavClient
-import dev.photopilot.scaffold.data.net.WttrProvider
 import dev.photopilot.scaffold.data.repo.AppSettingsRepository
 import dev.photopilot.scaffold.data.repo.WeatherRepository
 import dev.photopilot.scaffold.data.repo.AssetRepository
@@ -118,11 +117,7 @@ class AppEnvironment private constructor(
             val appContext = context.applicationContext
             return owner(appContext).reset { environment ->
                 environment.runner.shutdownAndJoin()
-                File(appContext.filesDir, "originals").deleteRecursively()
-                File(appContext.filesDir, "credentials").deleteRecursively()
-                File(appContext.cacheDir, "picked").deleteRecursively()
-                File(appContext.cacheDir, "import-tmp").deleteRecursively()
-                File(appContext.cacheDir, "diagnostics").deleteRecursively()
+                LocalUserDataCleaner.clear(appContext.filesDir, appContext.cacheDir)
                 environment.database.clearAllTables()
             }
         }
@@ -204,7 +199,7 @@ class AppEnvironment private constructor(
             val credentialStore = CredentialStore(appContext)
             val appSettings = AppSettingsRepository(database.settingsKvDao())
             val weatherProvider: WeatherProvider = FallbackWeatherProvider(
-                forecast = listOf(OpenMeteoProvider(), WttrProvider()),
+                forecast = listOf(OpenMeteoProvider()),
                 search = listOf(OpenMeteoProvider(), NativeGeocoderProvider(appContext)),
             )
             val adapterResolver: suspend (String) -> SourceAdapter = { jobId ->

@@ -10,11 +10,7 @@ final class PhotoPilotImportTests: XCTestCase {
     var coordinator: ImportCoordinator!
 
     private var fixtureRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("tests/fixtures/smoke-v1")
+        Bundle(for: Self.self).resourceURL!.appendingPathComponent("smoke-v1")
     }
 
     private var libraryRoot: URL {
