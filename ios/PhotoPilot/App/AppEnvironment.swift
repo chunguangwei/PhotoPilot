@@ -144,11 +144,13 @@ final class AppEnvironment: @unchecked Sendable {
         if let resumingJobID {
             let runner = registerRunner(coordinator: coordinator, jobID: resumingJobID, networkPolicy: nasNetworkPolicy)
             try await runner.resume()
+            try settings.setOnboardingCompleted(true)
             return runner
         }
         let job = try await coordinator.createJob(sourceID: sourceID, scopeJSON: scopeJSON)
         let runner = registerRunner(coordinator: coordinator, jobID: job.id, networkPolicy: nasNetworkPolicy)
         await runner.start()
+        try settings.setOnboardingCompleted(true)
         return runner
     }
 
@@ -196,11 +198,13 @@ final class AppEnvironment: @unchecked Sendable {
         if let resumingJobID {
             let runner = registerRunner(coordinator: coordinator, jobID: resumingJobID, networkPolicy: nasNetworkPolicy)
             try await runner.resume()
+            try settings.setOnboardingCompleted(true)
             return runner
         }
         let job = try await coordinator.createJob(sourceID: sourceID, scopeJSON: scopeJSON)
         let runner = registerRunner(coordinator: coordinator, jobID: job.id, networkPolicy: nasNetworkPolicy)
         await runner.start()
+        try settings.setOnboardingCompleted(true)
         return runner
     }
 

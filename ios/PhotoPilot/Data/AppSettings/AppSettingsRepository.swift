@@ -19,7 +19,17 @@ final class AppSettingsRepository {
     }
 
     func isOnboardingCompleted() throws -> Bool {
-        try value(forKey: Self.onboardingCompletedKey) == "true"
+        if try value(forKey: Self.onboardingCompletedKey) == "true" { return true }
+        let context = container.viewContext
+        let hasSavedFrame = try context.performAndWait {
+            let request = NSFetchRequest<NSManagedObject>(entityName: "Frame")
+            request.predicate = NSPredicate(format: "selection_version > 0")
+            request.fetchLimit = 1
+            return try context.count(for: request) > 0
+        }
+        guard hasSavedFrame else { return false }
+        try setOnboardingCompleted(true)
+        return true
     }
 
     func setOnboardingCompleted(_ completed: Bool) throws {

@@ -4,6 +4,48 @@ import UIKit
 
 @MainActor
 final class PhotoPilotUIReviewTests: XCTestCase {
+    func testNasImportCompletesOnboardingAfterCreatingAJob() async throws {
+        for smb in [false, true] {
+            let environment = makeEnvironment()
+            XCTAssertFalse(try environment.settings.isOnboardingCompleted())
+            let endpoint = NasAddress.sourceFingerprint(scheme: smb ? "smb" : "webdav", host: "127.0.0.1", port: 1, path: "photos")
+            let sourceID = smb
+                ? try environment.sources.ensureSmbSource(endpointKey: endpoint, displayName: "Test", recursive: true, directories: [""])
+                : try environment.sources.ensureWebdavSource(endpointKey: endpoint, displayName: "Test", recursive: true, directories: [""])
+            let runner = smb
+                ? try await environment.startSmbImport(sourceID: sourceID)
+                : try await environment.startWebDavImport(sourceID: sourceID)
+            XCTAssertTrue(try environment.settings.isOnboardingCompleted())
+            try await runner.cancel()
+        }
+    }
+
+    func testFailedNasStartDoesNotCompleteOnboarding() async throws {
+        for smb in [false, true] {
+            let environment = makeEnvironment()
+            do {
+                _ = smb
+                    ? try await environment.startSmbImport(sourceID: "missing")
+                    : try await environment.startWebDavImport(sourceID: "missing")
+                XCTFail("Missing source must fail")
+            } catch {
+                XCTAssertFalse(try environment.settings.isOnboardingCompleted())
+            }
+        }
+    }
+
+    func testSavedSelectionRecoversLegacyOnboardingButDraftDoesNot() async throws {
+        let environment = makeEnvironment()
+        let frameID = try await environment.frameManager.createFrame(name: "Confirmed")
+        XCTAssertFalse(try environment.settings.isOnboardingCompleted())
+        let saved = try await environment.frames.save(frameID: frameID, baseVersion: 0)
+        guard case .ok = saved else { return XCTFail("Selection save failed") }
+        XCTAssertTrue(try environment.settings.isOnboardingCompleted())
+        XCTAssertEqual(try environment.settings.value(forKey: AppSettingsRepository.onboardingCompletedKey), "true")
+        try environment.settings.setOnboardingCompleted(false)
+        XCTAssertTrue(try environment.settings.isOnboardingCompleted())
+    }
+
     func testEraseImportedMusicRemovesCopiesAndPartialFilesOnly() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

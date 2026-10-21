@@ -96,3 +96,9 @@ iOS177 full Release simulator tests, final build/analyze and unsigned Release ar
 Android now synchronizes seven segmented-control groups and five switches from the loaded frame settings; programmatic switch updates do not invoke user-action callbacks. Saved Android brightness53%/59% no longer truncates to52%/58%; every integer percentage0–100 passes a real JSON/Float conversion regression. iOS serializes transition durations in Double tenths and recovers exact legacy Float representations instead of falling back to0.8; arbitrary invalid fractions remain rejected. Six-position iOS saved-control round trips did not reproduce the reported clock default. No data-flow, permissions, vendor or licence changes were made.
 
 iOS179 Release simulator tests and build/analyze/archive passed; Android400 JVM tests, Debug/signedRelease, lint0error/181warning and a dependency-free native Instrumentation APK build passed. That native test was not executed because adb has no device. Version56 archive device families, notices/privacy-source equality and absence of private fixtures were verified. Physical installation/start and limitations are tracked in PhysicalRegression.md; no Distribution/App Store acceptance is claimed.
+
+## 2026-10-21 · v1.1.57
+
+双端57：Android来源卡动作按实际文字宽度自适应横/竖排，修复英文窄屏裁切；iOS修复NAS首次流程的onboarding完成标记，并仅以已确认保存的帧恢复历史状态。Android旧56真实View裁切RED、新fix物理12场景GREEN；iOS新增3项先RED后GREEN，全量182 Release模拟器通过。Android400 JVM通过、Debug/签名Release/lint通过（0error/181warning）；iOS build/analyze与最终unsigned Release archive通过。独立代码复核无重要阻塞。源码包/manifest沿用56相同锁定内容。
+
+APK22568571字节，SHA-256 `b09c456a54c57ad809fd600c557c60059017f21784300e0e8075be6f54a0fe59`；签名证书SHA-256 `9cd985f16aec8a0e492ff834aa7a07de6b426f224b2fd6d788a5965cc1b4f37c`。Apple本地unsigned归档后沿用旧开发身份供真机覆盖安装，不等于正式Distribution签名、Apple Validate或App Store上传。真机结果与未测项见PhysicalRegression.md最新节；设备断连或锁屏不写成通过。

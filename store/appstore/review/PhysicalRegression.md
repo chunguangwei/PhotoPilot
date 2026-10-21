@@ -4,18 +4,23 @@ This record separates installation, runtime checks and full workflows. NOT_RUN i
 
 | Check | iPhone13 | iPadAir4 | HuaweiICL-AL20 |
 |---|---|---|---|
-| Installed version | 1.1.56(56), in-place | 1.1.56(56), in-place | 1.1.54(54) verified;55 install blocked by USB |
-| Start/process | PASS56 | PASS56 after owner unlocked | PASS, WARM launch54 |
-| Existing library integrity | quick_check OK;112 assets/1frame/1source unchanged | quick_check OK;796/2/2 unchanged | NOT_RUN, Release app DB not read |
-| Native unit/controller/fixture suite | PASS177/177 on isolated physical host | PASS177/177 on isolated physical host | JVM399/399 only; physical instrumentation NOT_RUN |
-| Actual client/modified-library checks | Marker PASS;2network tests failed due isolated-app Wi-Fi denial | PASS3/3: encrypted SMB+HTTPS WebDAV6-photo hashes and modified-library marker | NOT_RUN; signed14,208-byte read-only testAPK prepared, no USB installation |
-| Public encrypted SMB UI import/select/play | PASS, isolated55 app on hardware | PASS, isolated55 app on hardware | NOT_RUN, USB disconnected |
-| Public trusted HTTPS WebDAV UI import/select/play | PASS, isolated55 app on hardware | PASS, independent retry after driver correction | NOT_RUN, same blocker |
-| Language persistence / privacy and licence pages | PASS on isolated55 app | PASS on isolated55 app | NOT_RUN |
-| Actual landscape sources / focused NAS fields / player | NOT_RUN | PASS, follow-up below | NOT_RUN |
-| Weather failure / large-text physical workflow | NOT_RUN | NOT_RUN | NOT_RUN |
-| Fresh/denied/limited-permission physical workflow | NOT_RUN; use an isolated test installation, never erase the personal app | NOT_RUN; same safeguard | NOT_RUN |
-| Erase-all private audio cleanup | PASS on isolated55 app; injected music deleted, DB0/0/0 | PASS on isolated55 app after corrected-driver retry; music deleted, DB0/0/0 | Temporary-directory unit regression only; no physical erase |
+| Installed production version | 1.1.57(57), in-place; launch PASS | 1.1.57(57), in-place; launch PASS after actual unlock | 1.1.57(57), in-place; COLD launch PASS |
+| Existing library integrity | quick_check OK;112 assets/1frame/1source unchanged | quick_check OK;796 assets/2frames/2sources unchanged before/after57 | Release app DB not read; firstInstallTime retained |
+| Native unit/controller/fixture suite | Historical177/177 on physical host; current182/182 Release simulator | Same scope | Current400/400 JVM; actual native settings controls PASS on hardware |
+| Actual public NAS clients | Historical physical55 checks plus HTTPS UI56 below | Historical3/3 encrypted SMB+HTTPS+modified marker | Encrypted SMB3.1.1 and trusted HTTPS,6 photo hashes each PASS |
+| Public encrypted SMB UI import/select/play | PASS isolated55 | PASS isolated55 | Connection/encrypted dialect PASS56; full import/play NOT_RUN |
+| Public HTTPS WebDAV UI import/select/play | PASS56, recursive6, explicit6, frame/play/exit | PASS56, recursive6, explicit6, frame/play/exit | PASS56, nonrecursive3 imported/explicit2 selected/frame/play/exit; recursive6 UI NOT_RUN |
+| Language persistence | PASS isolated55 | PASS isolated55 | PASS56 English after cold restart |
+| Actual landscape player | PASS56,844×390pt, whole-screen captures | PASS56,1180×820pt, whole-screen captures | PASS56,2440×1080 actual screenshot |
+| Offline local playback | NOT_RUN, driver did not establish offline | NOT_RUN, same scope | PASS56, no active network, automatic1/2→2/2, network restored |
+| Maximum text | PASS56 welcome/sources/NAS; player visual-only; settings NOT_RUN | Same scope | Sources actions at100%/200%, zh/en,320/432/1200dp PASS on fixed native Views; full app NOT_RUN |
+| Photo permission | Actual system denial safety PASS56; limited NOT_RUN | Same scope | Fresh/denied/limited NOT_RUN |
+| Weather actual failure / expired cache | NOT_RUN | NOT_RUN | NOT_RUN |
+| Fresh NAS cold restart | FAIL56 then PASS57 existing-data recovery and fresh6-image workflow/cold restart | PASS57 fresh6-image workflow and plain cold restart | English cold restart reached existing slideshow PASS56 |
+| Erase-all private audio cleanup | PASS isolated55; clone-only | PASS isolated55; clone-only | Unit regression only; personal app never erased |
+
+
+The following paragraphs are chronological historical evidence; the table and newest follow-up section describe current status.
 
 The standalone iOS runner launches the installed app by bundle identifier without reset or language overrides. Both initial device runs failed before executing the navigation test: `Timed out while enabling automation mode`. Both devices reported unlockedSinceBoot and no passcodeRequired; this does not prove UI automation was authorised. Mac DevToolsSecurity reported disabled; an attempted noninteractive enable required administrator authentication. The operator has been asked to enable device UI automation, approve any system prompt and enable the Mac developer-testing setting. No password was requested for transmission or collected.
 
@@ -73,3 +78,23 @@ iPhone56 installed in place and launched; before/after quick_check OK and112/1/1
 ### iPad56 unlocked launch follow-up
 
 After the owner unlocked iPad, original app launch succeeded. A fresh installed-app query confirmed1.1.56(56); post-unlock quick_check was OK and796 assets/2frames/2sources matched the pre-install aggregate. The temporary copied DB was removed. Evidence: `.build/device-install-v1.1.56/{ipad-launch-unlocked,ipad-apps-post-unlock,ipad-post-unlock-library-summary,ipad-verified}.json`. This closes the locked-start item above, without changing the scope of other outstanding hardware/Distribution checks.
+
+## Connected-device follow-up — 1.1.56 regression / 1.1.57 fixes
+
+Android was already56 at this session’s true before-snapshot, not54. A56 in-place reinstall retained firstInstallTime2026-10-15 21:23:50 and launched successfully. Actual native controls passed both languages, all six clock positions, repeated bind/save/reopen, switches and brightness. Actual read-only clients returned encrypted SMB_3_1_1 with six payload hashes, plus six trusted-HTTPS hashes. WebDAV UI imported three root images with recursion deliberately off, selected two, created a frame and advanced playback. This is not a six-image recursive UI result. English persisted across cold launch; with Wi-Fi/cellular disabled, the system reported no active default network and local slideshow advanced. Original network1/1, input method, orientation and text settings were restored.
+
+A real source-card defect was found: English Disconnect source extended below its action-row height at narrow width. Old56 physical measurement failed with textBottom235 > rowHeight196. The fix adapts horizontal versus vertical actions to actual label width; physical native Views passed12 language/width/font scenarios without clipping, overlap or ellipsis, preserving callbacks and touch height. The live fixed English screenshot was separately inspected. These measurements do not substitute for full app accessibility or TalkBack testing.
+
+On both Apple devices, isolated final56 UI tests passed first-frame launch skip, actual system PhotoKit denial safety, maximum text in welcome/sources/NAS, recursive HTTPS six-image import and explicit selection, frame/play/exit and actual landscape playback. XCUIScreen screenshots plus accessibility geometry establish landscape; app-only screenshots with EXIF8 were misleading and are not used as rotation proof. Maximum-text settings drivers and offline controls did not complete: neither is a product pass. Network controls were restored explicitly to airplane0/Wi-Fi1 on both devices.
+
+Fresh NAS-only use exposed a real iOS defect: six imported/selected images and one saved frame persisted, but onboarding.completed was absent and a plain cold launch returned to Welcome.57 marks onboarding after successful NAS start/resume, and recovers older installations only when a confirmed saved frame (selection_version>0) exists. Bare import and draft frames do not bypass onboarding. Three added tests first demonstrated two positive-case failures, then full182 Release simulator tests passed; Android400 JVM tests, both builds, iOS analyze/archive, Android lint0errors/181warnings and make check43 passed. Physical57 recovery and installation results are recorded separately below.
+
+Current private evidence: `.build/device-regression56-{ios,android}/`, `.build/device-install-v1.1.57/`. Do not publish raw fixture credentials, test screenshots containing input fields, copied personal databases, or restricted xcresult diagnostics. Android USB temporarily disconnected after the fix test and SMB connection check. It subsequently reconnected: final57 install and clone/runner removal completed. No production app was reset or uninstalled.
+
+Still required on devices: iOS offline playback and actual weather failure/expired cache, limited Photos permission, maximum-text settings interaction, VoiceOver/TalkBack,24-hour stability (device availability not yet confirmed), minimum-supported OS/hardware and performance/thermal measurements. Final Distribution/TestFlight regression remains separate. This record is not full hardware acceptance or a guarantee of App Review approval.
+
+Android final57 follow-up: actual before56→after1.1.57/code57, unchanged firstInstallTime2026-10-15 21:23:50, COLD launch Status ok and PID3638. All three isolated clone/test packages were removed and absence verified; harness XML was removed. Original network, font, rotation and input method settings remained restored. Release sandbox DB was not read, so this is not a database-integrity assertion. Evidence: `.build/device-install-v1.1.57/android-verified.json` and raw install/package/launch/cleanup logs.
+
+Final57 iOS repair evidence: iPhone’s retained affected56 clone was updated in place, with no reset/onboarding override. The exact final57 executable and AMSMB2 framework hashes matched the production57 package. Cold launch entered the existing slideshow rather than Welcome; quick_check OK,6assets/1frame/1source/6selections retained and onboarding.completed=true. Separately, both iPhone and iPad fresh isolated57 installations passed HTTPS recursive6→explicit6 selection→save→actual landscape slideshow→exit→plain terminate/relaunch without reset or onboarding overrides (1/1 each). Both aggregates were6/1/1/6 with completed=true. Evidence: `.build/device-regression57-ios/{exact-binary-proof,iphone-existing-recovery-aggregate,iphone-freshnas-cold-aggregate,ipad-freshnas-cold-aggregate}.json` and matching xcresults. These are isolated development-signed physical workflows, not App Store Distribution acceptance.
+
+Final production-app preservation check after clone tests: both57 apps launched successfully. iPhone quick_check OK and112/1/1; iPad quick_check OK and796/2/2, exactly matching their own before57 aggregates. Temporary personal DB copies were deleted by the checker. Both isolated57 clones passed guarded erase-all to0/0/0/0 and both clone/runner pairs were then uninstalled; personal app data was never reset. Raw private evidence is retained within its restricted local scope, with host-fixture cleanup recorded separately.

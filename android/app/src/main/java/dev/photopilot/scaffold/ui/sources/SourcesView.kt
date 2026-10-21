@@ -171,8 +171,28 @@ class SourcesView(context: Context) : ScrollView(context) {
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_meta))
                 setTextColor(context.getColor(R.color.pp_text_secondary))
             }
-            val actions = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
+            val actions = object : LinearLayout(context) {
+                override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+                    val available = MeasureSpec.getSize(widthMeasureSpec) - paddingLeft - paddingRight
+                    val slot = if (childCount > 0) available / childCount else available
+                    val fits = MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.UNSPECIFIED ||
+                        (0 until childCount).all { index ->
+                            val label = getChildAt(index) as TextView
+                            kotlin.math.ceil(label.paint.measureText(label.text.toString()).toDouble()).toInt() +
+                                label.compoundPaddingLeft + label.compoundPaddingRight <= slot
+                        }
+                    orientation = if (fits) HORIZONTAL else VERTICAL
+                    for (index in 0 until childCount) {
+                        (getChildAt(index).layoutParams as LayoutParams).apply {
+                            width = if (fits) 0 else LayoutParams.MATCH_PARENT
+                            height = LayoutParams.WRAP_CONTENT
+                            weight = if (fits) 1f else 0f
+                        }
+                    }
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+                }
+            }.apply {
+                isBaselineAligned = false
             }
             val sync = TextView(context).apply {
                 text = res.getString(R.string.sources_sync_now)
