@@ -5,7 +5,7 @@ This record separates installation, runtime checks and full workflows. NOT_RUN i
 | Check | iPhone13 | iPadAir4 | HuaweiICL-AL20 |
 |---|---|---|---|
 | Installed version | 1.1.56(56), in-place | 1.1.56(56), in-place | 1.1.54(54) verified;55 install blocked by USB |
-| Start/process | PASS56 | 56 blocked by screen lock;55 previously PASS | PASS, WARM launch54 |
+| Start/process | PASS56 | PASS56 after owner unlocked | PASS, WARM launch54 |
 | Existing library integrity | quick_check OK;112 assets/1frame/1source unchanged | quick_check OK;796/2/2 unchanged | NOT_RUN, Release app DB not read |
 | Native unit/controller/fixture suite | PASS177/177 on isolated physical host | PASS177/177 on isolated physical host | JVM399/399 only; physical instrumentation NOT_RUN |
 | Actual client/modified-library checks | Marker PASS;2network tests failed due isolated-app Wi-Fi denial | PASS3/3: encrypted SMB+HTTPS WebDAV6-photo hashes and modified-library marker | NOT_RUN; signed14,208-byte read-only testAPK prepared, no USB installation |
@@ -68,3 +68,8 @@ The first post-playback cleanup driver could not find Settings after relaunch an
 ## 1.1.56 installation after settings corrections
 
 iPhone56 installed in place and launched; before/after quick_check OK and112/1/1 unchanged. iPad56 installed in place; before/after quick_check OK and796/2/2 unchanged, but launch was denied by the operating system because the screen was locked. Unlock/start retry remains pending. Earlier native177-case and full NAS UI hardware evidence above is for55; the new179-case settings tests passed on the56 simulator. Android remains54 on the last connected hardware;56 native Instrumentation APK compilation and400 JVM passes do not establish actual56 hardware behaviour. No personal reset was performed.
+
+
+### iPad56 unlocked launch follow-up
+
+After the owner unlocked iPad, original app launch succeeded. A fresh installed-app query confirmed1.1.56(56); post-unlock quick_check was OK and796 assets/2frames/2sources matched the pre-install aggregate. The temporary copied DB was removed. Evidence: `.build/device-install-v1.1.56/{ipad-launch-unlocked,ipad-apps-post-unlock,ipad-post-unlock-library-summary,ipad-verified}.json`. This closes the locked-start item above, without changing the scope of other outstanding hardware/Distribution checks.
