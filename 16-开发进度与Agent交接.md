@@ -1,5 +1,7 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**最新真机补装（2026-10-21 Android1.1.54）**：用户开启USB调试后识别到华为ICL-AL20；首次streamed安装遇到USB连接断开失败，重连后使用非streaming的`install -r`覆盖升级，用户确认安装成功。实读安装前1.1.52/code52、安装后1.1.54/code54；firstInstallTime仍为2026-10-15 21:23:50，lastUpdateTime更新为2026-10-21 14:15:43；未卸载/清数据。随后am start -W返回Status ok、WARM，应用进程存在。证据`.build/device-install-android-v1.1.54/`；安装/版本/启动已验证，未核验库数量、NAS全流程、语言或天气真机验收，不将此前无Android连接的历史记录改为全功能已通过。
+
 **最新续轮（2026-10-21 双真机安装与Android同类补查）**：用户确认真机在线并要求直接安装、Android同类修复更新GitHub。最终开发签名1.1.53(53)已分别覆盖安装iPadAir4和iPhone13，版本与启动成功；安装前后DB quick_check OK、汇总一致：iPad796资产/2相框/2来源，iPhone112/1/1。未卸载或重置，临时DB副本已删除；证据`.build/device-install-v1.1.53-both/`。这关闭此前iPad最终包未安装的残留，不将安装验证称为完整NAS真机或Distribution验收。
 
 Android逐项核对：SMB加密先行/真实协商属性/恢复安全限制已在53中修复；目录选择已使用目录计数词条；凭证保存先于来源与任务创建，有失败中止回归。发现Activity吞掉保存/创建异常而无提示，现复用已有中英文保存失败弹窗，保留当前目录选择供重试，CancellationException继续传播。仅Android升到1.1.54/code54；iOS源及版本不变。**本轮验证**：Android Debug/签名Release构建、lint（0error/181warning）、全量393项零失败/错误/跳过；make check43项及diff检查通过。APK24456923字节，SHA-256 `b87ee7c932af7868c58bea13518555fc6df5c7cd10c57739aed1cac02b36f31e`，证书与53一致；证据`.build/v1.1.54-android-verified.log`、`.build/releases/v1.1.54/local-verification.json`。未新增镜像式UI测试，现有凭证失败不创建来源测试继续通过；当前adb无接入设备，未宣称Android/Harmony真机运行或弹窗视觉验收。代码提交`11467a9`与annotated tag `v1.1.54`已推送；[Android1.1.54 Release](https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.1.54)已公开并设Latest，匿名API与四资产大小/digest匹配，APK匿名下载哈希匹配，证据`.build/releases/v1.1.54/remote-verification.json`。未上传/提交App Store，外部分发/法务门控仍开放。
