@@ -28,7 +28,7 @@ Sources: [Analytics overview](https://developer.apple.com/help/app-store-connect
 
 | Item | Required before final submission |
 |---|---|
-| Distribution identity | Verify authorised membership/team, agreements/ASC role and app record; decide current Bundle ID; prepare Distribution archive/Validate/upload only with submission authorisation |
+| Distribution identity | Owner confirmed the publishing Apple ID matches the Xcode account on 2026-10-23; the login email stays in a local private record. Verify authorised membership/team, agreements/ASC role and app record; decide current Bundle ID; prepare Distribution archive/Validate/upload only with submission authorisation |
 | Publisher/contact | Real account/legal publisher identity, review contact name and reachable phone; use Apple Standard EULA and the prepared third-party permission supplement. Do not invent a company or substitute an email for required fields |
 | Territories | [TerritoryPlan.md](TerritoryPlan.md): intended all selectable non-mainland territories, Hong Kong/Macao/Taiwan included separately; France documentation and factual EU DSA status remain conditional, not silently excluded |
 | Privacy | [AppPrivacyQuestionnaire.md](AppPrivacyQuestionnaire.md): complete bilingual data-type/purpose/linking/tracking worksheet, Open-Meteo only, support-collection conditional branch; candidate manifest includes the three weather categories; the ASC form remains separate |

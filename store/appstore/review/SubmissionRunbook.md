@@ -30,7 +30,7 @@ iPhone 五张均为 1320×2868；iPad 五张竖屏为 2064×2752，一张横屏�
 
 当前候选归档：项目根目录下 `.build/appstore-audit/PhotoPilot-v1.1.58-final-unsigned.xcarchive`。这是 unsigned Release，不能直接称为可提交 IPA。版本 1.1.58、build58，Bundle ID `dev.photopilot.scaffold`，iPhone/iPad，最低 iOS15；工具 Xcode27.1。证据见 [PreparationEvidence.json](PreparationEvidence.json) 和 [ReleaseAudit.md](ReleaseAudit.md)。
 
-只读核查本机有效签名身份没有 Apple Distribution；现有 project.yml 的 DEVELOPMENT_TEAM 与开发身份不代表用户已选定商店发布主体。下一步先在用户的真实开发者账号核对 membership、协议、ASC 权限、Bundle ID 所有权及 app record。不要沿用别人的开发身份，也不要为方便修改 Bundle ID。若 ASC 已用过 build58，则 iOS 的 build number 必须另定，Android 保持 58，不重复上传同一 build。
+只读核查本机有效签名身份没有 Apple Distribution；现有 project.yml 的 DEVELOPMENT_TEAM 与开发身份不代表用户已选定商店发布主体。用户已于2026-10-23确认发布 Apple ID 与 Xcode 登录账号一致，具体登录邮箱仅存本机私有记录，不作为公开支持邮箱。下一步在该已确认账号核对 membership、协议、ASC 权限、Bundle ID 所有权及 app record。不要沿用别人的开发身份，也不要为方便修改 Bundle ID。若 ASC 已用过 build58，则 iOS 的 build number 必须另定，Android 保持 58，不重复上传同一 build。
 
 确认发布团队后，通过 Xcode 的 Signing & Capabilities 选择该团队并使用适用的 App Store 分发签名；如需修改工程声明，应修改 ios/project.yml 后 `make ios-generate`。重新执行 `make check`、`make ios-build`、`make ios-analyze` 和最终相关测试，再以 PhotoPilot scheme / Release / Any iOS Device 归档。命令式归档等价入口（TEAM_ID 必须由真实账号确定，不能照抄占位值运行）：
 
@@ -50,7 +50,7 @@ Apple 会处理上传构建后才在 ASC 可选；上传不等于提交审核。
 
 ## 下次需要用户/账号提供的真实信息
 
-1. 用哪个开发者账号/团队、个人或组织、真实主体所在地；当前 Bundle ID 是否归该团队。
+1. 发布 Apple ID 已由用户确认，与 Xcode 登录账号一致，无需再次询问。仍需核对账号下具体团队、个人或组织、真实主体所在地，以及当前 Bundle ID 是否归该团队。
 2. 商店版权人及年份、审核联系人姓名与可接通电话。支持邮箱已确认，不再重复询问。
 3. EU DSA：此 App 是否在职业/经营活动中提供；若为 trader，提供真实可公开且可验证的地址/电话等。免费不能替代判断。
 4. 维持法国首发时所需的加密材料及最终问卷路径，按已准备证据完成，不假定豁免。
