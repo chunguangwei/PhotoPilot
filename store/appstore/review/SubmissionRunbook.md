@@ -95,3 +95,11 @@ Mac与Vision Pro默认勾选已取消并保存；免费初始定价确认各地�
 本轮用原私有记录只读复验：WebDAV列目录、SMB3.1.1强加密、六张图片双协议哈希均通过（`.build/appstore-submit/nas-readonly-oct23.json`）；不执行写入/删除。私有审核备注补两协议真实连接参数、临时凭证、六图步骤与样图公开ZIP链接；2755 UTF-8字节，未公开这些凭证。ZIP未实际附加，截图仍未上传；只提供链接不声称附件已附。审核联系信息保持，App登录仍不需要。
 
 [OwnerReview.md](OwnerReview.md)汇总人工检查入口、隐私重点和真实未完项。Distribution/Validate/构建上传/加密随包问卷、截图权限、账号级DSA提示及最终分发证据仍需下步；不创建生产密钥、不动其他App、不点击添加审核或提交。
+
+### 必填截图与附件已上传（2026-10-23续）
+
+原扩展上传缺本地文件权限，改用系统文件选择器成功，未扩大权限。后台当前将iPhone中等屏列必填，故另建隔离iPhone18Pro模拟器，以当前58 Release构建补拍1206×2622五张；build-for-testing和截图UI测试1/1通过，逐图目检，见ScreenshotEvidence58。该新模拟器默认自带6张Apple图，另导入6张自有SeedMedia，公开首页/播放器显示自有图；含图库的横屏编辑捕获排除，不把图库资产12当成仅6。截图后该专用模拟器已shutdown，个人真机/其他模拟器未改。
+
+英文/简中/繁中三套后台均实际关联iPhone中屏5/大屏5/iPad13英寸6；本轮重新导航逐语言核对计数（48处展示、16个独立PNG），MediaUploadEvidence记录结果。ReviewPhotos.zip通过系统选择器上传，整页重载后精确文件名仍存在、input files无待上传项；私有NAS备注和无需登录保持，未将凭证写入公开证据。交接页面切到英文版App预览和截屏，而不是隐私页或标题宣传图页。
+
+按真实team准备本地ExportOptions（destination=export、关闭自动改version/build），实际exportArchive失败：无对应App Store provisioning profile，提示需allowProvisioningUpdates。本机有效Distribution身份为空。已具体请求允许该发布账号创建/下载PhotoPilot签名描述文件及缺少时生成Distribution证书；等待明确答复，不撤销已有证书、不自动生成生产密钥。未经此步骤不能宣称IPA/Validate/上传完成。可选视频/标题创意素材有意留空，不阻塞首次提交。隐私标签仍草稿，无添加审核/提交。

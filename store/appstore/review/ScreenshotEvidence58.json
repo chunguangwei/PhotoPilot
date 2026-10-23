@@ -1,0 +1,59 @@
+{
+  "version": "1.1.58",
+  "build": 58,
+  "configuration": "Release Simulator",
+  "testsPassed": 1,
+  "sourceResult": ".build/appstore-submit/medium58.xcresult",
+  "excludedEditorLandscape": true,
+  "screenshots": [
+    {
+      "file": "store/appstore/iphone-6.3/05-sources.png",
+      "sha256": "3ac7bf7e1f0638e8e5026a41e526a44ca9838d06f07d6a67dc0ce3b2b8a4d69f",
+      "pixels": [
+        1206,
+        2622
+      ],
+      "sourceAttachment": "744C9599-0192-4A8C-985B-19237AEBF0A9.png"
+    },
+    {
+      "file": "store/appstore/iphone-6.3/02-player.png",
+      "sha256": "2c3ba4175f239b29dc4945dadf038ce49165323e7278d1761b4c6a54b22ef219",
+      "pixels": [
+        1206,
+        2622
+      ],
+      "sourceAttachment": "8CF7969A-FF99-42C3-AAFB-C215980FB770.png"
+    },
+    {
+      "file": "store/appstore/iphone-6.3/01-home.png",
+      "sha256": "428e157fb175ae3e5f0ac14b084737ab7b3808dd178294fa74509fcc74f4c25b",
+      "pixels": [
+        1206,
+        2622
+      ],
+      "sourceAttachment": "DF035EE6-31DC-443F-B086-DFC6C72B77B2.png"
+    },
+    {
+      "file": "store/appstore/iphone-6.3/04-music-picker.png",
+      "sha256": "7c5e7818f462b16658c8258721e8477ff0293d04564979bd3df7124dc66ce540",
+      "pixels": [
+        1206,
+        2622
+      ],
+      "sourceAttachment": "BB19BD95-294E-49D5-8F80-B2A0DC77AEFD.png"
+    },
+    {
+      "file": "store/appstore/iphone-6.3/03-playback-settings.png",
+      "sha256": "82dd92d2cfe958d7cd5e4158a93df41e0f6a977fa2a8941d6a7df216df03104b",
+      "pixels": [
+        1206,
+        2622
+      ],
+      "sourceAttachment": "64AD6ED1-829F-4A4D-914F-C95DE1EF4AC0.png"
+    }
+  ],
+  "captureDate": "2026-10-23",
+  "device": "iPhone 18 Pro / iOS27.0 simulator",
+  "photoFixtureNote": "Fresh simulator has six Apple default assets plus six imported owned SeedMedia images. The published home/player captures render owned SeedMedia artwork; editor landscape is excluded.",
+  "visualReview": "Five captures inspected; owned procedural artwork, no credentials or personal photos."
+}

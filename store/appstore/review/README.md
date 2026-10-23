@@ -1,5 +1,7 @@
 # PhotoPilot — App Review preparation
 
+最新上传实证：[MediaUploadEvidence.json](MediaUploadEvidence.json)（三语言iPhone中屏/大屏+iPad截图均已关联）；新中屏截图来源：[ScreenshotEvidence58.json](ScreenshotEvidence58.json)。
+
 人工检查入口：[OwnerReview.md](OwnerReview.md)。已填后台草稿、未提交；以该文件及最新实证为准。
 
 准备总入口：[提交准备单](SubmissionRunbook.md) · [文件核对结果](PreparationEvidence.json)。

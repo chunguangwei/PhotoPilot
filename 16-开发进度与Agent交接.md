@@ -1,5 +1,7 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**截图/审核附件实际补交（2026-10-23）**：扩展仍拒本地文件权限，已改系统文件选择器完成上传，未扩权限。发现后台当前iPhone中屏必填，额外隔离iPhone18Pro补拍58 Release 1206×2622五图，build-for-testing及UI1/1通过并目检，自有SeedMedia画面；新sim默认6张Apple图+导入6张seed，横屏图库捕获排除，专用sim已shutdown，不碰个人真机。三语言各iPhone中屏5/大屏5/iPad6已逐语言重新导航核对，16独立PNG/48展示，见MediaUploadEvidence/ScreenshotEvidence58。ReviewPhotos.zip已实际附加，重载后文件名保留且无待上传input，私有备注/无需登录保留。页面交接为英文App预览和截屏，非隐私页。正式exportArchive已尝试并因缺AppStore profile失败，本机Distribution身份0；已请求具体授权创建/下载描述文件及缺少时分发证书，尚待答复，不撤销旧证书/不自动创建生产密钥。未生成正式IPA/Validate/构建上传，未发布隐私标签或提交审核；可选视频/标题素材有意留空。
+
 **人工检查资料补齐（2026-10-23）**：用户要求先补齐信息供人工检查、不提交。已保存三语言App名称/副标题与中英繁版本文案、摄影与录像/生活分类、版权2026 魏春光及内容权利声明。原年龄问卷逐页只读确认所有否/无、非Kids、无覆盖，4+区域差异保留。三语言隐私URL、三天气类别用途/linked=yes/tracking=no已保存草稿并生成预览，未点击隐私发布；政策版本范围对齐58。原私有NAS账号只读双协议复验列目录/SMB3.1.1加密/六图哈希通过；私有审核备注补连接参数和凭证及ZIP下载链接，不公开到Git，未实际附ZIP。新增OwnerReview检查入口。截图0、分发签名/Validate/构建上传/随包加密/最终许可交付仍未完成；未提交审核。
 
 **最新首发范围及持久化实证（2026-10-23）**：用户明确非大陆/非EU、仅iPhone/iPad、无需账号登录。ASC147地区已保存并逐项表格验证28未供应=大陆+EU27，港澳台/非EU欧洲保留，future auto-add关闭；免费0.00已确认保存，Mac/VisionPro默认勾选已取消保存。审核字段此前实际上未保存（WebBridge合成fill未触发React状态），已撤回旧断言；改可信键盘输入后POST reviewDetails=201，整页重进核对loginRequired=false、四联系人非空、notes1822/版本1.1.58，真实联系方式只在私有记录。版权邮箱问题按Apple官方说明建议2026+真实版权人，尚待确认。更新TerritoryPlan覆盖旧含EU计划；法国不首发，无需为本次法国分发补声明，但SMB加密评估不豁免。截图权限/签名/其他本地化问卷仍待完成，未提交。

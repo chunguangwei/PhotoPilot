@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-10-23",
+  "appID": "6826092247",
+  "version": "1.1.58",
+  "screenshots": {
+    "iphone": {
+      "英语（美国）": [
+        5,
+        5
+      ],
+      "简体中文": [
+        5,
+        5
+      ],
+      "繁体中文": [
+        5,
+        5
+      ]
+    },
+    "ipad": {
+      "简体中文": [
+        6
+      ],
+      "繁体中文": [
+        6
+      ],
+      "英语（美国）": [
+        6
+      ]
+    }
+  },
+  "appPreviewVideos": 0,
+  "headerAndSearchCreativeAssets": 0,
+  "optionalCreativeAssetsIntentionallyOmitted": true,
+  "reviewPhotosAttachmentUploadObserved": true,
+  "distributionExport": "blocked: App Store provisioning profile missing",
+  "certificatePermissionRequested": true,
+  "submittedForReview": false
+}

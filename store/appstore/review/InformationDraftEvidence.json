@@ -77,7 +77,12 @@
     "smbDialect": "0x311",
     "sixPhotosBothProtocolsSHA256Matched": true
   },
-  "screenshotsUploaded": 0,
+  "screenshotsUploaded": 16,
   "distributionBuildUploaded": false,
-  "submittedForReview": false
+  "submittedForReview": false,
+  "screenshotPlacementsAcrossLocales": 48,
+  "mediaEvidence": "MediaUploadEvidence.json",
+  "reviewSampleZIPAttachedAndReloaded": true,
+  "distributionExport": "Failed: missing App Store provisioning profile",
+  "signingPermission": "requested; pending explicit owner response"
 }
