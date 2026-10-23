@@ -1,0 +1,108 @@
+{
+  "checkedAt": "2026-10-23",
+  "status": "preparation only; no App Store login/upload/submission",
+  "screenshots": [
+    {
+      "file": "store/appstore/iphone-6.9/01-home.png",
+      "pixels": [
+        1320,
+        2868
+      ],
+      "sha256": "89cd6c6908ea6439c7c2cc00b17cd44022970f70230da0fcf423d67e845d3f15"
+    },
+    {
+      "file": "store/appstore/iphone-6.9/02-player.png",
+      "pixels": [
+        1320,
+        2868
+      ],
+      "sha256": "b5c95558d976b485a612530df955486e197fc286de0b7b5e5c91b1714787f704"
+    },
+    {
+      "file": "store/appstore/iphone-6.9/03-playback-settings.png",
+      "pixels": [
+        1320,
+        2868
+      ],
+      "sha256": "a322ea6043f41bc594824c47c5a82aaf04195fd2a8e265f3732c8f3ee05485de"
+    },
+    {
+      "file": "store/appstore/iphone-6.9/04-music-picker.png",
+      "pixels": [
+        1320,
+        2868
+      ],
+      "sha256": "84ada6461cbe6accc74305b167635357cdbed187d3d9aea05c061feafc3bfc78"
+    },
+    {
+      "file": "store/appstore/iphone-6.9/05-sources.png",
+      "pixels": [
+        1320,
+        2868
+      ],
+      "sha256": "2427b54b9634a99b2dfe71d133f3ef2c0df8eb3781c1fdfc3f93035391d52a60"
+    },
+    {
+      "file": "store/appstore/ipad-13/01-home.png",
+      "pixels": [
+        2064,
+        2752
+      ],
+      "sha256": "f23009c35909d4f4e4f9854fe81e17bafc8f35e0f58e841d6b559cdeab2f3cb4"
+    },
+    {
+      "file": "store/appstore/ipad-13/02-player.png",
+      "pixels": [
+        2064,
+        2752
+      ],
+      "sha256": "47084608cc175be279787040010323048870aa65433ede4d31d041f808eb4d61"
+    },
+    {
+      "file": "store/appstore/ipad-13/03-playback-settings.png",
+      "pixels": [
+        2064,
+        2752
+      ],
+      "sha256": "714ad3a33f11da7dc0c8bd636ba8cb47da4270263781bc6e04543de4eec5d848"
+    },
+    {
+      "file": "store/appstore/ipad-13/04-music-picker.png",
+      "pixels": [
+        2064,
+        2752
+      ],
+      "sha256": "f86e0f485b48c4f92967f0cb18a5bf1150f1d75e5c0aa104ecca41d5fb3a9e1f"
+    },
+    {
+      "file": "store/appstore/ipad-13/05-sources.png",
+      "pixels": [
+        2064,
+        2752
+      ],
+      "sha256": "305f5e10ed39c1824aad289dc73106bf9904423f720b6544d71d8e50224391cb"
+    },
+    {
+      "file": "store/appstore/ipad-13/06-sources-landscape.png",
+      "pixels": [
+        2752,
+        2064
+      ],
+      "sha256": "20b906d7abe7b00420e24be5c97bff18ef7fa99b74828e121a0bc08a649e7255"
+    }
+  ],
+  "screenshotCaptureVersion": "1.1.52",
+  "archive": ".build/appstore-audit/PhotoPilot-v1.1.58-final-unsigned.xcarchive",
+  "bundleID": "dev.photopilot.scaffold",
+  "version": "1.1.58",
+  "build": "58",
+  "minimumOS": "15.0",
+  "families": [
+    1,
+    2
+  ],
+  "localAppleDistributionIdentities": 0,
+  "binarySHA256": "0cc04af231ff7651d57784c95716b3905bab27148a81b098ac3ab3e99c3b4dc7",
+  "privacyManifestMatchesSource": true,
+  "notDistributionSigned": true
+}

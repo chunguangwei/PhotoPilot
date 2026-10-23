@@ -1,5 +1,7 @@
 # PhotoPilot — App Review preparation
 
+准备总入口：[提交准备单](SubmissionRunbook.md) · [文件核对结果](PreparationEvidence.json)。
+
 This is a local preparation packet. It has not been submitted to App Review. Local unsigned Release inspection and remaining submission requirements are recorded in [ReleaseAudit.md](ReleaseAudit.md).
 
 `ReviewPhotos.zip` contains the six synthetic PNG images used by the repository's UI tests (`ios/PhotoPilotUITests/SeedMedia`). It contains no customer photos or credentials. Before submission, attach the archive to the review information or provide a verified download link, and confirm the steps below against the exact Release build.

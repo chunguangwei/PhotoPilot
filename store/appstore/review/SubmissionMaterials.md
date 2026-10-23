@@ -1,6 +1,8 @@
-# Submission materials — 2026-10-21
+# Submission materials — 2026-10-23
 
 This packet describes the prepared 1.1.58 build, not an App Store submission or approval. Facts marked unverified are not to be copied as completed form answers.
+
+提交入口与打包步骤见 [SubmissionRunbook.md](SubmissionRunbook.md)。截图尺寸、文件摘要和候选归档核对结果见 [PreparationEvidence.json](PreparationEvidence.json)。
 
 ## Confirmed business model
 

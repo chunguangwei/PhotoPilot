@@ -1,5 +1,7 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**商店提交准备收尾（2026-10-23）**：用户自行安装安卓，版本仍1.1.58(58)。已更新同一GitHub Release中英文说明，突出首格点选、旋转崩溃、短横屏编辑与许可排版，以及Apple布局修复；原APK未替换、原tag未移动。匿名API核对说明全文一致、APK22570351字节及原SHA256一致；本轮没有新增应用内更新日志功能，原更新弹窗仍显示版本/大小。新增`store/github/v1.1.58.md`留存发布说明。AppStore新增`SubmissionRunbook.md`逐项映射文案/11图/问卷/审核附件/地区/签名打包路径及真实资料缺口，`PreparationEvidence.json`逐图hash/尺寸核验和现存unsigned58归档核对；11图已目检，保留历史采集版本而不冒称58新截。Apple现行截图尺寸联网核实；本机有效签名身份只读核查无Apple Distribution。现存归档隐私清单与源一致；未登录ASC、未注册标识/生产证书、未签正式商店包或上传/提交。真实发布主体/联系人电话、BundleID所有权、EU DSA、法国加密资料、最终Distribution与LGPL签名分发实证仍需下轮完成，VoiceOver全流程/最低OS未全验；用户承担稳定性。
+
 **v1.1.58分发收尾实证（2026-10-23）**：源码提交`2841ab3`已推送origin/main，annotated tag`v1.1.58`已推送并对应该提交；[GitHub Release](https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.1.58)已公开设Latest，含签名APK、SHA256SUMS、AMSMB2源码tar、SMBSourceManifest四资产。匿名Latest API、远端tag、四份完整匿名下载size/SHA256均与本地一致，证据`.build/releases/v1.1.58/remote-verification.json`。iPhone/iPad最终58装机/启动/个人库保持与隔离测试清理均完成；Android当前未接线，最终生产58待装，不能将GitHub分发等同Android最终包实机安装。AppStore未登录、未上传或提交，真实主体/DSA/法国材料/Distribution等仍按下节上线阶段完成。
 
 **最新功能续检与装机（2026-10-23，覆盖下方历史暂停状态）**：iOS设置页补窄屏/AX纵向重排、原生开关固有尺寸及确定性列宽。真实iPad横屏AX截图的64pt列宽塌缩已用测试RED复现（期望311/720实得64）后修复；另截图发现侧栏入口与页脚重叠，新增RED（入口bottom867>viewport820），无障碍大字号改用既有底部导航，普通字号断点不变，02同步规则。全量**186/186**模拟器、build/analyze、最新unsigned Release archive/开发重签通过。iPhone竖屏/iPad横屏AXXXL实际设置开关、节假日入口、冷启动两次保存恢复各PASS1/1，截图独立目检；iPad实际有限照片零选片授权+应用limited提示PASS1/1，未导入或拍摄系统个人图库。独立只读代码审查无Critical/Important；动态AX切换与重复紧凑布局循环仅为额外覆盖观察，不是已知缺陷。
