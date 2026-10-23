@@ -1,5 +1,7 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**正式发布推进（2026-10-23，协议/AppID）**：已实际核验Apple新版协议接受日Oct23（签发Oct14），ASC协议提示消失。显式AppID`dev.photopilot.scaffold`在原发布团队注册成功并列表复核，保持标识、无可选capability新增。创建ASC iOS/en-US/SKU photopilot-ios时Apple返回“PhotoPilot名称已被使用”，记录未创建；候选英文名“PhotoPilot - Photo Frame”待用户确认，未擅改或重试创建。DSA经营事实、审核联系人/版权、分发签名/问卷/最终分发证据仍待补；无上传或审核提交。
+
 **正式发布准备已启动（2026-10-23）**：已实际查看Xcode账号设置、ASC与Developer门户。账号一致、Xcode Admin、个人会员续订有效，门户团队与现有开发安装包profile团队一致；具体标识仅存本机私有记录。ASC新版协议与EU DSA提示为实际阻塞，已请账户持有人亲自接受协议并确认经营事实/审核联系人/版权。PhotoPilot不在当前ASC应用列表，门户显式AppIDs不含当前bundleID；新建表单仅查看并取消，无注册/创建/签证书/上传/提交。后续先核实当前ID可注册性，禁止因通配符开发装机成功就宣称商店标识已就绪。现场步骤已追加SubmissionRunbook，不把已登录只读核查写成仍未登录。
 
 **发布账号确认（2026-10-23）**：用户确认发布Apple ID与Xcode登录账号一致，登录邮箱已存本机`.build/appstore-submit/publisher-account.json`（0600、Git忽略），公开资料只记录已确认，不公开登录邮箱。后续不重复询问使用哪个Apple ID；仍须核对账号下团队/会员协议/BundleID归属/正式分发签名，不把邮箱确认等同这些项目已验证。

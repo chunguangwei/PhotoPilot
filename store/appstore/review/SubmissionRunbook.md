@@ -65,3 +65,7 @@ Apple 会处理上传构建后才在 ASC 可选；上传不等于提交审核。
 实际阻塞：ASC提示新版Developer Program协议需账户持有人接受，同时提示EU DSA身份待提供。账户持有人需自行阅读并接受法律协议；Agent未代签。ASC当前应用列表未见PhotoPilot；新建App表单只查看后取消，未创建。门户的App IDs列表不含当前`dev.photopilot.scaffold`，因此尚不能把既有真机通配符开发描述文件当作正式商店App ID。
 
 操作顺序：完成协议/DSA事实确认 → 为PhotoPilot处理显式BundleID（优先检查保留现有ID的可注册性，不擅改标识）与ASC应用记录 → 分发签名及Release归档/Validate → 完成文案、截图、隐私/年龄/加密/地区和私有NAS审核资料 → 上传处理后检查候选并提交审核。版权与审核姓名电话需要用户提供或明确确认，不能推断自账号姓名。当前未创建正式标识/证书/应用记录、未上传或提交。
+
+### 协议与App ID进展（2026-10-23续）
+
+Developer账户实际显示新版协议签发2026-10-14、接受2026-10-23，ASC协议阻塞提示已消失。已在同一发布团队注册显式`PhotoPilot / dev.photopilot.scaffold`并在Identifiers列表核验成功；保持BundleID、未新增可选Capabilities。尝试创建iOS商店记录（主语言en-US、SKU`photopilot-ios`）时，Apple返回“PhotoPilot名称已被使用”，未创建成功。英文名称候选`PhotoPilot - Photo Frame`已请用户确认，未擅改原文案或重新提交创建。DSA事实、审核联系人/版权、Distribution与最终加密/许可交付项目仍未闭环；没有上传或提交审核。
