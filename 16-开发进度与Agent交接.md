@@ -1,5 +1,7 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**v1.1.58分发收尾实证（2026-10-23）**：源码提交`2841ab3`已推送origin/main，annotated tag`v1.1.58`已推送并对应该提交；[GitHub Release](https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.1.58)已公开设Latest，含签名APK、SHA256SUMS、AMSMB2源码tar、SMBSourceManifest四资产。匿名Latest API、远端tag、四份完整匿名下载size/SHA256均与本地一致，证据`.build/releases/v1.1.58/remote-verification.json`。iPhone/iPad最终58装机/启动/个人库保持与隔离测试清理均完成；Android当前未接线，最终生产58待装，不能将GitHub分发等同Android最终包实机安装。AppStore未登录、未上传或提交，真实主体/DSA/法国材料/Distribution等仍按下节上线阶段完成。
+
 **最新功能续检与装机（2026-10-23，覆盖下方历史暂停状态）**：iOS设置页补窄屏/AX纵向重排、原生开关固有尺寸及确定性列宽。真实iPad横屏AX截图的64pt列宽塌缩已用测试RED复现（期望311/720实得64）后修复；另截图发现侧栏入口与页脚重叠，新增RED（入口bottom867>viewport820），无障碍大字号改用既有底部导航，普通字号断点不变，02同步规则。全量**186/186**模拟器、build/analyze、最新unsigned Release archive/开发重签通过。iPhone竖屏/iPad横屏AXXXL实际设置开关、节假日入口、冷启动两次保存恢复各PASS1/1，截图独立目检；iPad实际有限照片零选片授权+应用limited提示PASS1/1，未导入或拍摄系统个人图库。独立只读代码审查无Critical/Important；动态AX切换与重复紧凑布局循环仅为额外覆盖观察，不是已知缺陷。
 
 **iOS天气/本地播放补测已闭环（本轮范围）**：仅隔离iPhone clone的无线数据由系统选中3（WLAN+cellular）改0，未动整机Wi-Fi/飞行/蜂窝或runner网络。有效London/天气on，clone-only过期4h快照及零快照两份fixture分别实际请求失败，天气地点整行隐藏、无不可用占位，本地六图继续推进，UI各PASS1/1。独立恢复测试确认原选项3，随后真实Open-Meteo新天气返回、UI London温度可见与数据库新cache/quick_check=ok，恢复UI PASS1/1；受限证据`.build/apple-functional58/weather-safe-oct23/result.json`。这是App级网络拒绝，不冒称整机offline。VoiceOver真实焦点遍历/语音、最低OS硬件与测量性能仍不完整；24h稳定性明确由用户负责，未由Agent开展。
@@ -8,7 +10,7 @@
 
 **Apple收尾实证**：两台隔离clone均经guarded UI erase返回Choose photos、DB quick_check=ok且asset/frame/source/selection=0/0/0/0，再连同两个runner卸载并核验消失；不触碰生产bundle。最新含导航修复的开发签名58最终覆盖安装/启动iPhone与iPad成功；个人库before/after完全一致：112/1/1、796/2/2，quick_check=ok。证据`.build/device-install-v1.1.58/final-oct23-verified.json`；iPad测试方向恢复landscapeLeft，未改旋转锁。主机19个私有fixture/App/DB临时路径已删、三处凭证resource剩余0；受限xcresult诊断保留，repo外operatoraccess保留0600，不声称所有历史痕迹清零。
 
-**发布/上架边界**：隐私/加密/地区/元数据稿已准备，最新加密问卷记录Oct23 unsigned归档确切hash；不是Distribution验证。首发全部实际可选非大陆商店方向不变，不默删法国/EU。真实主体/审核联系人电话、EU DSA事实身份、法国加密材料、最终Distribution签名/Validate/ASC填写上传留到用户统一上线阶段；未登录、上传或提交App Store。代码与GitHub58分发结果待实际提交后补记。详细实测/未覆盖见`store/appstore/review/PhysicalRegression.md`最新节。
+**发布/上架边界**：隐私/加密/地区/元数据稿已准备，最新加密问卷记录Oct23 unsigned归档确切hash；不是Distribution验证。首发全部实际可选非大陆商店方向不变，不默删法国/EU。真实主体/审核联系人电话、EU DSA事实身份、法国加密材料、最终Distribution签名/Validate/ASC填写上传留到用户统一上线阶段；未登录、上传或提交App Store。代码与GitHub58已发布并完成匿名下载校验，见顶部实证。详细实测/未覆盖见`store/appstore/review/PhysicalRegression.md`最新节。
 
 **源码与准备包已推送（2026-10-21）**：提交`9eb65e5`已推送origin/main，含58候选源修复、问卷/地区/商店文案与真实未测清单；无tag58/无GitHub58Release，公开Latest仍57。补核Android无缓存真实失败隐藏→联网恢复完整PASS，父Agent已目检恢复PNG及有效城市/on/新cache聚合。安卓设备脚本/截图/日志已删、混杂其他App诊断已删、14份input XML脱敏、含凭证连接PNG删除、临时hostcloneDB副本0；仅隔离clone与私有候选APK保留待续，Applefixture/runner仍保留且iPhone网络待用户恢复。最终handoff `.build/device-functional-completion-android/final-handoff.json` 与 `.build/apple-functional58/apple-control-handoff.json`。本轮43工具检查、18文档检查与准备包额外21本地链接通过；新/改公开文件无配置NAS/签名密码。余下设备动作请求已明确，不宣称全量功能验收或正式上架完成。
 
