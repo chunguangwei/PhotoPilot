@@ -1,6 +1,6 @@
 # 加密出口问卷 / Export compliance worksheet — 1.1.58
 
-2026-10-21本地准备；未登录ASC、未上传文件、未认领出口豁免或批准号。版本改动/最终Distribution签名后须复核。开源、免费、不做广告、使用HTTPS，均不能单独推出“没有加密”或“无需任何文件”。
+2026-10-23按最新设置页修复重新归档并核验；2026-10-21起本地准备；未登录ASC、未上传文件、未认领出口豁免或批准号。版本改动/最终Distribution签名后须复核。开源、免费、不做广告、使用HTTPS，均不能单独推出“没有加密”或“无需任何文件”。
 
 ## 1. 二进制与源码事实
 
@@ -8,8 +8,8 @@
 
 | 文件（相对上述App） | SHA-256 |
 |---|---|
-| `PhotoPilot` | `5df803e0a29594dabfa258e97ebd8ed0a0764ed6bd86813dc812f09abf9ca9fc` |
-| `Frameworks/AMSMB2.framework/AMSMB2` | `9b3b58966bc7ef382ab9e4f82cbba6b412ae7ca1353009a3854e06d0a43a0f2f` |
+| `PhotoPilot` | `0cc04af231ff7651d57784c95716b3905bab27148a81b098ac3ab3e99c3b4dc7` |
+| `Frameworks/AMSMB2.framework/AMSMB2` | `af6efbbaed48a88ee60d921b994727fa9b2b952da8116902c9991bc4630664ec` |
 | `Info.plist` | `fcf87ade80ac5932052df3817e23103c1b90fdd445f4b0ce49f6d83cac0f98d1` |
 | `PrivacyInfo.xcprivacy` | `f902828ec87bfac8258edba796fd94bb50d37236b4e5394ef3a49a02817ef0c0` |
 

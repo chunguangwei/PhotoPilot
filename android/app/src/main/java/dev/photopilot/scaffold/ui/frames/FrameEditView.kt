@@ -102,6 +102,9 @@ class FrameEditView(
     private val noticeLine: TextView
     private val manualEntry: TextView
     private val summaryLine: TextView
+    private val compactControlViews = mutableListOf<View>()
+    private var compactControlsScroll: ScrollView? = null
+    private var compactLayout = false
     private val gridAdapter: PhotosAdapter
     private var inFoldersTab = false
 
@@ -256,6 +259,8 @@ class FrameEditView(
             },
         )
         addView(bottomBar, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        compactControlViews += (0 until childCount).map { getChildAt(it) }
+            .filter { it !== gridView && it !== foldersScroll }
         selectTab(false)
     }
 
@@ -314,6 +319,39 @@ class FrameEditView(
         if (pendingCoverId != current.coverAssetId) return true
         if (manualOrderDirty) return true
         return ruleStates.toMap() != initialRuleStates
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val width = MeasureSpec.getSize(widthMeasureSpec)
+        val height = MeasureSpec.getSize(heightMeasureSpec)
+        applyCompactLayout(height > 0 && width > height && height < 480 * resources.displayMetrics.density)
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+    }
+
+    private fun applyCompactLayout(compact: Boolean) {
+        if (compact == compactLayout) return
+        compactLayout = compact
+        if (compact) {
+            compactControlViews.forEach { removeView(it) }
+            val column = LinearLayout(context).apply { orientation = VERTICAL }
+            compactControlViews.forEach { column.addView(it) }
+            val scroll = ScrollView(context).apply {
+                addView(column, FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+            }
+            compactControlsScroll = scroll
+            addView(scroll, 0, LayoutParams(LayoutParams.MATCH_PARENT, 0, 0.45f))
+            gridView.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 0, 0.55f)
+            foldersScroll.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 0, 0.55f)
+        } else {
+            val scroll = compactControlsScroll
+            (scroll?.getChildAt(0) as? ViewGroup)?.removeAllViews()
+            removeAllViews()
+            compactControlViews.dropLast(1).forEach { addView(it) }
+            addView(gridView, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
+            addView(foldersScroll, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
+            addView(compactControlViews.last())
+            compactControlsScroll = null
+        }
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {

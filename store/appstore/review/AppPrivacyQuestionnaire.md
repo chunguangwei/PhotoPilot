@@ -72,7 +72,7 @@
 | 原始位置进入系统地名解析 | `ios/PhotoPilot/Data/WeatherRepository/WeatherAutoLocator.swift:50–57,77–92` |
 | 城市系统回退及本地SHA256 ID | `ios/PhotoPilot/Data/Net/WeatherProvider.swift:303–322`；本地SHA不是上传设备ID |
 | 诊断字段和本地临时文件 | `ios/PhotoPilot/Data/Diagnostics/DiagnosticsExporter.swift:5–33` |
-| 诊断系统分享，无固定收件人 | `ios/PhotoPilot/UI/Settings/SettingsViewController.swift:578–582` |
+| 诊断系统分享，无固定收件人 | `ios/PhotoPilot/UI/Settings/SettingsViewController.swift:588–592` |
 | 当前公开政策 | `PRIVACY.md:19–29,40–49`；既有[天气证据](WeatherPrivacyEvidence.md) |
 
 官方依据（2026-10-21联网核验）：[Apple App Privacy Details](https://developer.apple.com/app-store/app-privacy-details/)：离机且超出实时请求所需时间的可访问留存、第三方、IP按用途分类、关联/追踪及本地/Apple服务边界；[Open-Meteo Free API privacy](https://open-meteo.com/en/terms)：技术IP及可能含坐标的90天排障日志。上述分类与linked保守选择是项目推断，不是Apple对PhotoPilot的个案判定。

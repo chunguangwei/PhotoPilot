@@ -81,8 +81,13 @@ final class WeatherLocationFollowTests: XCTestCase {
     func testStoredDisplaySurvivesRepositoryRoundTrip() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
         let controller = PersistenceController(storeURL: directory.appendingPathComponent("library.db"))
+        defer {
+            for store in controller.container.persistentStoreCoordinator.persistentStores {
+                try? controller.container.persistentStoreCoordinator.remove(store)
+            }
+            try? FileManager.default.removeItem(at: directory)
+        }
         let settings = AppSettingsRepository(container: controller.container)
         let raw = #"{"geo:1,2":{"nameZh":"旧","nameEn":"Old","latE7":1,"lonE7":2,"region":"","displayZh":{"locality":"北京","subLocality":"海淀区"}}}"#
         try settings.setValue(raw, forKey: WeatherRepository.placesKey)

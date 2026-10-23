@@ -5,6 +5,8 @@ final class SettingsViewController: UIViewController {
 
     private let environment: AppEnvironment
     private let formStack = UIStackView()
+    private var formWidthConstraint: NSLayoutConstraint?
+    private var adaptiveControlRows: [(stack: UIStackView, switchLabelWidth: NSLayoutConstraint?)] = []
 
     private let appearanceSegmented = UISegmentedControl()
     private let languageSegmented = UISegmentedControl()
@@ -60,14 +62,8 @@ final class SettingsViewController: UIViewController {
         scrollView.addSubview(formStack)
         view.addSubview(scrollView)
 
-        let readableCap = formStack.widthAnchor.constraint(
-            lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
-        )
-        let fillColumn = formStack.widthAnchor.constraint(
-            equalTo: scrollView.frameLayoutGuide.widthAnchor,
-            constant: -ThemeMetrics.contentInset * 2
-        )
-        fillColumn.priority = UILayoutPriority(999)
+        let formWidth = formStack.widthAnchor.constraint(equalToConstant: ThemeMetrics.bodyMaxWidth)
+        formWidthConstraint = formWidth
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.topAnchor,
@@ -94,16 +90,7 @@ final class SettingsViewController: UIViewController {
                 constant: -ThemeMetrics.space24
             ),
             formStack.centerXAnchor.constraint(equalTo: scrollView.frameLayoutGuide.centerXAnchor),
-            formStack.leadingAnchor.constraint(
-                greaterThanOrEqualTo: scrollView.frameLayoutGuide.leadingAnchor,
-                constant: ThemeMetrics.contentInset
-            ),
-            formStack.trailingAnchor.constraint(
-                lessThanOrEqualTo: scrollView.frameLayoutGuide.trailingAnchor,
-                constant: -ThemeMetrics.contentInset
-            ),
-            readableCap,
-            fillColumn,
+            formWidth,
         ])
 
         buildForm()
@@ -112,6 +99,29 @@ final class SettingsViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         reloadValues()
+    }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        if view.bounds.width > 0 {
+            let availableWidth = max(0, view.bounds.width - 2 * ThemeMetrics.contentInset)
+            formWidthConstraint?.constant = min(availableWidth, ThemeMetrics.bodyMaxWidth)
+        }
+        let stacked = view.bounds.width < 480 || traitCollection.preferredContentSizeCategory.isAccessibilityCategory
+        for adaptiveRow in adaptiveControlRows where adaptiveRow.stack.axis != (stacked ? .vertical : .horizontal) {
+            let row = adaptiveRow.stack
+            let isSwitchRow = row.arrangedSubviews.last is UISwitch
+            row.axis = stacked ? .vertical : .horizontal
+            row.alignment = stacked ? (isSwitchRow ? .trailing : .fill) : .center
+            row.spacing = stacked ? ThemeMetrics.space8 : ThemeMetrics.space12
+            row.isLayoutMarginsRelativeArrangement = stacked && isSwitchRow
+            row.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 8)
+            adaptiveRow.switchLabelWidth?.isActive = stacked && isSwitchRow
+            adaptiveRow.switchLabelWidth?.constant = -8
+            for child in row.arrangedSubviews where type(of: child) == UIView.self {
+                child.isHidden = stacked
+            }
+        }
     }
 
     private func buildForm() {
@@ -706,6 +716,7 @@ final class SettingsViewController: UIViewController {
         row.heightAnchor.constraint(
             greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
         ).isActive = true
+        adaptiveControlRows.append((row, label.widthAnchor.constraint(equalTo: row.widthAnchor)))
         return row
     }
 

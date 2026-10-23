@@ -3,4 +3,5 @@
     <instrumentation android:name="dev.photopilot.scaffold.SourcesLayoutInstrumentation" android:targetPackage="dev.photopilot.scaffold" />
     <instrumentation android:name="dev.photopilot.scaffold.PlaybackLayoutInstrumentation" android:targetPackage="dev.photopilot.scaffold" />
     <instrumentation android:name="dev.photopilot.scaffold.FrameSelectionInstrumentation" android:targetPackage="dev.photopilot.scaffold" />
+    <instrumentation android:name="dev.photopilot.scaffold.FrameEditorLayoutInstrumentation" android:targetPackage="dev.photopilot.scaffold" />
 </manifest>

@@ -1,6 +1,33 @@
-# Physical regression record — 2026-10-21
+# Physical regression record — updated 2026-10-23
 
 This record separates installation, runtime checks and full workflows. NOT_RUN is not a pass. No personal library was reset or erased; production apps were never launched with `-uitest.reset`.
+
+
+## Latest continuation — 2026-10-23
+
+This section supersedes the historical device-state summaries below. Latest development-signed58 including settings width/row fixes and AX bottom navigation was installed/launched in place on both Apple devices. Before/after quick_check is OK and counts match: iPhone112 assets/1frame/1source; iPad796/2/2. Exact final record: `.build/device-install-v1.1.58/final-oct23-verified.json`. No personal app reset/uninstall.
+
+| Scoped case | Actual result |
+|---|---|
+| iPhone portrait AX XXXL settings | PASS1/1: native-size auto-play switch and holiday button fully reachable, holiday screen opens, two cold restarts preserve changed/restored value |
+| iPad landscape AX XXXL settings/navigation | Intermediate58 real64pt column collapse retained as FAIL; current deterministic width and accessibility bottom-navigation candidate PASS1/1 with screenshot inspection. Source RED also proved sidebar entry extended below viewport; current186 simulator tests pass |
+| iPad limited Photos | PASS1/1: actual system limited-library grant with zero personal images selected, app confirms limited authorization. System picker capture/recording disabled; no personal images imported |
+| iPhone expired weather failure | PASS1/1: only clone wireless data disabled; weather enabled/valid London, injected4h cache; entire place/weather row absent, local six-image slideshow advances |
+| iPhone no-cache weather failure | PASS1/1: same valid city/on and zero snapshots, clone app network denied, row absent without unavailable placeholder; local photos advance |
+| iPhone weather network recovery | PASS1/1 plus independent restoration PASS1/1: original app-specific WLAN+cellular option3 selected again; real Open-Meteo London weather appears and new cache timestamp/quick_check verified |
+| Android encrypted SMB/HTTPS six-photo full UI | Both PASS on isolated fixed57: recursive6 import/playable, explicit6 actual taps including first, frame save, automatic advance/exit |
+| Android selection/playback regressions | Old first-cell attachment RED/fixed six View-dispatched touches GREEN; independent actual six-tap UI above. Old playback rotation NPE RED/fixed first-wide/width cycles GREEN |
+| Android short-height large-text frame editor | Actual font1.45 landscape grid visible and full Save/Back reachable by control scrolling; native zh/en100/145/200%, portrait→2440x1080→2440x900→portrait RED/GREEN |
+
+Apple network tests denied only the isolated app, keeping the whole-device and runner network available; this is not a whole-device airplane/offline test. No location permission, global network or reader toggle was changed this continuation. Weather evidence: `.build/apple-functional58/weather-safe-oct23/result.json`; focused Apple UI summaries: `.build/apple-functional58/oct23-functional-summary.json`. The first Oct23 iPad launch timed out at Touch ID Enable UI Automation; subsequent actual tests passed after system authentication became available. Do not count the initialization failure as a product defect.
+
+Both Apple clones completed guarded erase-all, quick_check OK/asset-frame-source-selection0/0/0/0, and were uninstalled with both test runners; package absence verified. Credential resources remaining0;19 private temporary fixture/App/DB paths removed. Restricted historical diagnostic bundles retained; operator access outside repo retained. Final iPad direction restored to landscapeLeft; rotation lock unchanged.
+
+Android final restoration was read back: font1.0/weight1.0, extra-large toggle0, rotation0/accelerometer0, Wi-Fi/mobile1/1, Sogou, reader services empty/accessibility0, ADB TCP0/USB-only. Clone cleared/uninstalled, PhotoPilot instrumentation absent; production57 firstInstallTime unchanged/HOT launch OK. Final58 APK prepared, but Android is disconnected on Oct23 and production58 installation remains pending. The final license-row stacking change has build/lint/400-JVM validation, no new physical screenshot.
+
+Remaining explicit limits: real VoiceOver/Huawei app focus traversal and audio quality not proven; Google TalkBack absent; API31 cannot cover Android14 limited Photos or minimum API29 hardware; minimum iOS15 hardware and measured performance unavailable. Owner endurance/stability testing is separate. Current186 iOS simulator tests, Android400 JVM/build/lint0error181warning, iOS build/analyze/archive and native-test compilation passed. No App Store upload/submission.
+
+## Historical baseline — 2026-10-21
 
 | Check | iPhone13 | iPadAir4 | HuaweiICL-AL20 |
 |---|---|---|---|

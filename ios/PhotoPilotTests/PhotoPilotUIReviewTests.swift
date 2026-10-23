@@ -395,6 +395,135 @@ final class PhotoPilotUIReviewTests: XCTestCase {
         }
     }
 
+    func testSettingsControlRowsStackAndStayInsideNarrowMaximumTextLayout() async throws {
+        let previousLanguage = AppLanguage.overrideValue
+        AppLanguage.configure(value: AppLanguage.enValue)
+        defer { AppLanguage.configure(value: previousLanguage) }
+        let controller = SettingsViewController(environment: makeEnvironment())
+        let host = UIViewController()
+        host.addChild(controller)
+        host.view.addSubview(controller.view)
+        controller.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            controller.view.topAnchor.constraint(equalTo: host.view.topAnchor),
+            controller.view.bottomAnchor.constraint(equalTo: host.view.bottomAnchor),
+            controller.view.leadingAnchor.constraint(equalTo: host.view.leadingAnchor),
+            controller.view.trailingAnchor.constraint(equalTo: host.view.trailingAnchor)
+        ])
+        controller.didMove(toParent: host)
+        host.setOverrideTraitCollection(
+            UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge),
+            forChild: controller
+        )
+        let window = show(host, size: CGSize(width: 375, height: 667))
+        defer { window.isHidden = true }
+        host.view.layoutIfNeeded()
+        controller.view.layoutIfNeeded()
+        func descendants(_ view: UIView) -> [UIView] {
+            view.subviews.flatMap { [$0] + descendants($0) }
+        }
+        let autoPlay = try XCTUnwrap(descendants(controller.view).compactMap { $0 as? UISwitch }.first {
+            $0.accessibilityLabel == L10n.string("settings.auto_play")
+        })
+        let autoPlayRow = try XCTUnwrap(autoPlay.superview as? UIStackView)
+        let holidayButton = try XCTUnwrap(descendants(controller.view).first {
+            $0.accessibilityIdentifier == "settings.holiday.open"
+        })
+        let holidayRow = try XCTUnwrap(holidayButton.superview as? UIStackView)
+        for row in [autoPlayRow, holidayRow] {
+            row.removeFromSuperview()
+            row.translatesAutoresizingMaskIntoConstraints = true
+            let fittingSize = row.systemLayoutSizeFitting(
+                CGSize(width: 311, height: UIView.layoutFittingCompressedSize.height),
+                withHorizontalFittingPriority: .required,
+                verticalFittingPriority: .fittingSizeLevel
+            )
+            row.frame = CGRect(origin: .zero, size: fittingSize)
+            row.setNeedsLayout()
+            row.layoutIfNeeded()
+            XCTAssertEqual(row.axis, .vertical)
+            let label = try XCTUnwrap(row.arrangedSubviews.compactMap { $0 as? UILabel }.first)
+            let control = try XCTUnwrap(row.arrangedSubviews.last)
+            XCTAssertGreaterThanOrEqual(label.frame.minX, -0.5)
+            XCTAssertLessThanOrEqual(label.frame.maxX, row.bounds.width + 0.5)
+            XCTAssertGreaterThanOrEqual(control.frame.minX, -0.5)
+            XCTAssertLessThanOrEqual(
+                control.frame.maxX,
+                row.bounds.width + 0.5,
+                "\(label.text ?? "control") / \(type(of: control)) width \(row.bounds.width), control frame \(control.frame)"
+            )
+            XCTAssertGreaterThanOrEqual(row.bounds.height, ThemeMetrics.touchTarget - 0.5)
+            XCTAssertGreaterThan(control.frame.minY, label.frame.maxY)
+        }
+    }
+
+    func testSettingsFormFillsNarrowWidthAndCapsWideMaximumTextLayout() async throws {
+        for width in [375.0, 1024.0] {
+            let controller = SettingsViewController(environment: makeEnvironment())
+            let host = UIViewController()
+            host.addChild(controller)
+            host.view.addSubview(controller.view)
+            controller.view.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                controller.view.topAnchor.constraint(equalTo: host.view.topAnchor),
+                controller.view.bottomAnchor.constraint(equalTo: host.view.bottomAnchor),
+                controller.view.leadingAnchor.constraint(equalTo: host.view.leadingAnchor),
+                controller.view.trailingAnchor.constraint(equalTo: host.view.trailingAnchor)
+            ])
+            controller.didMove(toParent: host)
+            host.setOverrideTraitCollection(
+                UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge),
+                forChild: controller
+            )
+            let window = show(host, size: CGSize(width: width, height: 768))
+            try await Task.sleep(nanoseconds: 100_000_000)
+            window.layoutIfNeeded()
+            func descendants(_ view: UIView) -> [UIView] {
+                view.subviews.flatMap { [$0] + descendants($0) }
+            }
+            let scroll = try XCTUnwrap(descendants(controller.view).compactMap { $0 as? UIScrollView }.first)
+            let form = try XCTUnwrap(scroll.subviews.compactMap { $0 as? UIStackView }.first)
+            let expectedWidth = min(width - ThemeMetrics.contentInset * 2, ThemeMetrics.bodyMaxWidth)
+            XCTAssertEqual(form.bounds.width, expectedWidth, accuracy: 1, "host \(controller.view.bounds), scroll \(scroll.bounds), form \(form.bounds)")
+            window.isHidden = true
+        }
+    }
+
+    func testTabletNavigationRemainsInsideViewportAtMaximumTextSize() throws {
+        for size in [CGSize(width: 834, height: 1194), CGSize(width: 1180, height: 820)] {
+            let controller = MainContainerViewController(environment: makeEnvironment())
+            let host = UIViewController()
+            host.addChild(controller)
+            host.view.addSubview(controller.view)
+            controller.view.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                controller.view.topAnchor.constraint(equalTo: host.view.topAnchor),
+                controller.view.bottomAnchor.constraint(equalTo: host.view.bottomAnchor),
+                controller.view.leadingAnchor.constraint(equalTo: host.view.leadingAnchor),
+                controller.view.trailingAnchor.constraint(equalTo: host.view.trailingAnchor)
+            ])
+            controller.didMove(toParent: host)
+            host.setOverrideTraitCollection(
+                UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge),
+                forChild: controller
+            )
+            let window = show(host, size: size)
+            defer { window.isHidden = true }
+            window.layoutIfNeeded()
+            func descendants(_ view: UIView) -> [UIView] {
+                view.subviews.flatMap { [$0] + descendants($0) }
+            }
+            let buttons = descendants(controller.view).compactMap { $0 as? NavItemButton }
+            XCTAssertEqual(buttons.count, 4)
+            for button in buttons {
+                let rect = button.convert(button.bounds, to: window)
+                XCTAssertGreaterThanOrEqual(rect.minY, 0)
+                XCTAssertLessThanOrEqual(rect.maxY, window.bounds.height + 1)
+                XCTAssertGreaterThanOrEqual(rect.height, ThemeMetrics.touchTarget)
+            }
+        }
+    }
+
     func testMainSectionsLightDarkAndLargeText() async throws {
         let environment = makeEnvironment()
         _ = try await environment.frameManager.createFrame(name: "Morning light")

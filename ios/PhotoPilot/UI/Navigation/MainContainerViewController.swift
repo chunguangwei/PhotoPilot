@@ -111,7 +111,9 @@ final class MainContainerViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        let chrome = NavChrome.make(width: view.bounds.width)
+        let chrome: NavChrome = traitCollection.preferredContentSizeCategory.isAccessibilityCategory
+            ? .bottom
+            : NavChrome.make(width: view.bounds.width)
         guard chrome != currentChrome else { return }
         currentChrome = chrome
         installChrome(chrome)

@@ -42,9 +42,9 @@ class LicensesView(context: Context) : LinearLayout(context) {
         )
         LICENSES.forEach { (name, license) ->
             val row = LinearLayout(context).apply {
-                orientation = HORIZONTAL
+                orientation = VERTICAL
                 minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-                gravity = Gravity.CENTER_VERTICAL
+                gravity = Gravity.START
             }
             val nameView = TextView(context).apply {
                 text = name
@@ -55,11 +55,13 @@ class LicensesView(context: Context) : LinearLayout(context) {
                 text = license
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
                 setTextColor(context.getColor(R.color.pp_text_secondary))
-                gravity = Gravity.END
+                gravity = Gravity.START
             }
-            row.addView(nameView, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
-            row.addView(licenseView, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
-            column.addView(row, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+            row.addView(nameView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+            row.addView(licenseView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+            column.addView(row, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = res.getDimensionPixelSize(R.dimen.pp_space_12)
+            })
         }
         val musicNote = TextView(context).apply {
             text = res.getString(R.string.licenses_music_note)

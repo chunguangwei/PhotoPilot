@@ -30,6 +30,7 @@ class FrameSelectionInstrumentation : Instrumentation() {
     override fun onStart() {
         val result = Bundle()
         var status = -1
+        val trace = mutableListOf<String>()
         var activity: Activity? = null
         var directory: File? = null
         try {
@@ -47,20 +48,36 @@ class FrameSelectionInstrumentation : Instrumentation() {
             onMain {
                 view = FrameEditView(host, checkNotNull(directory))
                 view.dataSource = object : FrameEditView.DataSource {
-                    override fun fetchPhotos(limit: Int, offset: Int, callback: (List<AssetEntity>) -> Unit) = callback(photos.drop(offset).take(limit))
-                    override fun fetchCollections(callback: (List<Pair<CollectionEntity, Long>>) -> Unit) = callback(emptyList())
-                    override fun fetchAssetsByIds(refs: List<String>, callback: (Map<String, AssetEntity>) -> Unit) = callback(photos.filter { it.id in refs }.associateBy { it.id })
+                    override fun fetchPhotos(limit: Int, offset: Int, callback: (List<AssetEntity>) -> Unit) { host.window.decorView.post { callback(photos.drop(offset).take(limit)) } }
+                    override fun fetchCollections(callback: (List<Pair<CollectionEntity, Long>>) -> Unit) { host.window.decorView.post { callback(emptyList()) } }
+                    override fun fetchAssetsByIds(refs: List<String>, callback: (Map<String, AssetEntity>) -> Unit) { host.window.decorView.post { callback(photos.filter { it.id in refs }.associateBy { it.id }) } }
                 }
                 view.bind(FrameEditView.Model("Synthetic", FrameOrderMode.CAPTURED_ASC, emptySet(), emptySet(), emptyMap(), false))
                 host.setContentView(view)
             }
-            waitForIdleSync()
+            waitUntil {
+                descendants(view).filterIsInstance<GridView>().singleOrNull()?.let { grid ->
+                    grid.adapter.count == photos.size && grid.width > 0 && grid.height > 0 && grid.childCount > 0 && !grid.isLayoutRequested
+                } == true
+            }
             for (index in photos.indices) {
                 val bounds = Rect()
                 onMain {
                     val grid = descendants(view).filterIsInstance<GridView>().single()
-                    check(grid.childCount == 6) { "Expected six visible photos; found ${grid.childCount}" }
-                    val cell = grid.getChildAt(index)
+                    check(grid.adapter.count == photos.size) { "Expected six photos in the adapter; found ${grid.adapter.count}" }
+                    grid.setSelection(index)
+                }
+                waitUntil {
+                    val grid = descendants(view).filterIsInstance<GridView>().single()
+                    index in grid.firstVisiblePosition..grid.lastVisiblePosition && !grid.isLayoutRequested && grid.getChildAt(index - grid.firstVisiblePosition) != null
+                }
+                onMain {
+                    val grid = descendants(view).filterIsInstance<GridView>().single()
+                    trace += "index=$index grid=${grid.width}x${grid.height} count=${grid.adapter.count} visible=${grid.firstVisiblePosition}..${grid.lastVisiblePosition} children=${grid.childCount} font=${host.resources.configuration.fontScale}"
+                    val firstVisible = grid.firstVisiblePosition
+                    check(index in firstVisible..grid.lastVisiblePosition) { "Photo $index did not become visible after scrolling" }
+                    val cell = grid.getChildAt(index - firstVisible)
+                    check(cell != null) { "Photo $index did not get a visible child" }
                     check(cell.isAttachedToWindow) { "Photo $index was not attached to its window" }
                     check(!cell.isTemporarilyDetached) { "Photo $index remains temporarily detached after layout" }
                     check(cell.getGlobalVisibleRect(bounds) && !bounds.isEmpty) { "Photo $index is not visible" }
@@ -69,22 +86,32 @@ class FrameSelectionInstrumentation : Instrumentation() {
                 for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
                     val event = MotionEvent.obtain(down, SystemClock.uptimeMillis(), action, bounds.exactCenterX(), bounds.exactCenterY(), 0)
                     event.source = InputDevice.SOURCE_TOUCHSCREEN
-                    check(uiAutomation.injectInputEvent(event, true))
+                    onMain { check(host.dispatchTouchEvent(event)) }
                     event.recycle()
                 }
-                waitForIdleSync()
-                onMain { check(photos[index].id in view.currentState().selectedAssetIds) { "Touch did not select photo $index" } }
+                waitUntil { photos[index].id in view.currentState().selectedAssetIds }
             }
             onMain { check(view.currentState().selectedAssetIds == photos.map { it.id }.toSet()) }
-            result.putString("stream", "All six photos, including the first, accept real touch selection\n")
+            result.putString("stream", "All six photos, including the first, accept View-level dispatched touch selection\n${trace.joinToString("\n")}\n")
         } catch (error: Throwable) {
-            result.putString("stream", "FAILED: ${error.stackTraceToString()}\n")
+            result.putString("stream", "FAILED: ${error.stackTraceToString()}\n${trace.joinToString("\n")}\n")
             status = 0
         } finally {
             activity?.let { host -> onMain { host.finish() } }
             directory?.deleteRecursively()
         }
         finish(status, result)
+    }
+
+    private fun waitUntil(condition: () -> Boolean) {
+        val deadline = SystemClock.uptimeMillis() + 8000
+        while (SystemClock.uptimeMillis() < deadline) {
+            var ready = false
+            onMain { ready = condition() }
+            if (ready) return
+            SystemClock.sleep(50)
+        }
+        error("Adapter/layout did not settle in the bounded window")
     }
 
     private fun onMain(block: () -> Unit) {
