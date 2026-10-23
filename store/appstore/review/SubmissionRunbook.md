@@ -103,3 +103,13 @@ Mac与Vision Pro默认勾选已取消并保存；免费初始定价确认各地�
 英文/简中/繁中三套后台均实际关联iPhone中屏5/大屏5/iPad13英寸6；本轮重新导航逐语言核对计数（48处展示、16个独立PNG），MediaUploadEvidence记录结果。ReviewPhotos.zip通过系统选择器上传，整页重载后精确文件名仍存在、input files无待上传项；私有NAS备注和无需登录保持，未将凭证写入公开证据。交接页面切到英文版App预览和截屏，而不是隐私页或标题宣传图页。
 
 按真实team准备本地ExportOptions（destination=export、关闭自动改version/build），实际exportArchive失败：无对应App Store provisioning profile，提示需allowProvisioningUpdates。本机有效Distribution身份为空。已具体请求允许该发布账号创建/下载PhotoPilot签名描述文件及缺少时生成Distribution证书；等待明确答复，不撤销已有证书、不自动生成生产密钥。未经此步骤不能宣称IPA/Validate/上传完成。可选视频/标题创意素材有意留空，不阻塞首次提交。隐私标签仍草稿，无添加审核/提交。
+
+### 用户确认后正式签名、上传及隐私发布（2026-10-23）
+
+用户明确“确认”签名材料/正式包上传/隐私标签发布，未授权最终提交审核。隐私发布确认框已完成，后台显示当日发布人/发布时间，三个天气类别不变。初次无profile失败后，启用已授权allowProvisioningUpdates自动签名成功，使用当前团队可用的Apple Distribution签名/自动描述文件，无撤销证书、无手动另建无必要证书，本机身份列表仍无新增local Distribution（不误称没有分发签名）。
+
+本地export IPA与实际upload IPA签名/压缩字节不同，分别保留且不混淆摘要。实际上传暂存IPA为10275147字节，SHA256 52f573fc346565878b72aee5c2bbcaed35f525d5c044d4acbb219741460c3f8c；深度签名、team/bundle/version58、AppStore profile无设备列表/get-task-allow=false、清单等于源、无测试组件/私有审核密码、15份音乐/notice源文件一致，dSYM存在。14:17:53 Apple返回Upload succeeded，后续构建58出现。见DistributionEvidence58，未把上传接受当作App Review或全量真机通过。
+
+TestFlight实际问卷选额外标准算法、法国否，保存后由缺出口合规转为准备提交；未要求附件/代码，未设置虚假的Info.plist豁免。正式build58已在1.1.58版本选择并保存、重进表格仍58；最终核对发现发布方式回到自动，另用可信键盘选择Manual并保存，待重载最终确认。没有点击添加以供审核、提交审核、邀请测试员或外部Beta审核。正式签名候选TestFlight真机冒烟仍是上线人工检查边界。
+
+最终重载核对：1.1.58所选build58仍在表格；manualRelease=true、loginRequired=false、四项审核联系人完整、ZIP文件名保留，最后页面留App预览和截屏。见DistributionEvidence58。隐私发布和构建上传/关联均完成，未点击添加以供审核或最终提交。

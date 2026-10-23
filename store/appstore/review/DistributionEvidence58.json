@@ -1,0 +1,54 @@
+{
+  "path": ".build/appstore-submit/PhotoPilot-upload-payload58.ipa",
+  "sha256": "52f573fc346565878b72aee5c2bbcaed35f525d5c044d4acbb219741460c3f8c",
+  "bytes": 10275147,
+  "source": "staged IPA from current Xcode upload distribution log",
+  "version": "1.1.58",
+  "build": "58",
+  "bundleID": "dev.photopilot.scaffold",
+  "deviceFamily": [
+    1,
+    2
+  ],
+  "signatureVerified": true,
+  "privacyManifestMatchesSource": true,
+  "signedFiles": {
+    "PhotoPilot": "a1772a09c8c628b59401bf9b221b2115970cb35d51395fd2d95762ab44fd7def",
+    "Frameworks/AMSMB2.framework/AMSMB2": "7632e35dd769236a47980bf73fa4d1515abf6ab55e513d3e000baa2fd4ca45cb",
+    "Info.plist": "505c58f67160fc8f35b8a7a32ab3469d49f725007a6c3f05bba6ce02b1bbd607",
+    "PrivacyInfo.xcprivacy": "f902828ec87bfac8258edba796fd94bb50d37236b4e5394ef3a49a02817ef0c0"
+  },
+  "checkedAt": "2026-10-23T14:18:15.533062+08:00",
+  "profileName": "iOS Team Store Provisioning Profile: dev.photopilot.scaffold",
+  "profileCreated": "2026-10-23 06:13:16",
+  "profileExpires": "2027-06-26 03:37:40",
+  "getTaskAllow": false,
+  "profileHasDeviceList": false,
+  "privacyLabelsPublished": true,
+  "uploadCompleted": true,
+  "submittedForReview": false,
+  "uploadToolResult": "Upload succeeded; Uploaded PhotoPilot; EXPORT SUCCEEDED",
+  "uploadCompletedAt": "2026-10-23T14:17:53+08:00",
+  "appStoreProcessing": "build 58 processed, selected and saved",
+  "musicAndNoticesMatchSourceFiles": 15,
+  "archiveDSYMsPresent": true,
+  "exportComplianceAnswers": {
+    "additionalStandardAlgorithms": true,
+    "proprietaryAlgorithms": false,
+    "distributedInFrance": false,
+    "saved": true,
+    "approvalOrExemptionCodeClaimed": false
+  },
+  "testFlightBuildStatus": "Ready to Submit; 90 days remaining",
+  "storeVersionBuildSelected": "1.1.58 (58)",
+  "storeVersionBuildSelectionReloadVerified": true,
+  "storeVersionFinalFields": {
+    "version": "1.1.58",
+    "loginRequired": false,
+    "contactComplete": true,
+    "manualRelease": true,
+    "reviewAttachmentPresent": true
+  },
+  "exportComplianceRequirementCleared": true,
+  "manualReleaseReloadVerified": true
+}

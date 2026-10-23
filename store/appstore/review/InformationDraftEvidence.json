@@ -66,7 +66,7 @@
     ],
     "linked": true,
     "tracking": false,
-    "published": false
+    "published": true
   },
   "ageRatingReviewedExistingAnswers": "all No/None, no Kids, no override; computed 4+ with regional variations",
   "nasReadOnlyVerification": {
@@ -78,11 +78,15 @@
     "sixPhotosBothProtocolsSHA256Matched": true
   },
   "screenshotsUploaded": 16,
-  "distributionBuildUploaded": false,
+  "distributionBuildUploaded": true,
   "submittedForReview": false,
   "screenshotPlacementsAcrossLocales": 48,
   "mediaEvidence": "MediaUploadEvidence.json",
   "reviewSampleZIPAttachedAndReloaded": true,
-  "distributionExport": "Failed: missing App Store provisioning profile",
-  "signingPermission": "requested; pending explicit owner response"
+  "distributionExport": "Successful; App Store signed; upload succeeded",
+  "signingPermission": "explicitly confirmed by owner",
+  "privacyLabelsPublished": true,
+  "distributionEvidence": "DistributionEvidence58.json",
+  "buildSelected": "1.1.58 (58)",
+  "manualReleaseReloadVerified": true
 }

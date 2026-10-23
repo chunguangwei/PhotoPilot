@@ -1,6 +1,6 @@
 # App Privacy 填写稿 / entry worksheet — 1.1.58 (2026-10-21)
 
-2026-10-23已在App Store Connect保存三类天气数据及各自App Functionality/linked=yes/tracking=no草稿，并生成预览；未点击隐私标签“发布”。三语言隐私政策URL已填，待人工检查。下文保留分类依据与条件。适用 iOS/iPadOS 1.1.58(58)；Android GitHub 更新器不属于此 iOS 问卷。下列“拟填”是基于代码和供应商公开说明的申报判断，不是供应商日志审计或 Apple 批准。最终提交人须按真实后台逐项核对；候选58包内PrivacyInfo.xcprivacy已同步三个天气类别及关联/用途/追踪标记；它仍不能代替实际ASC标签填写。
+2026-10-23已在App Store Connect保存三类天气数据及各自App Functionality/linked=yes/tracking=no草稿，并生成预览；用户于2026-10-23随后明确确认，已点击隐私标签“发布”并核验后台发布时间。三语言隐私政策URL已填，待人工检查。下文保留分类依据与条件。适用 iOS/iPadOS 1.1.58(58)；Android GitHub 更新器不属于此 iOS 问卷。下列“拟填”是基于代码和供应商公开说明的申报判断，不是供应商日志审计或 Apple 批准。最终提交人须按真实后台逐项核对；候选58包内PrivacyInfo.xcprivacy已同步三个天气类别及关联/用途/追踪标记；它仍不能代替实际ASC标签填写。
 
 ## 1. 首屏与三个天气类别
 

@@ -65,3 +65,22 @@ Apple的现行文件表：仅Apple OS密码学不要求ASC文档；额外业界�
 官方来源（2026-10-21核验）：[Apple overview](https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance/)、[Apple documentation matrix](https://developer.apple.com/help/app-store-connect/reference/app-information/export-compliance-documentation-for-encryption/)、[Apple determine/upload workflow](https://developer.apple.com/help/app-store-connect/manage-app-information/determine-and-upload-app-encryption-documentation/)、[BIS encryption controls](https://www.bis.gov/learn-support/encryption-controls)、[BIS data-confidentiality boundary](https://www.bis.gov/learn-support/encryption-controls/cryptography-for-data-confidentiality)、[ANSSI procedures](https://cyber.gouv.fr/reglementation/reglementation-identite-confiance-numerique/controles-reglementaires-cryptographie/controle-moyen-de-cryptologie/controle-rglementaire-cryptographie-demarches/)。没有取得法务签字或保证Apple接受。
 
 协议公开性依据：[Microsoft MS-NLMP](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nlmp/)与[MS-SMB2](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/)已联网核验；不能把商用协议名称直接等同自创/未公开密码学。
+
+## 最新正式签名与上传实证（2026-10-23）
+
+用户已明确授权签名/上传。通过当前团队自动签名成功导出，再执行destination=upload上传成功。实际上传暂存IPA已在工具清理前保留，见[DistributionEvidence58.json](DistributionEvidence58.json)：版本1.1.58(58)、dev.photopilot.scaffold、签名团队CCTFP9X3SW、AppStore描述文件无设备列表/get-task-allow=false、深度签名验证通过。实际上传IPA SHA256=52f573fc346565878b72aee5c2bbcaed35f525d5c044d4acbb219741460c3f8c，bytes=10275147；本地另一次export产生的IPA签名/压缩字节不同，不混用摘要。
+
+实际上传包中签名文件摘要：
+
+| 文件 | SHA256 |
+|---|---|
+| `PhotoPilot` | `a1772a09c8c628b59401bf9b221b2115970cb35d51395fd2d95762ab44fd7def` |
+| `Frameworks/AMSMB2.framework/AMSMB2` | `7632e35dd769236a47980bf73fa4d1515abf6ab55e513d3e000baa2fd4ca45cb` |
+| `Info.plist` | `505c58f67160fc8f35b8a7a32ab3469d49f725007a6c3f05bba6ce02b1bbd607` |
+| `PrivacyInfo.xcprivacy` | `f902828ec87bfac8258edba796fd94bb50d37236b4e5394ef3a49a02817ef0c0` |
+
+隐私标签已按用户确认发布；构建正在Apple处理，随构建加密问卷仍待后台可选后完成，尚未声称获批准代码或豁免。App内源码/第三方许可不因签名或上传自动改变。
+
+### 后台实际问卷已完成（2026-10-23）
+
+构建58出现后，实际选择“代替在Apple操作系统中使用或访问加密，或与这些操作同时使用的标准加密算法”，下一页“是否会在法国分发”选否，与已保存排除EU27一致。保存后TestFlight构建状态由“缺少出口合规证明”变为“准备提交（90天后过期）”，本分支未要求附件或返回批准号。没有选择“以上均无”，没有设置ITSAppUsesNonExemptEncryption=false；末页通用提示文本不能当作本App没有加密的事实。此为后台问卷已保存，不等于BIS/ANSSI法务批准或App审核通过。

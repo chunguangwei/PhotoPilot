@@ -1,5 +1,9 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**本轮最终保存核对（2026-10-23）**：隐私标签已按明确确认发布；真实上传包经签名/清单/资源核对，Apple上传成功，后台58由缺出口合规转准备提交；额外标准算法/法国否已保存，未虚构豁免/批准号。正式58关联1.1.58后整页重载表格仍58；Auto发布回退已用可信键盘恢复Manual并再次整页重载核实为true。无需登录false、联系人完整、ReviewPhotos附件、截图关联保持；最后页面留英文App预览和截屏。DistributionEvidence58记录精确上传SHA、profile、验证范围。没有添加或提交审核/上线，也未邀请测试员；实际签名候选尚无TestFlight真机冒烟、完整VoiceOver/最低OS与长期稳定性未全验，不能写成验收全过。
+
+**用户确认后上传推进（2026-10-23）**：用户明确确认签名/上传/隐私标签发布。隐私后台已显示发布时间。allowProvisioningUpdates后自动签名导出成功；无撤销/无手动另建无必要证书，使用团队可用AppleDistribution与自动AppStore profile，本机仍无新增local Distribution不代表未签名。真实上传IPA已保留：10275147字节、SHA256 52f573fc346565878b72aee5c2bbcaed35f525d5c044d4acbb219741460c3f8c；codesign深验、profile/team/bundle/58、隐私清单、无UITest/审核密码、15音乐/notice及dSYM均核查。Apple14:17:53 Upload succeeded。后台58出现，额外标准算法/法国否问卷保存后缺合规转准备提交，无虚构代码/Info豁免；已选58关联版本并重载表格核实。发布方式意外回到Auto，已另用可信键盘恢复Manual并保存，重载最终确认已完成，见上方最终保存核对。未点添加审核/最终提交/邀请测试员；正式签名候选尚未TestFlight真机运行，不以历史开发包回归冒称。DistributionEvidence58记录精确包与范围。
+
 **截图/审核附件实际补交（2026-10-23）**：扩展仍拒本地文件权限，已改系统文件选择器完成上传，未扩权限。发现后台当前iPhone中屏必填，额外隔离iPhone18Pro补拍58 Release 1206×2622五图，build-for-testing及UI1/1通过并目检，自有SeedMedia画面；新sim默认6张Apple图+导入6张seed，横屏图库捕获排除，专用sim已shutdown，不碰个人真机。三语言各iPhone中屏5/大屏5/iPad6已逐语言重新导航核对，16独立PNG/48展示，见MediaUploadEvidence/ScreenshotEvidence58。ReviewPhotos.zip已实际附加，重载后文件名保留且无待上传input，私有备注/无需登录保留。页面交接为英文App预览和截屏，非隐私页。正式exportArchive已尝试并因缺AppStore profile失败，本机Distribution身份0；已请求具体授权创建/下载描述文件及缺少时分发证书，尚待答复，不撤销旧证书/不自动创建生产密钥。未生成正式IPA/Validate/构建上传，未发布隐私标签或提交审核；可选视频/标题素材有意留空。
 
 **人工检查资料补齐（2026-10-23）**：用户要求先补齐信息供人工检查、不提交。已保存三语言App名称/副标题与中英繁版本文案、摄影与录像/生活分类、版权2026 魏春光及内容权利声明。原年龄问卷逐页只读确认所有否/无、非Kids、无覆盖，4+区域差异保留。三语言隐私URL、三天气类别用途/linked=yes/tracking=no已保存草稿并生成预览，未点击隐私发布；政策版本范围对齐58。原私有NAS账号只读双协议复验列目录/SMB3.1.1加密/六图哈希通过；私有审核备注补连接参数和凭证及ZIP下载链接，不公开到Git，未实际附ZIP。新增OwnerReview检查入口。截图0、分发签名/Validate/构建上传/随包加密/最终许可交付仍未完成；未提交审核。

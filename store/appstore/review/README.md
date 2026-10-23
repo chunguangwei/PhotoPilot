@@ -1,5 +1,7 @@
 # PhotoPilot — App Review preparation
 
+最新状态（2026-10-23）：正式1.1.58(58)已签名上传并关联版本，隐私标签已按用户确认发布，加密问卷已保存，手动发布已重载核实；[DistributionEvidence58.json](DistributionEvidence58.json)。最终审核提交仍由用户确认。
+
 最新上传实证：[MediaUploadEvidence.json](MediaUploadEvidence.json)（三语言iPhone中屏/大屏+iPad截图均已关联）；新中屏截图来源：[ScreenshotEvidence58.json](ScreenshotEvidence58.json)。
 
 人工检查入口：[OwnerReview.md](OwnerReview.md)。已填后台草稿、未提交；以该文件及最新实证为准。
