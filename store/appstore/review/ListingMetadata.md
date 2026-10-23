@@ -6,7 +6,7 @@ This is a preparation worksheet, not an App Store Connect save, upload or submis
 
 | 字段 | 简体中文 | 繁體中文 | English |
 |---|---|---|---|
-| 名称 | 光屿 PhotoPilot | 光嶼 PhotoPilot | PhotoPilot |
+| 名称 | 光屿 PhotoPilot | 光嶼 PhotoPilot | PhotoPilot - Photo Frame |
 | 副标题（30 字符内） | 安静的家庭电子相框 | 安靜的家庭電子相框 | A quiet home for your photos |
 | 关键词（100 UTF-8 字节内，逗号分隔） | 电子相框,照片播放,幻灯片,平板相框,NAS照片,离线相册,家庭照片,数字相框 | 電子相框,照片播放,幻燈片,平板相框,NAS照片,離線相簿,家庭照片,數位相框 | digital photo frame,slideshow,photo frame,NAS photos,offline album,family photos |
 | 支持 URL | https://github.com/chunguangwei/PhotoPilot | 同左 | 同左 |

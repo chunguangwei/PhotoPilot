@@ -69,3 +69,9 @@ Apple 会处理上传构建后才在 ASC 可选；上传不等于提交审核。
 ### 协议与App ID进展（2026-10-23续）
 
 Developer账户实际显示新版协议签发2026-10-14、接受2026-10-23，ASC协议阻塞提示已消失。已在同一发布团队注册显式`PhotoPilot / dev.photopilot.scaffold`并在Identifiers列表核验成功；保持BundleID、未新增可选Capabilities。尝试创建iOS商店记录（主语言en-US、SKU`photopilot-ios`）时，Apple返回“PhotoPilot名称已被使用”，未创建成功。英文名称候选`PhotoPilot - Photo Frame`已请用户确认，未擅改原文案或重新提交创建。DSA事实、审核联系人/版权、Distribution与最终加密/许可交付项目仍未闭环；没有上传或提交审核。
+
+### 商店记录已创建（2026-10-23续）
+
+用户确认英文商店名`PhotoPilot - Photo Frame`及个人业余项目性质。ASC应用记录已创建并在重载列表核验：App ID `6826092247`，BundleID不变，主语言en-US、SKU`photopilot-ios`，状态Prepare for Submission。已保存版本`1.1.58`及英文描述/推广文本/关键词/支持URL/审核说明、用户提供的私有审核联系人；无需登录，手动发布。重进版本页确认标题/侧栏为1.1.58、保存按钮禁用。审核联系人仅填ASC私有字段与本机0600记录，电话不入Git。版权人另待确认，未从联系人擅自推断；未填NAS私有凭证，未附审核zip。
+
+截图上传尝试被Kimi扩展“允许访问文件网址”未开启拦截，系统选择器替代未完成；媒体管理大屏iPhone当前仍0/10，不能写成已上传。用户可选择允许扩展该权限，或由用户在系统选择器选图，不自动扩大扩展权限。个人业余事实已确认，DSA按PhotoPilot单App核对，未修改账号级声明以免影响其他App。签名身份复核仍未发现本地Distribution；没有正式签名打包/Validate/构建上传/提交审核，其他本地化和截图/问卷仍需ASC实际填写。
