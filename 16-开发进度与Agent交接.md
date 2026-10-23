@@ -1,5 +1,7 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**正式发布准备已启动（2026-10-23）**：已实际查看Xcode账号设置、ASC与Developer门户。账号一致、Xcode Admin、个人会员续订有效，门户团队与现有开发安装包profile团队一致；具体标识仅存本机私有记录。ASC新版协议与EU DSA提示为实际阻塞，已请账户持有人亲自接受协议并确认经营事实/审核联系人/版权。PhotoPilot不在当前ASC应用列表，门户显式AppIDs不含当前bundleID；新建表单仅查看并取消，无注册/创建/签证书/上传/提交。后续先核实当前ID可注册性，禁止因通配符开发装机成功就宣称商店标识已就绪。现场步骤已追加SubmissionRunbook，不把已登录只读核查写成仍未登录。
+
 **发布账号确认（2026-10-23）**：用户确认发布Apple ID与Xcode登录账号一致，登录邮箱已存本机`.build/appstore-submit/publisher-account.json`（0600、Git忽略），公开资料只记录已确认，不公开登录邮箱。后续不重复询问使用哪个Apple ID；仍须核对账号下团队/会员协议/BundleID归属/正式分发签名，不把邮箱确认等同这些项目已验证。
 
 **商店提交准备收尾（2026-10-23）**：用户自行安装安卓，版本仍1.1.58(58)。已更新同一GitHub Release中英文说明，突出首格点选、旋转崩溃、短横屏编辑与许可排版，以及Apple布局修复；原APK未替换、原tag未移动。匿名API核对说明全文一致、APK22570351字节及原SHA256一致；本轮没有新增应用内更新日志功能，原更新弹窗仍显示版本/大小。新增`store/github/v1.1.58.md`留存发布说明。AppStore新增`SubmissionRunbook.md`逐项映射文案/11图/问卷/审核附件/地区/签名打包路径及真实资料缺口，`PreparationEvidence.json`逐图hash/尺寸核验和现存unsigned58归档核对；11图已目检，保留历史采集版本而不冒称58新截。Apple现行截图尺寸联网核实；本机有效签名身份只读核查无Apple Distribution。现存归档隐私清单与源一致；未登录ASC、未注册标识/生产证书、未签正式商店包或上传/提交。真实发布主体/联系人电话、BundleID所有权、EU DSA、法国加密资料、最终Distribution与LGPL签名分发实证仍需下轮完成，VoiceOver全流程/最低OS未全验；用户承担稳定性。
