@@ -1,0 +1,83 @@
+{
+  "checkedAt": "2026-10-23",
+  "ascAppID": "6826092247",
+  "version": "1.1.58",
+  "reviewFields": {
+    "copyright": "2026 魏春光",
+    "loginRequired": false,
+    "contactPresent": true,
+    "notesBytes": 2755,
+    "notesHasNAS": true,
+    "manualRelease": true
+  },
+  "versionLocalizations": {
+    "en-US": {
+      "promotionalText": 130,
+      "description": 644,
+      "keywords": 80,
+      "supportUrl": 42
+    },
+    "zh-Hans": {
+      "promotionalText": 49,
+      "description": 211,
+      "keywords": 39,
+      "supportUrl": 42
+    },
+    "zh-Hant": {
+      "promotionalText": 49,
+      "description": 211,
+      "keywords": 39,
+      "supportUrl": 42
+    }
+  },
+  "appInformation": {
+    "英语（美国）": {
+      "name": "PhotoPilot - Photo Frame",
+      "subtitle": "A quiet home for your photos",
+      "primaryCategory": "PHOTO_AND_VIDEO",
+      "secondaryCategory": "LIFESTYLE"
+    },
+    "简体中文": {
+      "name": "光屿 PhotoPilot",
+      "subtitle": "安静的家庭电子相框",
+      "primaryCategory": "PHOTO_AND_VIDEO",
+      "secondaryCategory": "LIFESTYLE"
+    },
+    "繁体中文": {
+      "name": "光嶼 PhotoPilot",
+      "subtitle": "安靜的家庭電子相框",
+      "primaryCategory": "PHOTO_AND_VIDEO",
+      "secondaryCategory": "LIFESTYLE"
+    }
+  },
+  "privacyPolicyLocales": {
+    "英语（美国）": true,
+    "简体中文": true,
+    "繁体中文": true
+  },
+  "privacyDraft": {
+    "categories": [
+      "Coarse Location",
+      "Search History",
+      "Other Diagnostic Data"
+    ],
+    "purposes": [
+      "App Functionality"
+    ],
+    "linked": true,
+    "tracking": false,
+    "published": false
+  },
+  "ageRatingReviewedExistingAnswers": "all No/None, no Kids, no override; computed 4+ with regional variations",
+  "nasReadOnlyVerification": {
+    "checkedAt": "2026-10-23",
+    "readOnlyVerification": true,
+    "webdavListingOK": true,
+    "smbEncrypted": true,
+    "smbDialect": "0x311",
+    "sixPhotosBothProtocolsSHA256Matched": true
+  },
+  "screenshotsUploaded": 0,
+  "distributionBuildUploaded": false,
+  "submittedForReview": false
+}

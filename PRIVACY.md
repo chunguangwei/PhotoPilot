@@ -1,8 +1,8 @@
 # PhotoPilot · 光屿 Privacy Policy / 隐私政策
 
-Effective date / 生效日期：2026-10-21
+Effective date / 生效日期：2026-10-23
 Contact / 联系方式：chunguangwee@gmail.com
-Scope / 适用：PhotoPilot 1.1.55（iOS/iPadOS 与 Android）。Earlier 1.1.53/1.1.54 builds used wttr.in weather fallback; this policy describes 1.1.55, which uses Open-Meteo only. / 旧版 1.1.53/1.1.54 包含 wttr.in 天气备用请求，本政策说明仅使用 Open-Meteo 的 1.1.55。
+Scope / 适用：PhotoPilot 1.1.58（iOS/iPadOS 与 Android）。Versions 1.1.55–1.1.58 use Open-Meteo only; earlier 1.1.53/1.1.54 builds used wttr.in weather fallback. / 1.1.55–1.1.58 仅使用 Open-Meteo；旧版 1.1.53/1.1.54 包含 wttr.in 天气备用请求。
 
 ---
 
@@ -40,7 +40,7 @@ The current release is free, with no advertising, subscriptions or in-app purcha
 ### 4. Third parties
 
 - **Apple system photo library / iCloud Photos** — Accessed through system authorisation for photos you can already access; handled under Apple's terms and your system settings.
-- **Weather service** — Open-Meteo receives city-search text or forecast coordinates rounded to 0.1°, language/request parameters and connection IP. Its weather data is attributed under CC-BY 4.0. [Open-Meteo’s privacy notice](https://open-meteo.com/en/terms) describes technical IP processing and troubleshooting logs that may contain coordinates, with deletion after 90 days. PhotoPilot does not control these provider logs. There is no automatic wttr.in fallback in 1.1.55. Turning weather off stops weather requests; manual city selection avoids requesting the device’s current location but still sends city-search and forecast requests.
+- **Weather service** — Open-Meteo receives city-search text or forecast coordinates rounded to 0.1°, language/request parameters and connection IP. Its weather data is attributed under CC-BY 4.0. [Open-Meteo’s privacy notice](https://open-meteo.com/en/terms) describes technical IP processing and troubleshooting logs that may contain coordinates, with deletion after 90 days. PhotoPilot does not control these provider logs. There is no automatic wttr.in fallback in 1.1.58. Turning weather off stops weather requests; manual city selection avoids requesting the device’s current location but still sends city-search and forecast requests.
 - **Apple geocoding services (iOS)** — The app uses Apple’s network-based geocoding service to resolve location names and, if the primary city search fails, to search for a city. Reverse geocoding receives the location returned by the system before the app rounds coordinates for weather requests; that original location can be more precise than 0.1°. City search receives your search text. See [Apple Location Services & Privacy](https://www.apple.com/legal/privacy/data/en/location-services/).
 - **Android system geocoding services** — Where available, the device’s geocoding provider receives the original location returned by the system to resolve a place name, or your search text for fallback city search. The provider depends on the device/system configuration; only the coordinates sent to the weather forecast providers are rounded by the app.
 - **Your NAS** — Your normal NAS source is configured by you; we do not host your private library. A separate, temporary, read-only review server may provide synthetic sample images to App Review or testers who explicitly configure it. It does not accept photo uploads and is not automatically contacted by ordinary app installations. Connecting to that server exposes connection information to its operator for providing and securing that test service.
@@ -103,7 +103,7 @@ For privacy questions, contact chunguangwee@gmail.com.
 ### 四、第三方
 
 - **Apple 系统图库 / iCloud 照片**：通过系统授权访问你可访问的照片；相关处理遵循 Apple 的条款与你的系统设置。
-- **天气服务**：Open-Meteo 接收城市搜索文字或取整至 0.1° 的天气坐标、语言等请求参数及连接 IP；天气数据按 CC-BY 4.0 标示来源。[其隐私说明](https://open-meteo.com/en/terms)描述技术性 IP 处理，以及可能含坐标、90 天后删除的排障日志。PhotoPilot 不控制服务方日志。1.1.55 不再自动请求 wttr.in。关闭天气会停止天气请求；手选城市避免请求设备当前位置，但仍会发送城市搜索与天气请求。
+- **天气服务**：Open-Meteo 接收城市搜索文字或取整至 0.1° 的天气坐标、语言等请求参数及连接 IP；天气数据按 CC-BY 4.0 标示来源。[其隐私说明](https://open-meteo.com/en/terms)描述技术性 IP 处理，以及可能含坐标、90 天后删除的排障日志。PhotoPilot 不控制服务方日志。1.1.58 不再自动请求 wttr.in。关闭天气会停止天气请求；手选城市避免请求设备当前位置，但仍会发送城市搜索与天气请求。
 - **Apple 地理编码服务（iOS）**：应用通过 Apple 的联网地理编码服务解析位置名称，并在主城市搜索失败时搜索城市。逆地理编码接收系统返回的原始位置，发生在天气请求坐标取整之前，因此该位置可能比 0.1° 更精确；城市搜索接收你输入的搜索文字。参见 [Apple 定位服务与隐私](https://www.apple.com/legal/privacy/data/en/location-services/)。
 - **Android 系统地理编码服务**：设备提供此服务时，地理编码服务方接收系统返回的原始位置以解析地名，或接收备用城市搜索的输入文字。服务方取决于设备与系统配置；应用仅对发往天气预报服务的坐标取整。
 - **你的 NAS**：日常使用的 NAS 来源由你自行配置，我们不托管你的私人图库。另有临时、只读审核服务器，可向主动配置该来源的 App Review 审核员或测试者提供合成样图；它不接受照片上传，普通安装不会自动连接。连接该测试服务器会向其运营者暴露提供和保护测试服务所需的连接信息。

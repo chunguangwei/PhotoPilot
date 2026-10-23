@@ -1,5 +1,7 @@
 # PhotoPilot — App Review preparation
 
+人工检查入口：[OwnerReview.md](OwnerReview.md)。已填后台草稿、未提交；以该文件及最新实证为准。
+
 准备总入口：[提交准备单](SubmissionRunbook.md) · [文件核对结果](PreparationEvidence.json)。
 
 This is a local preparation packet. It has not been submitted to App Review. Local unsigned Release inspection and remaining submission requirements are recorded in [ReleaseAudit.md](ReleaseAudit.md).
