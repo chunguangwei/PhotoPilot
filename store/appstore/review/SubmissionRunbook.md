@@ -16,7 +16,7 @@
 | NAS 私有审核说明 | [NASEnvironment.md](NASEnvironment.md)：SMB 和 WebDAV 地址、端口、路径、六图预期。账号密码从本机私有记录复制到审核私有备注，不能放公开文案；提交当天再实连，并保持服务至审核结束 |
 | 隐私问卷 | [AppPrivacyQuestionnaire.md](AppPrivacyQuestionnaire.md)：照片本地处理与天气第三方数据流分别说明；不因无账号就填“无收集” |
 | 加密问卷 | [ExportComplianceQuestionnaire.md](ExportComplianceQuestionnaire.md)：SMB 含非系统密码实现，不直接套用仅 HTTPS/系统加密豁免 |
-| 地区与 EU | [TerritoryPlan.md](TerritoryPlan.md)：全部实际可选非大陆地区，港澳台包含；EU DSA/法国材料未齐不能默填，也不擅自剔除地区 |
+| 地区与 EU | [TerritoryPlan.md](TerritoryPlan.md)：按用户最新决定：全部实际可选非大陆、非EU地区，港澳台包含；见TerritoryPlan当前保存实证 |
 | EULA 与源码交付 | Apple Standard EULA，加 [UserTerms.md](UserTerms.md) 的第三方许可补充；[SMBDistribution.md](SMBDistribution.md) 记录 LGPL 源码/替换库路径，最终签名分发实证仍待完成 |
 | 审核后发布 | 建议选择手动发布，待审核通过后由用户确认上线；本轮没有保存该选项 |
 
@@ -75,3 +75,13 @@ Developer账户实际显示新版协议签发2026-10-14、接受2026-10-23，ASC
 用户确认英文商店名`PhotoPilot - Photo Frame`及个人业余项目性质。ASC应用记录已创建并在重载列表核验：App ID `6826092247`，BundleID不变，主语言en-US、SKU`photopilot-ios`，状态Prepare for Submission。已保存版本`1.1.58`及英文描述/推广文本/关键词/支持URL/审核说明、用户提供的私有审核联系人；无需登录，手动发布。重进版本页确认标题/侧栏为1.1.58、保存按钮禁用。审核联系人仅填ASC私有字段与本机0600记录，电话不入Git。版权人另待确认，未从联系人擅自推断；未填NAS私有凭证，未附审核zip。
 
 截图上传尝试被Kimi扩展“允许访问文件网址”未开启拦截，系统选择器替代未完成；媒体管理大屏iPhone当前仍0/10，不能写成已上传。用户可选择允许扩展该权限，或由用户在系统选择器选图，不自动扩大扩展权限。个人业余事实已确认，DSA按PhotoPilot单App核对，未修改账号级声明以免影响其他App。签名身份复核仍未发现本地Distribution；没有正式签名打包/Validate/构建上传/提交审核，其他本地化和截图/问卷仍需ASC实际填写。
+
+### 最新地区/平台决定（2026-10-23）
+
+用户明确改为非大陆、非EU，只发布iPhone/iPad、无需账号登录。已实际保存147地区供应，28排除项逐一表格核对，未来新地区自动加入关闭。此前含EU/法国的计划为历史，当前不要求法国首发材料；SMB加密问卷不因此免除。版权邮箱提议已按Apple字段规则建议改用年份+真实版权人，尚待用户确认。复查发现前轮审核资料部分未持久保存，已重填联系人/备注/无需登录并再次保存；离页重载复核仍待完成，不能沿用此前“全部已保存”断言。
+
+### 审核字段保存复核（2026-10-23续）
+
+复现：WebBridge fill/click对审核资料React字段只改变表面DOM，未触发保存状态；前轮联系人/无需登录保存断言撤回。改用授权页面内的可信键盘输入后Save变为可用；实际浏览器请求`POST appStoreReviewDetails`返回201。整页重新导航后只读核对：loginRequired=false，四项联系人非空、备注1822字符、版本1.1.58。联系方式内容未输出到公开证据。当前已确认无需登录持久保存。
+
+Mac与Vision Pro默认勾选已取消并保存；免费初始定价确认各地区0.00、确认保存。地区仍147，不将定价表175行误当可用175地区。版权建议2026+真实版权人姓名，邮箱继续用于支持联系，待用户确认姓名填写。

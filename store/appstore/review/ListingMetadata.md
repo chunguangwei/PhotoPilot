@@ -1,6 +1,6 @@
 # Store listing fields — 1.1.58 preparation
 
-This is a preparation worksheet, not an App Store Connect save, upload or submission. The native interface supports English and Simplified Chinese. Traditional Chinese below is store copy only; do not claim Traditional Chinese UI support. The requested availability is outside China mainland, subject to each territory's final account/compliance requirements.
+This is a preparation worksheet, not an App Store Connect save, upload or submission. The native interface supports English and Simplified Chinese. Traditional Chinese below is store copy only; do not claim Traditional Chinese UI support. The requested availability is outside China mainland and the EU, subject to each territory's final account/compliance requirements.
 
 **上架区域决策（2026-10-20 用户裁决）**：仅上架**非中国大陆地区**（App Store Connect地区选择排除China mainland；其他地区仍按当地要求完成资料，不将排除大陆当作全球合规豁免）。本地化语言三套：**English（主语言 en-US）、繁體中文（台灣/香港）、简体中文（新加坡等）**。
 
@@ -62,3 +62,5 @@ Suggested answers below follow the current private photo-frame feature set and m
 | Kids category | Not proposed as a children's app; do not select Made for Kids without a separate product/compliance decision |
 
 Account-specific additional questions or changed definitions must be reviewed against the exact final binary rather than answered automatically from this table.
+
+**地区更新（2026-10-23）**：用户明确仅非大陆、非EU首发，覆盖上方旧“其他地区”计划；当前ASC147地区已保存。原生支持iPhone/iPad、无需PhotoPilot账号登录。

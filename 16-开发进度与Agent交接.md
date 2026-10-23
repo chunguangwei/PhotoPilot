@@ -1,5 +1,7 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**最新首发范围及持久化实证（2026-10-23）**：用户明确非大陆/非EU、仅iPhone/iPad、无需账号登录。ASC147地区已保存并逐项表格验证28未供应=大陆+EU27，港澳台/非EU欧洲保留，future auto-add关闭；免费0.00已确认保存，Mac/VisionPro默认勾选已取消保存。审核字段此前实际上未保存（WebBridge合成fill未触发React状态），已撤回旧断言；改可信键盘输入后POST reviewDetails=201，整页重进核对loginRequired=false、四联系人非空、notes1822/版本1.1.58，真实联系方式只在私有记录。版权邮箱问题按Apple官方说明建议2026+真实版权人，尚待确认。更新TerritoryPlan覆盖旧含EU计划；法国不首发，无需为本次法国分发补声明，但SMB加密评估不豁免。截图权限/签名/其他本地化问卷仍待完成，未提交。
+
 **商店记录/资料推进（2026-10-23）**：用户接受“PhotoPilot - Photo Frame”、确认个人业余性质并提供私有审核联系人。ASC记录已成功创建，AppID6826092247、bundleID不变、en-US/SKU photopilot-ios；英文版本资料/审核联系人/无需登录/手动发布已保存，重进页确认版本1.1.58。联系方式仅本机0600与ASC私有字段，Git不存电话。版权人仍待确认。截图上传被Kimi扩展本地文件权限拒绝，原生替代未完成，当前0张；已让用户选择开启该权限或自行系统选图，不擅扩权限。DSA单App表单未填写、其他语言/问卷/最终签名加密分发实证未完成；未正式签名/Validate/上传构建或提交审核。
 
 **正式发布推进（2026-10-23，协议/AppID）**：已实际核验Apple新版协议接受日Oct23（签发Oct14），ASC协议提示消失。显式AppID`dev.photopilot.scaffold`在原发布团队注册成功并列表复核，保持标识、无可选capability新增。创建ASC iOS/en-US/SKU photopilot-ios时Apple返回“PhotoPilot名称已被使用”，记录未创建；候选英文名“PhotoPilot - Photo Frame”待用户确认，未擅改或重试创建。DSA经营事实、审核联系人/版权、分发签名/问卷/最终分发证据仍待补；无上传或审核提交。
