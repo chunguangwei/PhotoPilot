@@ -1,6 +1,10 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
-**远端按需相框开发中（2026-11-15）**：用户要求老设备在线选择并播放远端照片，在相框中可开启本地同步，并明确将产品逻辑交由实现者决定。设计/计划见`docs/superpowers/specs/2026-11-15-remote-frames-design.md`及同日期plan。采用SourceAsset元数据、稳定来源引用、128MiB共享缓存、按需解码与逐相框同步，保持17表；现正在双端实现。初轮共享check57+6通过，平台domain/cache有初步RED→GREEN，完整UI/播放/AI/清理/原生回归尚待完成。不得将本段计划视为已交付。版本拟1.3.0(60)，Apple签名资产刷新仍等待明确授权。
+**远端按需相框本地终验完成（2026-11-15，1.3.0/60）**：已实现WebDAV/SMB元数据选片、按需播放和逐相框可选本地同步。照片原始文件缓存全应用共用128MiB（含partial/预约），磁盘写入保留64MiB余量；解码缓存32MiB，可重算AI向量16MiB。选片/封面/播放/AI与同步均使用typed来源身份、epoch/revision及隐私守卫；17表。旧NAS引用、顺序、人工排除、AI归属和自选封面支持切换迁移；副本释放有确认、共享保护、provenance与恢复intent。
+
+Android435JVM、22native、中英/横竖/大字/暗色8种UI配置、旧5类instrumentation通过；root独立build/lint/test通过，lint0error204warnings。最终原签名四ABI APK153988162bytes、SHA `224743a5fde03991a010d0e8fe27c643186326814d837e8bfe64cb8e00e3a372`。iOS260native（真实Lite远端中英分类）、iPhone3UI+iPad3UI及增量1UI通过，root独立build/analyze通过；unsigned archive保留`.build/releases/v1.3.0/PhotoPilot-1.3.0-60.xcarchive`，executable SHA `11a23b91b508f592f0a3ef609ad9a943a50bd35f31d51fd7ba5ff301f75718c6`。21张真实iPhone/iPad截图及尺寸/SHA见`store/appstore/review/ScreenshotEvidence130.json`，Android24张QA截图留私有release目录。shared check57+6通过，唯一fresh综合review本轮确认项均已修复并逐项验diff，开放Critical/Important/Minor均0。
+
+双端payload版本/资源/权重排除及Android原证书已核，细目`store/appstore/review/RemoteFramesRelease130.json`。GitHub合并/提交推送/tag/Release待发布执行。AppStore更新文案、隐私和截图材料见`store/appstore/review/RemoteFramesUpdate.md`。Apple签名资产刷新此前被自动审批拒绝，Store导出需要明确授权及可用原发布账号/匹配profile；物理旧设备、最低OS、实体NAS与长稳待实测。Android真实推理回归使用Lite，标准模型既有M4 AVD SME限制见1.2.0证据。
 
 **本轮 AI 分类相框（2026-11-14，1.2.0/59）**：已完成中英本地分类、预览选片和名称建议、后期可修改的可选自动分类。轻量项改为201.5MB多语CLIP，标准387.7MB；国内ModelScope/国际HF/镜像回退固定同SHA。Android415单测+7原生、iOS227单测+iPhone5UI+iPad5UI通过，签名APK与iOS开发签名归档已完成。更新入口见`store/appstore/review/AIFramesUpdate.md`及本轮progress；[GitHub v1.2.0](https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.2.0)已公开设Latest，四附件匿名完整下载及SHA均匹配，源码tag为`6df1cd0`。商店IPA导出仍需匹配profile，本地导出证实旧profile缺当前分发证书；远端刷新被自动审批以签名资产变更风险拒绝，需用户明确授权及可用原Xcode账号，真实手机性能/最低OS/国内运营商网络尚待实测。用户已确认本项目此前成功上架，下方首发记录保留为历史。
 

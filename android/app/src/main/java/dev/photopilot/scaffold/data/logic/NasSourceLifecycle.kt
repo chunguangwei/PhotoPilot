@@ -7,6 +7,9 @@ object NasSourceLifecycle {
 
     fun shouldReactivate(currentStatus: String): Boolean = currentStatus == STATUS_DISCONNECTED
 
+    fun usesCatalogIndex(remoteEntry: Boolean, existingSettings: String?): Boolean =
+        remoteEntry || JsonMini.parseObject(existingSettings)["catalogOnly"] == true
+
     fun recursiveFromSettings(settingsJson: String?): Boolean =
         JsonMini.parseObject(settingsJson)["recursive"] as? Boolean ?: false
 

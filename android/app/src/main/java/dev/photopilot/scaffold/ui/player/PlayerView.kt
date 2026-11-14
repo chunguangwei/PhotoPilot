@@ -22,7 +22,7 @@ import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.TextView
 import dev.photopilot.scaffold.R
-import dev.photopilot.scaffold.data.db.AssetEntity
+import dev.photopilot.scaffold.data.remote.PlaybackItem
 import dev.photopilot.scaffold.data.db.FrameEntity
 import dev.photopilot.scaffold.data.logic.ClockFormat
 import dev.photopilot.scaffold.data.logic.FramePlaybackSettings
@@ -278,6 +278,7 @@ class PlayerView(
             applyRestDisplayMode()
             restartClockTick()
         }
+        failedOverlay.setBackgroundColor(if (foregroundA.drawable != null || foregroundB.drawable != null) android.graphics.Color.argb(120, 0, 0, 0) else context.getColor(R.color.pp_surface_rest))
         failedOverlay.visibility = if (state == PlaybackController.FAILED) View.VISIBLE else View.GONE
         val isPlaying = state != PlaybackController.PAUSED
         pauseButton.setImageResource(if (isPlaying) R.drawable.ic_player_pause_24 else R.drawable.ic_player_play_24)
@@ -351,7 +352,7 @@ class PlayerView(
     }
 
     override fun onShowVideo(
-        asset: AssetEntity,
+        asset: PlaybackItem,
         path: String,
         blurred: Bitmap?,
         edgeColor: Int?,
@@ -429,7 +430,7 @@ class PlayerView(
     }
 
     override fun onShowAsset(
-        asset: AssetEntity,
+        asset: PlaybackItem,
         decoded: PlayerEngine.DecodedAsset,
         transitionMs: Long,
         direction: Int,
@@ -551,6 +552,17 @@ class PlayerView(
     override fun onQueueInfo(size: Int) {
         currentQueueSize = size
         singlePhotoLine.visibility = if (size == 1) View.VISIBLE else View.GONE
+    }
+
+    override fun onMediaLoadError(code: String) {
+        val zh = resources.configuration.locales[0].language == "zh"
+        val message = when (code) {
+            "REMOTE_LOW_SPACE" -> if (zh) "空间不足，请保留 64 MiB 可用空间后重试。" else "Low storage. Keep 64 MiB free and retry."
+            "REMOTE_FILE_TOO_LARGE" -> if (zh) "照片超过临时缓存限额，请在相框设置开启本地同步。" else "This photo exceeds the temporary cache budget. Enable local sync in frame settings."
+            "REMOTE_CACHE_BUSY" -> if (zh) "临时缓存正忙，请稍后重试。" else "Temporary cache busy. Retry shortly."
+            else -> if (zh) "照片加载失败，请检查网络和来源后重试。" else "Unable to load the photo. Check the network and source, then retry."
+        }
+        showNotice(message)
     }
 
     override fun onDecodeSkipped() {

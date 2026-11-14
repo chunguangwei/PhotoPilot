@@ -623,6 +623,8 @@ final class SettingsViewController: UIViewController {
         Task { [weak self] in
             guard let self, let window = view.window else { return }
             PlayerViewController.dismissActiveIfAny()
+            await environment.frameStorage.stopAll()
+            await environment.remoteMedia.prepareForErase()
             await environment.aiFrames.prepareForErase()
             for runner in environment.runners.values {
                 try? await runner.cancel()

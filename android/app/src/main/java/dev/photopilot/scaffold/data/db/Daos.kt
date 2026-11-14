@@ -8,6 +8,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.RawQuery
 import androidx.room.Update
+import androidx.room.Upsert
 import androidx.sqlite.db.SupportSQLiteQuery
 import dev.photopilot.scaffold.data.logic.FrameSelectionLogic
 import dev.photopilot.scaffold.data.logic.FrameSelectionValues
@@ -39,7 +40,7 @@ interface SourceDao {
 
 @Dao
 interface SourceAssetDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsert(entity: SourceAssetEntity)
 
     @Update
@@ -53,6 +54,12 @@ interface SourceAssetDao {
 
     @Query("SELECT * FROM source_asset WHERE source_id = :sourceId")
     suspend fun getBySource(sourceId: String): List<SourceAssetEntity>
+
+    @Query("SELECT * FROM source_asset WHERE source_id = :sourceId AND substr(remote_key, 1, length(:prefix)) = :prefix AND (:recursive OR instr(substr(remote_key, length(:prefix) + 1), '/') = 0) ORDER BY remote_key, id LIMIT :limit OFFSET :offset")
+    suspend fun browseFolder(sourceId: String, prefix: String, recursive: Boolean, limit: Int, offset: Int): List<SourceAssetEntity>
+
+    @Query("SELECT COUNT(*) FROM source_asset WHERE source_id = :sourceId AND substr(remote_key, 1, length(:prefix)) = :prefix AND (:recursive OR instr(substr(remote_key, length(:prefix) + 1), '/') = 0)")
+    suspend fun countFolder(sourceId: String, prefix: String, recursive: Boolean): Long
 
     @Query("SELECT * FROM source_asset WHERE source_id = :sourceId AND remote_key = :remoteKey")
     suspend fun getByRemoteKey(sourceId: String, remoteKey: String): SourceAssetEntity?
@@ -78,6 +85,9 @@ interface AssetDao {
 
     @Delete
     suspend fun delete(entity: AssetEntity)
+
+    @Query("UPDATE asset SET readiness = 'ready', failure_code = NULL, updated_at = :now WHERE id = :assetId AND content_hash = :contentHash AND privacy_excluded = 0 AND deleted_at IS NULL AND readiness != 'deleted'")
+    suspend fun markOriginalReady(assetId: String, contentHash: String, now: Long): Int
 
     @Query("SELECT * FROM asset WHERE id = :id")
     suspend fun getById(id: String): AssetEntity?
@@ -148,14 +158,16 @@ interface AssetOriginDao {
 
     @Query(
         "SELECT DISTINCT asset_id FROM asset_origin " +
-            "WHERE policy_state = 'allowed' AND origin_state = 'active' AND asset_id IN (:assetIds)",
+            "WHERE policy_state = 'allowed' AND asset_id IN (:assetIds) AND (origin_state = 'active' OR (origin_state = 'detached' AND EXISTS (" +
+            "SELECT 1 FROM source_asset sa INNER JOIN source s ON s.id = sa.source_id WHERE sa.id = asset_origin.source_asset_id " +
+            "AND s.type IN ('smb','webdav') AND s.retention_policy = 'user_managed')))",
     )
     suspend fun allowedAssetIds(assetIds: List<String>): List<String>
 }
 
 @Dao
 interface CollectionDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsert(entity: CollectionEntity)
 
     @Update

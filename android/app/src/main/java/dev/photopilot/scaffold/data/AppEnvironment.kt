@@ -34,6 +34,7 @@ import dev.photopilot.scaffold.data.repo.LocalSourceRegistry
 import dev.photopilot.scaffold.data.secure.CredentialStore
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -59,6 +60,12 @@ class AppEnvironment private constructor(
     private val pickedAdapters: ConcurrentHashMap<String, PickedFilesSourceAdapter>,
     private val nasAdapters: ConcurrentHashMap<String, SourceAdapter>,
 ) {
+
+    lateinit var remoteMedia: dev.photopilot.scaffold.data.remote.RemoteMediaRepository
+        private set
+
+    lateinit var remoteCopies: dev.photopilot.scaffold.data.remote.RemoteLocalCopies
+        private set
 
     fun registerPickedAdapter(jobId: String, adapter: PickedFilesSourceAdapter) {
         pickedAdapters[jobId] = adapter
@@ -100,13 +107,17 @@ class AppEnvironment private constructor(
                             .also { database = it }
                         val environment = create(appContext, db)
                         try {
+                            environment.remoteCopies.recover()
                             environment.runner.markInterruptedJobsRecoverable()
                             environment.deletedSweeper.sweepExpired(System.currentTimeMillis())
                             environment.runner.resumeInterruptedJobs()
+                            environment.remoteCopies.resumeInterrupted()
                             environment.aiFrames.resumeAutomatic()
                             environment
                         } catch (failure: Throwable) {
                             environment.aiFrames.shutdown()
+                            environment.remoteCopies.shutdown()
+                            environment.remoteMedia.close()
                             environment.runner.shutdownAndJoin()
                             throw failure
                         }
@@ -121,6 +132,8 @@ class AppEnvironment private constructor(
             return owner(appContext).reset { environment ->
                 environment.runner.shutdownAndJoin()
                 environment.aiFrames.shutdown()
+                environment.remoteCopies.shutdown()
+                environment.remoteMedia.close()
                 LocalUserDataCleaner.clear(appContext.filesDir, appContext.cacheDir)
                 environment.database.clearAllTables()
             }
@@ -284,7 +297,20 @@ class AppEnvironment private constructor(
                 weatherProvider = weatherProvider,
                 pickedAdapters = pickedAdapters,
                 nasAdapters = nasAdapters,
-            )
+            ).also { env ->
+                env.remoteMedia = dev.photopilot.scaffold.data.remote.RemoteMediaRepository(appContext, database, env::nasAdapterFor) {
+                    val manager = appContext.getSystemService(android.net.ConnectivityManager::class.java)
+                    val capabilities = manager.getNetworkCapabilities(manager.activeNetwork)
+                    dev.photopilot.scaffold.data.imports.NasNetworkPolicy.allows(capabilities != null,
+                        capabilities?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED) == true,
+                        kotlinx.coroutines.runBlocking { env.settings.isWifiOnly() })
+                }
+                env.frames.remoteMedia = env.remoteMedia
+                env.aiFrames.remoteMedia = env.remoteMedia
+                env.remoteCopies = dev.photopilot.scaffold.data.remote.RemoteLocalCopies(appContext, env)
+                env.remoteMedia.onCatalogUpdated = { sourceId -> env.remoteCopies.metadataUpdated(sourceId); env.aiFrames.resumeAutomatic() }
+
+            }
         }
     }
 }

@@ -3,6 +3,8 @@ import UIKit
 final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITableViewDataSource, UITableViewDelegate {
     private let environment: AppEnvironment
     private var frameID: String?
+    private var remoteSourceID: String?
+    private var includesRemoteMedia: Bool
     private let routeToMainAfterSave: Bool
 
     private var detail: FrameDetailDTO?
@@ -29,9 +31,11 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
     private var gridEdgeConstraints: [NSLayoutConstraint] = []
     private var gridColumnConstraints: [NSLayoutConstraint] = []
 
-    init(environment: AppEnvironment, frameID: String?, routeToMainAfterSave: Bool = false) {
+    init(environment: AppEnvironment, frameID: String?, routeToMainAfterSave: Bool = false, remoteSourceID: String? = nil) {
         self.environment = environment
         self.frameID = frameID
+        self.remoteSourceID = remoteSourceID
+        self.includesRemoteMedia = remoteSourceID != nil
         self.routeToMainAfterSave = routeToMainAfterSave
         self.tabControl = UISegmentedControl(items: [
             L10n.string("library.tab_photos"),
@@ -266,6 +270,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             grid.view.bottomAnchor.constraint(equalTo: photosContainer.bottomAnchor),
         ])
         grid.didMove(toParent: self)
+        if includesRemoteMedia { grid.enableRemoteMedia(sourceID: remoteSourceID) }
         gridChild = grid
     }
 
@@ -288,7 +293,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         let trimmed = nameField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         Task { [weak self] in
             guard let self else { return }
-            let readyIDs = Set((try? await environment.assets.libraryItems())?.map(\.id) ?? [])
+            let readyIDs = Set((try? await environment.assets.libraryItems(includeRemote: includesRemoteMedia, remoteSourceID: remoteSourceID))?.map(\.id) ?? [])
             let playable = selectedAssetIDs.intersection(readyIDs).count
             let preview = CoverPreviewViewController(
                 environment: environment,
@@ -326,7 +331,12 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             }
             detail = fetched
             nameField.text = fetched.name
-            selectedAssetIDs = Set(fetched.includeAssetRefs)
+            let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: frameID)
+            if FrameStorageMode.isExplicit(bundle?.settingsJSON ?? "{}") || !fetched.includeSourceAssetRefs.isEmpty {
+                includesRemoteMedia = true
+                gridChild?.enableRemoteMedia(sourceID: remoteSourceID)
+            }
+            selectedAssetIDs = Set(fetched.includeAssetRefs + fetched.includeSourceAssetRefs.map { "remote:" + $0 })
             currentExcludes = Set(fetched.excludeRefs)
             dynamicRules = Dictionary(uniqueKeysWithValues: fetched.rules.map { ($0.collectionId, $0) })
             recursiveFlags = Dictionary(uniqueKeysWithValues: fetched.rules.map { ($0.collectionId, $0.recursive) })
@@ -362,7 +372,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         let selected = selectedAssetIDs
         Task { [weak self] in
             guard let self else { return }
-            let readyIDs = Set((try? await environment.assets.libraryItems())?.map(\.id) ?? [])
+            let readyIDs = Set((try? await environment.assets.libraryItems(includeRemote: includesRemoteMedia, remoteSourceID: remoteSourceID))?.map(\.id) ?? [])
             let playable = selected.intersection(readyIDs).count
             summaryLabel.text = FormatStrings.string(
                 "library.selection_summary",
@@ -374,7 +384,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
 
     private func members(of collectionID: String) async -> [String] {
         if let cached = memberCache[collectionID] { return cached }
-        let members = (try? await environment.assets.collectionAssetIDs(collectionID: collectionID)) ?? []
+        let members = (try? await environment.assets.collectionAssetIDs(collectionID: collectionID, includeRemote: includesRemoteMedia, recursive: recursiveFlags[collectionID] ?? false)) ?? []
         memberCache[collectionID] = members
         return members
     }
@@ -441,23 +451,28 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             let trimmed = nameField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if frameID == nil {
                 let createdName = trimmed.isEmpty ? L10n.string("frames.name_default") : trimmed
-                guard let created = try? await environment.frameManager.createFrame(name: createdName) else { return }
+                guard let created = try? await environment.frameManager.createFrame(name: createdName, storageMode: includesRemoteMedia ? .remote : nil) else { return }
                 frameID = created
                 detail = try? await environment.frameManager.frameDetail(frameID: created)
+            }
+            if let id = frameID, includesRemoteMedia,
+               let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: id), !FrameStorageMode.isExplicit(bundle.settingsJSON) {
+                try? await environment.frameManager.updateSettingsJSON(frameID: id, settingsJSON: FrameStorageMode.local.applying(to: bundle.settingsJSON))
+                detail = try? await environment.frameManager.frameDetail(frameID: id)
             }
             guard let detail, let frameID else { return }
             if !trimmed.isEmpty, trimmed != detail.name {
                 try? await environment.frameManager.renameFrame(frameID: frameID, name: trimmed)
             }
-            let loaded = Set(detail.includeAssetRefs)
+            let loaded = Set(detail.includeAssetRefs + detail.includeSourceAssetRefs.map { "remote:" + $0 })
             let addIncludes = selectedAssetIDs.subtracting(loaded).map {
-                SelectionRefEdit(assetId: $0, sourceAssetId: nil)
+                MediaReference(runtimeID: $0).selection
             }
             var removeRefs = loaded.subtracting(selectedAssetIDs).map {
-                SelectionRefEdit(assetId: $0, sourceAssetId: nil)
+                MediaReference(runtimeID: $0).selection
             }
             removeRefs += Set(detail.excludeRefs).subtracting(currentExcludes).map {
-                SelectionRefEdit(assetId: $0, sourceAssetId: nil)
+                MediaReference(runtimeID: $0).selection
             }
 
             let now = Int(Date().timeIntervalSince1970 * 1000)
@@ -490,6 +505,10 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             case .ok:
                 if let pendingCoverAssetID, pendingCoverAssetID != detail.coverAssetId {
                     try? await environment.frameManager.setCover(frameID: frameID, assetID: pendingCoverAssetID)
+                }
+                if let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: frameID),
+                   FrameStorageMode.isExplicit(bundle.settingsJSON), FrameStorageMode.read(bundle.settingsJSON) == .local {
+                    await environment.frameStorage.start(frameID: frameID)
                 }
                 finishAfterSave()
             default:
@@ -573,6 +592,8 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             cell.imageView?.image = UIImage(systemName: dynamic ? "checkmark.circle.fill" : "circle")
             cell.imageView?.tintColor = dynamic ? ThemeColor.accentAction : ThemeColor.textSecondary
             cell.accessibilityTraits = [.button]
+            if includesRemoteMedia && collection.sourceID != nil { cell.accessoryType = .detailDisclosureButton }
+            else { cell.accessoryType = .none }
             return cell
         case .recursiveToggle(let collection):
             return makeToggleCell(
@@ -673,6 +694,23 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         }
     }
 
+    func tableView(_ tableView: UITableView, accessoryButtonTappedForRowWith indexPath: IndexPath) {
+        guard case .collection(let collection) = directoryRows[indexPath.row] else { return }
+        let grid = AssetGridViewController(environment: environment, collectionID: collection.id,
+            headerTitle: CollectionDisplayName.display(name: collection.name, type: collection.type), showsCloseButton: true)
+        grid.selectionEnabled = true
+        grid.enableRemoteMedia(sourceID: collection.sourceID)
+        grid.applySelection(selectedAssetIDs)
+        grid.onSelectionChange = { [weak self] ids in
+            self?.selectedAssetIDs = ids
+            self?.dirty = true
+            self?.gridChild?.applySelection(ids)
+            self?.updateSummary()
+        }
+        grid.modalPresentationStyle = .fullScreen
+        present(grid, animated: true)
+    }
+
     private func toggleCollection(_ collection: CollectionDTO) {
         if dynamicRules[collection.id] != nil {
             dynamicRules.removeValue(forKey: collection.id)
@@ -699,6 +737,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
     @objc private func handleRecursiveSwitch(_ sender: UISwitch) {
         guard case .recursiveToggle(let collection) = directoryRows[sender.tag] else { return }
         recursiveFlags[collection.id] = sender.isOn
+        memberCache[collection.id] = nil
         if let rule = dynamicRules[collection.id] {
             dynamicRules[collection.id] = SaveRuleRow(
                 collectionId: rule.collectionId,

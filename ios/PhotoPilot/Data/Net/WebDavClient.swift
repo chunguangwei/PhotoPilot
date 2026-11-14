@@ -26,15 +26,17 @@ enum WebDavMultistatusParser {
     }
 
     static func relativePath(href: String, basePath: String) -> String {
-        let decoded = href.removingPercentEncoding ?? href
-        var path = decoded
-        if !basePath.isEmpty, path.hasPrefix(basePath) {
-            let remainder = path.dropFirst(basePath.count)
-            if remainder.isEmpty || remainder.hasPrefix("/") {
-                path = String(remainder)
-            }
+        let encodedPath = URLComponents(string: href)?.percentEncodedPath ?? href
+        let protected = encodedPath.replacingOccurrences(of: "%2f", with: "%252F", options: .caseInsensitive)
+            .replacingOccurrences(of: "%5c", with: "%255C", options: .caseInsensitive)
+        let decoded = protected.removingPercentEncoding ?? protected
+        var bytes = Data(decoded.utf8)
+        let base = Data(basePath.utf8)
+        if !base.isEmpty, bytes.starts(with: base),
+           bytes.count == base.count || bytes.dropFirst(base.count).first == 47 {
+            bytes = Data(bytes.dropFirst(base.count))
         }
-        return NasPath.normalize(path) ?? ""
+        return RemoteMediaPath.normalized(String(decoding: bytes, as: UTF8.self)) ?? ""
     }
 
     static func httpDateMillis(_ text: String) -> Int? {
@@ -172,6 +174,44 @@ final class WebDavClient: @unchecked Sendable {
         }
         try fileManager.moveItem(at: tempURL, to: fileURL)
         return (try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+    }
+
+    func downloadBounded(path: String, to destination: URL, maximumBytes: Int64) async throws {
+        guard maximumBytes > 0 else { throw RemoteMediaError.tooLarge }
+        try networkPolicy?.check()
+        let request = try makeRequest(method: "GET", path: path, headers: ["Accept-Encoding": "identity"], body: nil)
+        do {
+            let (bytes, response) = try await session.bytes(for: request)
+            guard let http = response as? HTTPURLResponse else { throw RemoteMediaError.unavailable }
+            try validate(response: http, isDownload: true)
+            if response.expectedContentLength > maximumBytes { throw RemoteMediaError.tooLarge }
+            try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+            FileManager.default.createFile(atPath: destination.path, contents: nil)
+            let writer = try FileHandle(forWritingTo: destination)
+            defer { try? writer.close() }
+            var buffer = Data()
+            buffer.reserveCapacity(65_536)
+            var written: Int64 = 0
+            for try await byte in bytes {
+                if written + Int64(buffer.count) >= maximumBytes { throw RemoteMediaError.tooLarge }
+                buffer.append(byte)
+                if buffer.count == 65_536 {
+                    try Task.checkCancellation()
+                    try networkPolicy?.check()
+                    try writer.write(contentsOf: buffer)
+                    written += Int64(buffer.count)
+                    buffer.removeAll(keepingCapacity: true)
+                }
+            }
+            try Task.checkCancellation()
+            try networkPolicy?.check()
+            if !buffer.isEmpty { try writer.write(contentsOf: buffer) }
+            try writer.synchronize()
+        } catch {
+            try? FileManager.default.removeItem(at: destination)
+            if let error = error as? URLError, error.code != .cancelled { throw map(urlError: error, url: request.url) }
+            throw error
+        }
     }
 
     private func makeRequest(

@@ -1,0 +1,90 @@
+{
+  "version": "1.3.0",
+  "build": 60,
+  "publication": "pending",
+  "sourceTag": "v1.3.0",
+  "android": {
+    "apk": "PhotoPilot-v1.3.0-60.apk",
+    "bytes": 153988162,
+    "sha256": "224743a5fde03991a010d0e8fe27c643186326814d837e8bfe64cb8e00e3a372",
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86",
+      "x86_64"
+    ],
+    "forbidden": [],
+    "assets": {
+      "assets/ai-models.json": "bb654fafba45429fb7e7139a2b4bbb4f94f80ab83598337cc9885f49aec44da4",
+      "assets/ai-third-party-notices.txt": "edc8e4cf9fc789df613fc002bca7531de93033745a297e80f7359566a146f4b3"
+    },
+    "certificateSHA256": "9cd985f16aec8a0e492ff834aa7a07de6b426f224b2fd6d788a5965cc1b4f37c",
+    "jvmTests": 435,
+    "jvmFailures": 0,
+    "jvmSkipped": 0,
+    "nativeTests": 22,
+    "nativeFailures": 0,
+    "uiConfigurations": 8,
+    "uiScreenshotCount": 24,
+    "legacyInstrumentationGroups": 5,
+    "lintErrors": 0,
+    "lintWarnings": 204,
+    "realInferenceModel": "Multilingual CLIP Lite",
+    "standardModelNote": "Existing Apple Silicon AVD SME limitation. Standard model evidence is recorded in the1.2.0 delivery."
+  },
+  "ios": {
+    "version": "1.3.0",
+    "build": 60,
+    "minimumOS": "15.0",
+    "deviceFamilies": [
+      1,
+      2
+    ],
+    "executableSHA256": "11a23b91b508f592f0a3ef609ad9a943a50bd35f31d51fd7ba5ff301f75718c6",
+    "appBytes": 40356925,
+    "assets": {
+      "ai-models.json": "bb654fafba45429fb7e7139a2b4bbb4f94f80ab83598337cc9885f49aec44da4",
+      "AIThirdPartyNotices.txt": "edc8e4cf9fc789df613fc002bca7531de93033745a297e80f7359566a146f4b3",
+      "PrivacyInfo.xcprivacy": "f902828ec87bfac8258edba796fd94bb50d37236b4e5394ef3a49a02817ef0c0"
+    },
+    "forbidden": [],
+    "signing": "unsigned archive",
+    "sourceArchive": "/private/tmp/PhotoPilot-1.3.0-60-remote-ready.xcarchive",
+    "retainedArchive": ".build/releases/v1.3.0/PhotoPilot-1.3.0-60.xcarchive",
+    "nativeTests": 260,
+    "nativeFailures": 0,
+    "nativeSkipped": 0,
+    "iphoneUITests": 3,
+    "ipadUITests": 3,
+    "incrementalUITests": 1,
+    "screenshotCount": 21,
+    "buildAndAnalyze": "passed",
+    "realInferenceModel": "Multilingual CLIP Lite"
+  },
+  "shared": {
+    "toolTests": 57,
+    "aiSourceTests": 6,
+    "result": "passed",
+    "schemaTables": 17
+  },
+  "review": {
+    "seats": 1,
+    "criticalOpen": 0,
+    "importantOpen": 0,
+    "minorOpen": 0,
+    "verdict": "Ready to merge"
+  },
+  "screenshotEvidence": "store/appstore/review/ScreenshotEvidence130.json",
+  "store": {
+    "materials": "store/appstore/review/RemoteFramesUpdate.md",
+    "archiveSigning": "unsigned",
+    "exportDependency": "Owner authorization for signing-asset refresh and usable original publishing account with matching Store profile. Automatic approval previously rejected remote signing refresh.",
+    "privateReviewServer": "Recheck current credentials and reachability before submission."
+  },
+  "pendingValidation": [
+    "physical old devices",
+    "minimum OS runtime",
+    "physical NAS",
+    "long-running playback"
+  ]
+}

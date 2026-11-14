@@ -40,6 +40,8 @@ class FrameRepository(
     private val cache: ResolutionCache = sharedCache,
 ) {
 
+    var remoteMedia: dev.photopilot.scaffold.data.remote.RemoteMediaRepository? = null
+
     companion object {
         val sharedCache = ResolutionCache()
 
@@ -51,6 +53,67 @@ class FrameRepository(
             )
             return FrameRepository(db, LibraryVersionRepository(db.settingsKvDao()), originalsDir)
         }
+    }
+
+    suspend fun nasSelectionAliases(frameId: String): Map<String, String> {
+        val sources = db.sourceDao().getAll().associateBy { it.id }
+        val result = mutableMapOf<String, String>()
+        for (assetId in (db.frameSelectionDao().getByFrame(frameId).mapNotNull { it.assetId } + listOfNotNull(db.frameDao().getById(frameId)?.coverAssetId)).distinct()) {
+            val asset = db.assetDao().getById(assetId) ?: continue
+            if (asset.privacyExcluded || asset.deletedAt != null || asset.mediaKind != dev.photopilot.scaffold.data.db.MediaKind.IMAGE) continue
+            val origins = db.assetOriginDao().getByAsset(assetId)
+            val candidates = origins.mapNotNull { origin -> db.sourceAssetDao().getById(origin.sourceAssetId)?.let { origin to it } }
+            if (candidates.isEmpty() || candidates.size != origins.size || candidates.any { sources[it.second.sourceId]?.type !in setOf(dev.photopilot.scaffold.data.db.SourceType.SMB, dev.photopilot.scaffold.data.db.SourceType.WEBDAV) }) continue
+            val allowed = candidates.sortedBy { it.second.id }.firstOrNull { (origin, remote) ->
+                origin.policyState == dev.photopilot.scaffold.data.db.PolicyState.ALLOWED && remoteMedia?.item(remote.id, allowRetainedCopy = false) != null
+            } ?: continue
+            result[assetId] = allowed.second.id
+        }
+        return result
+    }
+
+    suspend fun migrateNasSelections(frameId: String, baseVersion: Long, now: Long = System.currentTimeMillis()) = db.withTransaction {
+        val frame = requireNotNull(db.frameDao().getById(frameId))
+        require(frame.selectionVersion == baseVersion) { "REMOTE_SELECTION_CONFLICT" }
+        val aliases = nasSelectionAliases(frameId)
+        if (aliases.isEmpty()) return@withTransaction
+        frame.coverAssetId?.let { aliases[it] }?.let { sourceId ->
+            val settings = dev.photopilot.scaffold.data.logic.JsonMini.parseObject(frame.settingsJson).toMutableMap()
+            settings["remoteCoverRef"] = sourceId
+            db.frameDao().update(frame.copy(coverAssetId = null, settingsJson = dev.photopilot.scaffold.data.logic.JsonMini.toJson(settings), updatedAt = now))
+        }
+        val rows = db.frameSelectionDao().getByFrame(frameId)
+        for ((sourceId, oldRows) in rows.filter { it.assetId in aliases }.groupBy { aliases.getValue(requireNotNull(it.assetId)) }) {
+            val existing = rows.firstOrNull { it.sourceAssetId == sourceId }
+            val grouped = oldRows + listOfNotNull(existing)
+            val template = grouped.firstOrNull { it.mode == FrameSelectionMode.EXCLUDE } ?: grouped.minWith(compareBy({ it.manualOrder == null }, { it.manualOrder ?: 0 }, { it.addedAt }))
+            oldRows.forEach { db.frameSelectionDao().deleteByRef(frameId, it.refKey) }
+            db.frameSelectionDao().upsertRaw(template.copy(assetId = null, sourceAssetId = sourceId, refKey = sourceId, updatedAt = now))
+        }
+        val state = dev.photopilot.scaffold.data.aiframes.AIStateStore(db)
+        state.get(frameId)?.let { configuration ->
+            fun translated(id: String) = aliases[id]?.let { "remote:$it" } ?: id
+            val excluded = db.frameSelectionDao().getByFrame(frameId).filter { it.mode == FrameSelectionMode.EXCLUDE }.map { "remote:${it.refKey}" }.toSet()
+            state.put(configuration.copy(
+                revision = configuration.revision + 1,
+                members = configuration.members.map(::translated).toSet() - excluded,
+                processed = configuration.processed.filterKeys { it !in aliases },
+                reviews = configuration.reviews.mapKeys { translated(it.key) }.filterKeys { it !in excluded },
+                status = "idle",
+            ))
+        }
+    }
+
+    suspend fun coverItem(frameId: String): dev.photopilot.scaffold.data.remote.PlaybackItem? {
+        val frame = db.frameDao().getById(frameId) ?: return null
+        val settings = dev.photopilot.scaffold.data.logic.JsonMini.parseObject(frame.settingsJson)
+        val remoteRef = settings["remoteCoverRef"] as? String
+        if (remoteRef != null) {
+            val allowRetained = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode == "local"
+            remoteMedia?.item(remoteRef, allowRetainedCopy = allowRetained)?.let { return it }
+        }
+        frame.coverAssetId?.let { eligibleCover(it) }?.let { return dev.photopilot.scaffold.data.remote.PlaybackItem(local = it) }
+        return playbackItems(frameId).let { items -> buildPlayQueue(frameId).firstOrNull()?.let { id -> items.firstOrNull { it.id == id } } }
     }
 
     suspend fun eligibleCover(assetId: String): dev.photopilot.scaffold.data.db.AssetEntity? = withIo {
@@ -69,7 +132,7 @@ class FrameRepository(
             sourceEpochsKey = ResolutionCache.sourceEpochsKey(sources.associate { it.id to it.epoch }),
             libraryVersion = libraryVersion.current() ?: 0L,
         )
-        cache.get(cacheKey)?.let { return@withIo it }
+        if (remoteMedia == null) cache.get(cacheKey)?.let { return@withIo it }
 
         val skeleton = loadSkeleton(frameId)
         val firstPass = SelectionResolver.resolve(skeleton.copy(assets = emptyMap()))
@@ -79,6 +142,8 @@ class FrameRepository(
         } else {
             val entities = db.assetDao().getByIds(candidateIds).associateBy { it.id }
             val allowedIds = db.assetOriginDao().allowedAssetIds(candidateIds).toSet()
+            val excludedSources = skeleton.selections.filter { it.mode == SelectionResolver.MODE_EXCLUDE }.mapNotNull { it.sourceAssetId }
+            val blockedAliases = excludedSources.chunked(400).flatMap { db.assetOriginDao().getBySourceAssets(it) }.map { it.assetId }.toSet()
             candidateIds.mapNotNull { id ->
                 entities[id]?.let { entity ->
                     id to ResolvableAsset(
@@ -87,13 +152,20 @@ class FrameRepository(
                         privacyExcluded = entity.privacyExcluded,
                         deleted = entity.deletedAt != null,
                         fileExists = File(originalsDir, entity.originalRelPath).isFile,
-                        policyAllowed = id in allowedIds,
+                        policyAllowed = id in allowedIds && id !in blockedAliases,
                         mediaKind = entity.mediaKind.wire,
                     )
                 }
             }.toMap()
         }
-        val resolution = SelectionResolver.resolve(skeleton.copy(assets = assets))
+        val localResolution = SelectionResolver.resolve(skeleton.copy(assets = assets))
+        val remote = remoteItems(frameId)
+        val mode = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode
+        val ready = remote.filter { mode == "remote" || it.local != null }.map { it.id }
+        val resolution = localResolution.copy(
+            allowed = (localResolution.allowed + remote.map { it.id }).distinct(),
+            playable = (localResolution.playable.filter { it !in remote.mapNotNull { item -> item.local?.id }.toSet() } + ready).distinct(),
+        )
         cache.put(cacheKey, resolution)
         resolution
     }
@@ -117,7 +189,7 @@ class FrameRepository(
 
             val aiStore = dev.photopilot.scaffold.data.aiframes.AIStateStore(db)
             val aiConfiguration = aiStore.get(frameId)
-            val removedAIMembers = removeRefs.filter { it.assetId in aiConfiguration?.members.orEmpty() }
+            val removedAIMembers = removeRefs.filter { (it.sourceAssetId?.let { id -> "remote:$id" } ?: it.assetId) in aiConfiguration?.members.orEmpty() }
             val effectiveExcludes = addExcludes + removedAIMembers
             val request = SelectionSaveRequest(
                 addIncludes = addIncludes.map { AddInclude(ref = it.refKey, addedAt = now) },
@@ -216,7 +288,7 @@ class FrameRepository(
                 val manualEdits = addIncludes + removeRefs + addExcludes
                 val sourceRefs = manualEdits.mapNotNull { it.sourceAssetId }
                 val referencedAssets = if (sourceRefs.isEmpty()) emptyList() else db.assetOriginDao().getBySourceAssets(sourceRefs).map { it.assetId }
-                val manualRefs = (manualEdits.mapNotNull { it.assetId } + referencedAssets).toSet()
+                val manualRefs = (manualEdits.mapNotNull { it.assetId } + referencedAssets + sourceRefs.map { "remote:$it" }).toSet()
                 val excludedSourceRefs = addExcludes.mapNotNull { it.sourceAssetId }
                 if (excludedSourceRefs.isNotEmpty()) {
                     val blockedAssets = db.assetOriginDao().getBySourceAssets(excludedSourceRefs).map { it.assetId }.toSet()
@@ -233,25 +305,43 @@ class FrameRepository(
         }
     }
 
+    suspend fun playbackItems(frameId: String): List<dev.photopilot.scaffold.data.remote.PlaybackItem> = withIo {
+        val frame = db.frameDao().getById(frameId) ?: return@withIo emptyList()
+        val remote = remoteItems(frameId)
+        val mode = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode
+        val includedRemote = remote.filter { mode == "remote" || it.local != null }
+        val localIds = resolve(frameId).playable.filter { !it.startsWith("remote:") }
+        val remoteLocalIds = includedRemote.mapNotNull { it.local?.id }.toSet()
+        db.assetDao().getByIds(localIds).filter { it.id !in remoteLocalIds }.map { dev.photopilot.scaffold.data.remote.PlaybackItem(local = it) } + includedRemote
+    }
+
     suspend fun buildPlayQueue(frameId: String): List<String> = withIo {
-        val frame = db.frameDao().getById(frameId)
-            ?: throw IllegalArgumentException("frame not found: $frameId")
-        val resolution = resolve(frameId)
-        if (resolution.playable.isEmpty()) return@withIo emptyList()
-        val entities = db.assetDao().getByIds(resolution.playable).associateBy { it.id }
+        val frame = db.frameDao().getById(frameId) ?: return@withIo emptyList()
         val selections = db.frameSelectionDao().getByFrame(frameId).associateBy { it.refKey }
-        val queueAssets = resolution.playable.mapNotNull { id ->
-            entities[id]?.let { entity ->
-                QueueAsset(
-                    id = id,
-                    capturedAt = entity.capturedAt,
-                    importedAt = entity.importedAt,
-                    manualOrder = selections[id]?.manualOrder,
-                    addedAt = selections[id]?.addedAt ?: entity.importedAt,
-                )
+        val items = playbackItems(frameId)
+        PlaybackQueue.buildQueue(items.map { item ->
+            val selection = selections[item.sourceAssetId ?: item.id]
+            QueueAsset(item.id, item.capturedAt, item.importedAt, selection?.manualOrder, selection?.addedAt ?: item.importedAt)
+        }, frame.orderMode.wire, frame.randomSeed)
+    }
+
+    suspend fun remoteItems(frameId: String): List<dev.photopilot.scaffold.data.remote.PlaybackItem> {
+        val media = remoteMedia ?: return emptyList()
+        val frame = db.frameDao().getById(frameId) ?: return emptyList()
+        val allowRetained = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode == "local"
+        val selections = db.frameSelectionDao().getByFrame(frameId)
+        val excluded = selections.filter { it.mode == FrameSelectionMode.EXCLUDE }.map { it.refKey }.toSet()
+        val ids = selections.filter { it.mode == FrameSelectionMode.INCLUDE }.mapNotNull { it.sourceAssetId }.toMutableSet()
+        for (rule in db.frameDirectoryRuleDao().getByFrame(frameId)) {
+            val collection = db.collectionDao().getById(rule.collectionId) ?: continue
+            val sourceId = collection.sourceId ?: continue
+            for (asset in media.members(sourceId, collection.relPath.orEmpty(), rule.recursive)) {
+                if (dev.photopilot.scaffold.data.remote.RemotePaths.contains(collection.relPath.orEmpty(), asset.remoteKey, rule.recursive)) ids.add(asset.id)
             }
         }
-        PlaybackQueue.buildQueue(queueAssets, frame.orderMode.wire, frame.randomSeed)
+        return ids.filter { it !in excluded }.mapNotNull { media.item(it, allowRetainedCopy = allowRetained) }.filter { item ->
+            item.local?.id !in excluded && db.assetOriginDao().getBySourceAssets(listOfNotNull(item.sourceAssetId)).none { it.assetId in excluded }
+        }
     }
 
     private suspend fun upsertSelectionRow(

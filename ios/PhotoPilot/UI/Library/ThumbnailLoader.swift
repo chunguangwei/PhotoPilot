@@ -2,16 +2,17 @@ import AVFoundation
 import UIKit
 
 final class ThumbnailLoader: @unchecked Sendable {
-    private nonisolated(unsafe) static let sharedCache = NSCache<NSString, UIImage>()
 
     private let originalsRoot: URL
+    private let media: RemoteMediaService?
 
-    init(originalsRoot: URL) {
+    init(originalsRoot: URL, media: RemoteMediaService? = nil) {
+        self.media = media
         self.originalsRoot = originalsRoot
     }
 
     static func clearMemoryCache() {
-        sharedCache.removeAllObjects()
+        RemoteDecodedImages.shared.clear()
     }
 
     static func videoThumbnail(url: URL, maxPixels: Int) -> CGImage? {
@@ -30,8 +31,12 @@ final class ThumbnailLoader: @unchecked Sendable {
 
     func thumbnail(relPath: String, pointSize: CGFloat, scale: CGFloat) async -> UIImage? {
         let pixels = max(1, Int((pointSize * scale).rounded(.up)))
-        let key = "\(relPath)#\(pixels)" as NSString
-        if let cached = Self.sharedCache.object(forKey: key) {
+        if relPath.hasPrefix("remote:"), let media {
+            return try? await media.image(runtimeID: relPath, width: pixels, height: pixels)
+        }
+        let key = "thumbnail:\(relPath)#\(pixels)"
+        let generation = RemoteDecodedImages.shared.generation()
+        if let cached = RemoteDecodedImages.shared.image(key: key) {
             return cached
         }
         let root = originalsRoot
@@ -55,9 +60,8 @@ final class ThumbnailLoader: @unchecked Sendable {
             }
             return UIImage(cgImage: cgImage)
         }.value
-        if let image {
-            Self.sharedCache.setObject(image, forKey: key)
-        }
+        guard generation == RemoteDecodedImages.shared.generation() else { return nil }
+        if let image { RemoteDecodedImages.shared.store(image, key: key, generation: generation) }
         return image
     }
 }

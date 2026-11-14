@@ -157,6 +157,8 @@ actor ImportCoordinator {
                 guard let source = job.value(forKey: "source") as? NSManagedObject else {
                     throw PersistenceError.dbConstraintViolation
                 }
+                try Self.validateFrameScope(context: context, job: job, source: source)
+                let scoped = Self.frameScope(job) != nil
                 var needsItems: [NSManagedObject] = []
                 for descriptor in page.assets {
                     let upsert = try Self.upsertSourceAsset(
@@ -168,9 +170,10 @@ actor ImportCoordinator {
                     let sourceAsset = upsert.row
                     if !upsert.isNew, !upsert.revisionChanged {
                         let origins = sourceAsset.value(forKey: "assetOrigins") as? Set<NSManagedObject> ?? []
-                        if !origins.isEmpty {
-                            continue
-                        }
+                        if scoped {
+                            if let record = try RemoteMediaRepository.record(context: context, row: sourceAsset,
+                                originals: self.originalsRootURL), record.localReady { continue }
+                        } else if !origins.isEmpty { continue }
                     }
                     needsItems.append(sourceAsset)
                 }
@@ -221,6 +224,8 @@ actor ImportCoordinator {
             guard let source = job.value(forKey: "source") as? NSManagedObject else {
                 throw PersistenceError.dbConstraintViolation
             }
+            let raw = job.value(forKey: "scope_json") as? String ?? "{}"
+            if let object = try? JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any], object["frameID"] != nil { return false }
             let flags = source.value(forKey: "capability_flags") as? Int ?? 0
             return flags & 2 != 0
         }
@@ -599,6 +604,12 @@ actor ImportCoordinator {
     }
 
     func commitItem(itemID: String) async throws -> CommitOutcome {
+        try await LibraryStorageGate.shared(storeURL: controller.storeURL).perform {
+            try await self.commitItemSerialized(itemID: itemID)
+        }
+    }
+
+    private func commitItemSerialized(itemID: String) async throws -> CommitOutcome {
         let ref = try await itemRef(itemID: itemID)
         guard ref.state == ImportItemState.committing.rawValue else {
             throw PersistenceError.dbConstraintViolation
@@ -631,6 +642,7 @@ actor ImportCoordinator {
                   let source = job.value(forKey: "source") as? NSManagedObject else {
                 throw PersistenceError.dbConstraintViolation
             }
+            try Self.validateFrameScope(context: context, job: job, source: source)
             let currentEpoch = source.value(forKey: "epoch") as? Int ?? 1
             let epochAtCreate = job.value(forKey: "epoch_at_create") as? Int ?? 1
             if currentEpoch != epochAtCreate {
@@ -685,7 +697,15 @@ actor ImportCoordinator {
             let asset: NSManagedObject
             if let existing = try context.fetch(assetRequest).first {
                 asset = existing
-                try? FileManager.default.removeItem(at: stagedURL)
+                let relative = existing.value(forKey: "original_rel_path") as? String ?? ""
+                let target = originalsRoot.appendingPathComponent(relative)
+                if !FileManager.default.fileExists(atPath: target.path) {
+                    try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    try FileManager.default.moveItem(at: stagedURL, to: target)
+                    existing.setValue("ready", forKey: "readiness")
+                    existing.setValue(nil, forKey: "failure_code")
+                    existing.setValue(now, forKey: "updated_at")
+                } else { try? FileManager.default.removeItem(at: stagedURL) }
                 try Self.upsertAssetOrigin(
                     context: context,
                     asset: existing,
@@ -748,6 +768,9 @@ actor ImportCoordinator {
                 outcome = .imported(assetId: assetId)
             }
 
+            if ["webdav", "smb"].contains(source.value(forKey: "type") as? String ?? "") {
+                try RemoteMediaRepository.writeProvenance(context: context, asset: asset, sourceAsset: sourceAsset, frameScoped: Self.frameScope(job) != nil)
+            }
             try Self.attachToImportBatch(context: context, job: job, asset: asset, now: now)
             try Self.attachToSourceFolder(
                 context: context,
@@ -764,6 +787,7 @@ actor ImportCoordinator {
             )
             let assetId = asset.value(forKey: "id") as? String ?? ""
             for selection in try context.fetch(selectionRequest) {
+                if let settings = selection.value(forKeyPath: "frame.settings_json") as? String, FrameStorageMode.isExplicit(settings) { continue }
                 try FrameSelectionValidator.validateExactlyOneReference(
                     assetId: assetId,
                     sourceAssetId: nil
@@ -1339,7 +1363,7 @@ actor ImportCoordinator {
         asset: NSManagedObject,
         now: Int
     ) throws {
-        guard (source.value(forKey: "type") as? String) == "webdav" else { return }
+        guard ["webdav", "smb"].contains(source.value(forKey: "type") as? String ?? "") else { return }
         guard let raw = source.value(forKey: "settings_json") as? String,
               let data = raw.data(using: .utf8),
               let settings = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -1438,6 +1462,28 @@ actor ImportCoordinator {
         row.setValue(PolicyState.allowed.rawValue, forKey: "policy_state")
         row.setValue(OriginState.active.rawValue, forKey: "origin_state")
         row.setValue(now, forKey: "updated_at")
+    }
+
+    private static func frameScope(_ job: NSManagedObject) -> [String: Any]? {
+        guard let raw = job.value(forKey: "scope_json") as? String,
+              let object = try? JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any], object["frameID"] != nil else { return nil }
+        return object
+    }
+
+    private static func validateFrameScope(context: NSManagedObjectContext, job: NSManagedObject, source: NSManagedObject) throws {
+        guard let scope = frameScope(job) else { return }
+        guard let frameID = scope["frameID"] as? String,
+              let version = scope["selectionVersion"] as? Int,
+              let frame = try RemoteMediaRepository.fetch(context, entity: "Frame", id: frameID),
+              FrameStorageMode.read(frame.value(forKey: "settings_json") as? String ?? "{}") == .local,
+              frame.value(forKey: "selection_version") as? Int == version,
+              source.value(forKey: "epoch") as? Int == job.value(forKey: "epoch_at_create") as? Int else { throw RemoteMediaError.changed }
+        let expected = scope["revisions"] as? [String: String] ?? [:]
+        for (id, revision) in expected {
+            guard let row = try RemoteMediaRepository.fetch(context, entity: "SourceAsset", id: id),
+                  row.value(forKey: "revision") as? String == revision,
+                  row.value(forKey: "access_state") as? String == "accessible" else { throw RemoteMediaError.changed }
+        }
     }
 
     private static func originalRelPath(assetId: String, format: String) -> String {

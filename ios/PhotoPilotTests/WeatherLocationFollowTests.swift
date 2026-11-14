@@ -78,6 +78,7 @@ final class WeatherLocationFollowTests: XCTestCase {
         XCTAssertEqual(places.map(\.region), ["Illinois", "Queensland"])
     }
 
+    @MainActor
     func testStoredDisplaySurvivesRepositoryRoundTrip() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

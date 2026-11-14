@@ -10,10 +10,19 @@ protocol SmbTransport: Sendable {
     func disconnectShare(gracefully: Bool) async throws
     func listShares(enumerateHidden: Bool) async throws -> [(name: String, comment: String)]
     func contentsOfDirectory(atPath path: String, recursive: Bool) async throws -> [[URLResourceKey: Any]]
+    func readChunk(atPath path: String, offset: Int64, length: Int) async throws -> Data
     func downloadItem(atPath path: String, to url: URL, progress: SMB2Manager.ReadProgressHandler) async throws
 }
 
-extension SMB2Manager: SmbTransport {}
+extension SmbTransport {
+    func readChunk(atPath path: String, offset: Int64, length: Int) async throws -> Data { throw NasTransportError.protocolUnsupported }
+}
+
+extension SMB2Manager: SmbTransport {
+    func readChunk(atPath path: String, offset: Int64, length: Int) async throws -> Data {
+        try await contents(atPath: path, range: offset..<(offset + Int64(length)))
+    }
+}
 
 struct SmbConfig: Sendable {
     let host: String
@@ -23,7 +32,7 @@ struct SmbConfig: Sendable {
     let password: String
 }
 
-final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
+final class SmbSourceAdapter: RemoteReadableSource, @unchecked Sendable {
     static let capabilityFlags = 83
     static let pageSize = 100
 
@@ -383,6 +392,37 @@ final class SmbSourceAdapter: SourceAdapter, @unchecked Sendable {
             return "\(path)/\(name)"
         }
         .sorted()
+    }
+
+    func downloadRemote(remoteID: String, to destination: URL, maximumBytes: Int64) async throws {
+        let resolved = resolveDirectory(remoteID)
+        let client = try await connectedClient(share: resolved.share)
+        defer { Task { try? await client.disconnectShare(gracefully: false) } }
+        try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+        FileManager.default.createFile(atPath: destination.path, contents: nil)
+        let writer = try FileHandle(forWritingTo: destination)
+        defer { try? writer.close() }
+        var offset: Int64 = 0
+        do {
+            while true {
+                try Task.checkCancellation()
+                try networkPolicy?.check()
+                let remaining = maximumBytes - offset
+                let length = Int(min(65_536, max(1, remaining + 1)))
+                let data = try await client.readChunk(atPath: resolved.subpath, offset: offset, length: length)
+                try Task.checkCancellation()
+                guard data.count <= length, Int64(data.count) <= remaining else { throw RemoteMediaError.tooLarge }
+                if data.isEmpty { break }
+                try writer.write(contentsOf: data)
+                offset += Int64(data.count)
+                if data.count < length { break }
+            }
+            try networkPolicy?.check()
+            try writer.synchronize()
+        } catch {
+            try? FileManager.default.removeItem(at: destination)
+            throw error
+        }
     }
 
     func assetPayload(remoteID: String) async throws -> LocalAssetPayload {

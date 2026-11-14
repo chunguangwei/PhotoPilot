@@ -69,7 +69,7 @@ class LocalSourceRegistry(
             db.assetOriginDao().markDetachedBySource(sourceId, now)
             db.importJobDao().getBySource(sourceId).forEach { db.importJobDao().delete(it) }
             db.sourceDao().update(
-                source.copy(status = SourceStatus.DISCONNECTED, updatedAt = now),
+                source.copy(status = SourceStatus.DISCONNECTED, epoch = source.epoch + 1, updatedAt = now),
             )
         } else {
             val sourceAssets = db.sourceAssetDao().getBySource(sourceId)
@@ -132,6 +132,7 @@ class LocalSourceRegistry(
                     if (NasSourceLifecycle.shouldReactivate(existing.status.wire)) {
                         val reactivated = existing.copy(
                             status = SourceStatus.ACTIVE,
+                            epoch = existing.epoch + 1,
                             settingsJson = settingsJson ?: existing.settingsJson,
                             updatedAt = nowMillis(),
                         )

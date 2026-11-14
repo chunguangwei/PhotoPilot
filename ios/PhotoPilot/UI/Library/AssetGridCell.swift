@@ -1,6 +1,7 @@
 import UIKit
 
 final class AssetGridCell: UICollectionViewCell {
+    var imageTask: Task<Void, Never>?
     static let reuseID = "AssetGridCell"
     private static let coverStarTint = UIColor(red: 1.0, green: 0.84, blue: 0.04, alpha: 1)
 
@@ -90,6 +91,8 @@ final class AssetGridCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        imageTask?.cancel()
+        imageTask = nil
         assetID = nil
         imageView.image = nil
         statusLabel.text = L10n.string("library.status_failed")

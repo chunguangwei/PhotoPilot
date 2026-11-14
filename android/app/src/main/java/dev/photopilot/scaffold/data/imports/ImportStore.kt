@@ -31,6 +31,9 @@ class AssetTruncatedException : IOException("staged byte count mismatch")
 class LocalImportStore(
     private val originalsDir: File,
     private val tmpDir: File,
+    private val disk: dev.photopilot.scaffold.data.remote.DiskReservations = dev.photopilot.scaffold.data.remote.DiskReservations.shared,
+    private val freeSpace: () -> Long = { originalsDir.usableSpace },
+    private val minimumFreeBytes: Long = 67108864,
 ) : ImportStore {
 
     init {
@@ -45,34 +48,35 @@ class LocalImportStore(
         val head = MessageDigest.getInstance("SHA-256")
         var written = 0L
         var headRemaining = ContentHash.HEAD64K_SIZE
-        target.outputStream().use { out ->
-            val buffer = ByteArray(16 * 1024)
-            source.use { src ->
-                while (true) {
-                    val read = src.read(buffer)
-                    if (read < 0) break
-                    out.write(buffer, 0, read)
-                    full.update(buffer, 0, read)
-                    if (headRemaining > 0) {
-                        val take = minOf(read, headRemaining)
-                        head.update(buffer, 0, take)
-                        headRemaining -= take
+        try {
+            source.use { input ->
+                if (target.exists() && !target.delete()) throw IOException("staging cleanup failed")
+                disk.reserve(expectedBytes ?: 0, freeSpace, minimumFreeBytes).use { claim ->
+                    target.outputStream().use { output ->
+                        val buffer = ByteArray(16384)
+                        while (true) {
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            claim.write(count) { output.write(buffer, 0, count) }
+                            full.update(buffer, 0, count)
+                            if (headRemaining > 0) {
+                                val take = minOf(count, headRemaining)
+                                head.update(buffer, 0, take)
+                                headRemaining -= take
+                            }
+                            written += count
+                        }
+                        output.fd.sync()
                     }
-                    written += read.toLong()
                 }
             }
-            out.fd.sync()
+            if (expectedBytes != null && expectedBytes != written) throw AssetTruncatedException()
+            val headHash = if (written > 0) ContentHash.PREFIX + ContentHash.toHex(head.digest()) else null
+            return ImportStore.Staged(tempRelPath, written, ContentHash.PREFIX + ContentHash.toHex(full.digest()), headHash)
+        } catch (failure: Throwable) {
+            target.delete()
+            throw failure
         }
-        if (expectedBytes != null && expectedBytes != written) {
-            throw AssetTruncatedException()
-        }
-        val headHash = if (written > 0L) ContentHash.PREFIX + ContentHash.toHex(head.digest()) else null
-        return ImportStore.Staged(
-            tempRelPath = tempRelPath,
-            bytesWritten = written,
-            contentHash = ContentHash.PREFIX + ContentHash.toHex(full.digest()),
-            head64kHash = headHash,
-        )
     }
 
     override fun commitStaged(tempRelPath: String, targetRelPath: String) {
@@ -80,8 +84,22 @@ class LocalImportStore(
         val to = File(originalsDir, targetRelPath)
         to.parentFile?.mkdirs()
         if (!from.renameTo(to)) {
-            from.copyTo(to, overwrite = true)
-            from.delete()
+            val pending = File(to.parentFile, ".${to.name}.${java.util.UUID.randomUUID()}.part")
+            try {
+                disk.reserve(from.length(), { to.parentFile!!.usableSpace }, minimumFreeBytes).use { claim ->
+                    from.inputStream().use { input -> pending.outputStream().use { output ->
+                        val buffer = ByteArray(16384)
+                        while (true) {
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            claim.write(count) { output.write(buffer, 0, count) }
+                        }
+                        output.fd.sync()
+                    } }
+                }
+                if (!pending.renameTo(to)) throw IOException("original commit failed")
+                from.delete()
+            } finally { pending.delete() }
         }
     }
 

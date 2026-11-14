@@ -115,7 +115,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     init(environment: AppEnvironment, frameID: String) {
         self.environment = environment
         self.frameID = frameID
-        self.loader = ThumbnailLoader(originalsRoot: environment.originalsRootURL)
+        self.loader = ThumbnailLoader(originalsRoot: environment.originalsRootURL, media: environment.remoteMedia)
         self.playerLoader = PlayerImageLoader(originalsRoot: environment.originalsRootURL)
         super.init(nibName: nil, bundle: nil)
     }
@@ -132,6 +132,12 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         buildLayout()
         enableKeyboardDismissal()
         load()
+    }
+
+    @objc private func openPhotoStorage() {
+        let navigation = UINavigationController(rootViewController: FrameStorageViewController(environment: environment, frameID: frameID))
+        navigation.modalPresentationStyle = .fullScreen
+        present(navigation, animated: true)
     }
 
     private func buildLayout() {
@@ -157,6 +163,15 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         formStack.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(formStack)
         view.addSubview(scrollView)
+        let storageButton = UIButton(type: .system)
+        storageButton.setTitle(AIText.value("Photo storage and offline playback", "照片存储与离线播放"), for: .normal)
+        storageButton.titleLabel?.font = ThemeFont.body()
+        storageButton.titleLabel?.adjustsFontForContentSizeCategory = true
+        storageButton.titleLabel?.numberOfLines = 0
+        storageButton.accessibilityIdentifier = "playback.storage"
+        storageButton.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
+        storageButton.addTarget(self, action: #selector(openPhotoStorage), for: .touchUpInside)
+        formStack.addArrangedSubview(storageButton)
 
         let cancelButton = ActionButton(titleKey: "common.cancel", style: .secondary)
         cancelButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
@@ -1002,7 +1017,8 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
             guard let self else { return }
             guard (try? await environment.frameManager.updateSettingsJSON(
                 frameID: frameID,
-                settingsJSON: json
+                settingsJSON: json,
+                preservingMediaSettings: true
             )) != nil else { return }
             if orderMode != originalOrderMode {
                 try? await environment.frameManager.updateOrderMode(frameID: frameID, orderMode: orderMode)

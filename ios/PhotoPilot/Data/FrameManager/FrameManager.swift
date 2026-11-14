@@ -8,6 +8,7 @@ struct FrameCardDTO: Sendable {
     let playableCount: Int
     let pendingCount: Int
     let updatedAt: Int
+    var storageMode: FrameStorageMode = .local
 }
 
 struct FrameDetailDTO: Sendable {
@@ -54,7 +55,7 @@ actor FrameManager {
         Int(Date().timeIntervalSince1970 * 1000)
     }
 
-    func createFrame(name: String) async throws -> String {
+    func createFrame(name: String, storageMode: FrameStorageMode? = nil) async throws -> String {
         let context = makeContext()
         let now = nowMillis()
         return try await context.perform {
@@ -62,7 +63,7 @@ actor FrameManager {
             let frameID = UUID().uuidString
             frame.setValue(frameID, forKey: "id")
             frame.setValue(name, forKey: "name")
-            frame.setValue(Self.defaultSettingsJSON(), forKey: "settings_json")
+            frame.setValue(try storageMode?.applying(to: Self.defaultSettingsJSON()) ?? Self.defaultSettingsJSON(), forKey: "settings_json")
             frame.setValue(NSNumber(value: 0), forKey: "selection_version")
             frame.setValue(PlaybackQueue.orderCapturedAsc, forKey: "order_mode")
             frame.setValue(NSNumber(value: Int64.random(in: Int64.min...Int64.max)), forKey: "random_seed")
@@ -156,10 +157,11 @@ actor FrameManager {
                 FrameCardDTO(
                     id: $0.value(forKey: "id") as? String ?? "",
                     name: $0.value(forKey: "name") as? String ?? "",
-                    coverRelPath: $0.value(forKeyPath: "coverAsset.original_rel_path") as? String,
+                    coverRelPath: Self.remoteCover($0.value(forKey: "settings_json") as? String ?? "{}") ?? ($0.value(forKeyPath: "coverAsset.original_rel_path") as? String),
                     playableCount: 0,
                     pendingCount: 0,
-                    updatedAt: $0.value(forKey: "updated_at") as? Int ?? 0
+                    updatedAt: $0.value(forKey: "updated_at") as? Int ?? 0,
+                    storageMode: FrameStorageMode.read($0.value(forKey: "settings_json") as? String ?? "{}")
                 )
             }
             .sorted { $0.updatedAt > $1.updatedAt }
@@ -167,37 +169,8 @@ actor FrameManager {
     }
 
     func frameCounts(frameID: String) async throws -> (playable: Int, pending: Int) {
-        let context = makeContext()
-        return try await context.perform {
-            let selections = NSFetchRequest<NSManagedObject>(entityName: "FrameSelection")
-            selections.predicate = NSPredicate(
-                format: "frame.id == %@ AND mode == %@",
-                frameID,
-                SelectionResolver.modeInclude
-            )
-            let rows = try context.fetch(selections)
-            var assetRefs: [String] = []
-            var pending = 0
-            for row in rows {
-                if let assetID = row.value(forKeyPath: "asset.id") as? String {
-                    assetRefs.append(assetID)
-                } else {
-                    pending += 1
-                }
-            }
-            var playable = 0
-            if !assetRefs.isEmpty {
-                let assets = NSFetchRequest<NSManagedObject>(entityName: "Asset")
-                assets.predicate = NSPredicate(
-                    format: "id IN %@ AND readiness == %@ AND privacy_excluded == NO AND deleted_at == nil AND media_kind != %@",
-                    assetRefs,
-                    SelectionResolver.readinessReady,
-                    "video"
-                )
-                playable = try context.count(for: assets)
-            }
-            return (playable, pending)
-        }
+        let resolution = try await FrameRepository(controller: controller).resolve(frameID: frameID)
+        return (resolution.playable.count, resolution.pending.count)
     }
 
     func queueAssetRelPaths(frameID: String, limit: Int) async throws -> [String] {
@@ -234,7 +207,8 @@ actor FrameManager {
             var manualRows: [(ref: String, order: Int, addedAt: Int)] = []
             var newRefs: [String] = []
             for row in try context.fetch(selections) {
-                let ref = row.value(forKey: "ref_key") as? String ?? ""
+                let rawRef = row.value(forKey: "ref_key") as? String ?? ""
+                let ref = row.value(forKey: "sourceAsset") != nil ? "remote:" + rawRef : rawRef
                 let mode = row.value(forKey: "mode") as? String
                 if mode == SelectionResolver.modeExclude {
                     excludes.append(ref)
@@ -277,7 +251,7 @@ actor FrameManager {
                 rules: rules,
                 manualOrderedRefs: ordered.map(\.ref),
                 newRefs: newRefs.sorted(),
-                coverAssetId: frame.value(forKeyPath: "coverAsset.id") as? String
+                coverAssetId: Self.remoteCover(frame.value(forKey: "settings_json") as? String ?? "{}") ?? (frame.value(forKeyPath: "coverAsset.id") as? String)
             )
         }
     }
@@ -292,14 +266,31 @@ actor FrameManager {
         }
     }
 
-    func updateSettingsJSON(frameID: String, settingsJSON: String) async throws {
+    func updateSettingsJSON(frameID: String, settingsJSON: String, preservingMediaSettings: Bool = false) async throws {
         let context = makeContext()
         let now = nowMillis()
+        try await LibraryStorageGate.shared(storeURL: controller.storeURL).perform {
         try await context.perform {
             let frame = try Self.fetchFrame(context: context, frameID: frameID)
-            frame.setValue(settingsJSON, forKey: "settings_json")
+            let previous = frame.value(forKey: "settings_json") as? String ?? "{}"
+            var updated = settingsJSON
+            if preservingMediaSettings {
+                var current = (try JSONSerialization.jsonObject(with: Data(previous.utf8)) as? [String: Any]) ?? [:]
+                let incoming = (try JSONSerialization.jsonObject(with: Data(settingsJSON.utf8)) as? [String: Any]) ?? [:]
+                for key in ["holdSeconds", "transition", "transitionSeconds", "fitMode", "solidColor", "clock", "date", "keepAwakeWhenPaused", "rest", "brightness", "qualityLevel", "music"] {
+                    current[key] = incoming[key]
+                }
+                updated = String(decoding: try JSONSerialization.data(withJSONObject: current), as: UTF8.self)
+            }
+            if FrameStorageMode.read(previous) != FrameStorageMode.read(updated)
+                || FrameStorageMode.isExplicit(previous) != FrameStorageMode.isExplicit(updated) {
+                frame.setValue((frame.value(forKey: "selection_version") as? Int ?? 0) + 1, forKey: "selection_version")
+                _ = try PersistenceController.bumpLibraryVersionValue(in: context)
+            }
+            frame.setValue(updated, forKey: "settings_json")
             frame.setValue(now, forKey: "updated_at")
             try context.save()
+        }
         }
     }
 
@@ -319,13 +310,23 @@ actor FrameManager {
         let now = nowMillis()
         try await context.perform {
             let frame = try Self.fetchFrame(context: context, frameID: frameID)
-            let request = NSFetchRequest<NSManagedObject>(entityName: "Asset")
-            request.predicate = NSPredicate(format: "id == %@", assetID)
-            request.fetchLimit = 1
-            guard let asset = try context.fetch(request).first else {
-                throw PersistenceError.dbConstraintViolation
+            var settings = (try? JSONSerialization.jsonObject(with: Data((frame.value(forKey: "settings_json") as? String ?? "{}").utf8)) as? [String: Any]) ?? [:]
+            switch MediaReference(runtimeID: assetID) {
+            case .sourceAsset(let id):
+                guard let source = try RemoteMediaRepository.fetch(context, entity: "SourceAsset", id: id),
+                      let record = try RemoteMediaRepository.record(context: context, row: source,
+                        originals: self.controller.storeURL.deletingLastPathComponent().appendingPathComponent("originals")),
+                      record.remoteAllowed || record.localReady else { throw RemoteMediaError.revoked }
+                settings["remoteCoverRef"] = assetID
+                frame.setValue(nil, forKey: "coverAsset")
+            case .asset(let id):
+                guard let asset = try RemoteMediaRepository.fetch(context, entity: "Asset", id: id),
+                      asset.value(forKey: "privacy_excluded") as? Bool != true,
+                      asset.value(forKey: "deleted_at") == nil else { throw RemoteMediaError.revoked }
+                settings.removeValue(forKey: "remoteCoverRef")
+                frame.setValue(asset, forKey: "coverAsset")
             }
-            frame.setValue(asset, forKey: "coverAsset")
+            frame.setValue(String(decoding: try JSONSerialization.data(withJSONObject: settings, options: [.sortedKeys]), as: UTF8.self), forKey: "settings_json")
             frame.setValue(now, forKey: "updated_at")
             try context.save()
         }
@@ -399,6 +400,12 @@ actor FrameManager {
             throw PersistenceError.dbConstraintViolation
         }
         return frame
+    }
+
+    private static func remoteCover(_ json: String) -> String? {
+        let object = try? JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
+        guard let ref = object?["remoteCoverRef"] as? String, ref.hasPrefix("remote:") else { return nil }
+        return ref
     }
 
     static func defaultSettingsJSON() -> String {

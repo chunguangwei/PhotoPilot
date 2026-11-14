@@ -19,6 +19,9 @@ object NasScope {
         return out
     }
 
+    fun latestSourceScope(scopesNewestFirst: List<String>): String? =
+        scopesNewestFirst.firstOrNull { JsonMini.parseObject(it)["frameId"] == null }
+
     fun scopeJson(directories: List<String>): String =
         JsonMini.toJson(mapOf("directories" to directories))
 }

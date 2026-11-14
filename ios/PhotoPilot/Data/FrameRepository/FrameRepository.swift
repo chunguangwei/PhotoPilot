@@ -78,8 +78,48 @@ actor FrameRepository {
                 assets: assets
             )
         )
-        self.cache.put(cacheKey, resolution: resolution)
-        return resolution
+        let settings = frame.value(forKey: "settings_json") as? String ?? "{}"
+        let merged = FrameStorageMode.isExplicit(settings)
+            ? try remoteResolution(context: context, frameID: frameID, mode: FrameStorageMode.read(settings), local: resolution, skeleton: skeleton)
+            : resolution
+        self.cache.put(cacheKey, resolution: merged)
+        return merged
+    }
+
+    private func remoteResolution(context: NSManagedObjectContext, frameID: String, mode: FrameStorageMode,
+                                  local: SelectionResolution, skeleton: SelectionResolveInput) throws -> SelectionResolution {
+        let originals = controller.storeURL.deletingLastPathComponent().appendingPathComponent("originals")
+        var records: [String: RemoteMediaRecord] = [:]
+        let rows = try Self.fetchSelections(context: context, frameID: frameID)
+        let excluded = Set(rows.filter { $0.value(forKey: "mode") as? String == "exclude" }.compactMap { $0.value(forKey: "ref_key") as? String })
+        for selection in rows where selection.value(forKey: "mode") as? String == "include" {
+            if let source = selection.value(forKey: "sourceAsset") as? NSManagedObject,
+               let record = try RemoteMediaRepository.record(context: context, row: source, originals: originals) {
+                records[record.descriptor.runtimeID] = record
+            }
+        }
+        for rule in skeleton.rules {
+            for record in try RemoteMediaRepository.records(context: context, originals: originals, collectionID: rule.collectionId, recursive: rule.recursive) {
+                records[record.descriptor.runtimeID] = record
+            }
+        }
+        let sourceIDs = Set(records.values.map { $0.descriptor.sourceAssetID })
+        var allowed = Set(local.allowed.filter { !sourceIDs.contains($0) })
+        var playable = Set(local.playable)
+        var pending = Set(local.pending.filter { !sourceIDs.contains($0) })
+        var candidates = Set(local.candidates)
+        for record in records.values {
+            let id = record.descriptor.runtimeID
+            guard !excluded.contains(record.descriptor.sourceAssetID),
+                  try !RemoteMediaRepository.isExcluded(context: context, frameID: frameID, runtimeID: id),
+                  !record.blocked, record.policyAllowed,
+                  mode != .remote || record.sourceStatus != "disconnected" else { continue }
+            candidates.insert(id)
+            allowed.insert(id)
+            if record.localReady || (mode == .remote && record.remoteAllowed) { playable.insert(id) }
+            else { pending.insert(id) }
+        }
+        return SelectionResolution(candidates: candidates.sorted(), pending: pending.sorted(), allowed: allowed.sorted(), playable: playable.sorted())
     }
 
     func save(
@@ -94,6 +134,8 @@ actor FrameRepository {
     ) async throws -> SelectionSaveResult {
         let context = makeContext()
         let now = nowMillis()
+        let manualOrderRefs = manualOrderRefs?.map { MediaReference(runtimeID: $0).rawID }
+        return try await LibraryStorageGate.shared(storeURL: controller.storeURL).perform {
         return try await context.perform {
             let frame = try Self.fetchFrame(context: context, frameID: frameID)
             let currentVersion = Int64(frame.value(forKey: "selection_version") as? Int ?? 0)
@@ -143,7 +185,10 @@ actor FrameRepository {
             request.addIncludes = addIncludes.map { AddInclude(ref: $0.refKey, addedAt: now) }
             request.removeRefs = removeRefs.map(\.refKey)
             request.addExcludes = addExcludes.map(\.refKey)
-            request.ruleChanges = ruleChanges
+            request.ruleChanges = ruleChanges.map { change in
+                RuleChange(collectionId: change.collectionId, recursive: change.recursive, includeFuture: change.includeFuture,
+                           confirmed: change.confirmed, members: change.members.map { MediaReference(runtimeID: $0).rawID }, addedAt: change.addedAt)
+            }
             request.removeRules = removeRules
 
             let result = SelectionSavePlanner.plan(
@@ -174,7 +219,8 @@ actor FrameRepository {
             }
             for change in ruleChanges where !change.includeFuture {
                 for member in change.members where refEdits[member] == nil {
-                    refEdits[member] = SelectionRefEdit(assetId: member, sourceAssetId: nil)
+                    let edit = MediaReference(runtimeID: member).selection
+                    refEdits[edit.refKey] = edit
                 }
             }
 
@@ -243,12 +289,14 @@ actor FrameRepository {
                 target.setValue(now, forKey: "updated_at")
             }
 
-            try AIFrameStore.manualChange(context: context, frameID: frameID, includes: Set(addIncludes.map(\.refKey)), removed: Set((removeRefs + addExcludes).map(\.refKey)))
+            try AIFrameStore.manualChange(context: context, frameID: frameID, includes: Set(addIncludes.map { $0.sourceAssetId.map { "remote:" + $0 } ?? $0.refKey }),
+                removed: Set((removeRefs + addExcludes).map { $0.sourceAssetId.map { "remote:" + $0 } ?? $0.refKey }))
             frame.setValue(Int(newVersion), forKey: "selection_version")
             frame.setValue(now, forKey: "updated_at")
             try context.save()
             self.cache.clear()
             return result
+        }
         }
     }
 
@@ -269,7 +317,15 @@ actor FrameRepository {
             for row in try Self.fetchSelections(context: context, frameID: frameID) {
                 if let ref = row.value(forKey: "ref_key") as? String { selectionsByRef[ref] = row }
             }
+            let originals = self.controller.storeURL.deletingLastPathComponent().appendingPathComponent("originals")
+            let remote = Dictionary(uniqueKeysWithValues: try RemoteMediaRepository.records(context: context, originals: originals).map { ($0.descriptor.runtimeID, $0) })
             let queueAssets = resolution.playable.compactMap { id -> QueueAsset? in
+                if let record = remote[id] {
+                    let selection = selectionsByRef[record.descriptor.sourceAssetID]
+                    return QueueAsset(id: id, capturedAt: record.descriptor.takenAt, importedAt: record.indexedAt,
+                        manualOrder: (selection?.value(forKey: "manual_order") as? Int).map(Int64.init),
+                        addedAt: Int64(selection?.value(forKey: "added_at") as? Int ?? Int(record.indexedAt)))
+                }
                 guard let entity = entities[id] else { return nil }
                 let importedAt = Int64(entity.value(forKey: "imported_at") as? Int ?? 0)
                 return QueueAsset(

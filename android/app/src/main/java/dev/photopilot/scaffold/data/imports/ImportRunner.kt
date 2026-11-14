@@ -68,6 +68,8 @@ class ImportRunner(
 
     fun start(jobId: String) {
         scope.launch {
+            val job = db.importJobDao().getById(jobId) ?: return@launch
+            if (dev.photopilot.scaffold.data.logic.JsonMini.parseObject(job.scopeJson)["frameId"] != null) return@launch
             queueMutex.withLock {
                 if (activeJobId == jobId && activeJobHandle?.isActive == true) return@withLock
                 pendingJobIds.add(jobId)

@@ -21,8 +21,12 @@ import dev.photopilot.scaffold.data.db.AssetEntity
 import dev.photopilot.scaffold.data.db.FrameEntity
 import dev.photopilot.scaffold.ui.library.ThumbnailLoader
 import dev.photopilot.scaffold.ui.widget.BrandMarkView
+import kotlinx.coroutines.launch
 import java.io.File
 import java.lang.ref.WeakReference
+
+internal fun remotePhotoCount(count: Int, chinese: Boolean): String =
+    if (chinese) "$count 张照片" else if (count == 1) "1 photo" else "$count photos"
 
 class FramesView(
     context: Context,
@@ -34,8 +38,10 @@ class FramesView(
         val cover: AssetEntity?,
         val playable: Int,
         val pending: Int,
+        val remoteCover: dev.photopilot.scaffold.data.remote.PlaybackItem? = null,
     )
 
+    var remoteMedia: dev.photopilot.scaffold.data.remote.RemoteMediaRepository? = null
     var onOpen: ((FrameEntity) -> Unit)? = null
     var onCreateAI: (() -> Unit)? = null
     var onCreate: (() -> Unit)? = null
@@ -185,7 +191,7 @@ class FramesView(
             setOnClickListener { onOpen?.invoke(model.frame) }
             isFocusable = false
         }
-        card.addView(CoverView(context, model.cover, loader), LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        card.addView(CoverView(context, model.cover, loader, model.remoteCover, remoteMedia), LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         val details = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             val pad = res.getDimensionPixelSize(R.dimen.pp_space_16)
@@ -208,7 +214,10 @@ class FramesView(
                 topMargin = res.getDimensionPixelSize(margin)
             })
         }
-        addCount(res.getQuantityString(R.plurals.frames_playable_count, model.playable, model.playable), R.dimen.pp_space_8)
+        val remoteMode = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(model.frame.settingsJson).mediaStorageMode == "remote"
+        val photoCount = if (remoteMode) remotePhotoCount(model.playable, resources.configuration.locales[0].language == "zh")
+            else res.getQuantityString(R.plurals.frames_playable_count, model.playable, model.playable)
+        addCount(photoCount, R.dimen.pp_space_8)
         if (model.pending > 0) {
             addCount(res.getQuantityString(R.plurals.frames_pending_count, model.pending, model.pending), R.dimen.pp_space_4)
         }
@@ -317,10 +326,12 @@ class FramesView(
         )
     }
 
-    private class CoverView(context: Context, private val asset: AssetEntity?, private val loader: ThumbnailLoader) : FrameLayout(context) {
+    private class CoverView(context: Context, private val asset: AssetEntity?, private val loader: ThumbnailLoader, private val remote: dev.photopilot.scaffold.data.remote.PlaybackItem?, private val media: dev.photopilot.scaffold.data.remote.RemoteMediaRepository?) : FrameLayout(context) {
         private val image = ImageView(context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
         private val placeholder = BrandMarkView(context)
         private var requestedPixels = 0
+        private var remoteJob: kotlinx.coroutines.Job? = null
+        override fun onDetachedFromWindow() { remoteJob?.cancel(); image.setImageDrawable(null); super.onDetachedFromWindow() }
 
         init {
             setBackgroundColor(context.getColor(R.color.pp_surface_canvas))
@@ -340,8 +351,22 @@ class FramesView(
 
         override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
             super.onLayout(changed, left, top, right, bottom)
-            val cover = asset ?: return
             if (width <= 0) return
+            if (asset == null && remote != null && media != null) {
+                if (requestedPixels > 0) return
+                requestedPixels = width
+                val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main)
+                remoteJob = scope.launch {
+                    val bitmap = runCatching { media.bitmap(remote, width.coerceAtMost(640), width.coerceAtMost(640)) }.getOrNull()
+                    if (media.valid(remote) && isAttachedToWindow) { image.setImageBitmap(bitmap); placeholder.visibility = if (bitmap == null) VISIBLE else GONE }
+                    while (isAttachedToWindow) {
+                        kotlinx.coroutines.delay(250)
+                        if (!media.valid(remote)) { image.setImageDrawable(null); placeholder.visibility = VISIBLE; break }
+                    }
+                }
+                return
+            }
+            val cover = asset ?: return
             val pixels = (((width + 127) / 128) * 128).coerceAtMost(1600)
             if (pixels <= requestedPixels) return
             requestedPixels = pixels

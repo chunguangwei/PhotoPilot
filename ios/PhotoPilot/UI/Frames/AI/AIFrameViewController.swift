@@ -37,7 +37,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
     private let thresholdLabel = UILabel()
     private let statusLabel = UILabel()
     private let progressView = UIProgressView(progressViewStyle: .default)
-    private lazy var thumbnailLoader = ThumbnailLoader(originalsRoot: environment.originalsRootURL)
+    private lazy var thumbnailLoader = ThumbnailLoader(originalsRoot: environment.originalsRootURL, media: environment.remoteMedia)
     var onSaved: (() -> Void)?
 
     init(environment: AppEnvironment, frameID: String? = nil) {
@@ -315,8 +315,14 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         cell.accessoryType = preview.selected.contains(match.assetID) ? .checkmark : .none
         cell.imageView?.image = UIImage(systemName: "photo")
         Task { [weak self, weak cell] in
-            guard let self, let asset = try? await environment.assets.fetchAsset(id: match.assetID) else { return }
-            let thumbnail = await thumbnailLoader.thumbnail(relPath: asset.originalRelPath, pointSize: 56, scale: self.traitCollection.displayScale)
+            guard let self else { return }
+            let path: String
+            if match.assetID.hasPrefix("remote:") { path = match.assetID }
+            else {
+                guard let asset = try? await environment.assets.fetchAsset(id: match.assetID) else { return }
+                path = asset.originalRelPath
+            }
+            let thumbnail = await thumbnailLoader.thumbnail(relPath: path, pointSize: 56, scale: self.traitCollection.displayScale)
             guard let cell, self.tableView.indexPath(for: cell) == indexPath else { return }
             cell.imageView?.image = thumbnail
             cell.setNeedsLayout()
@@ -474,7 +480,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
                     if preview.savedFrameID != nil { continue }
                     let id: String
                     if let frameID { id = frameID }
-                    else { id = try await environment.frameManager.createFrame(name: preview.name) }
+                    else { id = try await environment.frameManager.createFrame(name: preview.name, storageMode: preview.matches.contains(where: { $0.assetID.hasPrefix("remote:") }) ? .remote : nil) }
                     do {
                         let matches = preview.matches.map { match in
                             AIFrameMatch(assetID: match.assetID, score: match.score,

@@ -101,7 +101,7 @@ final class ManualOrderViewController: UIViewController,
         self.newRefs = newRefs
         self.hasExcludes = hasExcludes
         self.onDone = onDone
-        self.loader = ThumbnailLoader(originalsRoot: environment.originalsRootURL)
+        self.loader = ThumbnailLoader(originalsRoot: environment.originalsRootURL, media: environment.remoteMedia)
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -216,6 +216,7 @@ final class ManualOrderViewController: UIViewController,
             guard let self else { return }
             let library = (try? await environment.assets.libraryItems()) ?? []
             relPaths = Dictionary(uniqueKeysWithValues: library.map { ($0.id, $0.originalRelPath) })
+            for id in items where id.hasPrefix("remote:") { relPaths[id] = id }
             collectionView?.reloadData()
         }
     }

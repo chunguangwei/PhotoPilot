@@ -1,0 +1,249 @@
+{
+  "version": "1.3.0",
+  "build": 60,
+  "capturedAt": "2026-11-15",
+  "captureScheme": "PhotoPilotRemoteQA",
+  "displayName": "PhotoPilot",
+  "method": "Native simulator production UI source in an isolated QA app with synthetic local protocol fixtures. iPad UIKit screen images are normalized to their actual display orientation. All-opaque alpha was removed from iPad delivery PNGs with unchanged RGB samples. No generated UI, personal NAS or private photos.",
+  "verification": {
+    "iphoneUITests": 3,
+    "ipadUITests": 3,
+    "additionalIncrementalUI": 1,
+    "physicalDevice": false,
+    "physicalNAS": false
+  },
+  "screenshots": [
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/iphone-6.3/en-online-selection.png",
+      "width": 1206,
+      "height": 2622,
+      "mode": "RGB",
+      "bytes": 153661,
+      "sha256": "5ff6f20bff58d01f20d340eb7e6a7b44fb68c3ee7d19f096c08c692675d3716b",
+      "language": "en",
+      "purpose": "Store candidate",
+      "sourceCapture": "iphone/en-online-selection.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/iphone-6.3/en-storage-offline.png",
+      "width": 1206,
+      "height": 2622,
+      "mode": "RGB",
+      "bytes": 313173,
+      "sha256": "4b348e828b314a93e76c31f2052224c6699a6e15016959ea506cb63d515a66a2",
+      "language": "en",
+      "purpose": "Store candidate",
+      "sourceCapture": "iphone/en-storage-offline.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/iphone-6.3/en-storage-online.png",
+      "width": 1206,
+      "height": 2622,
+      "mode": "RGB",
+      "bytes": 314518,
+      "sha256": "7b05c5c4ac2a908ea3d8ff6aa4bd3237f176f7b1f3b76cdcc0e97cfe845bb8d4",
+      "language": "en",
+      "purpose": "Store candidate",
+      "sourceCapture": "iphone/en-storage-online.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/iphone-6.3/zh-online-selection-AX-dark.png",
+      "width": 1206,
+      "height": 2622,
+      "mode": "RGB",
+      "bytes": 191948,
+      "sha256": "f9f9ba55feb28853de7badcc2de1c03511ac3d0878d85bb01918fe42bf54bb45",
+      "language": "zh-Hans",
+      "purpose": "accessibility QA",
+      "sourceCapture": "iphone/zh-online-selection-AX-dark.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/iphone-6.3/zh-online-selection.png",
+      "width": 1206,
+      "height": 2622,
+      "mode": "RGB",
+      "bytes": 155012,
+      "sha256": "08a898e82a8729d1c6020012dc5e32c497fc35ae8cb07a4c946e5cea7e3962d2",
+      "language": "zh-Hans",
+      "purpose": "Store candidate",
+      "sourceCapture": "iphone/zh-online-selection.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/iphone-6.3/zh-storage-offline-AX-dark.png",
+      "width": 1206,
+      "height": 2622,
+      "mode": "RGB",
+      "bytes": 221999,
+      "sha256": "1407076a01211a521ad90d1275bd189a1e7c5432a67aa0a8bf9210f7327618df",
+      "language": "zh-Hans",
+      "purpose": "accessibility QA",
+      "sourceCapture": "iphone/zh-storage-offline-AX-dark.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/iphone-6.3/zh-storage-offline.png",
+      "width": 1206,
+      "height": 2622,
+      "mode": "RGB",
+      "bytes": 367557,
+      "sha256": "5a9f3d61f777d0f28e7e5d1b8b49297b9e85737bcc2a882e50abcace26b5c3e9",
+      "language": "zh-Hans",
+      "purpose": "Store candidate",
+      "sourceCapture": "iphone/zh-storage-offline.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/iphone-6.3/zh-storage-online-AX-dark.png",
+      "width": 1206,
+      "height": 2622,
+      "mode": "RGB",
+      "bytes": 274592,
+      "sha256": "5fcc682d5977577f18a683818ce5de53b202baa7bb2e6e5537e20ea465501832",
+      "language": "zh-Hans",
+      "purpose": "accessibility QA",
+      "sourceCapture": "iphone/zh-storage-online-AX-dark.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/iphone-6.3/zh-storage-online.png",
+      "width": 1206,
+      "height": 2622,
+      "mode": "RGB",
+      "bytes": 347972,
+      "sha256": "3c1dc2bbb0f1995e918bb35ff9705d309924b5db7374ae52a50052a4e9269d76",
+      "language": "zh-Hans",
+      "purpose": "Store candidate",
+      "sourceCapture": "iphone/zh-storage-online.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/ipad-13/en-online-selection.png",
+      "width": 2064,
+      "height": 2752,
+      "mode": "RGB",
+      "bytes": 104765,
+      "sha256": "174d9232cd12e752b742a3207668380123667454a2443e64b84dfb70654c6236",
+      "language": "en",
+      "purpose": "Store candidate",
+      "sourceCapture": "ipad/en-online-selection.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/ipad-13/en-storage-landscape.png",
+      "width": 2752,
+      "height": 2064,
+      "mode": "RGB",
+      "bytes": 178451,
+      "sha256": "22a22f3ce7c4a42bcac2b878aa6dc27c4dbf291df7b6a0e21422db6a437f5713",
+      "language": "en",
+      "purpose": "Store candidate",
+      "sourceCapture": "ipad/en-storage-landscape.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/ipad-13/en-storage-offline.png",
+      "width": 2064,
+      "height": 2752,
+      "mode": "RGB",
+      "bytes": 198771,
+      "sha256": "cb4c34e1a105465264693c7dcad258f7e4bdce427033471d9d51b53ea75c0467",
+      "language": "en",
+      "purpose": "Store candidate",
+      "sourceCapture": "ipad/en-storage-offline.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/ipad-13/en-storage-online.png",
+      "width": 2064,
+      "height": 2752,
+      "mode": "RGB",
+      "bytes": 185645,
+      "sha256": "b21e9beb8a5634f1fd986941ff4b39c7eafaaf05cf82840742aba5fa8e053dac",
+      "language": "en",
+      "purpose": "Store candidate",
+      "sourceCapture": "ipad/en-storage-online.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/ipad-13/zh-online-selection-AX-dark.png",
+      "width": 2064,
+      "height": 2752,
+      "mode": "RGB",
+      "bytes": 159185,
+      "sha256": "f91765cf58d9e7a703a07e2dd09def467da19dae6f7b343ec5bf1050df599362",
+      "language": "zh-Hans",
+      "purpose": "accessibility QA",
+      "sourceCapture": "ipad/zh-online-selection-AX-dark.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/ipad-13/zh-online-selection.png",
+      "width": 2064,
+      "height": 2752,
+      "mode": "RGB",
+      "bytes": 103746,
+      "sha256": "48fe189528cadf62df31fb6c97169020cb3867ba9e41a8c9f91b912549939c9f",
+      "language": "zh-Hans",
+      "purpose": "Store candidate",
+      "sourceCapture": "ipad/zh-online-selection.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/ipad-13/zh-storage-landscape-AX-dark.png",
+      "width": 2752,
+      "height": 2064,
+      "mode": "RGB",
+      "bytes": 310398,
+      "sha256": "88afdb97b01f85b51b55d84f2b0c0f734fced7b2f53c14d8c19e0aad30c83736",
+      "language": "zh-Hans",
+      "purpose": "accessibility QA",
+      "sourceCapture": "ipad/zh-storage-landscape-AX-dark.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/ipad-13/zh-storage-landscape.png",
+      "width": 2752,
+      "height": 2064,
+      "mode": "RGB",
+      "bytes": 227780,
+      "sha256": "3ba8f9d1bf668ec349c027c6efff097facb8ab387e9cab94e6e25983d49a5ab6",
+      "language": "zh-Hans",
+      "purpose": "Store candidate",
+      "sourceCapture": "ipad/zh-storage-landscape.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/ipad-13/zh-storage-offline-AX-dark.png",
+      "width": 2064,
+      "height": 2752,
+      "mode": "RGB",
+      "bytes": 333124,
+      "sha256": "9c861a585b0e5ac3d6eb0b6224c24819cca7c5487e1a9970bc87aa463af06bdc",
+      "language": "zh-Hans",
+      "purpose": "accessibility QA",
+      "sourceCapture": "ipad/zh-storage-offline-AX-dark.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/ipad-13/zh-storage-offline.png",
+      "width": 2064,
+      "height": 2752,
+      "mode": "RGB",
+      "bytes": 237666,
+      "sha256": "fd18ba1f78ee28d2cddf477653d8d2663bf05ca1a964287eabf3e9f0a2ab3077",
+      "language": "zh-Hans",
+      "purpose": "Store candidate",
+      "sourceCapture": "ipad/zh-storage-offline.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/ipad-13/zh-storage-online-AX-dark.png",
+      "width": 2064,
+      "height": 2752,
+      "mode": "RGB",
+      "bytes": 352076,
+      "sha256": "cdbef693fc33ab4896ee5bf4195b3a9362322b1c027c34e55d8403fc3a106cdb",
+      "language": "zh-Hans",
+      "purpose": "accessibility QA",
+      "sourceCapture": "ipad/zh-storage-online-AX-dark.png"
+    },
+    {
+      "path": "store/appstore/remote-frames-v1.3.0/ipad-13/zh-storage-online.png",
+      "width": 2064,
+      "height": 2752,
+      "mode": "RGB",
+      "bytes": 226408,
+      "sha256": "2598ed8db391080e6c8a8415dec63a251c14336e60523e4b3e56e94fee08357e",
+      "language": "zh-Hans",
+      "purpose": "Store candidate",
+      "sourceCapture": "ipad/zh-storage-online.png"
+    }
+  ],
+  "specification": "https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications"
+}

@@ -53,9 +53,8 @@ suspend fun AIFrameService.preview(
                     val includes = rules.map { rule -> rule.includes.map(engine::text) }
                     val excludes = rules.map { rule -> rule.excludes.map(engine::text) }
                     val themeVectors = AINameSuggestions.themes.mapValues { engine.text(it.value.first + " " + it.value.second) }
-                    val allCollections = db.collectionDao().getAll()
-                    val sourceIds = AISourceScope.expand(collections, recursive, allCollections.associate { it.id to it.parentId })
-                    val assetIds = sourceIds.toList().chunked(400).flatMap { db.collectionAssetDao().getByCollections(it) }.map { it.assetId }.distinct()
+                    val candidates = mediaCandidates(collections, recursive)
+                    val assetIds = candidates.keys.toList()
                     if (checkpoint.assets.keys.any { it !in assetIds }) {
                         checkpoint.assets.keys.retainAll(assetIds.toSet())
                         dirty = true
@@ -68,68 +67,61 @@ suspend fun AIFrameService.preview(
                     var processed = 0
                     var reused = 0
                     var sinceSave = 0
-                    for (batch in assetIds.chunked(128)) {
-                        val allowed = db.assetOriginDao().allowedAssetIds(batch).toSet()
-                        for (asset in db.assetDao().getByIds(batch)) {
-                            currentCoroutineContext().ensureActive()
-                            checkpoint.ensureCurrent()
-                            if (shouldPause()) throw java.io.IOException("preview_paused")
-                            val file = File(context.filesDir, "originals/${asset.originalRelPath}")
-                            val selections = frameId?.let { db.frameSelectionDao().getByFrame(it) }.orEmpty()
-                            val origins = if (selections.isEmpty()) emptySet() else db.assetOriginDao().getByAsset(asset.id).map { it.sourceAssetId }.toSet()
-                            val manuallyExcluded = selections.any { it.mode == FrameSelectionMode.EXCLUDE && (it.assetId == asset.id || it.sourceAssetId in origins) }
-                            val eligible = file.isFile && AIEligibility.allowed(asset.readiness.wire, asset.privacyExcluded, asset.deletedAt != null, asset.mediaKind.wire, asset.id in allowed, manuallyExcluded)
-                            if (!eligible) {
-                                dirty = checkpoint.assets.remove(asset.id) != null || dirty
+                    for ((id, candidate) in candidates) {
+                        currentCoroutineContext().ensureActive()
+                        checkpoint.ensureCurrent()
+                        if (shouldPause()) throw java.io.IOException("preview_paused")
+                        val eligible = !excluded(candidate, frameId)
+                        if (!eligible) {
+                            dirty = checkpoint.assets.remove(id) != null || dirty
+                        } else {
+                            fingerprints[id] = candidate.fingerprint
+                            val cached = checkpoint.assets[id]?.takeIf { it.contentHash == candidate.fingerprint }
+                            val result = if (cached != null) {
+                                reused++
+                                cached
                             } else {
-                                fingerprints[asset.id] = asset.contentHash
-                                val cached = checkpoint.assets[asset.id]?.takeIf { it.contentHash == asset.contentHash }
-                                val result = if (cached != null) {
-                                    reused++
-                                    cached
-                                } else {
-                                    dirty = checkpoint.assets.remove(asset.id) != null || dirty
-                                    try {
-                                        val bitmap = AIImageDecoder.decode(file, asset.exifOrientation.toInt())
-                                        val vector = try { engine.image(bitmap) } finally { bitmap.recycle() }
-                                        val categories = rules.indices.map { index ->
-                                            val score = AIEmbedding.cosine(vector, descriptions[index])
-                                            AICachedCategory(rules[index].evaluate(score, includes[index].map { AIEmbedding.cosine(vector, it) }, excludes[index].map { AIEmbedding.cosine(vector, it) }), score)
-                                        }
-                                        val themeScores = themeVectors.mapValues { AIEmbedding.cosine(vector, it.value).toDouble() }
-                                        AICachedAsset(asset.contentHash, categories, themeScores).also {
-                                            checkpoint.assets[asset.id] = it
-                                            dirty = true
-                                        }
-                                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                                        throw cancelled
-                                    } catch (_: Exception) {
-                                        failed.add(asset.id)
-                                        null
+                                dirty = checkpoint.assets.remove(id) != null || dirty
+                                try {
+                                    val vector = mediaVector(candidate, engine, model)
+                                    val categories = rules.indices.map { index ->
+                                        val score = AIEmbedding.cosine(vector, descriptions[index])
+                                        AICachedCategory(rules[index].evaluate(score, includes[index].map { AIEmbedding.cosine(vector, it) }, excludes[index].map { AIEmbedding.cosine(vector, it) }), score)
                                     }
+                                    val themeScores = themeVectors.mapValues { AIEmbedding.cosine(vector, it.value).toDouble() }
+                                    if (candidate.item.remote != null && remoteMedia?.valid(candidate.item) != true) throw java.io.IOException("REMOTE_REVOKED")
+                                    AICachedAsset(candidate.fingerprint, categories, themeScores).also {
+                                        checkpoint.assets[id] = it
+                                        dirty = true
+                                    }
+                                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                    throw cancelled
+                                } catch (_: Exception) {
+                                    failed.add(id)
+                                    null
                                 }
-                                if (result != null) {
-                                    for (index in rules.indices) {
-                                        when (result.categories[index].match) {
-                                            AIMatch.MATCH -> {
-                                                matches[index][asset.id] = result.categories[index].score
-                                                result.themes.forEach { (key, value) -> themes[index][key] = (themes[index][key] ?: 0.0) + value }
-                                            }
-                                            AIMatch.REVIEW -> reviews[index][asset.id] = result.categories[index].score
-                                            AIMatch.REJECT -> Unit
+                            }
+                            if (result != null) {
+                                for (index in rules.indices) {
+                                    when (result.categories[index].match) {
+                                        AIMatch.MATCH -> {
+                                            matches[index][id] = result.categories[index].score
+                                            result.themes.forEach { (key, value) -> themes[index][key] = (themes[index][key] ?: 0.0) + value }
                                         }
+                                        AIMatch.REVIEW -> reviews[index][id] = result.categories[index].score
+                                        AIMatch.REJECT -> Unit
                                     }
                                 }
                             }
-                            processed++
-                            sinceSave++
-                            if (dirty && (sinceSave >= 8 || processed == 1)) {
-                                checkpoint.save()
-                                dirty = false
-                                sinceSave = 0
-                            }
-                            progress(processed, assetIds.size)
                         }
+                        processed++
+                        sinceSave++
+                        if (dirty && (sinceSave >= 8 || processed == 1)) {
+                            checkpoint.save()
+                            dirty = false
+                            sinceSave = 0
+                        }
+                        progress(processed, assetIds.size)
                     }
                     rules.indices.map { index ->
                         AIPreview(model, collections, recursive, rules[index], matches[index], reviews[index], fingerprints, themes[index], failed.size, failed, reused)
@@ -164,43 +156,40 @@ suspend fun AIFrameService.savePreviews(previews: List<AIPreview>, names: List<S
         val frame = oldFrame ?: FrameEntity(UUID.randomUUID().toString(), names[index].trim().ifEmpty { preview.rule.description.take(60) }, null, FrameManager.DEFAULT_SETTINGS_JSON, 0, FrameOrderMode.CAPTURED_ASC, kotlin.random.Random.nextLong(), now, now)
         val namedFrame = frame.copy(name = names[index].trim().ifEmpty { frame.name }, updatedAt = now)
         if (oldFrame == null) db.frameDao().upsert(namedFrame) else db.frameDao().update(namedFrame)
-        val collections = db.collectionDao().getAll()
-        val collectionIds = AISourceScope.expand(preview.collections, preview.recursive, collections.associate { it.id to it.parentId })
-        val scopeIds = collectionIds.toList().chunked(400).flatMap { db.collectionAssetDao().getByCollections(it) }.map { it.assetId }.toSet()
+        val candidates = mediaCandidates(preview.collections, preview.recursive)
         val owned = previous?.members.orEmpty().toMutableSet()
         val selectionRows = db.frameSelectionDao().getByFrame(frame.id)
-        val selections = selectionRows.filter { it.assetId != null }.associateBy { it.assetId }
-        val validFingerprints = mutableMapOf<String, String>()
-        for (batch in preview.fingerprints.keys.chunked(128)) {
-            val allowed = db.assetOriginDao().allowedAssetIds(batch).toSet()
-            for (asset in db.assetDao().getByIds(batch)) {
-                if (asset.id in scopeIds && preview.fingerprints[asset.id] == asset.contentHash && AIEligibility.allowed(asset.readiness.wire, asset.privacyExcluded, asset.deletedAt != null, asset.mediaKind.wire, asset.id in allowed, false)) validFingerprints[asset.id] = asset.contentHash
-            }
-        }
+        val validFingerprints = preview.fingerprints.filter { (id, hash) -> candidates[id]?.fingerprint == hash }
         val selectedIds = chosen[index].intersect(preview.matches.keys + preview.reviews.keys)
         for (assetId in (selectedIds + owned + preview.matches.keys)) {
-            val asset = db.assetDao().getByIds(listOf(assetId)).firstOrNull()
-            val origins = db.assetOriginDao().getByAsset(assetId).map { it.sourceAssetId }.toSet()
-            val current = selections[assetId]
-            val excluded = selectionRows.any { it.mode == FrameSelectionMode.EXCLUDE && (it.assetId == assetId || it.sourceAssetId in origins) }
-            val policyEligible = asset != null && assetId in scopeIds && File(context.filesDir, "originals/${asset.originalRelPath}").isFile && AIEligibility.allowed(asset.readiness.wire, asset.privacyExcluded, asset.deletedAt != null, asset.mediaKind.wire, db.assetOriginDao().allowedAssetIds(listOf(assetId)).isNotEmpty(), excluded)
+            val candidate = candidates[assetId]
+            val rawId = assetId.removePrefix("remote:")
+            val aliases = candidate?.let { selectionAliases(it) }.orEmpty() + rawId
+            val current = selectionRows.firstOrNull { it.refKey == rawId } ?: selectionRows.firstOrNull { it.refKey in aliases }
+            val excluded = candidate?.let { excluded(it, frame.id) } ?: true
+            val policyEligible = candidate != null && !excluded
             if (policyEligible && assetId in preview.failedAssetIDs) continue
-            if (policyEligible && asset.contentHash != preview.fingerprints[assetId] && assetId in preview.fingerprints) continue
-            val eligible = policyEligible && asset.contentHash == preview.fingerprints[assetId]
+            if (policyEligible && candidate.fingerprint != preview.fingerprints[assetId] && assetId in preview.fingerprints) continue
+            val eligible = policyEligible && candidate.fingerprint == preview.fingerprints[assetId]
             if (assetId in selectedIds && eligible) {
                 if (assetId in preview.reviews) owned.remove(assetId)
                 if (current == null) {
-                    db.frameSelectionDao().upsertRaw(FrameSelectionEntity(frame.id, assetId, null, FrameSelectionMode.INCLUDE, null, now, assetId, now, now))
+                    db.frameSelectionDao().upsertResolved(frame.id, assetId.takeUnless { it.startsWith("remote:") }, assetId.takeIf { it.startsWith("remote:") }?.removePrefix("remote:"), FrameSelectionMode.INCLUDE, null, now)
                     if (assetId in preview.matches) owned.add(assetId)
                 }
             } else if (assetId in owned) {
-                if (current?.mode == FrameSelectionMode.INCLUDE) db.frameSelectionDao().deleteByRef(frame.id, assetId)
+                if (current?.mode == FrameSelectionMode.INCLUDE) db.frameSelectionDao().deleteByRef(frame.id, rawId)
                 owned.remove(assetId)
             }
             if (policyEligible && assetId in preview.matches && assetId !in selectedIds && !excluded) {
-                db.frameSelectionDao().upsertRaw(FrameSelectionEntity(frame.id, assetId, null, FrameSelectionMode.EXCLUDE, null, now, assetId, now, now))
+                db.frameSelectionDao().upsertResolved(frame.id, assetId.takeUnless { it.startsWith("remote:") }, assetId.takeIf { it.startsWith("remote:") }?.removePrefix("remote:"), FrameSelectionMode.EXCLUDE, null, now)
                 owned.remove(assetId)
             }
+        }
+        if (selectedIds.any { it.startsWith("remote:") }) {
+            val settings = dev.photopilot.scaffold.data.logic.JsonMini.parseObject(namedFrame.settingsJson).toMutableMap()
+            if (!settings.containsKey("mediaStorageMode")) settings["mediaStorageMode"] = "remote"
+            db.frameDao().update(namedFrame.copy(settingsJson = dev.photopilot.scaffold.data.logic.JsonMini.toJson(settings)))
         }
         val processed = validFingerprints.filterKeys { it !in preview.failedAssetIDs }.mapValues { (_, hash) -> "$hash:${preview.model.revision}:${preview.model.preprocessingVersion}" }
         state.put(AIConfiguration(frame.id, (previous?.revision ?: 0) + 1, preview.model.id, preview.model.revision, preview.collections, preview.recursive, automatic, preview.rule, owned, processed, preview.reviews.filterKeys { it !in selectedIds && it in validFingerprints }, "complete", preview.fingerprints.size, preview.failed, preview.themes))

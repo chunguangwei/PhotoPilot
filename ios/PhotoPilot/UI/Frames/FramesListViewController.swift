@@ -17,7 +17,7 @@ final class FramesListViewController: UIViewController {
 
     init(environment: AppEnvironment) {
         self.environment = environment
-        self.loader = ThumbnailLoader(originalsRoot: environment.originalsRootURL)
+        self.loader = ThumbnailLoader(originalsRoot: environment.originalsRootURL, media: environment.remoteMedia)
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -38,6 +38,7 @@ final class FramesListViewController: UIViewController {
         titleLabel.numberOfLines = 0
         titleLabel.accessibilityTraits.insert(.header)
 
+        NotificationCenter.default.addObserver(self, selector: #selector(remoteMediaChanged), name: .remoteMediaChanged, object: nil)
         createButton.addTarget(self, action: #selector(handleCreate), for: .touchUpInside)
         titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         createButton.setContentHuggingPriority(.required, for: .horizontal)
@@ -51,6 +52,15 @@ final class FramesListViewController: UIViewController {
         aiButton.accessibilityIdentifier = "frames.createAI"
         aiButton.addTarget(self, action: #selector(openAIFrames), for: .touchUpInside)
         header.addArrangedSubview(aiButton)
+        let onlineButton = UIButton(type: .system)
+        onlineButton.setTitle(AIText.value("Online photos", "在线选片"), for: .normal)
+        onlineButton.titleLabel?.font = ThemeFont.body()
+        onlineButton.titleLabel?.adjustsFontForContentSizeCategory = true
+        onlineButton.titleLabel?.numberOfLines = 0
+        onlineButton.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
+        onlineButton.accessibilityIdentifier = "frames.onlinePhotos"
+        onlineButton.addTarget(self, action: #selector(openOnlinePhotos), for: .touchUpInside)
+        header.addArrangedSubview(onlineButton)
         header.axis = .vertical
         header.spacing = ThemeMetrics.space16
 
@@ -168,7 +178,7 @@ final class FramesListViewController: UIViewController {
                 var relPath = card.coverRelPath
                 if relPath == nil,
                    let firstID = (try? await environment.frames.buildPlayQueue(frameID: card.id))?.first {
-                    relPath = try? await environment.assets.fetchAsset(id: firstID)?.originalRelPath
+                    relPath = firstID.hasPrefix("remote:") ? firstID : try? await environment.assets.fetchAsset(id: firstID)?.originalRelPath
                 }
                 enriched.append(FrameCardDTO(
                     id: card.id,
@@ -176,7 +186,8 @@ final class FramesListViewController: UIViewController {
                     coverRelPath: relPath,
                     playableCount: counts.playable,
                     pendingCount: counts.pending,
-                    updatedAt: card.updatedAt
+                    updatedAt: card.updatedAt,
+                    storageMode: card.storageMode
                 ))
             }
             cards = enriched
@@ -276,7 +287,9 @@ final class FramesListViewController: UIViewController {
         nameLabel.numberOfLines = 0
 
         let playableLabel = UILabel()
-        playableLabel.text = String(format: L10n.string("frames.playable_count"), card.playableCount)
+        playableLabel.text = card.storageMode == .remote
+            ? AIText.value(card.playableCount == 1 ? "1 photo" : "\(card.playableCount) photos", "\(card.playableCount) 张照片")
+            : String(format: L10n.string("frames.playable_count"), card.playableCount)
         playableLabel.font = ThemeFont.meta()
         playableLabel.adjustsFontForContentSizeCategory = true
         playableLabel.textColor = ThemeColor.textSecondary
@@ -357,6 +370,17 @@ final class FramesListViewController: UIViewController {
         openEditor(frameID: cards[sender.tag].id)
     }
 
+    @objc private func remoteMediaChanged() {
+        guard viewIfLoaded?.window != nil else { return }
+        reload()
+    }
+
+    @objc private func openOnlinePhotos() {
+        let navigation = UINavigationController(rootViewController: RemoteSourcePickerViewController(environment: environment))
+        navigation.modalPresentationStyle = .fullScreen
+        present(navigation, animated: true)
+    }
+
     @objc private func openAIFrames() {
         let editor = AIFrameViewController(environment: environment)
         editor.onSaved = { [weak self] in self?.reload() }
@@ -402,6 +426,21 @@ final class FramesListViewController: UIViewController {
                 present(settings, animated: true)
             }
         ))
+        sheet.addAction(UIAlertAction(title: AIText.value("Photo storage", "照片存储"), style: .default) { [weak self] _ in
+            guard let self else { return }
+            let navigation = UINavigationController(rootViewController: FrameStorageViewController(environment: environment, frameID: card.id))
+            navigation.modalPresentationStyle = .fullScreen
+            present(navigation, animated: true)
+        })
+        sheet.addAction(UIAlertAction(title: AIText.value("Choose online photos", "选择远端照片"), style: .default) { [weak self] _ in
+            guard let self else { return }
+            let picker = RemoteSourcePickerViewController(environment: environment) { [weak self] sourceID in
+                self?.dismiss(animated: true) { [weak self] in self?.openEditor(frameID: card.id, remoteSourceID: sourceID) }
+            }
+            let navigation = UINavigationController(rootViewController: picker)
+            navigation.modalPresentationStyle = .fullScreen
+            present(navigation, animated: true)
+        })
         sheet.addAction(UIAlertAction(
             title: L10n.string("frames.duplicate"),
             style: .default,
@@ -479,8 +518,8 @@ final class FramesListViewController: UIViewController {
         present(alert, animated: true)
     }
 
-    private func openEditor(frameID: String?) {
-        let editor = FrameEditViewController(environment: environment, frameID: frameID)
+    private func openEditor(frameID: String?, remoteSourceID: String? = nil) {
+        let editor = FrameEditViewController(environment: environment, frameID: frameID, remoteSourceID: remoteSourceID)
         editor.modalPresentationStyle = .fullScreen
         present(editor, animated: true)
     }

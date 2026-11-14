@@ -6,6 +6,8 @@ final class CoverPreviewViewController: UIViewController {
     private let frameName: String
     private let photoCount: Int
     private let onConfirm: () -> Void
+    private let coverView = UIImageView()
+    private var revoked = false
     private var loadTask: Task<Void, Never>?
 
     init(
@@ -15,7 +17,7 @@ final class CoverPreviewViewController: UIViewController {
         photoCount: Int,
         onConfirm: @escaping () -> Void
     ) {
-        self.loader = ThumbnailLoader(originalsRoot: environment.originalsRootURL)
+        self.loader = ThumbnailLoader(originalsRoot: environment.originalsRootURL, media: environment.remoteMedia)
         self.relPath = relPath
         self.frameName = frameName
         self.photoCount = photoCount
@@ -46,7 +48,6 @@ final class CoverPreviewViewController: UIViewController {
         card.layer.cornerRadius = ThemeMetrics.radiusGroup
         card.clipsToBounds = true
 
-        let coverView = UIImageView()
         coverView.contentMode = .scaleAspectFill
         coverView.clipsToBounds = true
         coverView.backgroundColor = ThemeColor.canvas
@@ -64,7 +65,9 @@ final class CoverPreviewViewController: UIViewController {
         nameLabel.numberOfLines = 0
 
         let countLabel = UILabel()
-        countLabel.text = String(format: L10n.string("frames.playable_count"), photoCount)
+        countLabel.text = relPath?.hasPrefix("remote:") == true
+            ? AIText.value(photoCount == 1 ? "1 photo" : "\(photoCount) photos", "\(photoCount) 张照片")
+            : String(format: L10n.string("frames.playable_count"), photoCount)
         countLabel.font = ThemeFont.meta()
         countLabel.adjustsFontForContentSizeCategory = true
         countLabel.textColor = ThemeColor.textSecondary
@@ -118,6 +121,7 @@ final class CoverPreviewViewController: UIViewController {
             readable,
         ])
 
+        NotificationCenter.default.addObserver(self, selector: #selector(authorityChanged(_:)), name: .remoteMediaChanged, object: nil)
         loadCover(into: coverView)
     }
 
@@ -131,7 +135,15 @@ final class CoverPreviewViewController: UIViewController {
         }
     }
 
+    @objc private func authorityChanged(_ notification: Notification) {
+        guard notification.userInfo?["revoked"] as? Bool == true else { return }
+        revoked = true
+        loadTask?.cancel()
+        coverView.image = nil
+    }
+
     @objc private func handleConfirm() {
+        guard !revoked else { dismiss(animated: true); return }
         onConfirm()
         dismiss(animated: true)
     }

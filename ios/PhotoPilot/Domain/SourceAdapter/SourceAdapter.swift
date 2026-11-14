@@ -81,3 +81,7 @@ protocol SourceAdapter: Sendable {
     func enumerateAssets(cursor: String?) async throws -> SourceAssetPage
     func assetPayload(remoteID: String) async throws -> LocalAssetPayload
 }
+
+protocol RemoteReadableSource: SourceAdapter {
+    func downloadRemote(remoteID: String, to destination: URL, maximumBytes: Int64) async throws
+}

@@ -1,6 +1,6 @@
 import Foundation
 
-final class WebDavSourceAdapter: SourceAdapter {
+final class WebDavSourceAdapter: RemoteReadableSource {
     static let capabilityFlags = 83
     static let pageSize = 100
 
@@ -105,6 +105,10 @@ final class WebDavSourceAdapter: SourceAdapter {
             nextCursor: state.dirs.isEmpty ? nil : Self.encodeCursor(state),
             totalKnown: nil
         )
+    }
+
+    func downloadRemote(remoteID: String, to destination: URL, maximumBytes: Int64) async throws {
+        try await client.downloadBounded(path: remoteID, to: destination, maximumBytes: maximumBytes)
     }
 
     func assetPayload(remoteID: String) async throws -> LocalAssetPayload {

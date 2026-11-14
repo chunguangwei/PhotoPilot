@@ -27,8 +27,8 @@ settings:
     SWIFT_VERSION: "6.0"
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     TARGETED_DEVICE_FAMILY: "2"
-    MARKETING_VERSION: "1.2.0"
-    CURRENT_PROJECT_VERSION: "59"
+    MARKETING_VERSION: "1.3.0"
+    CURRENT_PROJECT_VERSION: "60"
 targets:
   PhotoPilot:
     type: application
@@ -88,6 +88,10 @@ targets:
       - path: ../contracts/vectors/ai-frame-classify.json
         buildPhase: resources
       - path: ../contracts/vectors/ai-wordpiece.json
+        buildPhase: resources
+      - path: ../contracts/vectors/frame-remote-paths.json
+        buildPhase: resources
+      - path: ../contracts/vectors/frame-remote-eligibility.json
         buildPhase: resources
       - path: ../contracts/vectors/selection-save.json
         buildPhase: resources

@@ -57,15 +57,16 @@ class AIStateStore(private val db: PhotoPilotDatabase) {
     suspend fun put(configuration: AIConfiguration) = settings.putRaw("ai.frame.${configuration.frameId}", configuration.json().toString())
     suspend fun removeAsset(assetId: String, now: Long) {
         AIPreviewCheckpoint.invalidateAll(db)
+        db.settingsKvDao().getByPrefix("ai.vector.").forEach { db.settingsKvDao().delete(it) }
+        val refs = setOf(assetId) + db.assetOriginDao().getByAsset(assetId).map { "remote:${it.sourceAssetId}" }
         for (frame in db.frameDao().getAll()) {
             val configuration = get(frame.id)
-            if (configuration != null && (assetId in configuration.members || assetId in configuration.processed || assetId in configuration.reviews)) {
-                if (assetId in configuration.members) {
-                    val selection = db.frameSelectionDao().getByFrame(frame.id).firstOrNull { it.assetId == assetId }
-                    if (selection?.mode == dev.photopilot.scaffold.data.db.FrameSelectionMode.INCLUDE) db.frameSelectionDao().deleteByRef(frame.id, selection.refKey)
+            if (configuration != null && refs.any { it in configuration.members || it in configuration.processed || it in configuration.reviews }) {
+                if (refs.any { it in configuration.members }) {
+                    db.frameSelectionDao().getByFrame(frame.id).filter { (it.assetId == assetId || "remote:${it.sourceAssetId}" in refs) && it.mode == dev.photopilot.scaffold.data.db.FrameSelectionMode.INCLUDE }.forEach { selection -> db.frameSelectionDao().deleteByRef(frame.id, selection.refKey) }
                     db.frameDao().bumpSelectionVersion(frame.id, now)
                 }
-                put(configuration.copy(members = configuration.members - assetId, processed = configuration.processed - assetId, reviews = configuration.reviews - assetId, themes = emptyMap()))
+                put(configuration.copy(members = configuration.members - refs, processed = configuration.processed - refs, reviews = configuration.reviews - refs, themes = emptyMap()))
             }
             if (frame.coverAssetId == assetId) {
                 val current = db.frameDao().getById(frame.id) ?: continue

@@ -46,8 +46,8 @@ class PlayerSettingsReloadTest {
         var keepAwake: Boolean? = null
         override fun onKeepScreenOn(keep: Boolean) { keepAwake = keep }
         override fun onStateChanged(state: String) = Unit
-        override fun onShowAsset(asset: AssetEntity, decoded: PlayerEngine.DecodedAsset, transitionMs: Long, direction: Int, position: Int) = Unit
-        override fun onShowVideo(asset: AssetEntity, path: String, blurred: Bitmap?, edgeColor: Int?) = Unit
+        override fun onShowAsset(asset: dev.photopilot.scaffold.data.remote.PlaybackItem, decoded: PlayerEngine.DecodedAsset, transitionMs: Long, direction: Int, position: Int) = Unit
+        override fun onShowVideo(asset: dev.photopilot.scaffold.data.remote.PlaybackItem, path: String, blurred: Bitmap?, edgeColor: Int?) = Unit
         override fun onClearTextures() = Unit
         override fun onShowSafeImage() = Unit
         override fun onQueueInfo(size: Int) = Unit

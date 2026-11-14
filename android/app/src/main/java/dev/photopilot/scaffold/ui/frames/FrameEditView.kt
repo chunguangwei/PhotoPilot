@@ -75,6 +75,7 @@ class FrameEditView(
     var dataSource: DataSource? = null
     var onBack: ((Boolean) -> Unit)? = null
     var onSave: ((State) -> Unit)? = null
+    var onRemotePhotos: (() -> Unit)? = null
     var onAISettings: (() -> Unit)? = null
     var onManualOrder: (() -> Unit)? = null
     var onConfirmDynamic: ((confirmed: (Boolean) -> Unit) -> Unit)? = null
@@ -146,6 +147,11 @@ class FrameEditView(
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_8)
             },
         )
+
+        addView(secondaryButton(context, R.string.common_done).apply {
+            text = if (resources.configuration.locales[0].language == "zh") "远端照片与本地同步" else "Remote photos and local sync"
+            setOnClickListener { onRemotePhotos?.invoke() }
+        }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { marginStart = inset; marginEnd = inset })
 
         tabControl = dev.photopilot.scaffold.ui.widget.SegmentedControl(
             context,
@@ -329,7 +335,7 @@ class FrameEditView(
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
         val height = MeasureSpec.getSize(heightMeasureSpec)
-        applyCompactLayout(height > 0 && width > height && height < 480 * resources.displayMetrics.density)
+        applyCompactLayout(height > 0 && width > height && height < 480 * resources.displayMetrics.density * resources.configuration.fontScale.coerceAtLeast(1f))
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
     }
 

@@ -336,19 +336,22 @@ class AIFrameView(
     }
     private fun previewImages(preview: AIPreview, ids: List<String>, category: Int, page: Int = 0) {
         scope.launch {
-            val assets = withContext(Dispatchers.IO) { environment.database.assetDao().getByIds(ids.drop(page * 12).take(12)) }
+            val assets = withContext(Dispatchers.IO) { ids.drop(page * 12).take(12).mapNotNull { id ->
+                if (id.startsWith("remote:")) environment.remoteMedia.item(id.removePrefix("remote:"))
+                else environment.database.assetDao().getById(id)?.let { dev.photopilot.scaffold.data.remote.PlaybackItem(local = it) }
+            } }
             val images = mutableListOf<android.graphics.Bitmap>()
             val list = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
             for (asset in assets) {
                 val image = ImageView(context).apply { adjustViewBounds = true; maxHeight = (240 * resources.displayMetrics.density).toInt() }
-                val bitmap = withContext(Dispatchers.IO) { runCatching { AIImageDecoder.decode(File(context.filesDir, "originals/${asset.originalRelPath}"), asset.exifOrientation.toInt(), 256) }.getOrNull() }
+                val bitmap = withContext(Dispatchers.IO) { runCatching { environment.remoteMedia.bitmap(asset, 256, 256) }.getOrNull() }
                 bitmap?.let { images.add(it); image.setImageBitmap(it) }
                 list.addView(image)
                 list.addView(CheckBox(context).apply { text = "%.3f".format(preview.matches[asset.id] ?: preview.reviews[asset.id]); isChecked = asset.id in previewChosen[category]; setOnCheckedChangeListener { _, checked -> if (checked) previewChosen[category].add(asset.id) else previewChosen[category].remove(asset.id) } })
             }
             val builder = AlertDialog.Builder(context).setTitle(words("预览图片", "Preview photos")).setView(ScrollView(context).apply { addView(list) }).setPositiveButton(words("完成", "Done"), null)
             if ((page + 1) * 12 < ids.size) builder.setNeutralButton(words("下一页", "Next page")) { _, _ -> previewImages(preview, ids, category, page + 1) }
-            builder.create().apply { setOnDismissListener { images.forEach { it.recycle() } }; show() }
+            builder.create().apply { setOnDismissListener { images.clear() }; show() }
         }
     }
     override fun onAttachedToWindow() {

@@ -219,6 +219,11 @@ class MainActivity : Activity() {
                             openPhotoDetail(asset)
                         }
                     }
+                    "remoteFrame" -> if (permissionOnly) continue else {
+                        val id = entry["frameId"] as? String
+                        val target = id?.takeIf { it.isNotEmpty() }?.let { env.database.frameDao().getById(it) }
+                        openRemoteFrame(target, entry.entries.mapNotNull { (key, value) -> if (key is String && value is String) key to value else null }.toMap())
+                    }
                     "frameEdit" -> if (permissionOnly) continue else (entry["frameId"] as? String)?.takeIf { it.isNotEmpty() }?.let { id ->
                         val frame = withContext(Dispatchers.IO) {
                             env.database.frameDao().getById(id)
@@ -925,6 +930,24 @@ class MainActivity : Activity() {
 
     private var nasEditContext: NasEditContext? = null
 
+    private var remoteConnectionOnly = false
+    private var remoteFrameView: dev.photopilot.scaffold.ui.remote.RemoteFrameView? = null
+
+    private fun openRemoteFrame(frame: FrameEntity?, draft: Map<String, String>? = null) {
+        val env = environment ?: return
+        val view = dev.photopilot.scaffold.ui.remote.RemoteFrameView(this, env, frame, draft)
+        remoteFrameView = view
+        view.onBack = { remoteFrameView = null; popOverlayTracked() }
+        view.onConnect = { remoteConnectionOnly = true; openNasForm() }
+        view.onSaved = {
+            remoteFrameView = null
+            framesDirty = true
+            while (root.topOverlay() != null) popOverlayTracked()
+            showMainContainer()
+        }
+        pushOverlayTracked(view, mapOf("type" to "remoteFrame", "frameId" to (frame?.id ?: "")))
+    }
+
     private fun openNasForm(
         prefillProtocol: String = "webdav",
         prefillHost: String = "",
@@ -940,6 +963,7 @@ class MainActivity : Activity() {
         view.onBack = {
             nasFormView = null
             nasEditContext = null
+            remoteConnectionOnly = false
             popOverlayTracked()
         }
         view.onTest = { form -> testNasConnection(view, form) }
@@ -1253,18 +1277,57 @@ class MainActivity : Activity() {
                 "password" to conn.password,
             ),
         )
+        val existing = withContext(Dispatchers.IO) { env.database.sourceDao().getAll().firstOrNull { it.endpointKey == conn.fingerprint && it.type == if (conn.protocol == "smb") SourceType.SMB else SourceType.WEBDAV } }
+        val editingSource = nasEditContext?.sourceId?.let { id -> withContext(Dispatchers.IO) { env.database.sourceDao().getById(id) } }
+        val previousCredential = withContext(Dispatchers.IO) { env.credentialStore.load(conn.fingerprint) }
+        val credentialsChanged = previousCredential != credentialJson
+        if (NasSourceLifecycle.usesCatalogIndex(remoteConnectionOnly, existing?.settingsJson) || NasSourceLifecycle.usesCatalogIndex(false, editingSource?.settingsJson)) {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    env.credentialStore.save(conn.fingerprint, credentialJson)
+                    val settings = when {
+                        existing != null && !NasSourceLifecycle.usesCatalogIndex(false, existing.settingsJson) -> existing.settingsJson
+                        else -> JsonMini.toJson(JsonMini.parseObject(NasSourceLifecycle.mergeSettings(existing?.settingsJson ?: settingsJson, recursive = recursive)) + mapOf("catalogOnly" to true, "directories" to dirs))
+                    }
+                    val ensured = env.localSources.ensureNasSource(if (conn.protocol == "smb") SourceType.SMB else SourceType.WEBDAV, conn.fingerprint, NasAddress.displayName(conn.protocol, conn.host, conn.port), WebDavSourceAdapter.WEBDAV_CAPABILITY_FLAGS, settings)
+                    val source = if (existing != null && ensured.epoch == existing.epoch && (credentialsChanged || ensured.status != SourceStatus.ACTIVE)) {
+                        ensured.copy(status = SourceStatus.ACTIVE, epoch = ensured.epoch + 1, updatedAt = System.currentTimeMillis()).also { env.database.sourceDao().update(it) }
+                    } else ensured
+                    env.remoteMedia.index(source.id, scopeJson, conn.adapterFor(recursive))
+                }
+            }.onFailure {
+                AlertDialog.Builder(this).setMessage(if (resources.configuration.locales[0].language == "zh") "读取远端目录失败，请检查连接后重试。" else "Unable to read remote folders. Check the connection and retry.").setPositiveButton(R.string.common_close, null).show()
+                return
+            }
+            val editContext = nasEditContext
+            if (editContext != null && editContext.endpointKey != conn.fingerprint) {
+                withContext(Dispatchers.IO) { env.localSources.disconnect(editContext.sourceId, true, System.currentTimeMillis()); env.credentialStore.delete(editContext.endpointKey) }
+            }
+            nasEditContext = null
+            nasFormView = null
+            remoteConnectionOnly = false
+            popOverlayTracked()
+            popOverlayTracked()
+            remoteFrameView?.reloadSources()
+            activeSourcesView?.let { refreshNasSources(it) }
+            return
+        }
         val provisioner = NasSourceProvisioner(
             saveCredential = { fingerprint, json ->
                 env.credentialStore.save(fingerprint, json)
             },
             ensureSource = { fingerprint, displayName, flags, settings ->
-                env.localSources.ensureNasSource(
+                val source = env.localSources.ensureNasSource(
                     type = if (conn.protocol == "smb") SourceType.SMB else SourceType.WEBDAV,
                     endpointKey = fingerprint,
                     displayName = displayName,
                     capabilityFlags = flags,
-                    settingsJson = settings,
-                ).id
+                    settingsJson = NasSourceLifecycle.mergeSettings(existing?.settingsJson ?: settings, recursive = recursive),
+                )
+                if (existing != null && source.epoch == existing.epoch && credentialsChanged) {
+                    env.database.sourceDao().update(source.copy(epoch = source.epoch + 1, status = SourceStatus.ACTIVE, updatedAt = System.currentTimeMillis()))
+                }
+                source.id
             },
             createJob = { sourceId, scope ->
                 env.coordinator.createJob(sourceId, scope)
@@ -1329,9 +1392,13 @@ class MainActivity : Activity() {
                     )
                     return@withContext null
                 }
-                val scopeJson = env.database.importJobDao().getBySource(sourceId)
-                    .maxByOrNull { it.createdAt }
-                    ?.scopeJson ?: return@withContext null
+                if (JsonMini.parseObject(source.settingsJson)["catalogOnly"] == true) {
+                    val directories = JsonMini.parseObject(source.settingsJson)["directories"] ?: listOf("")
+                    env.remoteMedia.index(sourceId, JsonMini.toJson(mapOf("directories" to directories)), adapter)
+                    env.aiFrames.resumeAutomatic()
+                    return@withContext null
+                }
+                val scopeJson = NasScope.latestSourceScope(env.database.importJobDao().getBySource(sourceId).sortedByDescending { it.createdAt }.map { it.scopeJson }) ?: return@withContext null
                 if (source.status != SourceStatus.ACTIVE) {
                     env.database.sourceDao().update(
                         source.copy(
@@ -1428,7 +1495,7 @@ class MainActivity : Activity() {
             val now = System.currentTimeMillis()
             val due = withContext(Dispatchers.IO) {
                 env.database.sourceDao().getAll()
-                    .filter { it.type == SourceType.WEBDAV && it.status == SourceStatus.ACTIVE }
+                    .filter { it.type in setOf(SourceType.WEBDAV, SourceType.SMB) && it.status == SourceStatus.ACTIVE }
                     .filter { source ->
                         source.endpointKey?.let { env.credentialStore.load(it) } != null
                     }
@@ -1450,9 +1517,7 @@ class MainActivity : Activity() {
                 val source = env.database.sourceDao().getById(sourceId) ?: return@withContext null
                 val endpointKey = source.endpointKey ?: return@withContext null
                 val credentialJson = env.credentialStore.load(endpointKey)
-                val scopeJson = env.database.importJobDao().getBySource(sourceId)
-                    .maxByOrNull { it.createdAt }
-                    ?.scopeJson
+                val scopeJson = NasScope.latestSourceScope(env.database.importJobDao().getBySource(sourceId).sortedByDescending { it.createdAt }.map { it.scopeJson }) ?: source.settingsJson
                 NasEditContext(
                     sourceId = source.id,
                     endpointKey = endpointKey,
@@ -1578,7 +1643,7 @@ class MainActivity : Activity() {
     )
 
     private fun buildFramesView(): FramesView {
-        val view = FramesView(this, File(filesDir, "originals"))
+        val view = FramesView(this, File(filesDir, "originals")).apply { remoteMedia = environment?.remoteMedia }
         view.onOpen = { frame -> openFrameEditor(frame) }
         view.onCreate = { openFrameEditor(null) }
         view.onCreateAI = { openAIFrameEditor(null) }
@@ -1604,13 +1669,14 @@ class MainActivity : Activity() {
             val (cards, libraryEmpty) = withContext(Dispatchers.IO) {
                 val frames = env.frameManager.listFrames()
                 val cardModels = frames.map { frame ->
-                    val cover = frame.coverAssetId?.let { env.frames.eligibleCover(it) }
-                        ?: env.frames.buildPlayQueue(frame.id).firstOrNull()
-                            ?.let { env.database.assetDao().getById(it) }
+                    val coverItem = env.frames.coverItem(frame.id)
+                    val cover = coverItem?.takeIf { it.remote == null }?.local
                     val playable = env.frames.resolve(frame.id).playable.size
-                    val pending = env.database.frameSelectionDao()
-                        .pendingIncludedSourceAssets(frame.id).size
-                    FramesView.CardModel(frame, cover, playable, pending)
+                    val remoteMode = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode == "remote"
+                    val readySources = env.frames.remoteItems(frame.id).filter { it.local != null }.mapNotNull { it.sourceAssetId }.toSet()
+                    val pending = if (remoteMode) 0 else env.database.frameSelectionDao()
+                        .pendingIncludedSourceAssets(frame.id).count { it.id !in readySources }
+                    FramesView.CardModel(frame, cover, playable, pending, coverItem?.takeIf { it.remote != null })
                 }
                 val empty = env.database.assetDao().browsePage(1, 0).isEmpty()
                 cardModels to empty
@@ -1727,6 +1793,7 @@ class MainActivity : Activity() {
         }
         view.onBack = { hasChanges -> handleEditorBack(view, hasChanges) }
         view.onSave = { state -> saveFrameEdit(view, frame, state) }
+        view.onRemotePhotos = { openRemoteFrame(frame, mapOf("name" to view.currentState().name)) }
         view.onAISettings = { frame?.let { openAIFrameEditor(it) } ?: openAIFrameEditor(null) }
         view.onManualOrder = { frame?.let { target -> openManualOrder(view, target) } }
         view.onConfirmDynamic = { completion -> confirmDynamicRule(completion) }
@@ -2219,27 +2286,13 @@ class MainActivity : Activity() {
         pushOverlayTracked(view, mapOf("type" to "playbackSettings", "frameId" to frame.id))
         view.bind(frame)
         scope.launch {
-            val preview = withContext(Dispatchers.IO) {
+            val items = withContext(Dispatchers.IO) {
                 val queue = env.frames.buildPlayQueue(frame.id)
-                val cover = frame.coverAssetId?.let { env.frames.eligibleCover(it) }
-                val first = cover ?: queue.firstOrNull()?.let { env.database.assetDao().getById(it) }
-                val second = queue.firstOrNull { it != first?.id }
-                    ?.let { env.database.assetDao().getById(it) }
-                first?.let { asset ->
-                    Pair(
-                        Pair(asset, File(File(filesDir, "originals"), asset.originalRelPath)),
-                        second?.let { other ->
-                            Pair(other, File(File(filesDir, "originals"), other.originalRelPath))
-                        },
-                    )
-                }
+                val all = env.frames.playbackItems(frame.id).associateBy { it.id }
+                queue.take(2).mapNotNull { all[it] }
             }
-            if (playbackSettingsView === view && preview != null) {
-                view.bindPreview(
-                    preview.first.first, preview.first.second,
-                    preview.second?.first, preview.second?.second,
-                )
-            }
+            val decoded = items.map { item -> runCatching { env.remoteMedia.bitmap(item, 640, 640) }.getOrNull() }
+            if (playbackSettingsView === view) view.bindRemotePreview(decoded.getOrNull(0), decoded.getOrNull(1))
         }
     }
 
@@ -3345,7 +3398,7 @@ class MainActivity : Activity() {
         if (overlayMeta.isNotEmpty()) {
             outState.putString(
                 KEY_OVERLAYS,
-                JsonMini.toJson(mapOf("stack" to overlayMeta.map { (view, meta) -> if (view is dev.photopilot.scaffold.ui.aiframes.AIFrameView) meta + view.draftState() else meta })),
+                JsonMini.toJson(mapOf("stack" to overlayMeta.map { (view, meta) -> when (view) { is dev.photopilot.scaffold.ui.aiframes.AIFrameView -> meta + view.draftState(); is dev.photopilot.scaffold.ui.remote.RemoteFrameView -> meta + view.draftState(); else -> meta } })),
             )
         }
     }
@@ -3383,6 +3436,8 @@ class MainActivity : Activity() {
                 playerEngine = null
                 playerView = null
             }
+            if (popped === remoteFrameView) remoteFrameView = null
+            if (popped === nasFormView) { nasFormView = null; remoteConnectionOnly = false }
             if (popped === activeSourcesView) activeSourcesView = null
             return
         }

@@ -4,6 +4,7 @@ import UIKit
 struct PlayerSettings: Sendable {
     static let restDisplayValues = ["dim", "clock", "clock_weather", "black"]
 
+    var mediaStorageMode = FrameStorageMode.local
     var holdSeconds = 10
     var transition = PlaybackTiming.transitionRandom
     var transitionSeconds = 0.8
@@ -33,6 +34,7 @@ struct PlayerSettings: Sendable {
 
     static func parse(json: String) -> PlayerSettings {
         var settings = PlayerSettings()
+        settings.mediaStorageMode = FrameStorageMode.read(json)
         guard let data = json.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             return settings
@@ -99,34 +101,22 @@ struct PlayerSettings: Sendable {
 final class PlayerImageLoader: @unchecked Sendable {
     static let maxDecodePixels: Int64 = 4096
 
-    private nonisolated(unsafe) static let sharedCache = NSCache<NSString, UIImage>()
-    private static let cacheLock = NSLock()
-    private nonisolated(unsafe) static var cacheGeneration = 0
-
     private let originalsRoot: URL
+    private let media: RemoteMediaService?
 
-    init(originalsRoot: URL) {
+    init(originalsRoot: URL, media: RemoteMediaService? = nil) {
+        self.media = media
         self.originalsRoot = originalsRoot
     }
 
-    static func clearMemoryCache() {
-        cacheLock.lock()
-        defer { cacheLock.unlock() }
-        cacheGeneration &+= 1
-        sharedCache.removeAllObjects()
-    }
+    static func clearMemoryCache() { RemoteDecodedImages.shared.clear() }
 
     private static func cacheEntry(for key: NSString) -> (image: UIImage?, generation: Int) {
-        cacheLock.lock()
-        defer { cacheLock.unlock() }
-        return (sharedCache.object(forKey: key), cacheGeneration)
+        (RemoteDecodedImages.shared.image(key: "player:" + (key as String)), RemoteDecodedImages.shared.generation())
     }
 
     private static func cache(_ image: UIImage, for key: NSString, generation: Int) {
-        cacheLock.lock()
-        defer { cacheLock.unlock() }
-        guard generation == cacheGeneration else { return }
-        sharedCache.setObject(image, forKey: key)
+        RemoteDecodedImages.shared.store(image, key: "player:" + (key as String), generation: generation)
     }
 
     func image(
@@ -136,6 +126,11 @@ final class PlayerImageLoader: @unchecked Sendable {
         scale: CGFloat,
         quality: String = "auto"
     ) async -> UIImage? {
+        if assetID.hasPrefix("remote:"), let media {
+            let target = RenderGeometry.decodeTarget(viewW: Int64(max(pointSize.width, 1)), viewH: Int64(max(pointSize.height, 1)),
+                scale: Int64(max(scale, 1)), cap: Self.maxDecodePixels)
+            return try? await media.image(runtimeID: assetID, width: Int(target.0), height: Int(target.1), priority: .playback)
+        }
         let key = "\(assetID)#\(quality)" as NSString
         let entry = Self.cacheEntry(for: key)
         if let cached = entry.image {
@@ -174,9 +169,8 @@ final class PlayerImageLoader: @unchecked Sendable {
             ) else { return nil }
             return UIImage(cgImage: cgImage)
         }.value
-        if let image {
-            Self.cache(image, for: key, generation: entry.generation)
-        }
+        guard entry.generation == RemoteDecodedImages.shared.generation() else { return nil }
+        if let image { Self.cache(image, for: key, generation: entry.generation) }
         return image
     }
 
@@ -191,9 +185,8 @@ final class PlayerImageLoader: @unchecked Sendable {
                   let output = ImageRenderer.blurredBackground(of: cgImage) else { return nil }
             return UIImage(cgImage: output)
         }.value
-        if let blurred {
-            Self.cache(blurred, for: key, generation: entry.generation)
-        }
+        guard entry.generation == RemoteDecodedImages.shared.generation() else { return nil }
+        if let blurred { Self.cache(blurred, for: key, generation: entry.generation) }
         return blurred
     }
 
@@ -302,7 +295,7 @@ final class PlayerViewController: UIViewController {
     init(environment: AppEnvironment, frameID: String) {
         self.environment = environment
         self.frameID = frameID
-        self.loader = PlayerImageLoader(originalsRoot: environment.originalsRootURL)
+        self.loader = PlayerImageLoader(originalsRoot: environment.originalsRootURL, media: environment.remoteMedia)
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -375,6 +368,9 @@ final class PlayerViewController: UIViewController {
         noticeLabel.textColor = ThemeColor.textOnPhoto
         noticeLabel.numberOfLines = 0
         noticeLabel.isHidden = true
+        noticeLabel.isUserInteractionEnabled = true
+        noticeLabel.accessibilityTraits.insert(.button)
+        noticeLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(retryRemotePhotos)))
         noticeLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(noticeLabel)
 
@@ -447,6 +443,7 @@ final class PlayerViewController: UIViewController {
             object: nil
         )
 
+        NotificationCenter.default.addObserver(self, selector: #selector(remoteMediaDidChange(_:)), name: .remoteMediaChanged, object: nil)
         startClock()
         startRestMonitor()
         startHolidayMonitor()
@@ -679,6 +676,21 @@ final class PlayerViewController: UIViewController {
     }
 
     private func loadImage(assetID: String) async -> UIImage? {
+        if assetID.hasPrefix("remote:") {
+            do {
+                let target = RenderGeometry.decodeTarget(viewW: Int64(max(view.bounds.width, 1)), viewH: Int64(max(view.bounds.height, 1)),
+                    scale: Int64(max(view.traitCollection.displayScale, 1)), cap: PlayerImageLoader.maxDecodePixels)
+                let image = try await environment.remoteMedia.image(runtimeID: assetID, mode: settings.mediaStorageMode, width: Int(target.0), height: Int(target.1), priority: .playback)
+                guard await environment.remoteMedia.authorized(runtimeID: assetID, mode: settings.mediaStorageMode) else { return nil }
+                relPaths[assetID] = assetID
+                noticeLabel.isHidden = true
+                return image
+            } catch {
+                noticeLabel.text = error.localizedDescription
+                noticeLabel.isHidden = false
+                return nil
+            }
+        }
         guard let relPath = relPaths[assetID] else {
             let asset = try? await environment.assets.fetchAsset(id: assetID)
             guard let relPath = asset?.originalRelPath else { return nil }
@@ -700,18 +712,47 @@ final class PlayerViewController: UIViewController {
         )
     }
 
+    private var prefetchTask: Task<Void, Never>?
+    private var readyNextID: String?
+
     private func prefetchNext() {
+        prefetchTask?.cancel()
+        readyNextID = nil
         guard queue.count > 1 else { return }
-        let nextID = queue[(index + 1) % queue.count]
-        Task { [weak self] in
-            _ = await self?.loadImage(assetID: nextID)
+        prefetchTask = Task { [weak self] in
+            guard let self else { return }
+            while queue.count > 1, !Task.isCancelled {
+                let nextIndex = (index + 1) % queue.count
+                let nextID = queue[nextIndex]
+                let image = await loadImage(assetID: nextID)
+                guard !Task.isCancelled else { return }
+                if image != nil {
+                    readyNextID = nextID
+                    if controllerState == PlaybackController.holding, nextTransitionAtMs <= Int64(Date().timeIntervalSince1970 * 1000) {
+                        dispatch(PlaybackEvent(type: "hold_elapsed", nextReady: true))
+                    }
+                    return
+                }
+                queue.remove(at: nextIndex)
+                if nextIndex < index { index -= 1 }
+                skippedAny = true
+            }
+            if !Task.isCancelled {
+                noticeLabel.text = AIText.value("No other photos are available. Tap to retry.", "其他照片暂不可用，轻点重试。")
+                noticeLabel.isHidden = false
+            }
         }
+    }
+
+    @objc private func retryRemotePhotos() {
+        noticeLabel.isHidden = true
+        rebuildQueue(keepIndex: true)
     }
 
     private func isNextReady() -> Bool {
         guard queue.count > 1 else { return false }
         let nextID = queue[(index + 1) % queue.count]
-        return relPaths[nextID] != nil
+        return readyNextID == nextID
     }
 
     private func handleDecodeFail() {
@@ -1093,6 +1134,9 @@ final class PlayerViewController: UIViewController {
     }
 
     private func clearTextures() {
+        prefetchTask?.cancel()
+        prefetchTask = nil
+        readyNextID = nil
         workTask?.cancel()
         invalidateImageLoad()
         frontImageView.layer.removeAllAnimations()
@@ -1135,6 +1179,17 @@ final class PlayerViewController: UIViewController {
             guard let self else { return }
             try? environment.settings.setValue("true", forKey: AppSettingsRepository.playbackHasPlayedOnceKey)
             try? environment.settings.setValue(frameID, forKey: AppSettingsRepository.playbackLastFrameIDKey)
+        }
+    }
+
+    @objc private func remoteMediaDidChange(_ notification: Notification) {
+        guard queue.contains(where: { $0.hasPrefix("remote:") }) || settings.mediaStorageMode == .remote else { return }
+        if notification.userInfo?["revoked"] as? Bool == true {
+            clearTextures()
+            dispatch(PlaybackEvent(type: "selection_changed", playableRemaining: true, category: "revoke"))
+            rebuildQueue(keepIndex: true)
+        } else {
+            dispatch(PlaybackEvent(type: "selection_changed", category: "add"))
         }
     }
 

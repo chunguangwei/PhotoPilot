@@ -1,8 +1,8 @@
 # PhotoPilot
 
-一个把旧 iPad / Android 平板变成数字相框的应用：导入本机、文件或 NAS（WebDAV/SMB）里的照片，按相框精选内容，配上时钟、日期与天气，常亮播放。
+一个把旧 iPad / Android 平板变成数字相框的应用：导入本机与文件照片，或按需播放 NAS（WebDAV/SMB）远端照片，按相框精选内容，配上时钟、日期与天气，常亮播放。
 
-Turn a spare iPad or Android tablet into a digital photo frame: import from the device, files, or a NAS (WebDAV/SMB), curate frames, and play them with clock, date and weather overlays.
+Turn a spare iPad or Android tablet into a digital photo frame: import from the device or files, or play NAS (WebDAV/SMB) photos on demand, curate frames, and play them with clock, date and weather overlays.
 
 ## 特性 / Features
 
@@ -14,11 +14,21 @@ Turn a spare iPad or Android tablet into a digital photo frame: import from the 
 - 照片只在本机处理；不上传、不记录照片名与路径
 - Android 内置 GitHub 更新检查（断点续传 + 前台保活下载）
 
-## AI 分类相框 / AI frames（1.2.0）
+## 远端按需相框 / On-demand remote frames（1.3.0）
 
-在相框页选择“AI 创建相框”，选择已导入的相册或目录，输入中英文类别（每行一个），按需设置包含/排除描述，先查看分类预览与名称建议，再确认创建。名称与选片均可修改。持续自动分类默认关闭。开启后仅处理所选目录后续导入的合格照片，也可在 AI 相框设置中关闭。人工添加和排除受到保护。
+在相框页进入在线选片，连接 WebDAV 或 SMB，选择照片或目录后确认保存。新远端相框默认按需播放，目录浏览先索引元数据。播放、封面、预览与 AI 共用 128MiB 原始照片临时缓存，包含未完成下载，自动淘汰，播放只预取下一张。缓存还受系统清理影响，远端照片没有可用副本时需要联网访问来源。
 
-Choose **Create AI frames**, select imported albums/folders, and enter English or Chinese categories, one per line. Optional include/exclude descriptions narrow the matches. Review photos and editable name suggestions before saving. Automatic classification of future imports is optional, initially off and editable later. Manual additions and exclusions remain under your control.
+相框中开启本地同步可保留所选原图供离线播放，切换模式保留选片与 AI 规则。释放本地副本先查看可释放与共享占用，再确认清理。其他本地相框需要的副本受到保护。旧数据缺少存储模式字段时按本地模式解析，来源级导入会产生额外存储占用。模型、元数据、明确同步的原图及其他导入内容另占空间。普通播放无需 AI 模型。
+
+Open online photo selection from Frames, connect WebDAV or SMB, choose photos or a folder scope, and confirm. New remote frames default to on-demand playback. Metadata browsing fetches directory entries first. Playback, covers, previews and AI share a 128MiB temporary raw-photo cache including partial downloads. The cache evicts automatically and playback prefetches only the next photo. The operating system may also purge it. Photos require source access when a usable local or cached copy is unavailable.
+
+Enable local sync per frame for offline access. Storage-mode changes preserve selections and AI rules. Review reclaimable/shared storage before confirming local-copy release. Copies required by other local frames remain protected. Frames without a stored mode use local playback. Source-level imports also occupy device storage. Models, metadata, synced originals and other imports use additional storage. Ordinary playback needs no AI model.
+
+## AI 分类相框 / AI frames（1.2.0 起）
+
+在相框页选择“AI 创建相框”，选择本地相册或目录（1.3.0 起也可选远端目录），输入中英文类别（每行一个），按需设置包含/排除描述，先查看分类预览与名称建议，再确认创建。名称与选片均可修改。持续自动分类默认关闭。开启后仅处理所选目录后续新增的合格照片，也可在 AI 相框设置中关闭。人工添加和排除受到保护。
+
+Choose **Create AI frames**, select local albums/folders or remote folders from1.3.0, and enter English or Chinese categories, one per line. Optional include/exclude descriptions narrow the matches. Review photos and editable name suggestions before saving. Automatic classification of newly discovered eligible photos within the selected scope is optional, initially off and editable later. Manual additions and exclusions remain under your control.
 
 - **EmbeddingGemma 2 文本＋图像版 / standard** 约387.7 MB，使用分类所需的文本和图像部分。Android 标准模型需要64位进程。
 - **多语 CLIP 轻量版 / Multilingual CLIP Lite** 约201.5 MB，包含文本编码器、图像编码器、投影和词表。完整下载比标准版小约48%，支持中英文零样本图像分类。

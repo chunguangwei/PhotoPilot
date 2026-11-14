@@ -10,6 +10,7 @@ struct SourceInfoDTO: Sendable {
     let recursive: Bool
     let directories: [String]
     let mirrorDelete: Bool
+    var catalogOnly = false
 }
 
 final class SourceRepository {
@@ -76,7 +77,12 @@ final class SourceRepository {
         )
         request.fetchLimit = 1
         if let existing = try context.fetch(request).first {
-            if (existing.value(forKey: "status") as? String) == "disconnected" {
+            let oldJSON = existing.value(forKey: "settings_json") as? String ?? "{}"
+            let oldSettings = try? JSONSerialization.jsonObject(with: Data(oldJSON.utf8)) as? [String: Any]
+            let oldDirectories = (oldSettings?["directories"] as? [String] ?? []).map { Data($0.utf8) }
+            let changed = oldDirectories != directories.map { Data($0.utf8) } || oldSettings?["recursive"] as? Bool != recursive
+            if (existing.value(forKey: "status") as? String) == "disconnected" || changed {
+                if changed { existing.setValue((existing.value(forKey: "epoch") as? Int ?? 1) + 1, forKey: "epoch") }
                 var merged: [String: Any] = [:]
                 if let raw = existing.value(forKey: "settings_json") as? String,
                    let data = raw.data(using: .utf8),
@@ -115,7 +121,7 @@ final class SourceRepository {
             throw PersistenceError.dbConstraintViolation
         }
         let settings = try? JSONSerialization.data(
-            withJSONObject: ["recursive": recursive, "directories": directories],
+            withJSONObject: ["recursive": recursive, "directories": directories, "catalogOnly": true],
             options: [.sortedKeys]
         )
         let now = Int(Date().timeIntervalSince1970 * 1000)
@@ -242,12 +248,14 @@ final class SourceRepository {
             var recursive = true
             var directories: [String] = []
             var mirrorDelete = false
+            var catalogOnly = false
             if let raw = row.value(forKey: "settings_json") as? String,
                let data = raw.data(using: .utf8),
                let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 recursive = parsed["recursive"] as? Bool ?? true
                 directories = parsed["directories"] as? [String] ?? []
                 mirrorDelete = parsed["mirrorDelete"] as? Bool ?? false
+                catalogOnly = parsed["catalogOnly"] as? Bool ?? false
             }
             return SourceInfoDTO(
                 id: row.value(forKey: "id") as? String ?? "",
@@ -257,7 +265,8 @@ final class SourceRepository {
                 status: row.value(forKey: "status") as? String ?? "",
                 recursive: recursive,
                 directories: directories,
-                mirrorDelete: mirrorDelete
+                mirrorDelete: mirrorDelete,
+                catalogOnly: catalogOnly
             )
         }
     }

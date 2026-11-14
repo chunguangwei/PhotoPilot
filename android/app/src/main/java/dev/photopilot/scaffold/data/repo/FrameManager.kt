@@ -56,7 +56,9 @@ class FrameManager(
 
     suspend fun setCover(frameId: String, assetId: String?) = withContext(Dispatchers.IO) {
         val frame = db.frameDao().getById(frameId) ?: return@withContext
-        db.frameDao().update(frame.copy(coverAssetId = assetId, updatedAt = nowMillis()))
+        val settings = dev.photopilot.scaffold.data.logic.JsonMini.parseObject(frame.settingsJson).toMutableMap()
+        settings.remove("remoteCoverRef")
+        db.frameDao().update(frame.copy(coverAssetId = assetId, settingsJson = dev.photopilot.scaffold.data.logic.JsonMini.toJson(settings), updatedAt = nowMillis()))
     }
 
     suspend fun duplicateFrame(frameId: String): FrameEntity? = withContext(Dispatchers.IO) {

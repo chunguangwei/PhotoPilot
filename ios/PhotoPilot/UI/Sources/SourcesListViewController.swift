@@ -409,6 +409,11 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
                 .first(where: { $0.id == sourceID }) else { return }
         Task { [weak self] in
             guard let self else { return }
+            if source.catalogOnly {
+                _ = try? await environment.remoteMedia.index(sourceID: source.id)
+                refreshNasSources()
+                return
+            }
             let runner: ImportRunner?
             if source.type == "smb" {
                 runner = try? await environment.startSmbImport(sourceID: source.id)

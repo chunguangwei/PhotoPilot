@@ -1,10 +1,11 @@
 import Foundation
 
 enum AIFrameError: String, Error, LocalizedError, Equatable {
-    case invalidVector, invalidRules, invalidState, missingModel, invalidManifest, invalidDownload, staleRun, interrupted, promptTooLong, classificationFailed, busy, requiresForeground, lowPower, thermal, lowMemory
+    case mediaBusy, invalidVector, invalidRules, invalidState, missingModel, invalidManifest, invalidDownload, staleRun, interrupted, promptTooLong, classificationFailed, busy, requiresForeground, lowPower, thermal, lowMemory
 
     var errorDescription: String? {
         switch self {
+        case .mediaBusy: return AIText.value("Classification paused while playback uses the temporary cache. Return here to resume.", "播放正在使用临时缓存，分类已暂停，请返回此处继续扫描。")
         case .lowMemory: return AIText.value("There is not enough memory for this model. Try Multilingual CLIP Lite, or retry with more memory available.", "可用内存不足，无法运行此模型。请尝试 多语 CLIP 轻量版，或释放内存后重试。")
         case .busy: return AIText.value("Another classification or model operation is running. Wait or cancel it first.", "已有分类或模型操作正在进行，请等待完成或先取消。")
         case .requiresForeground: return AIText.value("Paused. Return to PhotoPilot to continue.", "已暂停，请回到 PhotoPilot 前台以继续。")
@@ -123,6 +124,7 @@ struct AIFrameMatch: Codable, Sendable {
     let score: Float
     let decision: AIFrameDecision
     let themes: [String]
+    var contentVersion: String? = nil
 }
 
 struct AIFrameState: Codable, Sendable {

@@ -1,6 +1,7 @@
 import UIKit
 
 final class NasAddViewController: UIViewController, UITextFieldDelegate {
+    var onCatalogReady: ((String) -> Void)?
     private let environment: AppEnvironment
 
     private let schemeSegmented = UISegmentedControl()
@@ -750,6 +751,13 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
                         }
                         environment.credentialStore.delete(fingerprint: oldKey)
                     }
+                }
+                let source = try environment.sources.webdavSources().first { $0.id == sourceID }
+                if source?.catalogOnly == true || onCatalogReady != nil {
+                    _ = try await environment.remoteMedia.index(sourceID: sourceID)
+                    if let onCatalogReady { onCatalogReady(sourceID) }
+                    else { dismiss(animated: true) }
+                    return
                 }
                 let runner = isSmbSelected
                     ? try await environment.startSmbImport(sourceID: sourceID)

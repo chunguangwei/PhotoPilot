@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import dev.photopilot.scaffold.data.AppEnvironment
-import dev.photopilot.scaffold.data.db.AssetEntity
+import dev.photopilot.scaffold.data.remote.PlaybackItem
 import dev.photopilot.scaffold.data.db.FrameEntity
 import dev.photopilot.scaffold.data.db.MediaKind
 import dev.photopilot.scaffold.data.db.PlaybackSnapshotEntity
@@ -19,6 +19,7 @@ import dev.photopilot.scaffold.data.logic.QualityScale
 import dev.photopilot.scaffold.data.render.BitmapRenderer
 import dev.photopilot.scaffold.ui.permissions.PhotoPermissionGate
 import dev.photopilot.scaffold.data.repo.SelectionRefEdit
+import kotlinx.coroutines.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -38,14 +39,14 @@ class PlayerEngine(
     interface Listener {
         fun onStateChanged(state: String)
         fun onShowAsset(
-            asset: AssetEntity,
+            asset: PlaybackItem,
             decoded: DecodedAsset,
             transitionMs: Long,
             direction: Int,
             position: Int,
         )
         fun onShowVideo(
-            asset: AssetEntity,
+            asset: PlaybackItem,
             path: String,
             blurred: Bitmap?,
             edgeColor: Int?,
@@ -53,6 +54,7 @@ class PlayerEngine(
         fun onClearTextures()
         fun onShowSafeImage()
         fun onQueueInfo(size: Int)
+        fun onMediaLoadError(code: String) = Unit
         fun onDecodeSkipped()
         fun onKeepScreenOn(keep: Boolean)
     }
@@ -68,11 +70,13 @@ class PlayerEngine(
     private val originalsDir = File(appContext.filesDir, "originals")
     private val handler = Handler(Looper.getMainLooper())
     private val executor = Executors.newSingleThreadExecutor()
+    private var currentDecodeJob: Job? = null
+    private var prefetchDecodeJob: Job? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private var state = PlaybackController.IDLE
     private var queue: List<String> = emptyList()
-    private var assetsById: Map<String, AssetEntity> = emptyMap()
+    private var assetsById: Map<String, PlaybackItem> = emptyMap()
     private var index = 0
     private var transitionTargetIndex: Int? = null
     private var decodedCurrent: DecodedAsset? = null
@@ -152,7 +156,22 @@ class PlayerEngine(
         if (orderChanged) onExternalSelectionChanged()
     }
 
+    private var authorityJob: kotlinx.coroutines.Job? = null
     fun start(fromSnapshot: Boolean) {
+        authorityJob = scope.launch {
+            while (!stopped) {
+                kotlinx.coroutines.delay(250)
+                val current = currentAsset()
+                if (current != null && !env.remoteMedia.valid(current)) {
+                    queueGeneration++
+                    decodedCurrent = null
+                    decodedNext = null
+                    listener.onClearTextures()
+                    listener.onShowSafeImage()
+                    rebuildQueue(safePoint = true, allowSnapshot = false)
+                }
+            }
+        }
         useSnapshotOnRebuild = fromSnapshot
         handler.postDelayed(restTickRunnable, REST_TICK_MS)
         handler.postDelayed(holidayTickRunnable, HOLIDAY_TICK_MS)
@@ -168,7 +187,10 @@ class PlayerEngine(
 
     fun stop(clearSnapshot: Boolean) {
         stopped = true
+        authorityJob?.cancel()
         handler.removeCallbacksAndMessages(null)
+        currentDecodeJob?.cancel()
+        prefetchDecodeJob?.cancel()
         executor.shutdownNow()
         holidayCheck?.cancel()
         if (clearSnapshot) {
@@ -218,8 +240,8 @@ class PlayerEngine(
 
     fun onPermissionRevoked() {
         scope.launch {
-            val remaining = PhotoPermissionGate.status(appContext) != PhotoPermissionGate.Status.DENIED &&
-                queue.isNotEmpty()
+            val remaining = queue.any { it.startsWith("remote:") } ||
+                PhotoPermissionGate.status(appContext) != PhotoPermissionGate.Status.DENIED && queue.isNotEmpty()
             dispatch(PlaybackEvent(type = "asset_revoked", playableRemaining = remaining))
         }
     }
@@ -233,7 +255,7 @@ class PlayerEngine(
             env.frames.save(
                 frameId = frame.id,
                 baseVersion = fresh.selectionVersion,
-                addExcludes = listOf(SelectionRefEdit(assetId = assetId, sourceAssetId = null)),
+                addExcludes = listOf(SelectionRefEdit(assetId = assetId.takeUnless { it.startsWith("remote:") }, sourceAssetId = assetId.takeIf { it.startsWith("remote:") }?.removePrefix("remote:"))),
             )
             dispatch(PlaybackEvent(type = "selection_changed", category = null))
         }
@@ -332,13 +354,15 @@ class PlayerEngine(
     }
 
     private fun rebuildQueue(safePoint: Boolean, allowSnapshot: Boolean, silent: Boolean = false) {
+        currentDecodeJob?.cancel()
+        prefetchDecodeJob?.cancel()
         val generation = ++queueGeneration
         scope.launch {
             val loaded = withContext(Dispatchers.IO) {
                 val live = env.frames.buildPlayQueue(frame.id)
                 val restored = if (allowSnapshot) loadSnapshotQueue(live) else null
                 val result = restored ?: PlaybackRestore.Result(live, 0, null)
-                result to env.database.assetDao().getByIds(result.queue).associateBy { it.id }
+                result to env.frames.playbackItems(frame.id).associateBy { it.id }
             }
             if (stopped || generation != queueGeneration) return@launch
             val anchor = if (safePoint) queue.getOrNull(index) else null
@@ -387,7 +411,7 @@ class PlayerEngine(
         return PlaybackRestore.resolve(live, ids, snapIndex, snapshot.remainingHoldMs)
     }
 
-    private fun showVideoIfNeeded(asset: AssetEntity, silent: Boolean): Boolean {
+    private fun showVideoIfNeeded(asset: PlaybackItem, silent: Boolean): Boolean {
         if (asset.mediaKind != MediaKind.VIDEO) return false
         val path = java.io.File(originalsDir, asset.originalRelPath).absolutePath
         executor.execute {
@@ -474,6 +498,8 @@ class PlayerEngine(
         val safeTarget = ((target % queue.size) + queue.size) % queue.size
         assetsById[queue[safeTarget]]?.let { asset ->
             if (asset.mediaKind == MediaKind.VIDEO) {
+                currentDecodeJob?.cancel()
+                prefetchDecodeJob?.cancel()
                 transitionTargetIndex = null
                 consecutiveDecodeFails = 0
                 index = safeTarget
@@ -486,7 +512,11 @@ class PlayerEngine(
         transitionTargetIndex = safeTarget
         val prefetched = if (safeTarget == nextIndex()) decodedNext else null
         if (prefetched != null) {
-            completeTransitionTo(safeTarget, prefetched, direction)
+            scope.launch {
+                val item = assetsById[queue[safeTarget]]
+                if (item != null && env.remoteMedia.valid(item)) completeTransitionTo(safeTarget, prefetched, direction)
+                else handleDecodeFailure()
+            }
             return
         }
         decodeAsset(queue[safeTarget]) { decoded ->
@@ -545,7 +575,7 @@ class PlayerEngine(
         if (queue.size < 2) return
         val target = nextIndex()
         val assetId = queue.getOrNull(target) ?: return
-        decodeAsset(assetId) { decoded ->
+        decodeAsset(assetId, prefetch = true) { decoded ->
             if (stopped || decoded == null) return@decodeAsset
             if (nextIndex() == target) {
                 decodedNext = decoded
@@ -560,42 +590,39 @@ class PlayerEngine(
         }
     }
 
-    private fun decodeAsset(assetId: String, callback: (DecodedAsset?) -> Unit) {
+    private fun decodeAsset(assetId: String, prefetch: Boolean = false, callback: (DecodedAsset?) -> Unit) {
         val generation = queueGeneration
-        val asset = assetsById[assetId]
-        if (asset == null) {
-            mainHandler.post { if (!stopped && generation == queueGeneration) callback(null) }
-            return
+        val asset = assetsById[assetId] ?: return callback(null)
+        if (prefetch) {
+            prefetchDecodeJob?.cancel()
+        } else {
+            currentDecodeJob?.cancel()
+            prefetchDecodeJob?.cancel()
         }
-        val file = File(originalsDir, asset.originalRelPath)
-        val metrics = appContext.resources.displayMetrics
-        val targetW = QualityScale.scale(metrics.widthPixels, settings.qualityLevel)
-        val targetH = QualityScale.scale(metrics.heightPixels, settings.qualityLevel)
-        executor.execute {
-            val bitmap = if (file.isFile) {
-                runCatching {
-                    BitmapRenderer.decodeToTarget(file, targetW, targetH, asset.exifOrientation.toInt())
-                }.getOrNull()
-            } else {
+        val job = scope.launch {
+            if (stopped || generation != queueGeneration) return@launch
+            val metrics = appContext.resources.displayMetrics
+            val targetW = QualityScale.scale(metrics.widthPixels, settings.qualityLevel)
+            val targetH = QualityScale.scale(metrics.heightPixels, settings.qualityLevel)
+            val decoded = try {
+                val bitmap = env.remoteMedia.bitmap(asset, targetW, targetH, priority = 2) ?: return@launch callback(null)
+                withContext(Dispatchers.IO) {
+                    ensureActive()
+                    val blurred = if (settings.fitMode != FramePlaybackSettings.FIT_COLOR) BitmapRenderer.blurBackground(bitmap) else null
+                    val edge = if (settings.fitMode == FramePlaybackSettings.FIT_COLOR) BitmapRenderer.edgeColor(bitmap)?.let { android.graphics.Color.parseColor(it) } else null
+                    DecodedAsset(bitmap, blurred, edge)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                val code = error.message?.takeIf { it.matches(Regex("[A-Z_]+")) } ?: "REMOTE_LOAD_FAILED"
+                if (!stopped && generation == queueGeneration && !prefetch) listener.onMediaLoadError(code)
                 null
             }
-            val decoded = bitmap?.let {
-                val blurred = if (settings.fitMode != FramePlaybackSettings.FIT_COLOR) {
-                    runCatching { BitmapRenderer.blurBackground(it) }.getOrNull()
-                } else {
-                    null
-                }
-                val edge = if (settings.fitMode == FramePlaybackSettings.FIT_COLOR) {
-                    runCatching {
-                        BitmapRenderer.edgeColor(it)?.let { hex -> android.graphics.Color.parseColor(hex) }
-                    }.getOrNull()
-                } else {
-                    null
-                }
-                DecodedAsset(bitmap = it, blurred = blurred, edgeColor = edge)
-            }
-            mainHandler.post { if (!stopped && generation == queueGeneration) callback(decoded) }
+            ensureActive()
+            if (!stopped && generation == queueGeneration) callback(if (env.remoteMedia.valid(asset)) decoded else null)
         }
+        if (prefetch) prefetchDecodeJob = job else currentDecodeJob = job
     }
 
     private fun transitionMillis(): Long {
@@ -740,7 +767,7 @@ class PlayerEngine(
         listener.onKeepScreenOn(keep)
     }
 
-    private fun currentAsset(): AssetEntity? =
+    private fun currentAsset(): PlaybackItem? =
         queue.getOrNull(index)?.let(assetsById::get)
 
     private fun nextIndex(): Int =

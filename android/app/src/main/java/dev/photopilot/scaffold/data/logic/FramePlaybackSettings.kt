@@ -1,6 +1,7 @@
 package dev.photopilot.scaffold.data.logic
 
 data class FramePlaybackSettings(
+    val mediaStorageMode: String = "local",
     val holdSeconds: Int = 10,
     val transition: String = PlaybackTiming.TRANSITION_RANDOM,
     val transitionSeconds: Double = 0.8,
@@ -70,6 +71,7 @@ data class FramePlaybackSettings(
             val rest = root["rest"] as? Map<*, *>
             val music = root["music"] as? Map<*, *>
             return FramePlaybackSettings(
+                mediaStorageMode = if (root["mediaStorageMode"] == "remote") "remote" else "local",
                 holdSeconds = (root["holdSeconds"] as? Double)?.toInt() ?: 10,
                 transition = root["transition"] as? String ?: PlaybackTiming.TRANSITION_RANDOM,
                 transitionSeconds = root["transitionSeconds"] as? Double ?: 0.8,

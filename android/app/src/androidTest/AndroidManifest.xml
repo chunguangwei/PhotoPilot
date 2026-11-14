@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner" android:targetPackage="dev.photopilot.scaffold" />
     <instrumentation android:name="dev.photopilot.scaffold.PlaybackSettingsInstrumentation" android:targetPackage="dev.photopilot.scaffold" />
     <instrumentation android:name="dev.photopilot.scaffold.SourcesLayoutInstrumentation" android:targetPackage="dev.photopilot.scaffold" />
     <instrumentation android:name="dev.photopilot.scaffold.PlaybackLayoutInstrumentation" android:targetPackage="dev.photopilot.scaffold" />

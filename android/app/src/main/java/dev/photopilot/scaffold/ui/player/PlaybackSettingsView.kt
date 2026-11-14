@@ -298,6 +298,14 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         }
     }
 
+    fun bindRemotePreview(first: android.graphics.Bitmap?, next: android.graphics.Bitmap?) {
+        previewBitmap = first
+        previewBitmapB = next
+        previewBlurred = first?.let { runCatching { BitmapRenderer.blurBackground(it) }.getOrNull() }
+        previewEdge = first?.let { BitmapRenderer.edgeColor(it)?.let(android.graphics.Color::parseColor) }
+        renderPreview()
+    }
+
     fun showError(error: PlaybackSettingsEdit.Error) {
         clearErrors()
         when (error) {

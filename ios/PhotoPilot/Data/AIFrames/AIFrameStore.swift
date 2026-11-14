@@ -6,6 +6,7 @@ struct AIFrameCandidate: Sendable {
     let id: String
     let contentHash: String
     let relativePath: String
+    var remoteDescriptor: RemoteMediaDescriptor? = nil
 }
 
 /// AI configuration, progress and membership changes share the library's SQLite transaction.
@@ -108,6 +109,8 @@ actor AIFrameStore {
             guard let vector = try? JSONDecoder().decode([Float].self, from: data),
                   expectedDimension == nil || vector.count == expectedDimension,
                   (try? AIFrameScoring.cosine(vector, vector)) != nil else { return nil }
+            row.setValue(Int(Date().timeIntervalSince1970 * 1000), forKey: "updated_at")
+            try context.save()
             return vector
         }
     }
@@ -117,10 +120,12 @@ actor AIFrameStore {
         let context = controller.container.newBackgroundContext()
         try await context.perform {
             // A deletion racing inference must never recreate the deleted photo's features.
-            guard try Self.eligibleAsset(context, id: assetID) != nil else { return }
+            guard let media = try Self.eligibleAsset(context, id: assetID) else { return }
+            if assetID.hasPrefix("remote:"), !version.hasPrefix(try Self.contentVersion(media, context: context) + ":") { return }
             let key = Self.cacheKey(assetID: assetID, version: version)
             let row = try Self.setting(context, key: key) ?? NSEntityDescription.insertNewObject(forEntityName: "SettingsKV", into: context)
             try Self.assign(row, key: key, data: JSONEncoder().encode(vector))
+            try Self.trimFeatureCache(context)
             try context.save()
         }
     }
@@ -132,7 +137,7 @@ actor AIFrameStore {
             guard let frame = try Self.frame(context, id: frameID),
                   var state = try Self.read(context: context, frameID: frameID), state.accepts(token) else { throw AIFrameError.staleRun }
             guard let asset = try Self.eligibleAsset(context, id: candidate.id),
-                  (asset.value(forKey: "content_hash") as? String) == candidate.contentHash,
+                  try Self.contentVersion(asset, context: context) == candidate.contentHash,
                   try Self.isInScope(context, assetID: candidate.id, configuration: state.configuration) else {
                 state.skipped += 1
                 try Self.write(state, context: context)
@@ -199,18 +204,29 @@ actor AIFrameStore {
         try await context.perform {
             guard let frame = try Self.frame(context, id: frameID),
                   var state = try Self.read(context: context, frameID: frameID), state.configuration == configuration else { throw AIFrameError.staleRun }
-            let eligible = Set(try Self.candidates(context, configuration: configuration).map(\.id))
-            state.recordManualChange(includes: manualIncludes, removed: manualExcludes)
+            let candidates = try Self.candidates(context, configuration: configuration)
+            let eligible = Set(candidates.map(\.id))
+            let currentVersions = Dictionary(uniqueKeysWithValues: candidates.map { ($0.id, $0.contentHash) })
+            for match in matches where match.assetID.hasPrefix("remote:") {
+                guard match.contentVersion != nil, currentVersions[match.assetID] == match.contentVersion else { throw AIFrameError.staleRun }
+            }
+            let includeAliases = try manualIncludes.reduce(into: Set<String>()) { $0.formUnion(try RemoteMediaRepository.referenceAliases(context: context, runtimeID: $1)) }
+            let excludedAliases = try manualExcludes.reduce(into: Set<String>()) { $0.formUnion(try RemoteMediaRepository.referenceAliases(context: context, runtimeID: $1)) }
+            state.recordManualChange(includes: includeAliases, removed: excludedAliases)
+            for id in manualIncludes {
+                let aliases = try RemoteMediaRepository.referenceAliases(context: context, runtimeID: id).map { MediaReference(runtimeID: $0).rawID }
+                let oldExcludes = NSFetchRequest<NSManagedObject>(entityName: "FrameSelection")
+                oldExcludes.predicate = NSPredicate(format: "frame == %@ AND mode == %@ AND ref_key IN %@", frame, "exclude", aliases)
+                for row in try context.fetch(oldExcludes) { context.delete(row) }
+            }
             for id in manualIncludes.union(manualExcludes).intersection(eligible) {
                 guard let asset = try Self.eligibleAsset(context, id: id) else { continue }
                 let request = NSFetchRequest<NSManagedObject>(entityName: "FrameSelection")
-                request.predicate = NSPredicate(format: "frame == %@ AND ref_key == %@", frame, id)
+                request.predicate = NSPredicate(format: "frame == %@ AND ref_key == %@", frame, MediaReference(runtimeID: id).rawID)
                 let row = try context.fetch(request).first ?? NSEntityDescription.insertNewObject(forEntityName: "FrameSelection", into: context)
                 let now = Int(Date().timeIntervalSince1970 * 1000)
                 row.setValue(frame, forKey: "frame")
-                row.setValue(asset, forKey: "asset")
-                row.setValue(nil, forKey: "sourceAsset")
-                row.setValue(id, forKey: "ref_key")
+                Self.bind(asset, id: id, selection: row)
                 row.setValue(manualIncludes.contains(id) ? "include" : "exclude", forKey: "mode")
                 row.setValue(now, forKey: "added_at")
                 if row.value(forKey: "created_at") == nil { row.setValue(now, forKey: "created_at") }
@@ -231,16 +247,18 @@ actor AIFrameStore {
     private static func apply(_ match: AIFrameMatch, asset: NSManagedObject, frame: NSManagedObject,
                               state: inout AIFrameState, context: NSManagedObjectContext) throws {
         let request = NSFetchRequest<NSManagedObject>(entityName: "FrameSelection")
-        request.predicate = NSPredicate(format: "frame == %@ AND ref_key == %@", frame, match.assetID)
+        request.predicate = NSPredicate(format: "frame == %@ AND ref_key == %@", frame, MediaReference(runtimeID: match.assetID).rawID)
         let existing = try context.fetch(request).first
-        if match.decision == .matched, state.canAutomaticallyInclude(match.assetID) {
+        let aliases = try RemoteMediaRepository.referenceAliases(context: context, runtimeID: match.assetID)
+        let excluded = try RemoteMediaRepository.isExcluded(context: context, frameID: state.configuration.frameID, runtimeID: match.assetID)
+        if match.decision == .matched, state.canAutomaticallyInclude(match.assetID),
+           state.manualExcludedAssetIDs.isDisjoint(with: aliases), !excluded {
             // Existing explicit includes belong to the user. Explicit excludes always win.
             guard existing == nil else { return }
             let now = Int(Date().timeIntervalSince1970 * 1000)
             let row = NSEntityDescription.insertNewObject(forEntityName: "FrameSelection", into: context)
             row.setValue(frame, forKey: "frame")
-            row.setValue(asset, forKey: "asset")
-            row.setValue(match.assetID, forKey: "ref_key")
+            Self.bind(asset, id: match.assetID, selection: row)
             row.setValue("include", forKey: "mode")
             row.setValue(now, forKey: "added_at")
             row.setValue(now, forKey: "created_at")
@@ -256,7 +274,7 @@ actor AIFrameStore {
                                     context: NSManagedObjectContext) throws {
         guard state.ownedAssetIDs.remove(id) != nil else { return }
         let request = NSFetchRequest<NSManagedObject>(entityName: "FrameSelection")
-        request.predicate = NSPredicate(format: "frame == %@ AND ref_key == %@ AND mode == %@", frame, id, "include")
+        request.predicate = NSPredicate(format: "frame == %@ AND ref_key == %@ AND mode == %@", frame, MediaReference(runtimeID: id).rawID, "include")
         for row in try context.fetch(request) { context.delete(row) }
         bump(frame)
     }
@@ -268,7 +286,9 @@ actor AIFrameStore {
 
     static func manualChange(context: NSManagedObjectContext, frameID: String, includes: Set<String>, removed: Set<String>) throws {
         guard var state = try read(context: context, frameID: frameID) else { return }
-        state.recordManualChange(includes: includes, removed: removed)
+        let includeAliases = try includes.reduce(into: Set<String>()) { $0.formUnion(try RemoteMediaRepository.referenceAliases(context: context, runtimeID: $1)) }
+        let removedAliases = try removed.reduce(into: Set<String>()) { $0.formUnion(try RemoteMediaRepository.referenceAliases(context: context, runtimeID: $1)) }
+        state.recordManualChange(includes: includeAliases, removed: removedAliases)
         try write(state, context: context)
     }
 
@@ -276,10 +296,27 @@ actor AIFrameStore {
         if let row = try setting(context, key: prefix + frameID) { context.delete(row) }
     }
 
+    static func remapReferences(context: NSManagedObjectContext, frameID: String, mapping: [String: String]) throws {
+        guard !mapping.isEmpty, var state = try read(context: context, frameID: frameID) else { return }
+        state.ownedAssetIDs = Set(state.ownedAssetIDs.map { mapping[$0] ?? $0 })
+        state.manualExcludedAssetIDs = Set(state.manualExcludedAssetIDs.map { mapping[$0] ?? $0 })
+        for id in mapping.keys {
+            state.completedContentVersions.removeValue(forKey: id)
+            state.matches.removeValue(forKey: id)
+        }
+        state.runToken = nil
+        state.status = "idle"
+        try write(state, context: context)
+    }
+
     static func removeFeatures(context: NSManagedObjectContext, assetID: String) throws {
         let assetRequest = NSFetchRequest<NSManagedObject>(entityName: "Asset")
         assetRequest.predicate = NSPredicate(format: "id == %@", assetID)
+        var referenceIDs: Set<String> = [assetID]
         if let asset = try context.fetch(assetRequest).first {
+            for origin in asset.value(forKey: "assetOrigins") as? Set<NSManagedObject> ?? [] {
+                if let sourceID = origin.value(forKeyPath: "sourceAsset.id") as? String { referenceIDs.insert("remote:" + sourceID) }
+            }
             for frame in asset.value(forKey: "coveredFrames") as? Set<NSManagedObject> ?? [] {
                 frame.setValue(nil, forKey: "coverAsset")
             }
@@ -288,16 +325,25 @@ actor AIFrameStore {
             try? FileManager.default.removeItem(at: directory.appendingPathComponent("ai-preview-v1.json"))
         }
         let request = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
-        request.predicate = NSPredicate(format: "key BEGINSWITH %@", cachePrefix + assetID + ".")
+        request.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: referenceIDs.map { NSPredicate(format: "key BEGINSWITH %@", cachePrefix + $0 + ".") })
         for row in try context.fetch(request) { context.delete(row) }
+        for frame in try context.fetch(NSFetchRequest<NSManagedObject>(entityName: "Frame")) {
+            guard let json = frame.value(forKey: "settings_json") as? String,
+                  var settings = try? JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any],
+                  let cover = settings["remoteCoverRef"] as? String, referenceIDs.contains(cover) else { continue }
+            settings.removeValue(forKey: "remoteCoverRef")
+            frame.setValue(String(decoding: try JSONSerialization.data(withJSONObject: settings), as: UTF8.self), forKey: "settings_json")
+        }
         let statesRequest = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
         statesRequest.predicate = NSPredicate(format: "key BEGINSWITH %@", prefix)
         for row in try context.fetch(statesRequest) {
             guard let string = row.value(forKey: "value_json") as? String, let data = string.data(using: .utf8) else { continue }
             guard var state = try? AIFrameState.decode(data) else { context.delete(row); continue }
-            state.matches.removeValue(forKey: assetID)
-            state.completedContentVersions.removeValue(forKey: assetID)
-            state.ownedAssetIDs.remove(assetID)
+            for id in referenceIDs {
+                state.matches.removeValue(forKey: id)
+                state.completedContentVersions.removeValue(forKey: id)
+                state.ownedAssetIDs.remove(id)
+            }
             try assign(row, key: prefix + state.configuration.frameID, data: JSONEncoder().encode(state))
         }
     }
@@ -308,22 +354,40 @@ actor AIFrameStore {
         let membership = NSFetchRequest<NSManagedObject>(entityName: "CollectionAsset")
         membership.predicate = NSPredicate(format: "collection.id IN %@", Array(selected))
         let ids = Set(try context.fetch(membership).compactMap { $0.value(forKeyPath: "asset.id") as? String })
-        guard !ids.isEmpty else { return [] }
         let assetRequest = NSFetchRequest<NSManagedObject>(entityName: "Asset")
         assetRequest.predicate = NSPredicate(format: "id IN %@ AND readiness == %@ AND deleted_at == nil AND privacy_excluded == NO AND media_kind != %@", Array(ids), "ready", "video")
         let origins = NSFetchRequest<NSManagedObject>(entityName: "AssetOrigin")
         origins.predicate = NSPredicate(format: "asset.id IN %@ AND policy_state == %@ AND origin_state == %@", Array(ids), "allowed", "active")
         let allowed = Set(try context.fetch(origins).compactMap { $0.value(forKeyPath: "asset.id") as? String })
-        let result = try context.fetch(assetRequest).compactMap { asset -> AIFrameCandidate? in
+        var result = try context.fetch(assetRequest).compactMap { asset -> AIFrameCandidate? in
             guard let id = asset.value(forKey: "id") as? String, allowed.contains(id),
                   let hash = asset.value(forKey: "content_hash") as? String,
                   let path = asset.value(forKey: "original_rel_path") as? String else { return nil }
             return AIFrameCandidate(id: id, contentHash: hash, relativePath: path)
         }.sorted { $0.id < $1.id }
-        return result
+        let originals = originalsRoot(context)
+        var remote: [String: RemoteMediaRecord] = [:]
+        for collectionID in selected {
+            for record in try RemoteMediaRepository.records(context: context, originals: originals, collectionID: collectionID, recursive: false)
+                where record.remoteAllowed || record.localReady {
+                remote[record.descriptor.runtimeID] = record
+            }
+        }
+        var aliases = Set<String>()
+        for record in remote.values {
+            if let source = try RemoteMediaRepository.fetch(context, entity: "SourceAsset", id: record.descriptor.sourceAssetID) {
+                for origin in source.value(forKey: "assetOrigins") as? Set<NSManagedObject> ?? [] {
+                    if let id = origin.value(forKeyPath: "asset.id") as? String { aliases.insert(id) }
+                }
+            }
+            let hash = SHA256Hex.digest(data: Data(record.descriptor.identity.utf8))
+            result.append(AIFrameCandidate(id: record.descriptor.runtimeID, contentHash: hash, relativePath: record.descriptor.runtimeID, remoteDescriptor: record.descriptor))
+        }
+        return result.filter { !aliases.contains($0.id) }.sorted { $0.id < $1.id }
     }
 
     private static func isInScope(_ context: NSManagedObjectContext, assetID: String, configuration: AIFrameConfiguration) throws -> Bool {
+        if assetID.hasPrefix("remote:") { return try candidates(context, configuration: configuration).contains { $0.id == assetID } }
         let selected = try selectedCollections(context, configuration: configuration)
         guard !selected.isEmpty else { return false }
         let request = NSFetchRequest<NSManagedObject>(entityName: "CollectionAsset")
@@ -351,6 +415,12 @@ actor AIFrameStore {
     }
 
     private static func eligibleAsset(_ context: NSManagedObjectContext, id: String) throws -> NSManagedObject? {
+        if id.hasPrefix("remote:") {
+            guard let row = try RemoteMediaRepository.fetch(context, entity: "SourceAsset", id: MediaReference(runtimeID: id).rawID),
+                  let record = try RemoteMediaRepository.record(context: context, row: row, originals: originalsRoot(context)),
+                  record.remoteAllowed || record.localReady else { return nil }
+            return row
+        }
         let request = NSFetchRequest<NSManagedObject>(entityName: "Asset")
         request.predicate = NSPredicate(format: "id == %@ AND readiness == %@ AND deleted_at == nil AND privacy_excluded == NO AND media_kind != %@", id, "ready", "video")
         guard let asset = try context.fetch(request).first else { return nil }
@@ -358,6 +428,36 @@ actor AIFrameStore {
         origins.predicate = NSPredicate(format: "asset == %@ AND policy_state == %@ AND origin_state == %@", asset, "allowed", "active")
         guard try context.count(for: origins) > 0 else { return nil }
         return asset
+    }
+
+    private static func originalsRoot(_ context: NSManagedObjectContext) -> URL {
+        (context.persistentStoreCoordinator?.persistentStores.first?.url?.deletingLastPathComponent() ?? FileManager.default.temporaryDirectory).appendingPathComponent("originals")
+    }
+
+    private static func contentVersion(_ media: NSManagedObject, context: NSManagedObjectContext) throws -> String {
+        if media.entity.name == "SourceAsset" {
+            guard let record = try RemoteMediaRepository.record(context: context, row: media, originals: originalsRoot(context)) else { throw AIFrameError.staleRun }
+            return SHA256Hex.digest(data: Data(record.descriptor.identity.utf8))
+        }
+        return media.value(forKey: "content_hash") as? String ?? ""
+    }
+
+    private static func bind(_ media: NSManagedObject, id: String, selection: NSManagedObject) {
+        selection.setValue(id.hasPrefix("remote:") ? nil : media, forKey: "asset")
+        selection.setValue(id.hasPrefix("remote:") ? media : nil, forKey: "sourceAsset")
+        selection.setValue(MediaReference(runtimeID: id).rawID, forKey: "ref_key")
+    }
+
+    private static func trimFeatureCache(_ context: NSManagedObjectContext) throws {
+        let request = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
+        request.predicate = NSPredicate(format: "key BEGINSWITH %@", cachePrefix)
+        request.sortDescriptors = [NSSortDescriptor(key: "updated_at", ascending: true), NSSortDescriptor(key: "key", ascending: true)]
+        let rows = try context.fetch(request)
+        var bytes = rows.reduce(0) { $0 + (($1.value(forKey: "value_json") as? String)?.utf8.count ?? 0) }
+        for row in rows where bytes > 16_777_216 {
+            bytes -= (row.value(forKey: "value_json") as? String)?.utf8.count ?? 0
+            context.delete(row)
+        }
     }
 
     private static func cacheKey(assetID: String, version: String) -> String {

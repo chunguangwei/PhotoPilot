@@ -36,28 +36,28 @@
 
 ## Task2 — iOS complete vertical slice
 
-- [ ] Add failing domain/protocol tests for metadata-only Source scan, typed refs, bounded cache and authority leases.
-- [ ] Implement service files under ios/PhotoPilot/Data/RemoteMedia and Domain/RemoteMedia as needed. Reuse adapters/clients and makeContext/transaction conventions.
-- [ ] Extend FramePlaybackSettings/FrameRepository/SelectionResolver plus FrameEdit/AssetGrid and remote source connection picker. Preserve unrelated JSON settings and legacy callers.
-- [ ] Route PlayerImageLoader/PlayerViewController, ThumbnailLoader/covers and AIFrameStore/Service through media lease resolution. Add revision-aware cost-limited image cache and change/revocation observers.
-- [ ] Add scoped offline import, canonical-ref preservation, confirmed shared-aware local-copy cleanup and crash recovery.
-- [ ] Re-run RED cases GREEN plus old full suite. Run make ios-generate for config edits, build/analyze/archive. Isolated simulator UI in English/Chinese and iPad large/landscape, offline and small-storage states.
-- [ ] Deliver test commands/results, screenshots and signedDevelopment/unsigned artifacts. Do not change Apple assets.
+- [x] Add failing domain/protocol tests for metadata-only Source scan, typed refs, bounded cache and authority leases.
+- [x] Implement service files under ios/PhotoPilot/Data/RemoteMedia and Domain/RemoteMedia as needed. Reuse adapters/clients and makeContext/transaction conventions.
+- [x] Extend FramePlaybackSettings/FrameRepository/SelectionResolver plus FrameEdit/AssetGrid and remote source connection picker. Preserve unrelated JSON settings and legacy callers.
+- [x] Route PlayerImageLoader/PlayerViewController, ThumbnailLoader/covers and AIFrameStore/Service through media lease resolution. Add revision-aware cost-limited image cache and change/revocation observers.
+- [x] Add scoped offline import, canonical-ref preservation, confirmed shared-aware local-copy cleanup and crash recovery.
+- [x] Re-run RED cases GREEN plus old full suite. Run make ios-generate for config edits, build/analyze/archive. Isolated simulator UI in English/Chinese and iPad large/landscape, offline and small-storage states.
+- [x] Deliver test commands/results, screenshots and signedDevelopment/unsigned artifacts. Do not change Apple assets.
 
 ## Task3 — Android complete vertical slice
 
-- [ ] Add failing unit/Room/protocol tests mirroring Task2 and shared vectors.
-- [ ] Implement remote metadata membership without schema changes, typed PlaybackItem and cache leases under data/remote as appropriate.
-- [ ] Extend FramePlaybackSettings/FrameRepository/SelectionResolver, MainActivity/Nas connection and frame editor/remote picker. Route PlayerEngine/View, covers and AI through the service.
-- [ ] Scoped local import, stable source references, confirmed shared-aware cleanup/recovery and lifecycle invalidation.
-- [ ] Run native regressions, all unit tests, Debug/Release/lint and bilingual UI configurations. Preserve release keystore and fourABIs.
-- [ ] Deliver actual APK size/SHA and logs. Do not publish or edit root files.
+- [x] Add failing unit/Room/protocol tests mirroring Task2 and shared vectors.
+- [x] Implement remote metadata membership without schema changes, typed PlaybackItem and cache leases under data/remote as appropriate.
+- [x] Extend FramePlaybackSettings/FrameRepository/SelectionResolver, MainActivity/Nas connection and frame editor/remote picker. Route PlayerEngine/View, covers and AI through the service.
+- [x] Scoped local import, stable source references, confirmed shared-aware cleanup/recovery and lifecycle invalidation.
+- [x] Run native regressions, all unit tests, Debug/Release/lint and bilingual UI configurations. Preserve release keystore and fourABIs.
+- [x] Deliver actual APK size/SHA and logs. Do not publish or edit root files.
 
 ## Task4 — Integrated review, package and publish
 
-- [ ] Root verifies each deliverable through normal entry points and shared cache/quota/refs tests.
-- [ ] Single fresh integrated review, triage confirmed issues and one fix pass with regressions.
-- [ ] Root final make check, platform suites, actual final payload/signatures/version and no credentials/fixture/model weights.
-- [ ] Prepare version1.3.0(60) bilingual update text/privacy/screenshot evidence. Update16 actual outcomes/limits.
+- [x] Root verifies each deliverable through normal entry points and shared cache/quota/refs tests.
+- [x] Single fresh integrated review, triage confirmed issues and one fix pass with regressions.
+- [x] Root final make check, platform suites, actual final payload/signatures/version and no credentials/fixture/model weights.
+- [x] Prepare version1.3.0(60) bilingual update text/privacy/screenshot evidence. Update16 actual outcomes/limits.
 - [ ] Commit/merge into existing main preserving user changes, publish existing GitHub release/tag/assets, anonymously verify complete downloads.
-- [ ] Retain Store preparation artifacts and report the actual outstanding signing/account approval dependency.
+- [x] Retain Store preparation artifacts and report the actual outstanding signing/account approval dependency.

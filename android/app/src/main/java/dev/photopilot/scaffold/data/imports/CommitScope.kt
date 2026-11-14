@@ -38,9 +38,18 @@ interface CommitScope {
 
     suspend fun existingAssetByHash(contentHash: String): AssetEntity?
 
+    suspend fun markOriginalReady(assetId: String, contentHash: String, now: Long): Boolean {
+        val current = assetById(assetId) ?: return false
+        if (current.contentHash != contentHash || current.privacyExcluded || current.deletedAt != null || current.readiness == AssetReadiness.DELETED) return false
+        insertAsset(current.copy(readiness = AssetReadiness.READY, failureCode = null, updatedAt = now))
+        return true
+    }
     suspend fun insertAsset(entity: AssetEntity)
     suspend fun findOrigin(assetId: String, sourceAssetId: String): AssetOriginEntity?
     suspend fun insertOrigin(entity: AssetOriginEntity)
+
+    suspend fun frameScopeValid(scopeJson: String): Boolean = true
+    suspend fun recordProvenance(assetId: String, sourceAsset: SourceAssetEntity, contentHash: String, epoch: Long, now: Long) = Unit
 
     suspend fun repointSelections(sourceAssetId: String, assetId: String, now: Long)
 
@@ -110,13 +119,40 @@ class RoomCommitScope(private val db: PhotoPilotDatabase) : CommitScope {
         db.assetDao().upsert(entity)
     }
 
+    override suspend fun markOriginalReady(assetId: String, contentHash: String, now: Long): Boolean =
+        db.assetDao().markOriginalReady(assetId, contentHash, now) == 1
+
     override suspend fun findOrigin(assetId: String, sourceAssetId: String): AssetOriginEntity? =
         db.assetOriginDao().getByAssetAndSourceAsset(assetId, sourceAssetId)
 
     override suspend fun insertOrigin(entity: AssetOriginEntity) = db.assetOriginDao().upsert(entity)
 
     override suspend fun repointSelections(sourceAssetId: String, assetId: String, now: Long) {
-        db.frameSelectionDao().repointToAsset(sourceAssetId, assetId, now)
+        for (frame in db.frameDao().getAll()) {
+            val mode = dev.photopilot.scaffold.data.logic.JsonMini.parseObject(frame.settingsJson)["mediaStorageMode"]
+            if (mode == "local" || mode == "remote") continue
+            val selection = db.frameSelectionDao().getByFrame(frame.id).firstOrNull { it.sourceAssetId == sourceAssetId } ?: continue
+            db.frameSelectionDao().delete(selection)
+            val existing = db.frameSelectionDao().getByRef(frame.id, assetId)
+            if (existing == null || selection.mode == dev.photopilot.scaffold.data.db.FrameSelectionMode.EXCLUDE) {
+                db.frameSelectionDao().upsertRaw(selection.copy(assetId = assetId, sourceAssetId = null, refKey = assetId, updatedAt = now))
+            }
+        }
+    }
+
+    override suspend fun frameScopeValid(scopeJson: String): Boolean {
+        val scope = dev.photopilot.scaffold.data.logic.JsonMini.parseObject(scopeJson)
+        val frameId = scope["frameId"] as? String ?: return true
+        val frame = db.frameDao().getById(frameId) ?: return false
+        if (dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode != "local" || frame.selectionVersion != (scope["selectionVersion"] as? Number)?.toLong()) return false
+        val revisions = scope["sourceRevisions"] as? Map<*, *> ?: emptyMap<Any, Any>()
+        return revisions.all { (id, revision) -> db.sourceAssetDao().getById(id as? String ?: "")?.revision == revision }
+    }
+
+    override suspend fun recordProvenance(assetId: String, sourceAsset: SourceAssetEntity, contentHash: String, epoch: Long, now: Long) {
+        db.settingsKvDao().upsert(SettingsKvEntity(
+            dev.photopilot.scaffold.data.remote.RemoteMediaRepository.provenanceKey(assetId, sourceAsset.id),
+            dev.photopilot.scaffold.data.logic.JsonMini.toJson(mapOf("version" to 1, "epoch" to epoch, "revision" to sourceAsset.revision, "contentHash" to contentHash)), now, now))
     }
 
     override suspend fun upsertCollection(entity: CollectionEntity) =

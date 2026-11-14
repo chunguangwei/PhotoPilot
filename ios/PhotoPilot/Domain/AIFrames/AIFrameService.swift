@@ -15,13 +15,15 @@ actor AIFrameService {
     let store: AIFrameStore
     let models: AIModelManager?
     private let root: URL
+    private let media: RemoteMediaService
     private var jobs: [String: Task<Void, Never>] = [:]
     private var erasing = false
     private var memoryWarning = false
     private var queuedFrameIDs: [String] = []
     private var previewTask: Task<[AIFrameMatch], Error>?
 
-    init(controller: PersistenceController) {
+    init(controller: PersistenceController, media: RemoteMediaService? = nil) {
+        self.media = media ?? RemoteMediaService.shared(controller: controller)
         store = AIFrameStore(controller: controller)
         root = controller.storeURL.deletingLastPathComponent()
         models = try? AIModelManager.bundled(root: root.appendingPathComponent("ai-models", isDirectory: true))
@@ -142,6 +144,7 @@ actor AIFrameService {
                 } catch is CancellationError { throw CancellationError() }
                 catch AIFrameError.staleRun { throw AIFrameError.staleRun }
                 catch AIFrameError.interrupted { throw AIFrameError.interrupted }
+                catch AIFrameError.mediaBusy { throw AIFrameError.mediaBusy }
                 catch {
                     try await store.record(frameID: frameID, token: token, candidate: candidate, version: version, match: nil, apply: false, failed: true)
                 }
@@ -153,7 +156,7 @@ actor AIFrameService {
         } catch AIFrameError.staleRun {
             // An edit or deletion owns the state now.
         } catch {
-            let pauseReasons: [AIFrameError] = [.interrupted, .requiresForeground, .lowPower, .thermal]
+            let pauseReasons: [AIFrameError] = [.interrupted, .requiresForeground, .lowPower, .thermal, .mediaBusy]
             let status = pauseReasons.contains(where: { $0 == error as? AIFrameError }) ? "pausedAuto" : "failed"
             let message = (error as? AIFrameError)?.rawValue ?? "classificationFailed"
             if let runConfiguration {
@@ -236,6 +239,7 @@ actor AIFrameService {
                         try JSONEncoder().encode(checkpoint).write(to: previewURL, options: .atomic)
                     } catch is CancellationError { throw CancellationError() }
                     catch AIFrameError.staleRun { throw AIFrameError.staleRun }
+                    catch AIFrameError.mediaBusy { throw AIFrameError.mediaBusy }
                     catch { failed += 1 }
                 }
                 progress(AIFrameScanProgress(completed: index + 1, total: candidates.count,
@@ -286,12 +290,24 @@ actor AIFrameService {
 
     private func classify(_ candidate: AIFrameCandidate, configuration: AIFrameConfiguration,
                           engine: AIEmbeddingEngine, text: TextEmbeddings) async throws -> AIFrameMatch {
+        if let descriptor = candidate.remoteDescriptor {
+            guard await media.repository.authorized(descriptor, allowLocal: true) else { throw AIFrameError.staleRun }
+        }
         let cacheVersion = candidate.contentHash + ":" + configuration.modelID + ":" + configuration.modelRevision + ":preprocess2"
         let vector: [Float]
         if let cached = try await store.cachedVector(assetID: candidate.id, version: cacheVersion, expectedDimension: text.category.count) { vector = cached }
         else {
-            let url = root.appendingPathComponent("originals", isDirectory: true).appendingPathComponent(candidate.relativePath)
-            vector = try await engine.encode(imageURL: url)
+            let lease: RemoteMediaLease
+            do { lease = try await media.acquire(runtimeID: candidate.id, priority: .background) }
+            catch RemoteMediaError.busy { throw AIFrameError.mediaBusy }
+            do {
+                if let descriptor = candidate.remoteDescriptor, descriptor != lease.descriptor { throw AIFrameError.staleRun }
+                vector = try await engine.encode(imageURL: lease.fileURL)
+                await lease.release()
+            } catch {
+                await lease.release()
+                throw error
+            }
             try await store.cacheVector(vector, assetID: candidate.id, version: cacheVersion)
         }
         let category = try AIFrameScoring.cosine(vector, text.category)
@@ -308,7 +324,7 @@ actor AIFrameService {
         let effectiveScore = min(category, includeAggregate ?? category)
         return AIFrameMatch(assetID: candidate.id, score: effectiveScore,
                             decision: configuration.rule.decision(categoryScore: category, includeScores: includes, excludeScores: excludes),
-                            themes: themes)
+                            themes: themes, contentVersion: candidate.contentHash)
     }
 
     private static func version(_ candidate: AIFrameCandidate, configuration: AIFrameConfiguration) -> String {

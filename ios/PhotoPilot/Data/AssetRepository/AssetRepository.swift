@@ -58,6 +58,7 @@ struct CollectionDTO: Sendable {
     let type: String
     let sortKey: String
     let memberCount: Int
+    var sourceID: String? = nil
 }
 
 enum TombstoneReason: String {
@@ -220,7 +221,7 @@ actor AssetRepository {
                 row.setValue(sourceAsset, forKey: "sourceAsset")
             }
             row.setValue(now, forKey: "updated_at")
-            try AIFrameStore.manualChange(context: context, frameID: frameID, includes: mode == .include ? [refKey] : [], removed: mode == .exclude ? [refKey] : [])
+            try AIFrameStore.manualChange(context: context, frameID: frameID, includes: mode == .include ? [sourceAssetId.map { "remote:" + $0 } ?? refKey] : [], removed: mode == .exclude ? [sourceAssetId.map { "remote:" + $0 } ?? refKey] : [])
             try context.save()
             return Self.selectionDTO(row)
         }
@@ -231,10 +232,12 @@ actor AssetRepository {
         try await context.perform {
             let request = NSFetchRequest<NSManagedObject>(entityName: "FrameSelection")
             request.predicate = NSPredicate(format: "frame.id == %@ AND ref_key == %@", frameID, refKey)
+            var removed: Set<String> = []
             for row in try context.fetch(request) {
+                removed.insert(row.value(forKey: "sourceAsset") != nil ? "remote:" + refKey : refKey)
                 context.delete(row)
             }
-            try AIFrameStore.manualChange(context: context, frameID: frameID, includes: [], removed: [refKey])
+            try AIFrameStore.manualChange(context: context, frameID: frameID, includes: [], removed: removed)
             if context.hasChanges {
                 try context.save()
             }
@@ -394,6 +397,7 @@ actor AssetRepository {
             guard let source = try context.fetch(request).first else {
                 throw ImportFailureCode.srcUnavailable
             }
+            source.setValue((source.value(forKey: "epoch") as? Int ?? 1) + 1, forKey: "epoch")
             let fingerprint = ImportCoordinator.sourceFingerprint(source)
             let sourceAssets = source.value(forKey: "sourceAssets") as? Set<NSManagedObject> ?? []
             var files: [String] = []
@@ -401,6 +405,16 @@ actor AssetRepository {
                 for sourceAsset in sourceAssets {
                     let origins = sourceAsset.value(forKey: "assetOrigins") as? Set<NSManagedObject> ?? []
                     for origin in origins {
+                        if origin.value(forKey: "policy_state") as? String == "allowed",
+                           let asset = origin.value(forKey: "asset") as? NSManagedObject,
+                           let assetID = asset.value(forKey: "id") as? String,
+                           let sourceAssetID = sourceAsset.value(forKey: "id") as? String,
+                           let provenance = try RemoteMediaRepository.provenance(context: context, assetID: assetID, sourceAssetID: sourceAssetID),
+                           provenance.sourceEpoch == (source.value(forKey: "epoch") as? Int ?? 1) - 1,
+                           provenance.importedRevision == sourceAsset.value(forKey: "revision") as? String,
+                           provenance.contentHash == asset.value(forKey: "content_hash") as? String {
+                            try RemoteMediaRepository.writeProvenance(context: context, asset: asset, sourceAsset: sourceAsset, frameScoped: provenance.frameScoped)
+                        }
                         origin.setValue(OriginState.detached.rawValue, forKey: "origin_state")
                         origin.setValue(now, forKey: "updated_at")
                     }
@@ -502,7 +516,7 @@ actor AssetRepository {
         tombstone.setValue(now, forKey: "updated_at")
     }
 
-    func libraryItems(collectionID: String? = nil, readiness: String = Readiness.ready.rawValue) async throws -> [LibraryItemDTO] {
+    func libraryItems(collectionID: String? = nil, readiness: String = Readiness.ready.rawValue, includeRemote: Bool = false, remoteSourceID: String? = nil) async throws -> [LibraryItemDTO] {
         let context = makeContext()
         return try await context.perform {
             let request = NSFetchRequest<NSManagedObject>(entityName: "Asset")
@@ -518,7 +532,7 @@ actor AssetRepository {
                 ))
             }
             request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-            let items = try context.fetch(request).map { row -> LibraryItemDTO in
+            var items = try context.fetch(request).map { row -> LibraryItemDTO in
                 let origins = row.value(forKey: "assetOrigins") as? Set<NSManagedObject>
                 let remoteKey = origins?.first?.value(forKeyPath: "sourceAsset.remote_key") as? String
                 return LibraryItemDTO(
@@ -530,6 +544,19 @@ actor AssetRepository {
                     remoteKey: remoteKey,
                     isPending: false
                 )
+            }
+            if includeRemote {
+                let remote = try RemoteMediaRepository.records(context: context,
+                    originals: self.controller.storeURL.deletingLastPathComponent().appendingPathComponent("originals"),
+                    sourceID: remoteSourceID, collectionID: collectionID, recursive: false).filter { $0.remoteAllowed || $0.localReady }
+                if remoteSourceID != nil { items.removeAll() }
+                let localIDs = Set(remote.compactMap(\.localAssetID))
+                items.removeAll { localIDs.contains($0.id) }
+                items += remote.map { record in
+                    LibraryItemDTO(id: record.descriptor.runtimeID, originalRelPath: record.descriptor.runtimeID,
+                        capturedAtMillis: record.descriptor.takenAt.map(Int.init), importedAtMillis: Int(record.indexedAt),
+                        orientationClass: "", remoteKey: record.descriptor.remoteKey, isPending: false)
+                }
             }
             return items.sorted {
                 let left = $0.capturedAtMillis ?? $0.importedAtMillis
@@ -656,13 +683,17 @@ actor AssetRepository {
         let context = makeContext()
         return try await context.perform {
             let request = NSFetchRequest<NSManagedObject>(entityName: "Collection")
-            let rows = try context.fetch(request).map {
-                CollectionDTO(
-                    id: $0.value(forKey: "id") as? String ?? "",
-                    name: $0.value(forKey: "name") as? String ?? "",
-                    type: $0.value(forKey: "type") as? String ?? "",
-                    sortKey: $0.value(forKey: "sort_key") as? String ?? "",
-                    memberCount: ($0.value(forKey: "collectionAssets") as? Set<NSManagedObject>)?.count ?? 0
+            let rows = try context.fetch(request).map { collection in
+                let remote = try RemoteMediaRepository.records(context: context,
+                    originals: self.controller.storeURL.deletingLastPathComponent().appendingPathComponent("originals"),
+                    collectionID: collection.value(forKey: "id") as? String, recursive: true)
+                return CollectionDTO(
+                    id: collection.value(forKey: "id") as? String ?? "",
+                    name: collection.value(forKey: "name") as? String ?? "",
+                    type: collection.value(forKey: "type") as? String ?? "",
+                    sortKey: collection.value(forKey: "sort_key") as? String ?? "",
+                    memberCount: max((collection.value(forKey: "collectionAssets") as? Set<NSManagedObject>)?.count ?? 0, remote.filter { $0.remoteAllowed || $0.localReady }.count),
+                    sourceID: collection.value(forKeyPath: "source.id") as? String
                 )
             }
             return rows.sorted {
@@ -672,14 +703,19 @@ actor AssetRepository {
         }
     }
 
-    func collectionAssetIDs(collectionID: String) async throws -> [String] {
+    func collectionAssetIDs(collectionID: String, includeRemote: Bool = false, recursive: Bool = true) async throws -> [String] {
         let context = makeContext()
         return try await context.perform {
             let request = NSFetchRequest<NSManagedObject>(entityName: "CollectionAsset")
             request.predicate = NSPredicate(format: "collection.id == %@", collectionID)
-            return try context.fetch(request).compactMap {
+            let local = try context.fetch(request).compactMap {
                 $0.value(forKeyPath: "asset.id") as? String
             }
+            guard includeRemote else { return local }
+            let remote = try RemoteMediaRepository.records(context: context,
+                originals: self.controller.storeURL.deletingLastPathComponent().appendingPathComponent("originals"),
+                collectionID: collectionID, recursive: recursive).filter { $0.remoteAllowed || $0.localReady }
+            return Array(Set(local + remote.map { $0.descriptor.runtimeID })).sorted()
         }
     }
 

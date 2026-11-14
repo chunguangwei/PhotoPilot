@@ -23,6 +23,9 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
 
     var selectionEnabled = false
     private(set) var selectedAssetIDs: Set<String> = []
+    var includesRemoteMedia = false
+    var remoteSourceID: String?
+
     var onSelectionChange: ((Set<String>) -> Void)?
     var onLongPressAsset: ((String, UICollectionViewCell) -> Void)?
     var onCoverStarTap: ((String) -> Void)?
@@ -73,7 +76,7 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         showsCloseButton: Bool = false
     ) {
         self.environment = environment
-        self.loader = ThumbnailLoader(originalsRoot: environment.originalsRootURL)
+        self.loader = ThumbnailLoader(originalsRoot: environment.originalsRootURL, media: environment.remoteMedia)
         self.collectionID = collectionID
         self.headerTitle = headerTitle
         self.showsCloseButton = showsCloseButton
@@ -87,6 +90,7 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        NotificationCenter.default.addObserver(self, selector: #selector(remoteMediaChanged), name: .remoteMediaChanged, object: nil)
         enableEdgeSwipeBack()
         view.backgroundColor = ThemeColor.canvas
 
@@ -220,6 +224,17 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         }
     }
 
+    func enableRemoteMedia(sourceID: String? = nil) {
+        includesRemoteMedia = true
+        remoteSourceID = sourceID
+        if isViewLoaded { reload() }
+    }
+
+    @objc private func remoteMediaChanged() {
+        guard includesRemoteMedia, viewIfLoaded?.window != nil else { return }
+        reload()
+    }
+
     private func reload() {
         if let externalItems {
             apply(items: externalItems)
@@ -227,7 +242,7 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         }
         Task { [weak self] in
             guard let self else { return }
-            let fetched = (try? await environment.assets.libraryItems(collectionID: collectionID)) ?? []
+            let fetched = (try? await environment.assets.libraryItems(collectionID: collectionID, includeRemote: includesRemoteMedia, remoteSourceID: remoteSourceID)) ?? []
             apply(items: fetched)
         }
     }
@@ -292,18 +307,20 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
             cell.showPending()
             return cell
         }
+        cell.accessibilityIdentifier = "grid.photo." + item.id
         cell.configure(assetID: item.id, accessibilityText: Self.accessibilityText(for: item))
         cell.setCellSelected(selectionEnabled && selectedAssetIDs.contains(item.id), announced: false)
         applyStarState(to: cell, assetID: item.id)
         let side = max(itemSide, ThemeMetrics.gridCellMin)
         let scale = collectionView.traitCollection.displayScale
-        Task { [weak cell, loader] in
+        cell.imageTask?.cancel()
+        cell.imageTask = Task { [weak cell, loader] in
             let image = await loader.thumbnail(
                 relPath: item.originalRelPath,
                 pointSize: side,
                 scale: scale
             )
-            guard let cell, cell.assetID == item.id else { return }
+            guard !Task.isCancelled, let cell, cell.assetID == item.id else { return }
             if let image {
                 cell.showImage(image)
             } else {

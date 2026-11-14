@@ -29,6 +29,7 @@ import dev.photopilot.scaffold.data.logic.TombstoneIdentity
 import dev.photopilot.scaffold.data.logic.TombstoneMatchTier
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
@@ -40,6 +41,7 @@ class ImportCoordinator(
 ) {
 
     companion object {
+        private val commitLock = kotlinx.coroutines.sync.Mutex()
         val RETRY_BACKOFF_MS = longArrayOf(1_000L, 4_000L, 15_000L)
         const val MAX_RETRY = 3
         const val CURSOR_DONE = "__done__"
@@ -218,6 +220,7 @@ class ImportCoordinator(
         staged: StagedPayload,
         metadata: AssetCommitMetadata,
     ): CommitOutcome = withContext(Dispatchers.IO) {
+        commitLock.withLock {
         val item = requireNotNull(scope.item(itemId)) { "item not found" }
         require(item.state == ImportItemState.VERIFYING) { "item not in verifying" }
         val job = requireNotNull(scope.job(item.jobId)) { "job not found" }
@@ -227,7 +230,7 @@ class ImportCoordinator(
         transition(item, ImportItemState.COMMITTING, now)
 
         val source = scope.source(job.sourceId)
-        val epochStale = source == null || source.epoch != job.epochAtCreate
+        val epochStale = source == null || source.epoch != job.epochAtCreate || !scope.frameScopeValid(job.scopeJson)
         val existing = if (epochStale) null else scope.existingAssetByHash(staged.contentHash)
         val plan = CommitPlanner.plan(
             epochStale = epochStale,
@@ -263,18 +266,19 @@ class ImportCoordinator(
             }
 
             is CommitPlan.MergeExisting -> {
-                store.discardStaged(staged.tempRelPath)
-                val applied = applyInTransaction(
-                    job,
-                    item,
-                    sourceAsset,
-                    staged.contentHash,
-                    plan.assetId,
-                    now,
-                    null,
-                )
-                recalc(job.id, ImportJobAggregate.Signal.NONE)
-                CommitOutcome.Imported(applied.assetId, merged = true)
+                val target = scope.assetById(plan.assetId)
+                val restored = target != null && !store.existsOriginal(target.originalRelPath)
+                if (restored) store.commitStaged(staged.tempRelPath, requireNotNull(target).originalRelPath)
+                else store.discardStaged(staged.tempRelPath)
+                try {
+                    val applied = applyInTransaction(job, item, sourceAsset, staged.contentHash, plan.assetId, now, restored, null)
+                    if (applied.skipped && restored) store.deleteOriginal(requireNotNull(target).originalRelPath)
+                    recalc(job.id, ImportJobAggregate.Signal.NONE)
+                    if (applied.skipped) CommitOutcome.SkippedByTombstone else CommitOutcome.Imported(applied.assetId, merged = true)
+                } catch (failure: Throwable) {
+                    if (restored) store.deleteOriginal(requireNotNull(target).originalRelPath)
+                    throw failure
+                }
             }
 
             is CommitPlan.CreateNew -> {
@@ -317,8 +321,9 @@ class ImportCoordinator(
                     store.deleteOriginal(relPath)
                 }
                 recalc(job.id, ImportJobAggregate.Signal.NONE)
-                CommitOutcome.Imported(applied.assetId, merged = !applied.createdNew)
+                if (applied.skipped) CommitOutcome.SkippedByTombstone else CommitOutcome.Imported(applied.assetId, merged = !applied.createdNew)
             }
+        }
         }
     }
 
@@ -399,6 +404,7 @@ class ImportCoordinator(
     data class CommitApply(
         val assetId: String,
         val createdNew: Boolean,
+        val skipped: Boolean = false,
     )
 
     private suspend fun applyInTransaction(
@@ -408,6 +414,7 @@ class ImportCoordinator(
         contentHash: String,
         plannedAssetId: String,
         now: Long,
+        restoredOriginal: Boolean = false,
         buildNewAsset: ((String) -> AssetEntity)?,
     ): CommitApply {
         return scope.transaction {
@@ -418,6 +425,14 @@ class ImportCoordinator(
             var assetId = plannedAssetId
             var createdNew = false
             val existing = scope.existingAssetByHash(contentHash)
+            val target = scope.assetById(plannedAssetId)
+            val revoked = listOfNotNull(existing, target).any { it.privacyExcluded || it.deletedAt != null || it.readiness == AssetReadiness.DELETED }
+            val tombstone = scope.tombstoneTierMatch(TombstoneIdentity(contentHash, SourceFingerprints.of(source), sourceAsset.remoteKey, sourceAsset.byteSize, null))
+            if (revoked || tombstone != TombstoneMatchTier.NONE) {
+                finishSkipped(requireNotNull(scope.item(item.id)), now)
+                return@transaction CommitApply(plannedAssetId, false, skipped = true)
+            }
+            if (!scope.frameScopeValid(job.scopeJson)) throw java.io.IOException("FRAME_SYNC_STALE")
             if (existing != null) {
                 assetId = existing.id
             } else if (buildNewAsset != null) {
@@ -434,7 +449,12 @@ class ImportCoordinator(
                 throw IllegalStateException("merge target missing at commit")
             }
 
-            if (scope.findOrigin(assetId, sourceAsset.id) == null) {
+            if (restoredOriginal && !scope.markOriginalReady(assetId, contentHash, now)) {
+                finishSkipped(requireNotNull(scope.item(item.id)), now)
+                return@transaction CommitApply(assetId, false, skipped = true)
+            }
+            val existingOrigin = scope.findOrigin(assetId, sourceAsset.id)
+            if (existingOrigin == null) {
                 scope.insertOrigin(
                     AssetOriginEntity(
                         assetId = assetId,
@@ -447,6 +467,13 @@ class ImportCoordinator(
                     ),
                 )
             }
+            if (existingOrigin?.policyState == PolicyState.ALLOWED && existingOrigin.originState == OriginState.DETACHED &&
+                source.type in setOf(dev.photopilot.scaffold.data.db.SourceType.SMB, dev.photopilot.scaffold.data.db.SourceType.WEBDAV) &&
+                source.status == SourceStatus.ACTIVE && JsonMini.parseObject(job.scopeJson)["frameId"] != null) {
+                scope.insertOrigin(existingOrigin.copy(originState = OriginState.ACTIVE, importedAt = now, updatedAt = now))
+            }
+            if (!scope.frameScopeValid(job.scopeJson)) throw java.io.IOException("FRAME_SYNC_STALE")
+            scope.recordProvenance(assetId, sourceAsset, contentHash, job.epochAtCreate, now)
             scope.repointSelections(sourceAsset.id, assetId, now)
             scope.upsertCollectionAsset(
                 CollectionAssetEntity(
@@ -660,7 +687,7 @@ class ImportCoordinator(
                     ),
                 )
             }
-        } else if (scope.originsForSourceAsset(existing.id).isEmpty()) {
+        } else if (scope.originsForSourceAsset(existing.id).isEmpty() || JsonMini.parseObject(job.scopeJson)["frameId"] != null) {
             scope.insertItem(newQueuedItem(jobId, existing.id, candidate.byteSize, now))
         }
     }

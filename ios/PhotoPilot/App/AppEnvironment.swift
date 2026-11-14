@@ -8,6 +8,8 @@ final class AppEnvironment: @unchecked Sendable {
     let nasNetworkPolicy: NasNetworkPolicy
     let sources: SourceRepository
     let assets: AssetRepository
+    let remoteMedia: RemoteMediaService
+    let frameStorage: FrameStorageService
     let frames: FrameRepository
     let aiFrames: AIFrameService
     let frameManager: FrameManager
@@ -29,7 +31,7 @@ final class AppEnvironment: @unchecked Sendable {
             .appendingPathComponent("originals", isDirectory: true)
     }
 
-    init(persistence: PersistenceController, weatherProvider: (any WeatherProvider)? = nil) {
+    init(persistence: PersistenceController, weatherProvider: (any WeatherProvider)? = nil, remoteMedia: RemoteMediaService? = nil) {
         self.persistence = persistence
         let settings = AppSettingsRepository(container: persistence.container)
         self.settings = settings
@@ -37,11 +39,21 @@ final class AppEnvironment: @unchecked Sendable {
         self.nasNetworkPolicy = networkPolicy
         self.sources = SourceRepository(container: persistence.container)
         self.assets = AssetRepository(controller: persistence)
+        self.remoteMedia = remoteMedia ?? RemoteMediaService.shared(controller: persistence)
+        self.frameStorage = FrameStorageService(controller: persistence, media: self.remoteMedia)
         self.frames = FrameRepository(controller: persistence)
         self.frameManager = FrameManager(controller: persistence)
-        self.aiFrames = AIFrameService(controller: persistence)
+        self.aiFrames = AIFrameService(controller: persistence, media: self.remoteMedia)
         self.holidayStore = HolidayStore(controller: persistence)
         self.photoLibraryAdapter = PhotoLibrarySourceAdapter(networkPolicy: networkPolicy)
+        Task { [remoteMedia = self.remoteMedia, aiFrames, frameStorage] in
+            await remoteMedia.startObserving()
+            await frameStorage.startObserving()
+            await remoteMedia.setIndexCompletion {
+                await aiFrames.processPending()
+                await frameStorage.resumePending()
+            }
+        }
         self.weatherRepository = WeatherRepository(controller: persistence)
         self.weatherProvider = weatherProvider ?? FallbackWeatherProvider(
             forecast: [OpenMeteoProvider()],
@@ -211,6 +223,7 @@ final class AppEnvironment: @unchecked Sendable {
     }
 
     func runStartupMaintenance() async {
+        try? await frameStorage.recoverCleanup()
         _ = try? await assets.purgeExpiredDeletedAssets()
         let coordinator = ImportCoordinator(controller: persistence, adapter: photoLibraryAdapter)
         let interruptedJobs = (try? await coordinator.fetchJobs(
@@ -223,6 +236,8 @@ final class AppEnvironment: @unchecked Sendable {
             withState: ImportJobState.pausedAuto.rawValue
         )) ?? []
         for job in pausedJobs {
+            if let raw = try? await coordinator.scopeJSON(jobID: job.id),
+               let scope = try? JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any], scope["frameID"] != nil { continue }
             if job.sourceId == SourceRepository.localPhotosID {
                 let runner = openRunner(jobID: job.id)
                 try? await runner.resume()
@@ -239,6 +254,7 @@ final class AppEnvironment: @unchecked Sendable {
                 }
             }
         }
+        await frameStorage.resumePending()
     }
 
     static let autoSyncThrottleMillis = 60_000
@@ -256,7 +272,9 @@ final class AppEnvironment: @unchecked Sendable {
             let last = (try? settings.value(forKey: key)).flatMap(Int.init) ?? 0
             guard now - last >= Self.autoSyncThrottleMillis else { continue }
             try? settings.setValue("\(now)", forKey: key)
-            if source.type == "smb" {
+            if source.catalogOnly {
+                _ = try? await remoteMedia.index(sourceID: source.id)
+            } else if source.type == "smb" {
                 _ = try? await startSmbImport(sourceID: source.id)
             } else {
                 _ = try? await startWebDavImport(sourceID: source.id)
