@@ -32,7 +32,7 @@
 
 - [x] Root writes frame-storage contract and shared eligibility/path vectors.
 - [x] Fresh read-only builder checked design. Seven concrete issues were resolved in the spec, including provenance and rehydration, frame-scoped rebinding and decode-scoped leases.
-- [ ] Root runs make check before platform integration and records baseline.
+- [x] Root runs make check before platform integration and records baseline (57 tool tests and6 source checks passed).
 
 ## Task2 — iOS complete vertical slice
 
