@@ -1,0 +1,83 @@
+{
+  "formatVersion": 1,
+  "models": [
+    {
+      "id": "embeddinggemma2-vision",
+      "displayName": {
+        "en": "EmbeddingGemma 2 · Standard",
+        "zh-Hans": "EmbeddingGemma 2 · 标准版"
+      },
+      "runtime": "mediapipe",
+      "revision": "538e6574db281b4fe17993a3212f10c73bd678c6",
+      "upstream": "https://huggingface.co/litert-community/embeddinggemma-2-text-vision-440m-litert-lm",
+      "languages": [
+        "en",
+        "zh-Hans"
+      ],
+      "embeddingDimension": 768,
+      "files": [
+        {
+          "name": "embeddinggemma-2-text-vision-440m.litertlm",
+          "role": "model",
+          "size": 387710976,
+          "sha256": "92dcbea108899e5d6e30d919b0744f90d9967e80c67a4ab5503ac16d54f62eb0",
+          "urls": {
+            "international": [
+              "https://huggingface.co/litert-community/embeddinggemma-2-text-vision-440m-litert-lm/resolve/538e6574db281b4fe17993a3212f10c73bd678c6/embeddinggemma-2-text-vision-440m.litertlm"
+            ],
+            "domestic": [
+              "https://hf-mirror.com/litert-community/embeddinggemma-2-text-vision-440m-litert-lm/resolve/538e6574db281b4fe17993a3212f10c73bd678c6/embeddinggemma-2-text-vision-440m.litertlm"
+            ]
+          }
+        }
+      ],
+      "defaultThreshold": 0.2
+    },
+    {
+      "id": "siglip2-base-int8",
+      "displayName": {
+        "en": "SigLIP 2 · Compact",
+        "zh-Hans": "SigLIP 2 · 紧凑版"
+      },
+      "runtime": "onnx",
+      "revision": "ba1f3b0843f24bc5417d38e19c37b287d719b2f4",
+      "upstream": "https://huggingface.co/onnx-community/siglip2-base-patch16-224-ONNX",
+      "languages": [
+        "en",
+        "zh-Hans"
+      ],
+      "embeddingDimension": 768,
+      "files": [
+        {
+          "name": "model_quantized.onnx",
+          "role": "model",
+          "size": 378000135,
+          "sha256": "87fb1dbb1c091ea083e71a6c6a92fb2a39dd360ef1415314d9d645ca2b22057d",
+          "urls": {
+            "international": [
+              "https://huggingface.co/onnx-community/siglip2-base-patch16-224-ONNX/resolve/ba1f3b0843f24bc5417d38e19c37b287d719b2f4/onnx/model_quantized.onnx"
+            ],
+            "domestic": [
+              "https://hf-mirror.com/onnx-community/siglip2-base-patch16-224-ONNX/resolve/ba1f3b0843f24bc5417d38e19c37b287d719b2f4/onnx/model_quantized.onnx"
+            ]
+          }
+        },
+        {
+          "name": "tokenizer.model",
+          "role": "tokenizer",
+          "size": 4241003,
+          "sha256": "61a7b147390c64585d6c3543dd6fc636906c9af3865a5548f27f31aee1d4c8e2",
+          "urls": {
+            "international": [
+              "https://huggingface.co/onnx-community/siglip2-base-patch16-224-ONNX/resolve/ba1f3b0843f24bc5417d38e19c37b287d719b2f4/tokenizer.model"
+            ],
+            "domestic": [
+              "https://hf-mirror.com/onnx-community/siglip2-base-patch16-224-ONNX/resolve/ba1f3b0843f24bc5417d38e19c37b287d719b2f4/tokenizer.model"
+            ]
+          }
+        }
+      ],
+      "defaultThreshold": 0.075
+    }
+  ]
+}

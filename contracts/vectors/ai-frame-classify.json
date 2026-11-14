@@ -1,0 +1,213 @@
+{
+  "meta": {
+    "truth": "docs/superpowers/specs/2026-11-14-ai-frames-design.md",
+    "rule": "Exclusion >= threshold rejects. effective=min(category,all?min(includes):max(includes)), empty includes ignored; >=threshold matched; >=threshold-0.04 review; otherwise rejected. Invalid/missing scores reject. Scores are cosine similarity, never probability."
+  },
+  "cases": [
+    {
+      "id": "AIC-01",
+      "scenario": "strong category",
+      "categoryScore": 0.4,
+      "includeScores": [],
+      "excludeScores": [],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "matched"
+    },
+    {
+      "id": "AIC-02",
+      "scenario": "category below threshold",
+      "categoryScore": 0.1,
+      "includeScores": [],
+      "excludeScores": [],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "rejected"
+    },
+    {
+      "id": "AIC-03",
+      "scenario": "borderline category",
+      "categoryScore": 0.18,
+      "includeScores": [],
+      "excludeScores": [],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "review"
+    },
+    {
+      "id": "AIC-04",
+      "scenario": "threshold equality",
+      "categoryScore": 0.2,
+      "includeScores": [],
+      "excludeScores": [],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "matched"
+    },
+    {
+      "id": "AIC-05",
+      "scenario": "review boundary",
+      "categoryScore": 0.16,
+      "includeScores": [],
+      "excludeScores": [],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "review"
+    },
+    {
+      "id": "AIC-06",
+      "scenario": "all includes must match",
+      "categoryScore": 0.4,
+      "includeScores": [
+        0.4,
+        0.1
+      ],
+      "excludeScores": [],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "rejected"
+    },
+    {
+      "id": "AIC-07",
+      "scenario": "all includes borderline",
+      "categoryScore": 0.4,
+      "includeScores": [
+        0.4,
+        0.18
+      ],
+      "excludeScores": [],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "review"
+    },
+    {
+      "id": "AIC-08",
+      "scenario": "any includes one match",
+      "categoryScore": 0.4,
+      "includeScores": [
+        0.4,
+        0.1
+      ],
+      "excludeScores": [],
+      "matchAll": false,
+      "threshold": 0.2,
+      "expected": "matched"
+    },
+    {
+      "id": "AIC-09",
+      "scenario": "any includes all fail",
+      "categoryScore": 0.4,
+      "includeScores": [
+        0.05,
+        0.1
+      ],
+      "excludeScores": [],
+      "matchAll": false,
+      "threshold": 0.2,
+      "expected": "rejected"
+    },
+    {
+      "id": "AIC-10",
+      "scenario": "exclusion overrides match",
+      "categoryScore": 0.4,
+      "includeScores": [
+        0.4
+      ],
+      "excludeScores": [
+        0.3
+      ],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "rejected"
+    },
+    {
+      "id": "AIC-11",
+      "scenario": "exclusion equality",
+      "categoryScore": 0.4,
+      "includeScores": [],
+      "excludeScores": [
+        0.2
+      ],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "rejected"
+    },
+    {
+      "id": "AIC-12",
+      "scenario": "weak exclusion ignored",
+      "categoryScore": 0.4,
+      "includeScores": [],
+      "excludeScores": [
+        0.1
+      ],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "matched"
+    },
+    {
+      "id": "AIC-13",
+      "scenario": "negative category",
+      "categoryScore": -0.2,
+      "includeScores": [],
+      "excludeScores": [],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "rejected"
+    },
+    {
+      "id": "AIC-14",
+      "scenario": "category still required",
+      "categoryScore": 0.1,
+      "includeScores": [
+        0.8
+      ],
+      "excludeScores": [],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "rejected"
+    },
+    {
+      "id": "AIC-15",
+      "scenario": "missing category",
+      "categoryScore": null,
+      "includeScores": [],
+      "excludeScores": [],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "rejected"
+    },
+    {
+      "id": "AIC-16",
+      "scenario": "invalid negative threshold",
+      "categoryScore": 0.4,
+      "includeScores": [],
+      "excludeScores": [],
+      "matchAll": true,
+      "threshold": -0.1,
+      "expected": "rejected"
+    },
+    {
+      "id": "AIC-17",
+      "scenario": "invalid high threshold",
+      "categoryScore": 0.4,
+      "includeScores": [],
+      "excludeScores": [],
+      "matchAll": true,
+      "threshold": 1.1,
+      "expected": "rejected"
+    },
+    {
+      "id": "AIC-18",
+      "scenario": "category weaker than includes",
+      "categoryScore": 0.18,
+      "includeScores": [
+        0.8,
+        0.7
+      ],
+      "excludeScores": [],
+      "matchAll": true,
+      "threshold": 0.2,
+      "expected": "review"
+    }
+  ]
+}

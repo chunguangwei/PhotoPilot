@@ -1,6 +1,8 @@
 .PHONY: check ios-generate ios-build ios-analyze android-build android-lint android-test fixtures-generate fixtures-check design-check design-freeze docs-check
 
 check:
+	python3 tools/ai_models/validate_catalog.py
+	python3 -m unittest discover -s tests/ai -v
 	python3 tools/check_scaffold.py
 	python3 tools/check_contracts.py
 	python3 tools/check_strings_freshness.py
