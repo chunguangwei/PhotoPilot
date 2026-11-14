@@ -1,0 +1,58 @@
+{
+  "url": "https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.2.0",
+  "tag": "v1.2.0",
+  "commit": "6df1cd0b559a870ee70b305ab17878b09abb65ea",
+  "latest": true,
+  "public": true,
+  "releaseNotesMatch": true,
+  "assets": [
+    {
+      "name": "AMSMB2-4.0.3-source.tar.gz",
+      "bytes": 329872,
+      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "PhotoPilot-v1.2.0-59.apk",
+      "bytes": 153726018,
+      "sha256": "5bf6d3bd148d2ad38dee36953b04977bc59d8347f37cadd09b286a35fff5988c",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 273,
+      "sha256": "b40919f8eab8930410ed94c4650c73cae31a88ab60cf34e9033eb2de69df5c01",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "SMBSourceManifest.json",
+      "bytes": 33554,
+      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e",
+      "anonymousDownloadVerified": true
+    }
+  ],
+  "checkedAt": "2026-11-14T23:47:00+08:00",
+  "validation": {
+    "androidUnitPassed": 415,
+    "androidNativePassed": 7,
+    "androidUIConfigurationsPassed": 5,
+    "iOSUnitPassed": 227,
+    "iPhoneUIPassed": 5,
+    "iPad13UIPassed": 5,
+    "sharedToolTestsPassed": 57,
+    "sourceTestsPassed": 6,
+    "physicalAIPerformanceValidated": false,
+    "lowestSupportedOSExecutionValidated": false,
+    "mainlandCarrierNetworkValidated": false
+  },
+  "appStorePreparation": {
+    "packet": "store/appstore/review/AIFramesUpdate.md",
+    "developmentArchive": ".build/releases/v1.2.0/PhotoPilot-1.2.0-59-development.xcarchive",
+    "unsignedArchive": ".build/releases/v1.2.0/PhotoPilot-1.2.0-59-unsigned.xcarchive",
+    "storeIPAExported": false,
+    "localExportError": "Store provisioning profile does not include the current Apple Distribution certificate",
+    "automaticProfileRefresh": "rejected by automatic approval review because it may create or modify Apple team signing assets and preparation did not clearly authorize that mutation",
+    "appStoreUploaded": false,
+    "submittedForReview": false
+  }
+}

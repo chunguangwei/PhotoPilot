@@ -61,3 +61,11 @@ Physical-device AI performance, lowest-supported-OS execution and China mainland
 ## Prepared screenshots
 
 Eight opaque native screenshots cover English and Simplified Chinese model selection and configuration on iPhone and iPad13-inch. They are stored in [the versioned screenshot folder](../ai-frames-v1.2.0). Exact dimensions, hashes and capture provenance are recorded in [ScreenshotEvidence120.json](ScreenshotEvidence120.json).
+
+## Published release and local artifacts
+
+GitHubv1.2.0 is public and markedLatest. All four release assets were fully downloaded anonymously and checked against localsize andSHA256. The versiontag resolves to6df1cd0b559a870ee70b305ab17878b09abb65ea. [GitHub release](https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.2.0)
+
+The main checkout retains theDevelopment-signed archive at `.build/releases/v1.2.0/PhotoPilot-1.2.0-59-development.xcarchive` and unsigned archive alongside it. Local export with existing assets still fails because the Store profile lacks the current Distribution certificate. Automatic approval review rejected `-allowProvisioningUpdates`, citing potential creation or modification of Apple team signing assets and insufficient explicit authorization for that mutation. A profile refresh requires owner authorization and a usable original publishing account inXcode. The final local export and verification logs are in `.build/releases/v1.2.0`.
+
+[AIFramesRelease120.json](AIFramesRelease120.json) records the published assets, source revision, validation counts and signing status.
