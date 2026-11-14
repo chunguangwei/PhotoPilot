@@ -14,6 +14,22 @@ Turn a spare iPad or Android tablet into a digital photo frame: import from the 
 - 照片只在本机处理；不上传、不记录照片名与路径
 - Android 内置 GitHub 更新检查（断点续传 + 前台保活下载）
 
+## AI 分类相框 / AI frames（1.2.0）
+
+在相框页选择“AI 创建相框”，选择已导入的相册或目录，输入中英文类别（每行一个），按需设置包含/排除描述，先查看分类预览与名称建议，再确认创建。名称与选片均可修改。持续自动分类默认关闭。开启后仅处理所选目录后续导入的合格照片，也可在 AI 相框设置中关闭。人工添加和排除受到保护。
+
+Choose **Create AI frames**, select imported albums/folders, and enter English or Chinese categories, one per line. Optional include/exclude descriptions narrow the matches. Review photos and editable name suggestions before saving. Automatic classification of future imports is optional, initially off and editable later. Manual additions and exclusions remain under your control.
+
+- **EmbeddingGemma 2 文本＋图像版 / standard** 约387.7 MB，使用分类所需的文本和图像部分。Android 标准模型需要64位进程。
+- **多语 CLIP 轻量版 / Multilingual CLIP Lite** 约201.5 MB，包含文本编码器、图像编码器、投影和词表。完整下载比标准版小约48%，支持中英文零样本图像分类。
+- 模型按需下载，国内源优先 ModelScope，国际源使用 Hugging Face，另提供 hf-mirror 回退。安装前校验固定版本及 SHA-256。备用镜像可能跳转海外 CDN，可用性取决于网络。下载完成后照片、提示词和分类都留在本机。
+- Models are optional downloads from pinned sources and verified before installation. After download, inference is on-device. No photos or prompts are uploaded. Mirror availability varies by network.
+- 分类得分表示相似度。模型可能误选或漏选，可调整阈值并确认边界结果。轻量模型每条描述最多126个内容分词，过长描述需缩短。名称建议结合用户描述与模型选出的图片主题。
+- Scores represent similarity. Review uncertain matches and adjust strictness when needed. Lite accepts up to126 content tokens per description. Suggested names combine your description with image themes.
+- 删除下载模型时，相框和照片仍可使用。在设置中清除全部数据会清理模型、分类缓存和任务。iOS 持续分类在应用可运行期间、导入后或回到前台处理。
+
+下载来源及限制实证见 [模型来源记录](docs/superpowers/ai-model-source-evidence.md)，新增模型与 SDK 的许可见 [AI 第三方许可来源](docs/superpowers/ai-third-party-notices-evidence.md)。
+
 ## 构建 / Build
 
 环境要求见 `15-脚手架与开发启动说明.md`。

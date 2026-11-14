@@ -1,5 +1,7 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**本轮 AI 分类相框（2026-11-14，1.2.0/59）**：已完成中英本地分类、预览选片和名称建议、后期可修改的可选自动分类。轻量项改为201.5MB多语CLIP，标准387.7MB；国内ModelScope/国际HF/镜像回退固定同SHA。Android415单测+7原生、iOS227单测+iPhone5UI+iPad5UI通过，签名APK与iOS开发签名归档已完成。更新入口见`store/appstore/review/AIFramesUpdate.md`及本轮progress；GitHub发布核验记录将在发布后追加。商店IPA导出需Xcode原账号登录刷新匹配profile（现No Accounts），真实手机性能/最低OS/国内运营商网络尚待实测。用户已确认本项目此前成功上架，下方首发记录保留为历史。
+
 **本轮最终保存核对（2026-10-23）**：隐私标签已按明确确认发布；真实上传包经签名/清单/资源核对，Apple上传成功，后台58由缺出口合规转准备提交；额外标准算法/法国否已保存，未虚构豁免/批准号。正式58关联1.1.58后整页重载表格仍58；Auto发布回退已用可信键盘恢复Manual并再次整页重载核实为true。无需登录false、联系人完整、ReviewPhotos附件、截图关联保持；最后页面留英文App预览和截屏。DistributionEvidence58记录精确上传SHA、profile、验证范围。没有添加或提交审核/上线，也未邀请测试员；实际签名候选尚无TestFlight真机冒烟、完整VoiceOver/最低OS与长期稳定性未全验，不能写成验收全过。
 
 **用户确认后上传推进（2026-10-23）**：用户明确确认签名/上传/隐私标签发布。隐私后台已显示发布时间。allowProvisioningUpdates后自动签名导出成功；无撤销/无手动另建无必要证书，使用团队可用AppleDistribution与自动AppStore profile，本机仍无新增local Distribution不代表未签名。真实上传IPA已保留：10275147字节、SHA256 52f573fc346565878b72aee5c2bbcaed35f525d5c044d4acbb219741460c3f8c；codesign深验、profile/team/bundle/58、隐私清单、无UITest/审核密码、15音乐/notice及dSYM均核查。Apple14:17:53 Upload succeeded。后台58出现，额外标准算法/法国否问卷保存后缺合规转准备提交，无虚构代码/Info豁免；已选58关联版本并重载表格核实。发布方式意外回到Auto，已另用可信键盘恢复Manual并保存，重载最终确认已完成，见上方最终保存核对。未点添加审核/最终提交/邀请测试员；正式签名候选尚未TestFlight真机运行，不以历史开发包回归冒称。DistributionEvidence58记录精确包与范围。

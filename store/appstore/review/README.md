@@ -1,5 +1,7 @@
 # PhotoPilot — App Review preparation
 
+2026-11-14 更新准备。用户已确认 PhotoPilot 成功上架。本轮1.2.0(59)新增本地 AI 分类相框，中英更新说明、审核步骤、模型和截图说明见 [AIFramesUpdate.md](AIFramesUpdate.md)。下方保留1.1.58历史记录。
+
 最新状态（2026-10-23）：正式1.1.58(58)已签名上传并关联版本，隐私标签已按用户确认发布，加密问卷已保存，手动发布已重载核实；[DistributionEvidence58.json](DistributionEvidence58.json)。最终审核提交仍由用户确认。
 
 最新上传实证：[MediaUploadEvidence.json](MediaUploadEvidence.json)（三语言iPhone中屏/大屏+iPad截图均已关联）；新中屏截图来源：[ScreenshotEvidence58.json](ScreenshotEvidence58.json)。

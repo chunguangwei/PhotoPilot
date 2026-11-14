@@ -1,0 +1,82 @@
+{
+  "version": "1.2.0",
+  "build": 59,
+  "capturedAt": "2026-11-14",
+  "captureBundle": "dev.photopilot.aiqa",
+  "displayName": "PhotoPilot",
+  "method": "Native simulator captures from the same production UI source, isolated test bundle, with model selection and configuration forms. No photo imagery or customer data in these selected frames.",
+  "screenshots": [
+    {
+      "path": "store/appstore/ai-frames-v1.2.0/iphone-6.3/en-models.png",
+      "width": 1206,
+      "height": 2622,
+      "mode": "RGB",
+      "bytes": 235664,
+      "sha256": "e2b3af37a2d0a3d3a0e37f08c740910e9cb65a52392609c8fa64d4330a528ecb",
+      "sourceCapture": "en-11-normal-models.png"
+    },
+    {
+      "path": "store/appstore/ai-frames-v1.2.0/iphone-6.3/en-rules.png",
+      "width": 1206,
+      "height": 2622,
+      "mode": "RGB",
+      "bytes": 235175,
+      "sha256": "49b79066c264556222c48215366c3af3ef6add694b19c85dc9a45e21fc3ecbf7",
+      "sourceCapture": "en-13-normal-rules.png"
+    },
+    {
+      "path": "store/appstore/ai-frames-v1.2.0/iphone-6.3/zh-models.png",
+      "width": 1206,
+      "height": 2622,
+      "mode": "RGB",
+      "bytes": 233894,
+      "sha256": "b0ec0293633d97cc5d03b9f706061d4cda2ce83e427b0a3030d2cac24e0309bf",
+      "sourceCapture": "zh-11-normal-models.png"
+    },
+    {
+      "path": "store/appstore/ai-frames-v1.2.0/iphone-6.3/zh-rules.png",
+      "width": 1206,
+      "height": 2622,
+      "mode": "RGB",
+      "bytes": 233533,
+      "sha256": "14877e952436899772a8da8680f00d9fca08257a44a71c89effeb66f10ba8ed0",
+      "sourceCapture": "zh-13-normal-rules.png"
+    },
+    {
+      "path": "store/appstore/ai-frames-v1.2.0/ipad-13/en-models.png",
+      "width": 2064,
+      "height": 2752,
+      "mode": "RGB",
+      "bytes": 247808,
+      "sha256": "15540350fbc6a4d8a9294f2b93937e65a6a50e610c9f6ae253dc4ae9948ace5d",
+      "sourceCapture": "en-11-normal-models.png"
+    },
+    {
+      "path": "store/appstore/ai-frames-v1.2.0/ipad-13/en-rules.png",
+      "width": 2064,
+      "height": 2752,
+      "mode": "RGB",
+      "bytes": 247404,
+      "sha256": "16a6941af2b3f2c7f41cf79a3d1c1abbdfef9a65fedb40538ea6780e72cdae36",
+      "sourceCapture": "en-13-normal-rules.png"
+    },
+    {
+      "path": "store/appstore/ai-frames-v1.2.0/ipad-13/zh-models.png",
+      "width": 2064,
+      "height": 2752,
+      "mode": "RGB",
+      "bytes": 254710,
+      "sha256": "9d9e50d79ac8bc5676794448393af16e36c79f889497833ba84b1f9472d4c2e3",
+      "sourceCapture": "zh-11-normal-models.png"
+    },
+    {
+      "path": "store/appstore/ai-frames-v1.2.0/ipad-13/zh-rules.png",
+      "width": 2064,
+      "height": 2752,
+      "mode": "RGB",
+      "bytes": 254766,
+      "sha256": "4cbba70727106005802e735b38e921c002697c5aca43f6ea7202991fda219e8b",
+      "sourceCapture": "zh-13-normal-rules.png"
+    }
+  ]
+}
