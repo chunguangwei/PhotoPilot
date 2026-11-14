@@ -19,10 +19,10 @@ class AIFrameWorkflowTest {
         val prefix = "ai-workflow-" + UUID.randomUUID()
         val now = System.currentTimeMillis()
         val fixture = File(context.filesDir, "ai-validation")
-        val model = service.models.models.single { it.id == "siglip2-base-int8" }
+        val model = service.models.models.single { it.id == "multilingual-clip-vitb32-lite" }
         val directory = service.models.directory(model)
         for (file in model.files) {
-            File(fixture, file.name).copyTo(File(directory, file.name), overwrite = true)
+            File(fixture, "multilingual-clip/${file.name}").copyTo(File(directory, file.name), overwrite = true)
             File(directory, file.name + ".verified").writeText(file.sha256)
         }
         val original = File(context.filesDir, "originals/$prefix.png").apply { parentFile!!.mkdirs() }
@@ -36,7 +36,7 @@ class AIFrameWorkflowTest {
         val baseline = manager.listFrames().map { it.id }.toSet()
         var created = emptyList<String>()
         try {
-            val previews = service.preview(model, listOf(prefix), true, listOf(AIRule("a photo of cats", threshold = .075f), AIRule("一张猫的照片", threshold = .075f))) { _, _ -> }
+            val previews = service.preview(model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = model.defaultThreshold), AIRule("猫的照片", threshold = model.defaultThreshold))) { _, _ -> }
             assertEquals(baseline, manager.listFrames().map { it.id }.toSet())
             assertTrue(previews.all { prefix in it.matches })
             assertTrue(previews.all { it.suggestedNames(false).isNotEmpty() })

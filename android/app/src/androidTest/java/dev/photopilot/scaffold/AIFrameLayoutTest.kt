@@ -40,6 +40,11 @@ class AIFrameLayoutTest {
         }
         SystemClock.sleep(700)
         instrumentation.runOnMainSync {
+            args.getString("model")?.let { modelId ->
+                val index = environment.aiFrames.models.models.indexOfFirst { it.id == modelId }
+                require(index >= 0)
+                descendants(view).filterIsInstance<android.widget.Spinner>().first().setSelection(index)
+            }
             val fields = descendants(view).filterIsInstance<EditText>()
             fields[0].setText(if (language == "zh") "猫和狗\n海边的日落" else "Cats and dogs\nSunset at the beach")
             fields[4].setText(if (language == "zh") "家里的伙伴\n海边时光" else "Our companions\nSeaside moments")

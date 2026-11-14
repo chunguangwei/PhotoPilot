@@ -58,6 +58,7 @@ class AIFrameView(
     private var polling: Job? = null
     private var initialized = false
     private var previousModelId: String? = null
+    private var retiredModelNotice = false
 
     init {
         setBackgroundColor(context.getColor(dev.photopilot.scaffold.R.color.pp_surface_canvas))
@@ -132,12 +133,11 @@ class AIFrameView(
             }
             if (collections.isEmpty()) label(words("请先在照片库导入相册或目录。", "Import an album or folder in Library first."))
             if (configuration != null) {
-                modelPicker.setSelection(environment.aiFrames.models.models.indexOfFirst { it.id == configuration.modelId }.coerceAtLeast(0))
+                restoreModelSelection(configuration.modelId, configuration.rule.threshold.toString())
                 descriptions.setText(configuration.rule.description)
                 includes.setText(configuration.rule.includes.joinToString("\n"))
                 excludes.setText(configuration.rule.excludes.joinToString("\n"))
                 names.setText(existingFrame?.name)
-                threshold.setText(configuration.rule.threshold.toString())
                 allIncludes.isChecked = configuration.rule.requireAll
                 recursive.isChecked = configuration.recursive
                 automatic.isChecked = configuration.autoUpdate
@@ -150,17 +150,16 @@ class AIFrameView(
                 includes.setText(draft["includes"] ?: includes.text)
                 excludes.setText(draft["excludes"] ?: excludes.text)
                 names.setText(draft["names"] ?: names.text)
-                threshold.setText(draft["threshold"] ?: threshold.text)
                 recursive.isChecked = draft["recursive"]?.toBooleanStrictOrNull() ?: recursive.isChecked
                 automatic.isChecked = draft["automatic"]?.toBooleanStrictOrNull() ?: automatic.isChecked
                 allIncludes.isChecked = draft["allIncludes"]?.toBooleanStrictOrNull() ?: allIncludes.isChecked
                 val selectedFolders = draft["folders"]?.let { org.json.JSONArray(it) }?.let(AIConfiguration::strings).orEmpty()
                 collectionChecks.forEach { (id, check) -> check.isChecked = id in selectedFolders }
-                draft["modelId"]?.let { id -> previousModelId = id; modelPicker.setSelection(environment.aiFrames.models.models.indexOfFirst { it.id == id }.coerceAtLeast(0)) }
+                restoreModelSelection(draft["modelId"], draft["threshold"])
                 sourcePicker.setSelection(draft["source"]?.toIntOrNull()?.coerceIn(0, 2) ?: 0)
             }
             initialized = true
-            updateActions()
+            updateModelStatus()
             refreshProgress()
         }
     }
@@ -171,8 +170,18 @@ class AIFrameView(
         "folders" to org.json.JSONArray(collectionChecks.filterValues { it.isChecked }.keys.toList()).toString(),
         "modelId" to selectedModel().id, "source" to sourcePicker.selectedItemPosition.toString(),
     )
+    private fun restoreModelSelection(modelId: String?, savedThreshold: String?) {
+        val models = environment.aiFrames.models.models
+        val savedIndex = models.indexOfFirst { it.id == modelId }
+        retiredModelNotice = modelId != null && savedIndex < 0
+        val index = if (savedIndex >= 0) savedIndex else models.indexOfFirst { it.runtime == "onnx" }.coerceAtLeast(0)
+        val model = models[index]
+        previousModelId = model.id
+        modelPicker.setSelection(index)
+        threshold.setText(if (savedIndex >= 0) savedThreshold ?: model.defaultThreshold.toString() else model.defaultThreshold.toString())
+    }
     private fun selectedModel() = environment.aiFrames.models.models[modelPicker.selectedItemPosition.coerceAtLeast(0)]
-    private fun updateModelStatus() { modelStatus.text = if (!environment.aiFrames.models.supported(selectedModel())) words("此设备不支持标准模型，请选择紧凑版。", "Choose the compact model on this device.") else if (environment.aiFrames.models.ready(selectedModel())) words("模型已就绪，可离线分类", "Model ready for offline classification") else words("需要下载模型", "Model download required"); modelStatus.append(" · %.1f MB".format(selectedModel().bytes / 1e6)); updateActions() }
+    private fun updateModelStatus() { modelStatus.text = if (!environment.aiFrames.models.supported(selectedModel())) words("此设备不支持标准模型，请选择紧凑版。", "Choose the compact model on this device.") else if (environment.aiFrames.models.ready(selectedModel())) words("模型已就绪，可离线分类", "Model ready for offline classification") else words("需要下载模型", "Model download required"); modelStatus.append(" · %.1f MB".format(selectedModel().bytes / 1e6)); if (retiredModelNotice) modelStatus.append("\n" + words("旧模型已替换，请复核新模型与匹配严格度后保存。", "The previous model was replaced. Review the new model and matching strictness before saving.")); updateActions() }
     private fun input(hint: String, single: Boolean) = EditText(context).apply { this.hint = hint; setSingleLine(single); setTextColor(context.getColor(dev.photopilot.scaffold.R.color.pp_text_primary)) }
     private fun label(text: String, heading: Boolean = false) { column.addView(TextView(context).apply { this.text = text; textSize = if (heading) 21f else 15f; setPadding(0, resources.getDimensionPixelSize(dev.photopilot.scaffold.R.dimen.pp_space_16), 0, resources.getDimensionPixelSize(dev.photopilot.scaffold.R.dimen.pp_space_12)); setAccessibilityHeading(heading); setTextColor(context.getColor(if (heading) dev.photopilot.scaffold.R.color.pp_text_primary else dev.photopilot.scaffold.R.color.pp_text_secondary)) }) }
     private fun button(text: String, primary: Boolean = false, action: () -> Unit): TextView {
@@ -240,6 +249,8 @@ class AIFrameView(
             environment.aiFrames.configure(frame.id, selectedModel(), collectionChecks.filterValues { it.isChecked }.keys.toList(), recursive.isChecked, automatic.isChecked, rule)
             lines(names).firstOrNull()?.let { environment.frameManager.renameFrame(frame.id, it) }
             pendingPreview = null
+            retiredModelNotice = false
+            updateModelStatus()
             if (frame.id !in trackedFrames) trackedFrames.add(frame.id)
             status.text = words("设置已保存", "Settings saved")
             onChanged()
@@ -302,6 +313,8 @@ class AIFrameView(
                         val saved = withContext(Dispatchers.IO) { environment.aiFrames.savePreviews(previews, previewNames.map { it.text.toString() }, previewChosen.map { it.toSet() }, automatic.isChecked, existingFrame?.id, previewRevision) }
                         trackedFrames.addAll(saved.filter { it !in trackedFrames })
                         pendingPreview = null
+                        retiredModelNotice = false
+                        updateModelStatus()
                         results.removeAllViews()
                         onChanged()
                         refreshProgress()
@@ -348,7 +361,7 @@ class AIFrameView(
         if (previewJob?.isActive == true || pendingPreview != null) return
         val configurations = withContext(Dispatchers.IO) { trackedFrames.mapNotNull { environment.aiFrames.state.get(it) } }
         status.text = configurations.joinToString("\n") { c ->
-            val state = when (c.status) { "running" -> words("分类中", "Classifying"); "complete" -> words("已完成", "Complete"); "cancelled" -> words("已取消，可继续", "Cancelled, resumable"); "paused" -> words("已暂停", "Paused"); "model_missing" -> words("请下载模型以继续分类", "Download the model to continue classification"); "runtime_unavailable" -> words("此设备无法运行标准模型，请选择紧凑版模型。", "This device cannot run the standard model. Choose the compact model."); "failed" -> words("失败，请重试", "Failed, retry available"); else -> words("待开始", "Ready") }
+            val state = if (environment.aiFrames.models.models.none { it.id == c.modelId && it.revision == c.modelRevision }) words("旧模型已替换，请选择新模型并重新预览", "The previous model was replaced. Select a model and preview again") else when (c.status) { "running" -> words("分类中", "Classifying"); "complete" -> words("已完成", "Complete"); "cancelled" -> words("已取消，可继续", "Cancelled, resumable"); "paused" -> words("已暂停", "Paused"); "model_missing" -> words("请下载模型以继续分类", "Download the model to continue classification"); "runtime_unavailable" -> words("此设备无法运行标准模型，请选择紧凑版模型。", "This device cannot run the standard model. Choose the compact model."); "failed" -> words("失败，请重试", "Failed, retry available"); else -> words("待开始", "Ready") }
             "${c.rule.description} · $state · " + words("已处理 ${c.completed}，入选 ${c.members.size}，待确认 ${c.reviews.size}，失败 ${c.failed}", "${c.completed} processed, ${c.members.size} matched, ${c.reviews.size} to review, ${c.failed} failed")
         }
         if (configurations.any { it.status == "running" }) return

@@ -100,13 +100,13 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
     private suspend fun runScan(initial: AIConfiguration) {
         val frameId = initial.frameId
         if (shouldPause()) { status(frameId, "paused", initial.revision); return }
-        val model = models.models.first { it.id == initial.modelId && it.revision == initial.modelRevision }
+        val model = models.models.firstOrNull { it.id == initial.modelId && it.revision == initial.modelRevision } ?: throw java.io.IOException("model_missing")
         if (!models.supported(model)) throw java.io.IOException("runtime_unavailable")
         require(models.ready(model)) { "model_missing" }
         models.lock.withLock {
             require(models.verify(model)) { "model_integrity" }
             val directory = models.directory(model)
-            val embedder: AIEmbedder = if (model.runtime == "litertlm") RemoteGemmaEmbedder(context, File(directory, model.files.first().name)) else SiglipEmbedder(File(directory, "model_quantized.onnx"), File(directory, "tokenizer.model"))
+            val embedder = createAIEmbedder(context, model, directory)
             embedder.use { engine ->
                 val description = engine.text(initial.rule.description)
                 val includes = initial.rule.includes.map(engine::text)
@@ -125,7 +125,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                     if (db.frameDao().getById(frameId) == null) return
                     val configuration = state.get(frameId) ?: return
                     if (!AIJobGuard.canCommit(initial.revision, configuration.revision, initial.modelRevision, configuration.modelRevision, false)) return
-                    val fingerprint = "${asset.contentHash}:${model.revision}:preprocess1"
+                    val fingerprint = "${asset.contentHash}:${model.revision}:${model.preprocessingVersion}"
                     val selections = db.frameSelectionDao().getByFrame(frameId)
                     val sourceIds = db.assetOriginDao().getByAsset(asset.id).map { it.sourceAssetId }.toSet()
                     val manuallyExcluded = selections.any { it.mode == FrameSelectionMode.EXCLUDE && (it.assetId == asset.id || it.sourceAssetId in sourceIds) }

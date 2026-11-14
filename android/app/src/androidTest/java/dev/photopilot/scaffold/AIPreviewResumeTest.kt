@@ -17,9 +17,9 @@ class AIPreviewResumeTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val db = DatabaseFactory.builder(context).build()
         val service = AIFrameService(context, db)
-        val model = service.models.models.single { it.id == "siglip2-base-int8" }
+        val model = service.models.models.single { it.id == "multilingual-clip-vitb32-lite" }
         for (file in model.files) {
-            File(context.filesDir, "ai-validation/${file.name}").copyTo(File(service.models.directory(model), file.name), true)
+            File(context.filesDir, "ai-validation/multilingual-clip/${file.name}").copyTo(File(service.models.directory(model), file.name), true)
             File(service.models.directory(model), file.name + ".verified").writeText(file.sha256)
         }
         val prefix = "ai-resume-" + UUID.randomUUID()
@@ -42,29 +42,29 @@ class AIPreviewResumeTest {
         var restarted: AIFrameService? = null
         try {
             val interrupted = launch {
-                service.preview(model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = .075f))) { completed, _ -> if (completed == 1) this@launch.cancel() }
+                service.preview(model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = model.defaultThreshold))) { completed, _ -> if (completed == 1) this@launch.cancel() }
             }
             interrupted.join()
             assertTrue(interrupted.isCancelled)
             service.shutdown()
             val next = AIFrameService(context, db).also { restarted = it }
-            val resumed = next.preview(model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = .075f))) { _, _ -> }.single()
+            val resumed = next.preview(model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = model.defaultThreshold))) { _, _ -> }.single()
             assertEquals(3, resumed.fingerprints.size)
             assertEquals(1, resumed.reusedAssetCount)
             next.foreground = false
             try {
-                next.preview(model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = .075f))) { _, _ -> }
+                next.preview(model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = model.defaultThreshold))) { _, _ -> }
                 fail("Background previews must pause")
             } catch (paused: java.io.IOException) { assertEquals("preview_paused", paused.message) }
             next.foreground = true
-            val foregroundResume = next.preview(model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = .075f))) { _, _ -> }.single()
+            val foregroundResume = next.preview(model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = model.defaultThreshold))) { _, _ -> }.single()
             assertEquals(3, foregroundResume.reusedAssetCount)
-            val oldWriter = AIPreviewCheckpoint.open(db, model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = .075f)), null)
+            val oldWriter = AIPreviewCheckpoint.open(db, model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = model.defaultThreshold)), null)
             dev.photopilot.scaffold.data.repo.AssetRepository(db, dev.photopilot.scaffold.data.repo.LibraryVersionRepository(db.settingsKvDao())).hideAssetGlobally(ids.first(), "validation", now)
             try { oldWriter.save(); fail("Hidden-photo checkpoints must stay invalidated") }
             catch (invalidated: java.io.IOException) { assertEquals("preview_invalidated", invalidated.message) }
             assertTrue(db.settingsKvDao().getByPrefix(AIPreviewCheckpoint.PREFIX).isEmpty())
-            val afterHide = next.preview(model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = .075f))) { _, _ -> }.single()
+            val afterHide = next.preview(model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = model.defaultThreshold))) { _, _ -> }.single()
             assertEquals(0, afterHide.reusedAssetCount)
             assertEquals(2, afterHide.fingerprints.size)
             assertFalse(ids.first() in afterHide.fingerprints)

@@ -78,7 +78,7 @@ internal class AIPreviewCheckpoint private constructor(
         suspend fun open(db: PhotoPilotDatabase, model: AIModel, collections: List<String>, recursive: Boolean, rules: List<AIRule>, frameId: String?): AIPreviewCheckpoint = db.withTransaction {
             val settings = AppSettingsRepository(db.settingsKvDao())
             val config = JSONObject().put("modelId", model.id).put("modelRevision", model.revision)
-                .put("runtime", "${model.runtime}:litert0.17.1:onnx1.23.2:preprocess1")
+                .put("runtime", "${model.runtime}:litert0.17.1:onnx1.23.2:${model.preprocessingVersion}")
                 .put("collections", JSONArray(collections.sorted())).put("recursive", recursive)
                 .put("rules", JSONArray(rules.map { rule -> JSONObject().put("description", rule.description).put("includes", JSONArray(rule.includes)).put("excludes", JSONArray(rule.excludes)).put("all", rule.requireAll).put("threshold", rule.threshold.toDouble()) }))
             val identity = MessageDigest.getInstance("SHA-256").digest(config.toString().toByteArray()).joinToString("") { "%02x".format(it) }

@@ -41,42 +41,79 @@ class GemmaEmbedder(context: Context, model: File, useGpu: Boolean = false) : AI
     override fun close() = engine.close()
 }
 
-class SiglipEmbedder(model: File, tokenizerFile: File) : AIEmbedder {
+class MultilingualClipEmbedder(
+    textModel: File,
+    visionModel: File,
+    projectionFile: File,
+    vocabularyFile: File,
+) : AIEmbedder {
+    private val tokenizer = WordPieceTokenizer(vocabularyFile.readLines())
+    private val projection = ClipProjection(projectionFile.readBytes())
     private val environment = OrtEnvironment.getEnvironment()
-    private val session = OrtSession.SessionOptions().use { options ->
-        options.setIntraOpNumThreads(2)
-        environment.createSession(model.absolutePath, options)
+    private val textSession = openSession(textModel)
+    private val visionSession = try {
+        openSession(visionModel)
+    } catch (failure: Throwable) {
+        textSession.close()
+        throw failure
     }
-    private val tokenizer = SentencePieceTokenizer(tokenizerFile.readBytes())
-    override fun text(text: String): FloatArray = run(text, null).first
-    override fun image(bitmap: Bitmap): FloatArray = run("", bitmap).second
-    private fun run(text: String, bitmap: Bitmap?): Pair<FloatArray, FloatArray> {
-        val tokens = tokenizer.encode(text, 64)
-        val pixels = FloatArray(3 * 224 * 224)
-        bitmap?.let {
-            val resized = Bitmap.createScaledBitmap(it, 224, 224, true)
-            val colors = IntArray(224 * 224)
-            resized.getPixels(colors, 0, 224, 0, 0, 224, 224)
-            for (index in colors.indices) {
-                pixels[index] = ((colors[index] shr 16 and 255) / 255f - .5f) / .5f
-                pixels[224 * 224 + index] = ((colors[index] shr 8 and 255) / 255f - .5f) / .5f
-                pixels[2 * 224 * 224 + index] = ((colors[index] and 255) / 255f - .5f) / .5f
-            }
-            if (resized !== it) resized.recycle()
-        }
-        OnnxTensor.createTensor(environment, LongBuffer.wrap(tokens), longArrayOf(1, tokens.size.toLong())).use { input ->
-            OnnxTensor.createTensor(environment, FloatBuffer.wrap(pixels), longArrayOf(1, 3, 224, 224)).use { image ->
-                session.run(mapOf("input_ids" to input, "pixel_values" to image)).use { result ->
+
+    private fun openSession(file: File): OrtSession = OrtSession.SessionOptions().use { options ->
+        options.setIntraOpNumThreads(2)
+        environment.createSession(file.absolutePath, options)
+    }
+
+    override fun text(text: String): FloatArray {
+        val tokens = tokenizer.encode(text)
+        val attentionMask = LongArray(tokens.size) { 1 }
+        val shape = longArrayOf(1, tokens.size.toLong())
+        OnnxTensor.createTensor(environment, LongBuffer.wrap(tokens), shape).use { input ->
+            OnnxTensor.createTensor(environment, LongBuffer.wrap(attentionMask), shape).use { mask ->
+                textSession.run(mapOf("input_ids" to input, "attention_mask" to mask)).use { result ->
                     @Suppress("UNCHECKED_CAST")
-                    val textEmbedding = (result.get("text_embeds").get().value as Array<FloatArray>)[0].copyOf()
-                    @Suppress("UNCHECKED_CAST")
-                    val imageEmbedding = (result.get("image_embeds").get().value as Array<FloatArray>)[0].copyOf()
-                    return textEmbedding to imageEmbedding
+                    val hidden = result.get("last_hidden_state").get().value as Array<Array<FloatArray>>
+                    require(hidden.size == 1)
+                    val pooled = ClipEmbeddingMath.meanPool(hidden[0], attentionMask)
+                    return ClipEmbeddingMath.normalize(projection.apply(pooled))
                 }
             }
         }
     }
-    override fun close() = session.close()
+
+    override fun image(bitmap: Bitmap): FloatArray {
+        val argb = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(argb, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        val pixels = ClipImagePreprocessor.pixelValues(bitmap.width, bitmap.height, argb)
+        OnnxTensor.createTensor(environment, FloatBuffer.wrap(pixels), longArrayOf(1, 3, 224, 224)).use { input ->
+            visionSession.run(mapOf("pixel_values" to input)).use { result ->
+                @Suppress("UNCHECKED_CAST")
+                val values = result.get("image_embeds").get().value as Array<FloatArray>
+                require(values.size == 1 && values[0].size == 512)
+                return ClipEmbeddingMath.normalize(values[0])
+            }
+        }
+    }
+
+    override fun close() {
+        try { textSession.close() } finally { visionSession.close() }
+    }
+}
+
+internal fun createAIEmbedder(context: Context, model: AIModel, directory: File): AIEmbedder = when (model.runtime) {
+    "litertlm" -> {
+        require(model.embeddingDimension == 768)
+        RemoteGemmaEmbedder(context, File(directory, model.files.single { it.role == "model" }.name))
+    }
+    "onnx" -> {
+        require(model.embeddingDimension == 512)
+        MultilingualClipEmbedder(
+            textModel = File(directory, model.files.single { it.role == "text" }.name),
+            visionModel = File(directory, model.files.single { it.role == "model" }.name),
+            projectionFile = File(directory, model.files.single { it.role == "projection" }.name),
+            vocabularyFile = File(directory, model.files.single { it.role == "tokenizer" }.name),
+        )
+    }
+    else -> throw java.io.IOException("model_missing")
 }
 
 object AIImageDecoder {

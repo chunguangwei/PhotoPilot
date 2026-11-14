@@ -14,18 +14,19 @@ class AIRealInferenceTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val folder = File(context.filesDir, "ai-validation")
         val bitmap = requireNotNull(BitmapFactory.decodeFile(File(folder, "validation-cats.png").absolutePath))
-        val prompts = listOf("a photo of cats", "a photo of a beach", "a photo of a car", "一张猫的照片", "一张海滩的照片", "一张汽车的照片")
+        val prompts = listOf("a photo of a cat", "a photo of a beach", "a photo of a car", "猫的照片", "海滩的照片", "汽车的照片")
         val output = JSONObject()
         val adapters = listOf<Pair<String, () -> AIEmbedder>>(
-            "siglip2-base-int8" to { SiglipEmbedder(File(folder, "model_quantized.onnx"), File(folder, "tokenizer.model")) },
+            "multilingual-clip-vitb32-lite" to { MultilingualClipEmbedder(File(folder, "multilingual-clip/text_model_int8.onnx"), File(folder, "multilingual-clip/vision_model_q4.onnx"), File(folder, "multilingual-clip/projection.safetensors"), File(folder, "multilingual-clip/vocab.txt")) },
             "embeddinggemma2-vision" to { RemoteGemmaEmbedder(context, File(folder, "embeddinggemma-2-text-vision-440m.litertlm"), useGpu = InstrumentationRegistry.getArguments().getString("gemmaGpu") == "true") },
         )
         try {
-            for ((name, adapter) in adapters) {
+            val requested = InstrumentationRegistry.getArguments().getString("model")
+            for ((name, adapter) in adapters.filter { requested == null || it.first == requested }) {
                 val start = System.currentTimeMillis()
                 adapter().use { model ->
                     val image = model.image(bitmap)
-                    assertEquals(768, image.size)
+                    assertEquals(if (name == "embeddinggemma2-vision") 768 else 512, image.size)
                     val scores = prompts.map { AIEmbedding.cosine(image, model.text(it)) }
                     assertTrue(scores.all { it.isFinite() })
                     assertEquals(0, scores.take(3).indices.maxBy { scores[it] })

@@ -13,9 +13,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
 
-data class AIModelFile(val name: String, val size: Long, val sha256: String, val international: List<String>, val domestic: List<String>)
-data class AIModel(val id: String, val revision: String, val runtime: String, val english: String, val chinese: String, val files: List<AIModelFile>, val defaultThreshold: Float = .20f) {
+data class AIModelFile(val name: String, val size: Long, val sha256: String, val international: List<String>, val domestic: List<String>, val role: String = "model", val revision: String? = null)
+data class AIModel(val id: String, val revision: String, val runtime: String, val english: String, val chinese: String, val files: List<AIModelFile>, val defaultThreshold: Float = .20f, val embeddingDimension: Int = 768) {
     val bytes: Long get() = files.sumOf { it.size }
+    val preprocessingVersion: String get() = if (runtime == "onnx") "clip-bicubic-wordpiece-projection1" else "preprocess1"
 }
 
 class AIModelManager(private val context: Context) {
@@ -37,8 +38,8 @@ class AIModelManager(private val context: Context) {
                     require(hash.matches(Regex("[a-f0-9]{64}")))
                     val size = file.getLong("size")
                     require(size > 0)
-                    AIModelFile(name, size, hash, AIConfiguration.strings(file.getJSONObject("urls").getJSONArray("international")), AIConfiguration.strings(file.getJSONObject("urls").getJSONArray("domestic")))
-                }, model.optDouble("defaultThreshold", .20).toFloat())
+                    AIModelFile(name, size, hash, AIConfiguration.strings(file.getJSONObject("urls").getJSONArray("international")), AIConfiguration.strings(file.getJSONObject("urls").getJSONArray("domestic")), file.getString("role"), file.optString("revision").takeIf { it.isNotEmpty() })
+                }, model.optDouble("defaultThreshold", .20).toFloat(), model.getInt("embeddingDimension"))
         }.also { require(it.map { model -> model.id }.distinct().size == it.size) }
     }
     fun supported(model: AIModel): Boolean = model.runtime != "litertlm" || android.os.Process.is64Bit()

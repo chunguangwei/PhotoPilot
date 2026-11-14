@@ -47,11 +47,7 @@ suspend fun AIFrameService.preview(
             try {
                 if (shouldPause()) throw java.io.IOException("preview_paused")
                 val folder = models.directory(model)
-                val adapter: AIEmbedder = if (model.runtime == "litertlm") {
-                    RemoteGemmaEmbedder(context, File(folder, model.files.first().name))
-                } else {
-                    SiglipEmbedder(File(folder, "model_quantized.onnx"), File(folder, "tokenizer.model"))
-                }
+                val adapter = createAIEmbedder(context, model, folder)
                 adapter.use { engine ->
                     val descriptions = rules.map { engine.text(it.description) }
                     val includes = rules.map { rule -> rule.includes.map(engine::text) }
@@ -206,7 +202,7 @@ suspend fun AIFrameService.savePreviews(previews: List<AIPreview>, names: List<S
                 owned.remove(assetId)
             }
         }
-        val processed = validFingerprints.filterKeys { it !in preview.failedAssetIDs }.mapValues { (_, hash) -> "$hash:${preview.model.revision}:preprocess1" }
+        val processed = validFingerprints.filterKeys { it !in preview.failedAssetIDs }.mapValues { (_, hash) -> "$hash:${preview.model.revision}:${preview.model.preprocessingVersion}" }
         state.put(AIConfiguration(frame.id, (previous?.revision ?: 0) + 1, preview.model.id, preview.model.revision, preview.collections, preview.recursive, automatic, preview.rule, owned, processed, preview.reviews.filterKeys { it !in selectedIds && it in validFingerprints }, "complete", preview.fingerprints.size, preview.failed, preview.themes))
         db.frameDao().bumpSelectionVersion(frame.id, now)
         frameIds.add(frame.id)
