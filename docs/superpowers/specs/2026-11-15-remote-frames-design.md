@@ -1,0 +1,67 @@
+# 按需远端相框设计
+
+## 用户目标与授权
+
+用户希望小容量老设备在线选择远端照片播放，并在相框配置是否同步到本地。用户明确将产品逻辑交由实现者按行业实践决定，退出澄清和设计批准流程。本轮复用双端原生与现有WebDAV/SMB客户端，支持中英文。GitHub既有仓库交付沿用授权，Apple签名资产修改继续等待单独授权。正常播放独立于AI模型下载。
+
+## 已选方案与实现者决定
+
+采用远端元数据索引、按需文件lease和限额共享缓存。仅内存下载会放大老设备大照片解码峰值。整库持久化无法满足容量目标。系统Caches目录适合可重新获取的内容，应用自行控制淘汰和恢复。[Apple文件存储说明](https://developer.apple.com/documentation/foundation/using-the-file-system-effectively) [Android应用专用存储](https://developer.android.com/training/data-storage/app-specific)
+
+新远端相框显式保存mediaStorageMode=remote，用户开启同步后为local。缺该字段的旧相框按local读取。相框设置中显示同步开关、同步进度、共享缓存占用与清理入口。关闭同步后可显示独占可释放字节，用户确认后释放可重新下载的副本。普通本机相册和导入文件继续通过现有本地流程使用。
+
+默认共享磁盘缓存134217728字节，所有远端相框、封面、网格缩略图和AI读取共用。它与AI模型下载分别计量。缓存文件位于平台Caches目录并受LRU淘汰，预算计入下载partial和预约容量。读取前核对设备剩余空间，保留67108864字节余量。当前照片及下一张的lease保护文件，播放器仅预取下一张。AI逐张申请短lease。可见缩略图按需读取，传输并发受限。单文件超过当前预算或可用空间时显示具体错误与开启本地同步的入口。照片按显示需求下采样，解码内存缓存独立设置cost限额。
+
+## 数据与身份
+
+复用Source、SourceAsset、Collection、FrameSelection、AssetOrigin和SettingsKV。数据库保持17表，不修改CoreData程序化Schema或Room实体。远端目录成员按Collection.source_id+rel_path与SourceAsset.remote_key的规范化路径边界派生。目录索引创建source_folder Collection及父子关系，同时支持WebDAV与SMB。目录匹配区分同名前缀兄弟、递归开关及来源身份，复用现有安全路径规范。
+
+Frame.settings_json增加mediaStorageMode，值remote/local。所有设置编解码与保存入口保留此字段及既有播放参数。新metadata-only来源使用Source.settings_json.catalogOnly=true，其启动恢复/自动刷新仅做枚举索引。原有明确导入流程可继续下载。相框remote路径和新增远端连接路径调用独立索引入口，不先创建ImportJob再取消。
+
+FrameSelection继续用现有严格二选一asset_id/source_asset_id。新远端相框的source引用在本地同步完成后仍为canonical身份。ImportCoordinator仅对旧相框沿用历史重绑。运行时媒体引用有明确asset/sourceAsset类型，远端队列及AI缓存键采用remote:<sourceAssetID>，SQL ref_key仍为现有原始ID。播放DTO承载真实远端元数据，避免伪造ready Asset或original文件。
+
+来源状态active、SourceAsset.access_state=accessible、来源保留策略、关联本地Asset的隐私/删除标记及tombstone均参与eligibility。来源/账户切换或断连通过epoch作authority失效。缓存键包含sourceID、epoch、sourceAssetID和revision。下载完成、展示前和AI结果落库前都重验authority。隐藏/删除、来源断开和erase all取消inflight并清原文件缓存与解码缓存，旧完成不得回灌。
+
+## 浏览、选片与播放
+
+相框页提供远端选片入口，可选现有WebDAV/SMB来源或连接新来源，再按目录浏览并显式选照片/目录。连接新来源从该入口进入metadata-only路径。目录索引只保存元数据，照片内容在可见预览、选中播放或AI分类时获取。视频过滤沿用现行策略。
+
+远端队列复用现有顺序、随机、手动排序、停留与转场。所有加载通过统一media acquire取得lease file URL，再交已有图像解码。当前和下一张的异步任务、lease均显式取消/释放。下一张真实解码就绪后才转场。网络临时故障保留当前有效画面并给出重试状态，重试有边界，整个队列无可用图时提供返回/重试。有效缓存可继续使用，源撤销必须立即清屏。离线整套播放由local模式提供。
+
+封面和网格缩略图也经过同一eligibility与缓存服务。源revision变化刷新文件与解码cache key，已下载缩略图数量受成本限额控制。
+
+## 同步本地与空间回收
+
+local同步只针对该相框当前选择或明确目录规则匹配项，scope记录frameID、selectionVersion和源引用。开始与提交均核对模式、选择版本及authority，切remote取消该相框旧任务。复用现有hash/去重/import pipeline与AssetOrigin。一个相框开启同步不得隐式下载整个NAS。
+
+同步进度可暂停/恢复，空间不足保持已完成部分并显示状态。设置重启后持久化。切换模式保留选片、人工排除、AI配置和命名。
+
+释放副本为用户确认动作。仅处理全部来源均为NAS且来源当前可访问、远端revision匹配原导入版本、其他local相框和显式本地保留均未引用的文件。原始NAS由只读客户端访问。现有独立来源导入/同步与其他相框的本地需求应显示在占用说明中，清理计算保护这些引用。
+
+文件移除和数据库状态通过事务及可恢复intent/同卷trash rename协调。清理后Asset的本地可用状态正确反映缺文件，业务记录和source引用可继续按需解析。并发选片/同步与清理需要共同版本检查或锁，并在崩溃恢复时修复intent。禁止使用把照片标记为隐私删除的路径来实现空间回收。
+
+## AI集成
+
+remote模式的AI可选择已索引远端目录。候选合并本地与远端，按canonical来源避免重复，逐张短lease取得临时文件。现有模型、分类规则、名称主题与预览确认复用，结果保存source引用。源revision/epoch变更使向量与checkpoint失效。人工include/exclude、失败保旧成员、预览只读、规则CAS、可选auto保持既有语义。metadata-only来源的更新能触发已明确开启auto的相框扫描，整库扫描受缓存/电量/前台与模型内存条件约束。
+
+## 验证与交付
+
+最低iOS15/API29。新增代码遵守无注释约束。使用本地HTTP/URLProtocol和注入SMB transport做协议回归，检查枚举无内容下载、首播仅当前/下一张、partial计量、LRU/lease、独立取消、断连/隐私迟到写回、cache被系统删除、修订变化、模式切换、只同步选片、共享副本与恢复intent。新Schema保持17表，运行make check及双端完整构建/分析/lint/测试。UI检查中英、窄屏、iPad横屏、大字号、断网与低空间状态。
+
+版本选择1.3.0(60)，属于本轮实现者决定。签名APK/GitHub交付与App Store更新材料按既有仓库流程完成。实体设备、最低系统实际运行、个人NAS/M0和商店签名/上架仅记录实际证据。本轮复用已有SDK与模拟器。
+
+## 构建复核后的明确决定
+
+新增来源写catalogOnly，复用旧来源时保留它原有的明确导入偏好。来源列表与相框存储占用提示来源级同步仍会占用空间。metadata-only启动刷新与frame-scoped本地同步是独立入口。相框切换只取消与该frame版本绑定的任务。
+
+AssetOrigin没有导入revision列。成功导入时在同一业务事务写SettingsKV版本化provenance记录，键含assetID/sourceAssetID，值含sourceEpoch/importedRevision/contentHash。local解析从同一SourceAsset的历史origins中确定性挑选匹配当前revision/epoch且通过隐私与tombstone的ready副本。历史关联的隐私排除也阻止通过新remote身份绕过。
+
+缺少provenance的旧副本先保护。用户可显式启动逐张校验再释放，复用受限缓存从远端当前版本核对contentHash，相同才补provenance并进入可释放集合。版本不匹配、源不可读或空间不足给出保留原因。跨来源/本机导入/其他localframe仍使用的副本不进入清理集合。
+
+切回local导入同hash Asset时，若original缺失，需要把staged文件原子补回并恢复ready，复用原Asset身份。现有去重分支不能直接丢staged文件。同步失败与隐私/tombstone继续按既有规则处理。
+
+文件lease只覆盖读取与完整解码阶段。当前图片完成解码后释放文件lease，显示的bitmap可继续保留，以便128MiB预算下两张70MiB照片依次轮播。下一张文件也在解码完成后释放。解码缓存cost上限33554432字节，内存压力清cache和下一张预取。播放任务优先，AI/缩略图可暂退并由checkpoint恢复。可见缩略图并发受控，不能长期占有文件lease。
+
+新显式mode字段的相框在导入完成时保持SourceAsset引用，包括选中、排除、顺序及AI ownership。旧mode字段缺失的frame才执行历史重绑。数据库原始ID按实际asset_id/source_asset_id列解析，运行时再转typed ref。AI的候选、预览确认、人工排除、旧owned移除和checkpoint都要覆盖typed source引用，按源内当前revision去重并保留失败旧成员。
+
+远端AI的可重新计算向量缓存按全应用16777216字节限额淘汰，复用SettingsKV.updated_at排序和专用feature键前缀。照片成员、标签、规则和人工选择按业务数据保留。缓存计量使用UTF8实际字节，旧条目可被正常重算替代，避免大NAS扫描让向量缓存无界增长。用户占用说明分别显示照片临时缓存、本地同步副本和AI模型。

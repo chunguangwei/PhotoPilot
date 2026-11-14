@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "truth": "docs/superpowers/specs/2026-11-15-remote-frames-design.md",
+    "rule": "Compare canonical source-relative slash paths at folder boundaries. Reject dot traversal. Do not interpret percent-encoded slashes as a path separator."
+  },
+  "cases": [
+    {
+      "id": "RP-01",
+      "folder": "family",
+      "remoteKey": "family/cat.jpg",
+      "recursive": false,
+      "expectedMember": true
+    },
+    {
+      "id": "RP-02",
+      "folder": "family",
+      "remoteKey": "family/holiday/cat.jpg",
+      "recursive": false,
+      "expectedMember": false
+    },
+    {
+      "id": "RP-03",
+      "folder": "family",
+      "remoteKey": "family/holiday/cat.jpg",
+      "recursive": true,
+      "expectedMember": true
+    },
+    {
+      "id": "RP-04",
+      "folder": "family",
+      "remoteKey": "family2/cat.jpg",
+      "recursive": true,
+      "expectedMember": false
+    },
+    {
+      "id": "RP-05",
+      "folder": "",
+      "remoteKey": "cat.jpg",
+      "recursive": false,
+      "expectedMember": true
+    },
+    {
+      "id": "RP-06",
+      "folder": "",
+      "remoteKey": "family/cat.jpg",
+      "recursive": false,
+      "expectedMember": false
+    },
+    {
+      "id": "RP-07",
+      "folder": "",
+      "remoteKey": "family/cat.jpg",
+      "recursive": true,
+      "expectedMember": true
+    },
+    {
+      "id": "RP-08",
+      "folder": "旅行/夏天",
+      "remoteKey": "旅行/夏天/海边.jpg",
+      "recursive": false,
+      "expectedMember": true
+    },
+    {
+      "id": "RP-09",
+      "folder": "family",
+      "remoteKey": "family/../private/cat.jpg",
+      "recursive": true,
+      "expectedMember": false
+    },
+    {
+      "id": "RP-10",
+      "folder": "family",
+      "remoteKey": "family%2Fsecret/cat.jpg",
+      "recursive": true,
+      "expectedMember": false
+    },
+    {
+      "id": "RP-11",
+      "folder": "family",
+      "remoteKey": "family/a%20b.jpg",
+      "recursive": false,
+      "expectedMember": true
+    }
+  ]
+}

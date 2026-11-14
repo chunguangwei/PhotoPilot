@@ -1,0 +1,36 @@
+{
+  "formatVersion": 1,
+  "frameModeKey": "mediaStorageMode",
+  "modes": [
+    "remote",
+    "local"
+  ],
+  "legacyDefault": "local",
+  "newRemoteFrameDefault": "remote",
+  "catalogOnlySourceKey": "catalogOnly",
+  "runtimeRemotePrefix": "remote:",
+  "persistedSelectionRef": "existing raw one-of asset_id/source_asset_id",
+  "cache": {
+    "budgetBytes": 134217728,
+    "freeSpaceReserveBytes": 67108864,
+    "prefetchCount": 1,
+    "includesPartialAndReserved": true,
+    "location": "platform app-private Caches",
+    "keyFields": [
+      "sourceId",
+      "sourceEpoch",
+      "sourceAssetId",
+      "revision"
+    ],
+    "decodedCostBytes": 33554432,
+    "leaseScope": "acquisition and complete decode/inference; release file after display bitmap is fully decoded",
+    "vectorCacheBudgetBytes": 16777216
+  },
+  "canonicalSourceSelection": "explicit valid mediaStorageMode retains sourceAsset ref after offline import",
+  "membership": "derive source_folder membership by source identity and normalized parent-path boundary",
+  "schemaTables": 17,
+  "version": "1.3.0",
+  "build": 60,
+  "importProvenance": "SettingsKV version1 assetID/sourceAssetID -> sourceEpoch/importedRevision/contentHash",
+  "legacyCleanup": "explicit bounded remote hash verification before provenance backfill and release"
+}
