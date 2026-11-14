@@ -13,6 +13,13 @@ BUNDLES = [
 ]
 
 
+def composition_revision(files):
+    fields = ("name", "role", "size", "sha256", "revision")
+    components = [{key: file.get(key) for key in fields} for file in sorted(files, key=lambda file: file["name"])]
+    data = json.dumps(components, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha1(data).hexdigest()
+
+
 def validate(catalog):
     errors = []
     if not isinstance(catalog, dict) or catalog.get("formatVersion") != 1:
@@ -65,6 +72,9 @@ def validate(catalog):
                 total += size
             if not re.fullmatch(r"[a-f0-9]{64}", file.get("sha256", "")):
                 errors.append(identity + ": missing integrity hash")
+            component_revision = file.get("revision", revision)
+            if not re.fullmatch(r"[a-f0-9]{40}", component_revision):
+                errors.append(identity + ": component revision must be immutable")
             urls = file.get("urls", {})
             if not isinstance(urls, dict):
                 errors.append(identity + ": invalid sources")
@@ -81,17 +91,24 @@ def validate(catalog):
                         errors.append(identity + ": invalid URL")
                         continue
                     parsed = urlparse(candidate)
-                    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or revision not in parsed.path:
+                    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or component_revision not in parsed.path:
                         errors.append(identity + ": download URL must pin HTTPS model revision")
         if "model" not in roles:
             errors.append(identity + ": missing model weights")
         if model.get("runtime") == "onnx" and "tokenizer" not in roles:
             errors.append(identity + ": missing text tokenizer")
+        if model.get("revisionKind") == "composition-sha1" and revision != composition_revision(files):
+            errors.append(identity + ": stale composition revision")
+        if identity == "multilingual-clip-vitb32-lite":
+            if not {"model", "text", "projection", "tokenizer"}.issubset(roles):
+                errors.append(identity + ": incomplete multilingual CLIP package")
+            if model.get("embeddingDimension") != 512:
+                errors.append(identity + ": invalid CLIP embedding dimension")
         totals[identity] = total
     standard = totals.get("embeddinggemma2-vision")
-    compact = totals.get("siglip2-base-int8")
-    if standard is None or compact is None or compact >= standard:
-        errors.append("compact model including tokenizer must be smaller than standard model")
+    compact = totals.get("multilingual-clip-vitb32-lite")
+    if standard is None or compact is None or compact > standard * 0.6:
+        errors.append("compact package must be at most sixty percent of the standard download")
     return errors
 
 

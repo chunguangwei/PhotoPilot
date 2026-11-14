@@ -1,0 +1,250 @@
+{
+  "model": "multilingual-clip-vitb32-lite",
+  "tokenizerSourceRevision": "58edf8cada9e398793dca955574a48cbb7f18be2",
+  "includesSpecialTokens": true,
+  "maxTotalTokens": 128,
+  "cases": [
+    {
+      "text": "a photo of a cat",
+      "ids": [
+        101,
+        169,
+        38171,
+        10108,
+        169,
+        41163,
+        102
+      ],
+      "id": "WP-01"
+    },
+    {
+      "text": "猫的照片",
+      "ids": [
+        101,
+        5453,
+        5718,
+        5337,
+        5395,
+        102
+      ],
+      "id": "WP-02"
+    },
+    {
+      "text": "一张猫的照片",
+      "ids": [
+        101,
+        2072,
+        3720,
+        5453,
+        5718,
+        5337,
+        5395,
+        102
+      ],
+      "id": "WP-03"
+    },
+    {
+      "text": "海边日落 sunset",
+      "ids": [
+        101,
+        5005,
+        7682,
+        4348,
+        6824,
+        42230,
+        14488,
+        102
+      ],
+      "id": "WP-04"
+    },
+    {
+      "text": "CAFÉ café naive naïve",
+      "ids": [
+        101,
+        67853,
+        80932,
+        34551,
+        76206,
+        10612,
+        10132,
+        27514,
+        10612,
+        102
+      ],
+      "id": "WP-05"
+    },
+    {
+      "text": "Cats  and\tDogs\n猫和狗",
+      "ids": [
+        101,
+        67805,
+        10111,
+        54059,
+        5453,
+        2833,
+        5429,
+        102
+      ],
+      "id": "WP-06"
+    },
+    {
+      "text": "Hello, world! [CLS] [SEP]",
+      "ids": [
+        101,
+        31178,
+        117,
+        11356,
+        106,
+        101,
+        102,
+        102
+      ],
+      "id": "WP-07"
+    },
+    {
+      "text": "猫🧬🐱狗",
+      "ids": [
+        101,
+        5453,
+        100,
+        5429,
+        102
+      ],
+      "id": "WP-08"
+    },
+    {
+      "text": "hello\u0000world​猫",
+      "ids": [
+        101,
+        61694,
+        24731,
+        35703,
+        10162,
+        5453,
+        102
+      ],
+      "id": "WP-09"
+    },
+    {
+      "text": "北𠀀京",
+      "ids": [
+        101,
+        2650,
+        100,
+        2172,
+        102
+      ],
+      "id": "WP-10"
+    },
+    {
+      "text": "é vs é",
+      "ids": [
+        101,
+        173,
+        82091,
+        14987,
+        263,
+        102
+      ],
+      "id": "WP-11"
+    },
+    {
+      "text": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "ids": [
+        101,
+        100,
+        102
+      ],
+      "id": "WP-12"
+    },
+    {
+      "text": "A photo of my father-in-law.",
+      "ids": [
+        101,
+        138,
+        38171,
+        10108,
+        15127,
+        13194,
+        118,
+        10106,
+        118,
+        13255,
+        119,
+        102
+      ],
+      "id": "WP-13"
+    },
+    {
+      "text": "foo[MASK]bar [PAD] [UNK]",
+      "ids": [
+        101,
+        174,
+        22659,
+        103,
+        18121,
+        0,
+        100,
+        102
+      ],
+      "id": "WP-14"
+    },
+    {
+      "text": "a_b+c=3;  猫 狗",
+      "ids": [
+        101,
+        169,
+        168,
+        170,
+        116,
+        171,
+        134,
+        124,
+        132,
+        5453,
+        5429,
+        102
+      ],
+      "id": "WP-15"
+    },
+    {
+      "text": "cat�",
+      "ids": [
+        101,
+        41163,
+        102
+      ],
+      "id": "WP-16"
+    },
+    {
+      "text": "猫‍狗",
+      "ids": [
+        101,
+        5453,
+        5429,
+        102
+      ],
+      "id": "WP-17"
+    },
+    {
+      "text": "café café ＡＢＣ",
+      "ids": [
+        101,
+        34551,
+        11135,
+        14601,
+        82091,
+        10085,
+        119529,
+        119530,
+        102
+      ],
+      "id": "WP-18"
+    }
+  ],
+  "meta": {
+    "truth": "docs/superpowers/ai-compact-model-candidates.md",
+    "source": "Hugging Face tokenizer.json at pinned text-model revision",
+    "rule": "BertNormalizer, cased WordPiece, CLS and SEP included; no truncation"
+  }
+}

@@ -16,6 +16,26 @@ class AIModelCatalogTests(unittest.TestCase):
     def test_current_catalog_is_pinned_and_bilingual(self):
         self.assertEqual(module.validate(self.catalog), [])
 
+    def test_compact_package_is_at_most_sixty_percent_of_standard(self):
+        standard, compact = self.catalog["models"]
+        standard_size = sum(file["size"] for file in standard["files"])
+        compact_size = sum(file["size"] for file in compact["files"])
+        self.assertLessEqual(compact_size, standard_size * 0.6)
+
+    def test_allows_an_explicit_pinned_revision_for_each_component(self):
+        asset = self.catalog["models"][1]["files"][0]
+        previous = asset.get("revision", self.catalog["models"][1]["revision"])
+        asset["revision"] = "a" * 40
+        for urls in asset["urls"].values():
+            urls[:] = [url.replace(previous, asset["revision"]) for url in urls]
+        model = self.catalog["models"][1]
+        model["revision"] = module.composition_revision(model["files"])
+        self.assertEqual(module.validate(self.catalog), [])
+
+    def test_rejects_mutable_component_revision(self):
+        self.catalog["models"][1]["files"][0]["revision"] = "main"
+        self.assertTrue(module.validate(self.catalog))
+
     def test_rejects_mutable_model_revision(self):
         self.catalog["models"][0]["revision"] = "main"
         self.assertTrue(module.validate(self.catalog))
@@ -37,7 +57,7 @@ class AIModelCatalogTests(unittest.TestCase):
         self.assertTrue(module.validate(self.catalog))
 
     def test_compact_model_accounts_for_tokenizer_download(self):
-        self.catalog["models"][1]["files"][1]["size"] = 100000000
+        next(file for file in self.catalog["models"][1]["files"] if file["role"] == "tokenizer")["size"] = 100000000
         self.assertTrue(module.validate(self.catalog))
 
     def test_rejects_invalid_default_threshold(self):
