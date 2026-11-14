@@ -7,7 +7,7 @@
         "en": "EmbeddingGemma 2 · Standard",
         "zh-Hans": "EmbeddingGemma 2 · 标准版"
       },
-      "runtime": "mediapipe",
+      "runtime": "litertlm",
       "revision": "538e6574db281b4fe17993a3212f10c73bd678c6",
       "upstream": "https://huggingface.co/litert-community/embeddinggemma-2-text-vision-440m-litert-lm",
       "languages": [
@@ -31,7 +31,7 @@
           }
         }
       ],
-      "defaultThreshold": 0.2
+      "defaultThreshold": 0.63
     },
     {
       "id": "siglip2-base-int8",

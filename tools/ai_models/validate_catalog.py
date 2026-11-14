@@ -30,7 +30,7 @@ def validate(catalog):
         if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", identity) or identity in seen:
             errors.append("invalid or duplicate model identity")
         seen.add(identity)
-        if model.get("runtime") not in {"mediapipe", "onnx"}:
+        if model.get("runtime") not in {"litertlm", "onnx"}:
             errors.append(identity + ": unsupported runtime")
         threshold = model.get("defaultThreshold")
         if type(threshold) not in {float, int} or not 0 <= threshold <= 1:
