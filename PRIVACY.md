@@ -1,8 +1,8 @@
 # PhotoPilot · 光屿 Privacy Policy / 隐私政策
 
-Effective date / 生效日期：2026-10-23
+Effective date / 生效日期：2026-11-14
 Contact / 联系方式：chunguangwee@gmail.com
-Scope / 适用：PhotoPilot 1.1.58（iOS/iPadOS 与 Android）。Versions 1.1.55–1.1.58 use Open-Meteo only; earlier 1.1.53/1.1.54 builds used wttr.in weather fallback. / 1.1.55–1.1.58 仅使用 Open-Meteo；旧版 1.1.53/1.1.54 包含 wttr.in 天气备用请求。
+Scope / 适用：PhotoPilot 1.1.58 与拟更新 1.2.0（iOS/iPadOS 与 Android）；AI 相框段仅适用于 1.2.0。Versions 1.1.55–1.1.58 use Open-Meteo only; earlier 1.1.53/1.1.54 builds used wttr.in weather fallback. / 1.1.55–1.1.58 仅使用 Open-Meteo；旧版 1.1.53/1.1.54 包含 wttr.in 天气备用请求。
 
 ---
 
@@ -29,6 +29,9 @@ The current release is free, with no advertising, subscriptions or in-app purcha
 10. **Support messages** — If you email us or share a diagnostic report with us, we receive the address, message and attachments you choose to send, to respond and investigate. Avoid sending private photos or credentials. You may request deletion through the contact address; information may be retained where needed to handle the request or meet legal obligations. This is separate from automatic app telemetry.
 11. **App Store statistics (iOS/iPadOS)** — Apple may provide the developer with aggregate download and usage reports through App Store Connect. Some usage metrics depend on users choosing to share diagnostics and usage information with app developers and on privacy thresholds. PhotoPilot contains no separate analytics SDK and does not send its own usage events to our server. These reports do not provide us with your photos or NAS credentials. See [Apple’s Analytics privacy explanation](https://developer.apple.com/help/app-store-connect-analytics/engagement/app-usage).
 
+12. **Optional local AI frames (from 1.2.0)** — When you use AI frames, category descriptions, include/exclude rules, selected album/folder identifiers, photo-derived feature vectors, local tags, suggested names and classification progress are processed and stored on your device. The app does not send these inputs or your photos to a cloud AI service. You choose a model and download its weight and tokenizer files before using it; after installation, classification works offline. Automatic classification of later-imported photos is optional, off by default and can be changed later. Manually added or excluded photos are protected from automatic changes.
+13. **AI model downloads (from 1.2.0)** — Downloads use fixed model versions. The China source prioritizes ModelScope and can fall back to hf-mirror. The international source uses Hugging Face and its delivery infrastructure. These providers see your connection IP, model-file URL and normal HTTP request headers. No photo, category prompt, private album path or NAS credential is included in those requests. The mirror may redirect to an overseas CDN; selecting it does not mean the server is physically located in China. Provider logging and retention follow their policies; PhotoPilot does not operate these download services. See the [Hugging Face Privacy Policy](https://huggingface.co/privacy) and [ModelScope Privacy Policy](https://modelscope.cn/protocol/terms-privacy-policy). Models can be removed to free space without deleting your photos or saved frames.
+
 ### 3. What we do not do
 
 - We do not upload your photos, folder structures or filenames.
@@ -48,6 +51,8 @@ The current release is free, with no advertising, subscriptions or in-app purcha
 ### 5. Retention and deletion
 
 Photo copies, imported music and settings remain until you delete them. Several independent deletion paths are provided: remove from a frame (the photo is kept), delete from the on-device library, disconnect a source (with an explicit choice about keeping imported copies), and "Erase all data" in Settings. Erasing covers photo copies, imported music, derived images, caches, job queues, settings and source credentials. **We never delete the originals in your system album or on your NAS.** The "mirror source deletions" option is off by default and requires a second confirmation; even when enabled, only the on-device copy is removed — writing deletions back to the source is not supported.
+
+From 1.2.0, deleting an AI frame removes its saved AI rules and task state. Erase all data also clears downloaded AI models, pending downloads, local tags and feature caches; source photos are not deleted.
 
 Photo copies and settings are deleted on your device. Third-party service logs are governed by the relevant provider’s retention and deletion practices.
 
@@ -92,6 +97,9 @@ For privacy questions, contact chunguangwee@gmail.com.
 10. **支持消息**：你向我们发邮件或分享诊断时，我们会收到你主动发送的地址、内容和附件，用于回复与排查。请勿发送私人照片或凭证。可通过联系邮箱请求删除；为处理请求或履行法定义务而必要的信息可能继续保留。这与应用自动遥测是不同的处理。
 11. **App Store 统计（iOS/iPadOS）**：Apple 可以通过 App Store Connect 向开发者提供汇总下载与使用报告。部分使用指标取决于用户是否同意向开发者分享诊断与使用信息，以及隐私门槛。PhotoPilot 没有单独的统计 SDK，不会向我们的服务器发送自建使用事件。这些报告不会向我们提供你的照片或 NAS 凭证。参见 [Apple 统计隐私说明](https://developer.apple.com/help/app-store-connect-analytics/engagement/app-usage)。
 
+12. **可选的本地 AI 相框（1.2.0 起）**：分类描述、包含/排除规则、所选相册/目录标识、照片特征向量、本地标签、名称建议和分类进度均在设备本地处理及保存；不会将这些输入或照片发送给云端 AI。你先选择并下载模型权重与分词器，安装后可离线分类。对后续导入照片的持续自动分类默认关闭、可选且后期可修改；人工添加或排除的照片受到保护。
+13. **AI 模型下载（1.2.0 起）**：应用按固定版本下载模型。国内源优先使用 ModelScope，并提供 hf-mirror 回退，国际源使用 Hugging Face 及其分发设施。服务方能看到连接 IP、模型文件 URL 和正常 HTTP 请求头；请求不包含照片、分类提示词、私人相册路径或 NAS 凭证。镜像可能跳转海外 CDN，选择国内镜像不等于服务器位于中国境内。服务日志及保留规则由相应服务方政策决定，PhotoPilot 不运营这些下载服务。参见 [Hugging Face 隐私政策](https://huggingface.co/privacy)与 [ModelScope 隐私政策](https://modelscope.cn/protocol/terms-privacy-policy)。删除模型不会删除已保存的相框和照片。
+
 ### 三、我们不做的事
 
 - 不上传你的照片、相册目录结构或文件名。
@@ -113,6 +121,8 @@ For privacy questions, contact chunguangwee@gmail.com.
 照片副本、导入的音乐与设置会一直保留，直到你删除它们。我们提供多条独立的删除路径：从相框移除（不删照片）、从本机照片库删除、断开来源（可选择是否保留已导入副本）、以及设置中的「清除所有数据」。清除会覆盖照片副本、导入音乐、衍生图、缓存、任务队列、设置与来源凭证。**你的系统相册与 NAS 上的原始文件不会被我们删除。**「本地镜像删除」选项默认关闭且需要二次确认；即使主动开启，被删除的**只是本机副本**，本应用不支持写回删除源端。
 
 PhotoPilot 没有照片后端或用户账号，因此本机照片与设置由你在设备上删除。第三方服务日志的保留与删除遵循相应服务方的规则。
+
+1.2.0 起，删除 AI 相框也会清理其 AI 规则与任务状态；“清空全部数据”还会清理下载模型、未完成下载、本地标签及特征缓存，不会删除源端照片。
 
 ### 六、儿童
 

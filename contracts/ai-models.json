@@ -26,8 +26,12 @@
               "https://huggingface.co/litert-community/embeddinggemma-2-text-vision-440m-litert-lm/resolve/538e6574db281b4fe17993a3212f10c73bd678c6/embeddinggemma-2-text-vision-440m.litertlm"
             ],
             "domestic": [
+              "https://modelscope.cn/models/litert-community/embeddinggemma-2-text-vision-440m-litert-lm/resolve/0214d5b16fd2dd6c0169f2a829da6776ec08464e/embeddinggemma-2-text-vision-440m.litertlm",
               "https://hf-mirror.com/litert-community/embeddinggemma-2-text-vision-440m-litert-lm/resolve/538e6574db281b4fe17993a3212f10c73bd678c6/embeddinggemma-2-text-vision-440m.litertlm"
             ]
+          },
+          "sourceRevisions": {
+            "modelscope.cn": "0214d5b16fd2dd6c0169f2a829da6776ec08464e"
           }
         }
       ],
@@ -60,8 +64,12 @@
               "https://huggingface.co/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/58edf8cada9e398793dca955574a48cbb7f18be2/onnx/model_qint8_arm64.onnx"
             ],
             "domestic": [
+              "https://modelscope.cn/models/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/e8721d65650e509c422d91f8e42057b751e44d8f/onnx/model_qint8_arm64.onnx",
               "https://hf-mirror.com/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/58edf8cada9e398793dca955574a48cbb7f18be2/onnx/model_qint8_arm64.onnx"
             ]
+          },
+          "sourceRevisions": {
+            "modelscope.cn": "e8721d65650e509c422d91f8e42057b751e44d8f"
           }
         },
         {
@@ -75,8 +83,12 @@
               "https://huggingface.co/Xenova/clip-vit-base-patch32/resolve/6b7c523703ae26e39be4b03774966f8571c7f523/onnx/vision_model_q4.onnx"
             ],
             "domestic": [
+              "https://modelscope.cn/models/Xenova/clip-vit-base-patch32/resolve/cd8e8fac174dd664b6e5b584d05abb025694b49c/onnx/vision_model_q4.onnx",
               "https://hf-mirror.com/Xenova/clip-vit-base-patch32/resolve/6b7c523703ae26e39be4b03774966f8571c7f523/onnx/vision_model_q4.onnx"
             ]
+          },
+          "sourceRevisions": {
+            "modelscope.cn": "cd8e8fac174dd664b6e5b584d05abb025694b49c"
           }
         },
         {
@@ -90,8 +102,12 @@
               "https://huggingface.co/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/58edf8cada9e398793dca955574a48cbb7f18be2/2_Dense/model.safetensors"
             ],
             "domestic": [
+              "https://modelscope.cn/models/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/e8721d65650e509c422d91f8e42057b751e44d8f/2_Dense/model.safetensors",
               "https://hf-mirror.com/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/58edf8cada9e398793dca955574a48cbb7f18be2/2_Dense/model.safetensors"
             ]
+          },
+          "sourceRevisions": {
+            "modelscope.cn": "e8721d65650e509c422d91f8e42057b751e44d8f"
           }
         },
         {
@@ -105,8 +121,12 @@
               "https://huggingface.co/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/58edf8cada9e398793dca955574a48cbb7f18be2/vocab.txt"
             ],
             "domestic": [
+              "https://modelscope.cn/models/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/e8721d65650e509c422d91f8e42057b751e44d8f/vocab.txt",
               "https://hf-mirror.com/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/58edf8cada9e398793dca955574a48cbb7f18be2/vocab.txt"
             ]
+          },
+          "sourceRevisions": {
+            "modelscope.cn": "e8721d65650e509c422d91f8e42057b751e44d8f"
           }
         }
       ],

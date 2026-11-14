@@ -32,6 +32,13 @@ class AIModelCatalogTests(unittest.TestCase):
         model["revision"] = module.composition_revision(model["files"])
         self.assertEqual(module.validate(self.catalog), [])
 
+    def test_allows_an_independently_pinned_domestic_host_revision(self):
+        asset = self.catalog["models"][1]["files"][0]
+        revision = "b" * 40
+        asset["urls"]["domestic"] = ["https://modelscope.cn/models/example/resolve/" + revision + "/model.onnx"]
+        asset["sourceRevisions"] = {"modelscope.cn": revision}
+        self.assertEqual(module.validate(self.catalog), [])
+
     def test_rejects_mutable_component_revision(self):
         self.catalog["models"][1]["files"][0]["revision"] = "main"
         self.assertTrue(module.validate(self.catalog))

@@ -35,7 +35,7 @@
 
 全部最终响应含 `accept-ranges: bytes`。CDN ETag 与资产 SHA-256 分别保留，安装必须用锁定 SHA 校验。每次从固定 resolve URL 获取新跳转，最终带过期签名的 URL 只用于当前请求。
 
-hf-mirror 在本次请求中把全部大文件继续重定向至 HF 海外 CDN，最终 POP 为 `aws-ap-southeast-1`。当前证据可支持“可选镜像入口”和“本次匿名请求成功”。若产品要保证国内独立分发，需要具有相同完整文件 SHA 的国内托管资产，或先找到并验证确实在国内承载文件的镜像。自托管属于可落实的方案，实施仍需要实际资源托管和国内直连实测。当前国内独立托管源存在缺口。
+hf-mirror 在本次请求中把全部大文件继续重定向至 HF 海外 CDN，最终 POP 为 `aws-ap-southeast-1`。当前证据可支持“可选镜像入口”和“本次匿名请求成功”。若产品要保证国内独立分发，需要具有相同完整文件 SHA 的国内托管资产，或先找到并验证确实在国内承载文件的镜像。自托管属于可落实的方案，实施仍需要实际资源托管和国内直连实测。后续使用ModelScope独立commit已取得国内来源实证，详见本文末节。
 
 ## ModelScope 实证
 
@@ -46,7 +46,7 @@ hf-mirror 在本次请求中把全部大文件继续重定向至 HF 海外 CDN�
 
 ModelScope 的 `google/embeddinggemma-2` 仓库元数据及 `master` 文件列表返回 HTTP 200，元数据标注 Apache-2.0、多语言。资产只有原始完整模型 `model.safetensors`，1488915288 字节，SHA-256 `197a32965d4b1105faf060417baa899e193fb73cd401f42ec9295234d5553d79`，并含 tokenizer/config 等。此资产格式和体积需要额外转换与独立验证。已选 440M LiteRT-LM 资产在该文件列表中缺失。[公开文件列表](https://modelscope.cn/api/v1/models/google/embeddinggemma-2/repo/files?Revision=master&Recursive=true)
 
-本次未找到与选定转换资产完全一致、可锁定 revision 并匿名续传的 ModelScope 源。搜索接口 `GET /api/v1/models?Name=...` 返回404，记录为接口探测失败。
+早期探测使用HF revision请求ModelScope固定文件列表，返回404。后续按ModelScope自己的commit查验，已找到标准模型与新轻量模型的相同SHA公开源，详见末节。搜索接口 `GET /api/v1/models?Name=...` 返回404，记录为接口探测失败。
 
 ## 双语与更小候选
 
@@ -88,3 +88,13 @@ EmbeddingGemma2 固定转换卡 YAML 与原始 Google 模型卡都写 Apache-2.0
 2026-11-14T13:25:48Z 实跑，三资产乘两地区乘两个范围共12请求，全部 HTTP206、总长度正确、errors 为空，相同资产相同范围跨入口采样哈希一致，最终 host 均为 `us.aws.cdn.hf.co`。经主任务新增授权，已仅把这些实测 hf-mirror 固定 revision URL 写入 `contracts/ai-models.json` 的 `files[].urls.domestic`。原生打包清单同步由主任务执行。
 
 `python3 -m unittest discover -s tests/ai -p test_model_sources.py` 先看到6个工具缺失的失败，再实现并通过6项，覆盖正确206、服务器忽略Range、错误偏移、错误总长度、截断采样、大小写头字段。`python3 -m unittest discover -s tools/tests -p 'test_*.py'` 本次52项通过。
+
+## ModelScope独立commit追加核验
+
+2026-11-14后续只读核验确认标准generic LiteRT-LM同文件已在ModelScope现有公开仓库。该站独立commit为 `0214d5b16fd2dd6c0169f2a829da6776ec08464e`。固定Files API返回Code200，文件 `embeddinggemma-2-text-vision-440m.litertlm` 为387710976字节，SHA-256 `92dcbea108899e5d6e30d919b0744f90d9967e80c67a4ab5503ac16d54f62eb0`。该文件与原锁定资产相同。[固定Files API](https://modelscope.cn/api/v1/models/litert-community/embeddinggemma-2-text-vision-440m-litert-lm/repo/files?Revision=0214d5b16fd2dd6c0169f2a829da6776ec08464e&Recursive=true)
+
+实际匿名固定下载链接已验证。[标准模型ModelScope固定下载](https://modelscope.cn/models/litert-community/embeddinggemma-2-text-vision-440m-litert-lm/resolve/0214d5b16fd2dd6c0169f2a829da6776ec08464e/embeddinggemma-2-text-vision-440m.litertlm)
+
+对该URL分别请求 `Range bytes=0-63` 与 `bytes=64-127`，均为HTTP206、Content-Length64，Content-Range分别为 `bytes 0-63/387710976`、`bytes 64-127/387710976`。最终host `cdn-lfs-cn-1.modelscope.cn`，ETag `B5F0E40DC891FF70FE0F4609D3896C9D-152`。64字节采样SHA分别为 `bf7cdc75d7fc32876cf54b7c9c0392276e3aa64171cb0426197a4c89ecb214e9` 与 `3823287faf6f928015b277053f8da8795c784b791469834219653c2df6b4ba74`，与此前HF采样一致。大文件本轮没有重复完整下载，应用仍应按原完整SHA最终校验。
+
+早先的404说明HF commit无法直接用于该站版本，后续独立commit的200/206结果更新当前来源结论。标准模型与新轻量多语CLIP全部五项资产均已找到ModelScope固定来源。轻量四项的完整URL、固定commit、SHA、响应及词表的HTTP200无ETag特殊行为见 `ai-compact-model-candidates.md` 的ModelScope章节。catalog由主任务维护。国内运营商真机直连与速度仍需网络实测。

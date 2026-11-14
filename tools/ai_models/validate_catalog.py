@@ -75,6 +75,13 @@ def validate(catalog):
             component_revision = file.get("revision", revision)
             if not re.fullmatch(r"[a-f0-9]{40}", component_revision):
                 errors.append(identity + ": component revision must be immutable")
+            source_revisions = file.get("sourceRevisions", {})
+            if not isinstance(source_revisions, dict):
+                errors.append(identity + ": invalid source revision map")
+                source_revisions = {}
+            for host, source_revision in source_revisions.items():
+                if not isinstance(host, str) or not isinstance(source_revision, str) or not re.fullmatch(r"[a-f0-9]{40}", source_revision):
+                    errors.append(identity + ": source revision must be immutable")
             urls = file.get("urls", {})
             if not isinstance(urls, dict):
                 errors.append(identity + ": invalid sources")
@@ -91,7 +98,8 @@ def validate(catalog):
                         errors.append(identity + ": invalid URL")
                         continue
                     parsed = urlparse(candidate)
-                    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or component_revision not in parsed.path:
+                    source_revision = source_revisions.get(parsed.hostname, component_revision)
+                    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or not isinstance(source_revision, str) or source_revision not in parsed.path:
                         errors.append(identity + ": download URL must pin HTTPS model revision")
         if "model" not in roles:
             errors.append(identity + ": missing model weights")

@@ -66,3 +66,29 @@ Xenova `mobileclip_s0` 固定revision `757d59c9c6870a76a4b0306f05f5061bca15c39f`
 附加英语主题组宠物/日落/家庭分数为0.245807/0.186141/0.216490，最高为宠物。此单张样例验证了中英自由文本功能和投影空间连接。更多图片精度、阈值选择与移动端速度仍需项目实测。12类HF tokenizer参考文件位于 `/private/tmp/photopilot-ai-models/multilingual-clip/tokenizer-reference.json`，覆盖中英、混合文字、空白、组合重音、特殊token、emoji、控制字符和补充平面汉字。移动端ORT1.20兼容性继续单独验证。
 
 新增文本Apache2与OpenAI图像MIT完整许可已追加至 `ai-third-party-notices.txt`。正文来自固定官方源并保留Nils Reimers2019、OpenAI2021真实版权，来源与SHA记录在 `ai-third-party-notices-evidence.md`。
+
+## ModelScope固定同SHA国内来源补充核验
+
+2026-11-14追加核验已找到四项完全同SHA的现有公开ModelScope资产。两仓元数据分别Apache2与MIT，均为public、可匿名访问。其独立commit与HF commit分别固定，实际文件内容保持原清单SHA。固定版本Files API再次返回Code200，并给出以下精确size与SHA。
+
+| 用途 | ModelScope固定revision | 路径 | 字节数 | SHA-256 |
+|---|---|---|---|---|
+| 文本int8 | `e8721d65650e509c422d91f8e42057b751e44d8f` | `onnx/model_qint8_arm64.onnx` | 135336307 | `3bed77e83926519660b5c0833cb3321cfde952331edec4f7d501c7d384b8a8a7` |
+| Dense投影 | 同上 | `2_Dense/model.safetensors` | 1572984 | `d12568dc7300970a4d3dbb49068ad16cd89b99840b74b026f8e48071e9414f74` |
+| 词表 | 同上 | `vocab.txt` | 995526 | `fe0fda7c425b48c516fc8f160d594c8022a0808447475c1a7c6d6479763f310c` |
+| 图像q4 | `cd8e8fac174dd664b6e5b584d05abb025694b49c` | `onnx/vision_model_q4.onnx` | 63642858 | `0769eb1d2f6f68927bbfa6e5330df4c4c3c112f89cd43eae28baafa9e6bd34b4` |
+
+[文本仓固定Files API](https://modelscope.cn/api/v1/models/sentence-transformers/clip-ViT-B-32-multilingual-v1/repo/files?Revision=e8721d65650e509c422d91f8e42057b751e44d8f&Recursive=true) · [图像仓固定Files API](https://modelscope.cn/api/v1/models/Xenova/clip-vit-base-patch32/repo/files?Revision=cd8e8fac174dd664b6e5b584d05abb025694b49c&Recursive=true)
+
+实际固定下载URL如下，已逐条请求验证。
+
+- [ModelScope文本int8固定文件](https://modelscope.cn/models/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/e8721d65650e509c422d91f8e42057b751e44d8f/onnx/model_qint8_arm64.onnx)
+- [ModelScope投影固定文件](https://modelscope.cn/models/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/e8721d65650e509c422d91f8e42057b751e44d8f/2_Dense/model.safetensors)
+- [ModelScope词表固定文件](https://modelscope.cn/models/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/e8721d65650e509c422d91f8e42057b751e44d8f/vocab.txt)
+- [ModelScope图像q4固定文件](https://modelscope.cn/models/Xenova/clip-vit-base-patch32/resolve/cd8e8fac174dd664b6e5b584d05abb025694b49c/onnx/vision_model_q4.onnx)
+
+文本、Dense、图像q4分别请求 `Range bytes=0-63` 和 `bytes=64-127`。六次响应均HTTP206、Content-Length64、Content-Range为精确请求范围及清单总字节数。最终域名均为ModelScope中国区CDN `cdn-lfs-cn-1.modelscope.cn`。非零64字节sampleSHA与此前HF样本一致。响应ETag依次为 `D6234CF4B251DBFAEF48DBA247DAAA5D-53`、`3BEC7990A038B60BB7A6667B445C9978`、`5ED4629F9F16B1127A761F84ABD36613`。ETag继续仅作该下载源续传身份，最终完整内容仍按原SHA校验。大模型本次只做Range与固定索引SHA核验，没有重复完整下载。
+
+词表有服务器特殊行为。两次Range分别返回HTTP200、Content-Length64、`Content-Range bytes 0-63/995526`与`bytes 64-127/995526`，无ETag，最终host为 `modelscope.cn`。据此只记录其整文件下载可用，未认定为支持标准206断点续传。另一次无Range完整GET返回HTTP200、995526字节，实际计算SHA为 `fe0fda7c425b48c516fc8f160d594c8022a0808447475c1a7c6d6479763f310c`，完全一致。Dense也完整GET返回1572984字节，实际SHA `d12568dc7300970a4d3dbb49068ad16cd89b99840b74b026f8e48071e9414f74`一致。无ETag时重新获取约1MB词表即可。
+
+本轮请求来自开发机当前网络，国内运营商真机直连速度和连续下载稳定性仍需实际网络验证。现有公开固定ModelScope源已找到，可先作为轻量组合的独立来源。catalog由主任务维护，此只读调研没有修改它。
