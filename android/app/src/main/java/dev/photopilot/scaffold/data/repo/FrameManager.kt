@@ -91,7 +91,11 @@ class FrameManager(
 
     suspend fun deleteFrame(frameId: String) = withContext(Dispatchers.IO) {
         val frame = db.frameDao().getById(frameId) ?: return@withContext
-        db.frameDao().delete(frame)
+        db.withTransaction {
+            db.settingsKvDao().get("ai.frame.$frameId")?.let { db.settingsKvDao().delete(it) }
+            db.settingsKvDao().get("ai.preview-cache.$frameId")?.let { db.settingsKvDao().delete(it) }
+            db.frameDao().delete(frame)
+        }
     }
 
     suspend fun applyManualOrder(

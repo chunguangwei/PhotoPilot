@@ -12,6 +12,7 @@ import dev.photopilot.scaffold.ui.widget.screenHeader
 
 class LicensesView(context: Context) : LinearLayout(context) {
 
+    var onAILicenses: (() -> Unit)? = null
     var onBack: (() -> Unit)? = null
 
     init {
@@ -40,6 +41,10 @@ class LicensesView(context: Context) : LinearLayout(context) {
                 bottomMargin = res.getDimensionPixelSize(R.dimen.pp_space_16)
             },
         )
+        column.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, R.string.common_done).apply {
+            text = if (resources.configuration.locales[0].language == "zh") "AI 模型与推理组件许可" else "AI model and runtime licenses"
+            setOnClickListener { onAILicenses?.invoke() }
+        })
         LICENSES.forEach { (name, license) ->
             val row = LinearLayout(context).apply {
                 orientation = VERTICAL

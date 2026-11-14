@@ -483,7 +483,11 @@ interface WeatherSnapshotDao {
 }
 
 @Dao
-interface SettingsKvDao {    @Insert(onConflict = OnConflictStrategy.REPLACE)
+interface SettingsKvDao {
+    @Query("SELECT * FROM settings_kv WHERE key LIKE :prefix || '%'")
+    suspend fun getByPrefix(prefix: String): List<SettingsKvEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: SettingsKvEntity)
 
     @Delete

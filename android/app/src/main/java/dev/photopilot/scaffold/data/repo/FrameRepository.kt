@@ -53,6 +53,12 @@ class FrameRepository(
         }
     }
 
+    suspend fun eligibleCover(assetId: String): dev.photopilot.scaffold.data.db.AssetEntity? = withIo {
+        val asset = db.assetDao().getById(assetId) ?: return@withIo null
+        val allowed = dev.photopilot.scaffold.data.aiframes.AIEligibility.allowed(asset.readiness.wire, asset.privacyExcluded, asset.deletedAt != null, asset.mediaKind.wire, db.assetOriginDao().allowedAssetIds(listOf(assetId)).isNotEmpty(), false)
+        asset.takeIf { allowed && File(originalsDir, it.originalRelPath).isFile }
+    }
+
     suspend fun resolve(frameId: String): SelectionResolution = withIo {
         val frame = db.frameDao().getById(frameId)
             ?: throw IllegalArgumentException("frame not found: $frameId")
@@ -109,10 +115,14 @@ class FrameRepository(
             val selections = db.frameSelectionDao().getByFrame(frameId)
             val rules = db.frameDirectoryRuleDao().getByFrame(frameId)
 
+            val aiStore = dev.photopilot.scaffold.data.aiframes.AIStateStore(db)
+            val aiConfiguration = aiStore.get(frameId)
+            val removedAIMembers = removeRefs.filter { it.assetId in aiConfiguration?.members.orEmpty() }
+            val effectiveExcludes = addExcludes + removedAIMembers
             val request = SelectionSaveRequest(
                 addIncludes = addIncludes.map { AddInclude(ref = it.refKey, addedAt = now) },
                 removeRefs = removeRefs.map { it.refKey },
-                addExcludes = addExcludes.map { it.refKey },
+                addExcludes = effectiveExcludes.map { it.refKey },
                 ruleChanges = ruleChanges,
                 removeRules = removeRules,
             )
@@ -137,7 +147,7 @@ class FrameRepository(
             for (selection in selections) {
                 refEdits[selection.refKey] = SelectionRefEdit(selection.assetId, selection.sourceAssetId)
             }
-            for (edit in addIncludes + addExcludes + removeRefs) {
+            for (edit in addIncludes + effectiveExcludes + removeRefs) {
                 refEdits[edit.refKey] = edit
             }
             for (change in ruleChanges) {
@@ -202,6 +212,21 @@ class FrameRepository(
                 }
             }
 
+            if (aiConfiguration != null) {
+                val manualEdits = addIncludes + removeRefs + addExcludes
+                val sourceRefs = manualEdits.mapNotNull { it.sourceAssetId }
+                val referencedAssets = if (sourceRefs.isEmpty()) emptyList() else db.assetOriginDao().getBySourceAssets(sourceRefs).map { it.assetId }
+                val manualRefs = (manualEdits.mapNotNull { it.assetId } + referencedAssets).toSet()
+                val excludedSourceRefs = addExcludes.mapNotNull { it.sourceAssetId }
+                if (excludedSourceRefs.isNotEmpty()) {
+                    val blockedAssets = db.assetOriginDao().getBySourceAssets(excludedSourceRefs).map { it.assetId }.toSet()
+                    for (assetId in aiConfiguration.members.intersect(blockedAssets)) {
+                        val current = db.frameSelectionDao().getByFrame(frameId).firstOrNull { it.assetId == assetId && it.mode == FrameSelectionMode.INCLUDE }
+                        if (current != null) db.frameSelectionDao().deleteByRef(frameId, current.refKey)
+                    }
+                }
+                aiStore.put(aiConfiguration.copy(members = aiConfiguration.members - manualRefs, processed = aiConfiguration.processed - manualRefs, reviews = aiConfiguration.reviews - manualRefs))
+            }
             db.frameDao().bumpSelectionVersion(frameId, now)
             cache.clear()
             result

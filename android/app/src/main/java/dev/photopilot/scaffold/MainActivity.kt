@@ -227,6 +227,11 @@ class MainActivity : Activity() {
                             openFrameEditor(frame)
                         }
                     }
+                    "aiFrame" -> if (permissionOnly) continue else {
+                        val id = entry["frameId"] as? String ?: ""
+                        val frame = if (id.isEmpty()) null else env.database.frameDao().getById(id)
+                        if (id.isEmpty() || frame != null) openAIFrameEditor(frame, entry.entries.mapNotNull { (key, value) -> if (key is String && value is String) key to value else null }.toMap())
+                    }
                     "playbackSettings" -> if (permissionOnly) continue else (entry["frameId"] as? String)?.let { id ->
                         val frame = withContext(Dispatchers.IO) {
                             env.database.frameDao().getById(id)
@@ -351,6 +356,8 @@ class MainActivity : Activity() {
         super.onResume()
         pollHandler.removeCallbacks(pollRunnable)
         pollHandler.post(pollRunnable)
+        environment?.aiFrames?.foreground = true
+        environment?.aiFrames?.resumeAutomatic()
         maybeAutoSyncNas()
         val engine = playerEngine
         if (engine != null) {
@@ -375,6 +382,7 @@ class MainActivity : Activity() {
         playerView?.onAppBackground()
         playerEngine?.onBackground()
         musicPickerView?.stopPreview()
+        environment?.aiFrames?.foreground = false
         super.onPause()
     }
 
@@ -776,6 +784,7 @@ class MainActivity : Activity() {
 
     private fun showLicenses() {
         val view = LicensesView(this).apply {
+            onAILicenses = { root.pushOverlay(dev.photopilot.scaffold.ui.settings.AILicensesView(this@MainActivity) { popOverlayTracked() }) }
             onBack = { popOverlayTracked() }
         }
         root.pushOverlay(view)
@@ -1572,6 +1581,7 @@ class MainActivity : Activity() {
         val view = FramesView(this, File(filesDir, "originals"))
         view.onOpen = { frame -> openFrameEditor(frame) }
         view.onCreate = { openFrameEditor(null) }
+        view.onCreateAI = { openAIFrameEditor(null) }
         view.onPlay = { frame -> openPlayer(frame, fromSnapshot = false) }
         view.onPlaybackSettings = { frame -> openPlaybackSettings(frame) }
         view.onRename = { frame -> showRenameFrameDialog(frame) }
@@ -1594,7 +1604,7 @@ class MainActivity : Activity() {
             val (cards, libraryEmpty) = withContext(Dispatchers.IO) {
                 val frames = env.frameManager.listFrames()
                 val cardModels = frames.map { frame ->
-                    val cover = frame.coverAssetId?.let { env.database.assetDao().getById(it) }
+                    val cover = frame.coverAssetId?.let { env.frames.eligibleCover(it) }
                         ?: env.frames.buildPlayQueue(frame.id).firstOrNull()
                             ?.let { env.database.assetDao().getById(it) }
                     val playable = env.frames.resolve(frame.id).playable.size
@@ -1644,6 +1654,7 @@ class MainActivity : Activity() {
             .setMessage(R.string.frames_delete_confirm_body)
             .setPositiveButton(R.string.common_delete) { _, _ ->
                 scope.launch {
+                    environment?.aiFrames?.cancel(frame.id)
                     environment?.frameManager?.deleteFrame(frame.id)
                     framesDirty = true
                     refreshJobUi()
@@ -1669,6 +1680,16 @@ class MainActivity : Activity() {
                 .setNegativeButton(R.string.common_cancel, null)
                 .show()
         }
+    }
+
+    private fun openAIFrameEditor(frame: FrameEntity?, draft: Map<String, String>? = null) {
+        val env = environment ?: return
+        val view = dev.photopilot.scaffold.ui.aiframes.AIFrameView(this, env, scope, frame,
+            onClose = { popOverlayTracked(); framesDirty = true; refreshJobUi() },
+            onChanged = { framesDirty = true },
+            restoredDraft = draft,
+        )
+        pushOverlayTracked(view, mapOf("type" to "aiFrame", "frameId" to (frame?.id ?: "")))
     }
 
     private fun openFrameEditor(frame: FrameEntity?) {
@@ -1706,6 +1727,7 @@ class MainActivity : Activity() {
         }
         view.onBack = { hasChanges -> handleEditorBack(view, hasChanges) }
         view.onSave = { state -> saveFrameEdit(view, frame, state) }
+        view.onAISettings = { frame?.let { openAIFrameEditor(it) } ?: openAIFrameEditor(null) }
         view.onManualOrder = { frame?.let { target -> openManualOrder(view, target) } }
         view.onConfirmDynamic = { completion -> confirmDynamicRule(completion) }
         frameEditView = view
@@ -1769,8 +1791,8 @@ class MainActivity : Activity() {
                     dynamicRules = rules,
                     showAllPending = !hasPlayable && hasSelections,
                     persistedManualOrder = persistedOrder,
-                    coverAssetId = frame.coverAssetId,
-                    defaultCoverAssetId = frame.coverAssetId
+                    coverAssetId = frame.coverAssetId?.let { env.frames.eligibleCover(it)?.id },
+                    defaultCoverAssetId = frame.coverAssetId?.let { env.frames.eligibleCover(it)?.id }
                         ?: env.frames.buildPlayQueue(frame.id).firstOrNull(),
                 )
             }
@@ -2199,7 +2221,7 @@ class MainActivity : Activity() {
         scope.launch {
             val preview = withContext(Dispatchers.IO) {
                 val queue = env.frames.buildPlayQueue(frame.id)
-                val cover = frame.coverAssetId?.let { env.database.assetDao().getById(it) }
+                val cover = frame.coverAssetId?.let { env.frames.eligibleCover(it) }
                 val first = cover ?: queue.firstOrNull()?.let { env.database.assetDao().getById(it) }
                 val second = queue.firstOrNull { it != first?.id }
                     ?.let { env.database.assetDao().getById(it) }
@@ -3323,7 +3345,7 @@ class MainActivity : Activity() {
         if (overlayMeta.isNotEmpty()) {
             outState.putString(
                 KEY_OVERLAYS,
-                JsonMini.toJson(mapOf("stack" to overlayMeta.map { it.second })),
+                JsonMini.toJson(mapOf("stack" to overlayMeta.map { (view, meta) -> if (view is dev.photopilot.scaffold.ui.aiframes.AIFrameView) meta + view.draftState() else meta })),
             )
         }
     }

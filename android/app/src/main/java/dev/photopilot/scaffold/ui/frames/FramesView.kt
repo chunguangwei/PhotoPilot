@@ -37,6 +37,7 @@ class FramesView(
     )
 
     var onOpen: ((FrameEntity) -> Unit)? = null
+    var onCreateAI: (() -> Unit)? = null
     var onCreate: (() -> Unit)? = null
     var onRename: ((FrameEntity) -> Unit)? = null
     var onDuplicate: ((FrameEntity) -> Unit)? = null
@@ -94,6 +95,10 @@ class FramesView(
                 },
             )
         }
+        contentColumn.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, R.string.common_done).apply {
+            text = if (resources.configuration.locales[0].language == "zh") "AI 创建相框" else "Create AI frame"
+            setOnClickListener { onCreateAI?.invoke() }
+        })
         cardsColumn.removeAllViews()
         cardViews = cards.map { cardView(it) }
         contentColumn.addView(cardsColumn, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))

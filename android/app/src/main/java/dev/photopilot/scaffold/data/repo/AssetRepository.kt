@@ -91,6 +91,7 @@ class AssetRepository(
                 ?: throw IllegalArgumentException("asset not found")
             require(asset.readiness != AssetReadiness.DELETED) { "asset already deleted" }
             writeTombstone(asset, reason, now, head64kHash)
+            dev.photopilot.scaffold.data.aiframes.AIStateStore(db).removeAsset(assetId, now)
             db.assetDao().update(
                 asset.copy(
                     readiness = AssetReadiness.DELETED,
@@ -125,6 +126,7 @@ class AssetRepository(
             val asset = db.assetDao().getById(assetId)
                 ?: throw IllegalArgumentException("asset not found")
             writeTombstone(asset, reason, now, head64kHash = null)
+            dev.photopilot.scaffold.data.aiframes.AIStateStore(db).removeAsset(assetId, now)
             db.assetDao().update(
                 asset.copy(privacyExcluded = true, updatedAt = now),
             )

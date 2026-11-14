@@ -75,6 +75,7 @@ class FrameEditView(
     var dataSource: DataSource? = null
     var onBack: ((Boolean) -> Unit)? = null
     var onSave: ((State) -> Unit)? = null
+    var onAISettings: (() -> Unit)? = null
     var onManualOrder: (() -> Unit)? = null
     var onConfirmDynamic: ((confirmed: (Boolean) -> Unit) -> Unit)? = null
 
@@ -125,6 +126,10 @@ class FrameEditView(
         headerRow.setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
         addView(headerRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
+        addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, R.string.common_done).apply {
+            text = if (resources.configuration.locales[0].language == "zh") "AI 分类规则" else "AI classification rules"
+            setOnClickListener { onAISettings?.invoke() }
+        })
         nameInput = EditText(context).apply {
             hint = res.getString(R.string.frames_name_placeholder)
             setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))

@@ -48,6 +48,7 @@ class AppEnvironment private constructor(
     val mediaStoreAdapter: MediaStoreSourceAdapter,
     val runner: ImportRunner,
     val frames: FrameRepository,
+    val aiFrames: dev.photopilot.scaffold.data.aiframes.AIFrameService,
     val frameManager: FrameManager,
     val deletedSweeper: DeletedAssetSweeper,
     val credentialStore: CredentialStore,
@@ -102,8 +103,10 @@ class AppEnvironment private constructor(
                             environment.runner.markInterruptedJobsRecoverable()
                             environment.deletedSweeper.sweepExpired(System.currentTimeMillis())
                             environment.runner.resumeInterruptedJobs()
+                            environment.aiFrames.resumeAutomatic()
                             environment
                         } catch (failure: Throwable) {
+                            environment.aiFrames.shutdown()
                             environment.runner.shutdownAndJoin()
                             throw failure
                         }
@@ -117,6 +120,7 @@ class AppEnvironment private constructor(
             val appContext = context.applicationContext
             return owner(appContext).reset { environment ->
                 environment.runner.shutdownAndJoin()
+                environment.aiFrames.shutdown()
                 LocalUserDataCleaner.clear(appContext.filesDir, appContext.cacheDir)
                 environment.database.clearAllTables()
             }
@@ -211,6 +215,7 @@ class AppEnvironment private constructor(
                     ?: rebuildNasAdapter(database, credentialStore, tofuPins, jobId)
                     ?: mediaStoreAdapter
             }
+            val aiFrames = dev.photopilot.scaffold.data.aiframes.AIFrameService(appContext, database)
             return AppEnvironment(
                 database = database,
                 settings = AppSettingsRepository(database.settingsKvDao()),
@@ -248,9 +253,11 @@ class AppEnvironment private constructor(
                             dev.photopilot.scaffold.data.imports.ImportKeepAliveService.start(appContext)
                         } else {
                             dev.photopilot.scaffold.data.imports.ImportKeepAliveService.stop(appContext)
+                            aiFrames.resumeAutomatic()
                         }
                     }
                 },
+                aiFrames = aiFrames,
                 frames = FrameRepository(
                     database,
                     LibraryVersionRepository(database.settingsKvDao()),

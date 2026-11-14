@@ -31,7 +31,7 @@
           }
         }
       ],
-      "defaultThreshold": 0.63
+      "defaultThreshold": 0.61
     },
     {
       "id": "siglip2-base-int8",

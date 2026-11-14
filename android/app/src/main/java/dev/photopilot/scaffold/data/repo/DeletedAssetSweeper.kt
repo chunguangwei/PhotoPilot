@@ -1,5 +1,6 @@
 package dev.photopilot.scaffold.data.repo
 
+import androidx.room.withTransaction
 import dev.photopilot.scaffold.data.db.AssetReadiness
 import dev.photopilot.scaffold.data.db.PhotoPilotDatabase
 import dev.photopilot.scaffold.data.logic.DeletedSweep
@@ -20,7 +21,10 @@ class DeletedAssetSweeper(
             }
         expired.forEach { asset ->
             File(originalsDir, asset.originalRelPath).delete()
-            db.assetDao().delete(asset)
+            db.withTransaction {
+                dev.photopilot.scaffold.data.aiframes.AIStateStore(db).removeAsset(asset.id, now)
+                db.assetDao().delete(asset)
+            }
         }
         if (expired.isNotEmpty()) {
             libraryVersion.bump(now)

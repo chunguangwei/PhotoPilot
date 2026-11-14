@@ -19,11 +19,15 @@ val releaseSigningReady = keystorePropertiesFile.isFile &&
     keystoreProperties.getProperty("storeFile") != null
 
 dependencies {
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.17.1")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.23.2")
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     implementation("com.hierynomus:smbj:$smbjVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
 
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
     testImplementation("org.xerial:sqlite-jdbc:3.41.2.2")
@@ -48,8 +52,9 @@ android {
         applicationId = "dev.photopilot.scaffold"
         minSdk = 29
         targetSdk = 36
-        versionCode = 58
-        versionName = "1.1.58"
+        versionCode = 59
+        versionName = "1.2.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     bundle {
