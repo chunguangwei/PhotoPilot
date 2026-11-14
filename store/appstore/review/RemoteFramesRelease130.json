@@ -1,7 +1,7 @@
 {
   "version": "1.3.0",
   "build": 60,
-  "publication": "pending",
+  "publication": "published",
   "sourceTag": "v1.3.0",
   "android": {
     "apk": "PhotoPilot-v1.3.0-60.apk",
@@ -86,5 +86,55 @@
     "minimum OS runtime",
     "physical NAS",
     "long-running playback"
-  ]
+  ],
+  "sourceCommit": "c24aefe481456625e1a7e6382ed06325d1d55765",
+  "releaseURL": "https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.3.0",
+  "publishedAt": "2026-11-14T18:47:51Z",
+  "latestVerified": true,
+  "anonymousDownloadVerification": {
+    "release": "https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.3.0",
+    "tag": "v1.3.0",
+    "sourceCommit": "c24aefe481456625e1a7e6382ed06325d1d55765",
+    "latest": "v1.3.0",
+    "publishedAt": "2026-11-14T18:47:51Z",
+    "verifiedAt": "2026-11-14T18:50:35Z",
+    "anonymous": true,
+    "assets": [
+      {
+        "name": "AMSMB2-4.0.3-source.tar.gz",
+        "bytes": 329872,
+        "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077",
+        "apiDigest": "sha256:0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077",
+        "publicDownload": true
+      },
+      {
+        "name": "PhotoPilot-v1.3.0-60.apk",
+        "bytes": 153988162,
+        "sha256": "224743a5fde03991a010d0e8fe27c643186326814d837e8bfe64cb8e00e3a372",
+        "apiDigest": "sha256:224743a5fde03991a010d0e8fe27c643186326814d837e8bfe64cb8e00e3a372",
+        "publicDownload": true
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 273,
+        "sha256": "1ca50788227d9c97bca352d1beee558a346e7e37404b245b4c4a14c52615578f",
+        "apiDigest": "sha256:1ca50788227d9c97bca352d1beee558a346e7e37404b245b4c4a14c52615578f",
+        "publicDownload": true
+      },
+      {
+        "name": "SMBSourceManifest.json",
+        "bytes": 33554,
+        "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e",
+        "apiDigest": "sha256:2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e",
+        "publicDownload": true
+      }
+    ]
+  },
+  "publicPrivacyVerification": {
+    "url": "https://github.com/chunguangwei/PhotoPilot/blob/main/PRIVACY.md",
+    "anonymous": true,
+    "sha256": "36c4a8c4e309aa0273416c45dd7c6eb901ecb7c455e394993e62550372cc6516",
+    "matchedPublishedSource": true
+  },
+  "mergedMainChecks": "make check ios-build ios-analyze android-build android-lint android-test passed"
 }

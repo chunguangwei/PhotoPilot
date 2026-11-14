@@ -59,5 +59,5 @@
 - [x] Single fresh integrated review, triage confirmed issues and one fix pass with regressions.
 - [x] Root final make check, platform suites, actual final payload/signatures/version and no credentials/fixture/model weights.
 - [x] Prepare version1.3.0(60) bilingual update text/privacy/screenshot evidence. Update16 actual outcomes/limits.
-- [ ] Commit/merge into existing main preserving user changes, publish existing GitHub release/tag/assets, anonymously verify complete downloads.
+- [x] Commit/merge into existing main preserving user changes, publish existing GitHub release/tag/assets, anonymously verify complete downloads.
 - [x] Retain Store preparation artifacts and report the actual outstanding signing/account approval dependency.

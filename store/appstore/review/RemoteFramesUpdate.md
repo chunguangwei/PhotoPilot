@@ -1,6 +1,6 @@
 # Remote frame update preparation — 1.3.0 (60)
 
-Status — native implementation, integrated code review and local verification are complete. GitHub publication is pending. This packet contains update text and review materials. Store upload and submission are pending.
+Status — native implementation, integrated code review and local verification are complete. GitHub v1.3.0 is published and its four complete anonymous downloads match the local hashes. This packet contains update text and review materials. Store export, upload and submission are pending. [GitHub release](https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.3.0)
 
 ## English update text
 
@@ -58,3 +58,7 @@ The published policy must describe temporary remote-photo caching, optional offl
 ## Screenshot slots
 
 Checked2026-11-15. Apple currently requires an iPhone Dynamic Island medium-display screenshot and an iPad13-inch screenshot for this universal app. Native1206×2622 iPhone captures and2064×2752 or2752×2064 iPad captures fit the listed slots. Files must be opaque JPEG or PNG. Android captures are QA evidence and are kept separate from Store upload candidates. Final dimensions, hashes, theme and capture configuration belong in the versioned evidence manifest. [Apple screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications)
+
+## Local delivery artifacts
+
+The original project retains the signedAPK, source attachments, checksums, verification records and unsignediOS archive under `.build/releases/v1.3.0/`. The archive is `PhotoPilot-1.3.0-60.xcarchive`. Its final executable hash is recorded above and in the release evidence. The managed featureworktree also retains its local artifacts for continuation.
