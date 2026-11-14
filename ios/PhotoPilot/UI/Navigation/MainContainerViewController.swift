@@ -78,7 +78,7 @@ final class MainContainerViewController: UIViewController {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleForegroundSync),
-            name: UIApplication.willEnterForegroundNotification,
+            name: UIApplication.didBecomeActiveNotification,
             object: nil
         )
         NotificationCenter.default.addObserver(
@@ -87,13 +87,25 @@ final class MainContainerViewController: UIViewController {
             name: L10n.didChangeNotification,
             object: nil
         )
+        NotificationCenter.default.addObserver(self, selector: #selector(handleBackgroundAI), name: UIApplication.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleLowMemoryAI), name: UIApplication.didReceiveMemoryWarningNotification, object: nil)
+        Task { await environment.aiFrames.processPending() }
         let initialIndex = initialSectionTitleKey.flatMap { key in
             items.firstIndex { $0.titleKey == key }
         } ?? selectedIndex
         selectSection(initialIndex)
     }
 
+    @objc private func handleLowMemoryAI() {
+        Task { await environment.aiFrames.pauseForLowMemory() }
+    }
+
+    @objc private func handleBackgroundAI() {
+        Task { await environment.aiFrames.pauseForBackground() }
+    }
+
     @objc private func handleForegroundSync() {
+        Task { await environment.aiFrames.processPending() }
         guard presentedViewController == nil else { return }
         Task {
             await environment.autoSyncWebDavSources()

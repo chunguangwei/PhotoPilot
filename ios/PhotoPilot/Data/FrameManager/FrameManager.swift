@@ -141,6 +141,7 @@ actor FrameManager {
         let context = makeContext()
         try await context.perform {
             let frame = try Self.fetchFrame(context: context, frameID: frameID)
+            try AIFrameStore.removeState(context: context, frameID: frameID)
             context.delete(frame)
             try context.save()
         }

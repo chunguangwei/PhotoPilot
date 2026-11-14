@@ -10,6 +10,11 @@ options:
     iOS: "15.0"
   createIntermediateGroups: true
 packages:
+  MediaPipeTasks:
+    path: Packages/MediaPipeTasks
+  ONNXRuntime:
+    url: https://github.com/microsoft/onnxruntime-swift-package-manager
+    exactVersion: 1.20.0
   AMSMB2:
     url: https://github.com/amosavian/AMSMB2
     from: 4.0.3
@@ -18,11 +23,12 @@ configs:
   Release: release
 settings:
   base:
+    EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
     SWIFT_VERSION: "6.0"
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     TARGETED_DEVICE_FAMILY: "2"
-    MARKETING_VERSION: "1.1.58"
-    CURRENT_PROJECT_VERSION: "58"
+    MARKETING_VERSION: "1.2.0"
+    CURRENT_PROJECT_VERSION: "59"
 targets:
   PhotoPilot:
     type: application
@@ -37,6 +43,10 @@ targets:
         excludes:
           - Info.plist
     dependencies:
+      - package: MediaPipeTasks
+        product: MediaPipeTasksRetrieval
+      - package: ONNXRuntime
+        product: onnxruntime
       - package: AMSMB2
         product: AMSMB2
         embed: true
@@ -47,7 +57,7 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: L35RLT89XN
+        DEVELOPMENT_TEAM: CCTFP9X3SW
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_FILE: PhotoPilot/Resources/Info.plist
         GENERATE_INFOPLIST_FILE: NO
@@ -74,6 +84,10 @@ targets:
       - path: ../contracts/vectors/selection-resolve.json
         buildPhase: resources
       - path: ../contracts/vectors/playback-queue.json
+        buildPhase: resources
+      - path: ../contracts/vectors/ai-frame-classify.json
+        buildPhase: resources
+      - path: ../contracts/vectors/ai-wordpiece.json
         buildPhase: resources
       - path: ../contracts/vectors/selection-save.json
         buildPhase: resources

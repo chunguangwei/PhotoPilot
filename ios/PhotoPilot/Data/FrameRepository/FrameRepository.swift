@@ -243,6 +243,7 @@ actor FrameRepository {
                 target.setValue(now, forKey: "updated_at")
             }
 
+            try AIFrameStore.manualChange(context: context, frameID: frameID, includes: Set(addIncludes.map(\.refKey)), removed: Set((removeRefs + addExcludes).map(\.refKey)))
             frame.setValue(Int(newVersion), forKey: "selection_version")
             frame.setValue(now, forKey: "updated_at")
             try context.save()

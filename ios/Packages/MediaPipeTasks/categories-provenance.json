@@ -1,0 +1,25 @@
+{
+  "upstreamRevision": "02ca022d573c004c463d8c61eb3f8ce17e95a7fc",
+  "upstreamZipSHA256": "39990d7ff26dedeef5e0f43e7a8656ead9219b52133ae390af5e9ffcfa208b1f",
+  "anchorSourceSHA256": "d985582a15b053facd7d57369e7b6963a1baa4fd220b612ccdf877696237db37",
+  "architectures": {
+    "ios-arm64": {
+      "inputArchiveSHA256": "290ed3d73fda9be0938383aa98eebc9f20e461ba1a387bacbb0217b1c9d85197",
+      "members": {
+        "MPPBaseOptions+Helpers.o": "ff89499322bba0d097809da87e0f1dac084fc0faa8e40ed87092f748757b4cf9",
+        "MPPEmbeddingResult+Helpers.o": "74176bfbb145a76a862b3fb73702944ee392d210bbc97a9bf4e63752889ab029",
+        "MPPEmbedding+Helpers.o": "7fbe9f8d5f755f91b7eff554dc200645925fdbd186dc1939ca8a02c9719e7662"
+      },
+      "outputLibrarySHA256": "9e7aa84b736e321a6a5b905b69afc3eeaca516dc8bb31c0af792028eacc6c1b3"
+    },
+    "ios-arm64-simulator": {
+      "inputArchiveSHA256": "fa6f1d994389974a4124ef0cc4a7b92b36400eaea2a041545407536228d54c40",
+      "members": {
+        "MPPBaseOptions+Helpers.o": "0f48d21fed6a34eb8b6d696804fced4f5008ec6056aa3de5d754b0469afe281d",
+        "MPPEmbeddingResult+Helpers.o": "e78d4a68f18669a40fe330da7a237664668d5b4d09007a20f9ba024b7de6007c",
+        "MPPEmbedding+Helpers.o": "1e8dfa01fbfda6beb949c638b5e42276fadaa7ba2655cad9b42b0bee70b9b8f8"
+      },
+      "outputLibrarySHA256": "a4a1fbd4cf08f5fe3f20c39ab175078c9a46c1358e6de0764f0e025efab1b35b"
+    }
+  }
+}

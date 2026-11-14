@@ -220,6 +220,7 @@ actor AssetRepository {
                 row.setValue(sourceAsset, forKey: "sourceAsset")
             }
             row.setValue(now, forKey: "updated_at")
+            try AIFrameStore.manualChange(context: context, frameID: frameID, includes: mode == .include ? [refKey] : [], removed: mode == .exclude ? [refKey] : [])
             try context.save()
             return Self.selectionDTO(row)
         }
@@ -233,6 +234,7 @@ actor AssetRepository {
             for row in try context.fetch(request) {
                 context.delete(row)
             }
+            try AIFrameStore.manualChange(context: context, frameID: frameID, includes: [], removed: [refKey])
             if context.hasChanges {
                 try context.save()
             }
@@ -258,6 +260,7 @@ actor AssetRepository {
                 reason: reason,
                 now: now
             )
+            try AIFrameStore.removeFeatures(context: context, assetID: id)
             asset.setValue(Readiness.deleted.rawValue, forKey: "readiness")
             asset.setValue(now, forKey: "deleted_at")
             asset.setValue(now, forKey: "updated_at")
@@ -313,6 +316,7 @@ actor AssetRepository {
                 reason: .privacyDelete,
                 now: now
             )
+            try AIFrameStore.removeFeatures(context: context, assetID: id)
             asset.setValue(NSNumber(value: true), forKey: "privacy_excluded")
             asset.setValue(now, forKey: "updated_at")
             _ = try PersistenceController.bumpLibraryVersionValue(in: context)
@@ -438,6 +442,7 @@ actor AssetRepository {
                             now: now
                         )
                         files.append(identity.originalRelPath)
+                        if let id = asset.value(forKey: "id") as? String { try AIFrameStore.removeFeatures(context: context, assetID: id) }
                         context.delete(asset)
                     } else {
                         context.delete(origin)

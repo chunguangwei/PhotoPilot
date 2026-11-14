@@ -298,12 +298,19 @@ final class SettingsViewController: UIViewController {
         licenseNotice.numberOfLines = 0
         let licensesButton = ActionButton(titleKey: "settings.licenses", style: .secondary)
         licensesButton.addTarget(self, action: #selector(handleLicenses), for: .touchUpInside)
+        let aiLicensesButton = UIButton(type: .system)
+        aiLicensesButton.setTitle(AIText.value("AI model and runtime licenses", "AI 模型与推理组件许可"), for: .normal)
+        aiLicensesButton.titleLabel?.font = ThemeFont.body()
+        aiLicensesButton.titleLabel?.adjustsFontForContentSizeCategory = true
+        aiLicensesButton.titleLabel?.numberOfLines = 0
+        aiLicensesButton.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
+        aiLicensesButton.addTarget(self, action: #selector(handleAILicenses), for: .touchUpInside)
         let privacyButton = ActionButton(titleKey: "settings.privacy_policy", style: .secondary)
         privacyButton.addTarget(self, action: #selector(handlePrivacyPolicy), for: .touchUpInside)
         formStack.addArrangedSubview(makeSection(
             titleKey: "settings.about",
             collapsible: false,
-            rows: [makeRow(labelKey: "settings.version_label", control: versionValue), licenseNotice, privacyButton, licensesButton]
+            rows: [makeRow(labelKey: "settings.version_label", control: versionValue), licenseNotice, privacyButton, licensesButton, aiLicensesButton]
         ))
     }
 
@@ -616,6 +623,7 @@ final class SettingsViewController: UIViewController {
         Task { [weak self] in
             guard let self, let window = view.window else { return }
             PlayerViewController.dismissActiveIfAny()
+            await environment.aiFrames.prepareForErase()
             for runner in environment.runners.values {
                 try? await runner.cancel()
             }
@@ -653,6 +661,12 @@ final class SettingsViewController: UIViewController {
             navigation.setNavigationBarHidden(true, animated: false)
             RootTransition.setRoot(navigation, in: window)
         }
+    }
+
+    @objc private func handleAILicenses() {
+        let licenses = UINavigationController(rootViewController: AIModelLicensesViewController())
+        licenses.modalPresentationStyle = .fullScreen
+        present(licenses, animated: true)
     }
 
     @objc private func handleLicenses() {

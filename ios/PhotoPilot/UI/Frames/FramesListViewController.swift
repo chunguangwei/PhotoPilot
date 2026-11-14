@@ -42,6 +42,15 @@ final class FramesListViewController: UIViewController {
         titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         createButton.setContentHuggingPriority(.required, for: .horizontal)
         header.addArrangedSubview(titleLabel)
+        let aiButton = UIButton(type: .system)
+        aiButton.setTitle(AIText.value("Create AI frames", "AI 创建相框"), for: .normal)
+        aiButton.titleLabel?.font = ThemeFont.body()
+        aiButton.titleLabel?.adjustsFontForContentSizeCategory = true
+        aiButton.titleLabel?.numberOfLines = 0
+        aiButton.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
+        aiButton.accessibilityIdentifier = "frames.createAI"
+        aiButton.addTarget(self, action: #selector(openAIFrames), for: .touchUpInside)
+        header.addArrangedSubview(aiButton)
         header.axis = .vertical
         header.spacing = ThemeMetrics.space16
 
@@ -299,6 +308,7 @@ final class FramesListViewController: UIViewController {
         actionsButton.setImage(UIImage(systemName: "ellipsis"), for: .normal)
         actionsButton.tintColor = ThemeColor.accentAction
         actionsButton.accessibilityLabel = L10n.string("player.more")
+        actionsButton.accessibilityIdentifier = "frame.actions." + card.id
         actionsButton.tag = index
         actionsButton.addTarget(self, action: #selector(handleCardActions(_:)), for: .touchUpInside)
         let buttons: [UIControl] = [playButton, actionsButton]
@@ -345,6 +355,14 @@ final class FramesListViewController: UIViewController {
         }
         guard sender.tag < cards.count else { return }
         openEditor(frameID: cards[sender.tag].id)
+    }
+
+    @objc private func openAIFrames() {
+        let editor = AIFrameViewController(environment: environment)
+        editor.onSaved = { [weak self] in self?.reload() }
+        let navigation = UINavigationController(rootViewController: editor)
+        navigation.modalPresentationStyle = .fullScreen
+        present(navigation, animated: true)
     }
 
     @objc private func handlePlayCard(_ sender: UIControl) {
@@ -448,6 +466,7 @@ final class FramesListViewController: UIViewController {
             style: .destructive,
             handler: { [weak self] _ in
                 Task { [weak self] in
+                    await self?.environment.aiFrames.cancel(frameID: card.id)
                     try? await self?.environment.frameManager.deleteFrame(frameID: card.id)
                     self?.reload()
                 }

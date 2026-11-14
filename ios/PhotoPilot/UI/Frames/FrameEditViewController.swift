@@ -78,6 +78,15 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         topBar.spacing = ThemeMetrics.space12
 
         let header = UIStackView(arrangedSubviews: [topBar, nameField])
+        let aiSettings = UIButton(type: .system)
+        aiSettings.setTitle(AIText.value("AI classification settings", "AI 分类设置"), for: .normal)
+        aiSettings.titleLabel?.font = ThemeFont.body()
+        aiSettings.titleLabel?.adjustsFontForContentSizeCategory = true
+        aiSettings.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
+        aiSettings.accessibilityIdentifier = "frame.ai.settings"
+        aiSettings.addTarget(self, action: #selector(openAISettings), for: .touchUpInside)
+        aiSettings.isHidden = frameID == nil
+        header.addArrangedSubview(aiSettings)
         header.axis = .vertical
         header.spacing = ThemeMetrics.space12
         header.translatesAutoresizingMaskIntoConstraints = false
@@ -211,6 +220,15 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         if traitCollection.horizontalSizeClass != previousTraitCollection?.horizontalSizeClass {
             updateGridWidthConstraints()
         }
+    }
+
+    @objc private func openAISettings() {
+        guard let frameID else { return }
+        let editor = AIFrameViewController(environment: environment, frameID: frameID)
+        editor.onSaved = { [weak self] in self?.reload() }
+        let navigation = UINavigationController(rootViewController: editor)
+        navigation.modalPresentationStyle = .fullScreen
+        present(navigation, animated: true)
     }
 
     private func updateGridWidthConstraints() {

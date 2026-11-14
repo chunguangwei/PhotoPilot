@@ -26,58 +26,111 @@
               "https://huggingface.co/litert-community/embeddinggemma-2-text-vision-440m-litert-lm/resolve/538e6574db281b4fe17993a3212f10c73bd678c6/embeddinggemma-2-text-vision-440m.litertlm"
             ],
             "domestic": [
+              "https://modelscope.cn/models/litert-community/embeddinggemma-2-text-vision-440m-litert-lm/resolve/0214d5b16fd2dd6c0169f2a829da6776ec08464e/embeddinggemma-2-text-vision-440m.litertlm",
               "https://hf-mirror.com/litert-community/embeddinggemma-2-text-vision-440m-litert-lm/resolve/538e6574db281b4fe17993a3212f10c73bd678c6/embeddinggemma-2-text-vision-440m.litertlm"
             ]
+          },
+          "sourceRevisions": {
+            "modelscope.cn": "0214d5b16fd2dd6c0169f2a829da6776ec08464e"
           }
         }
       ],
-      "defaultThreshold": 0.63
+      "defaultThreshold": 0.61
     },
     {
-      "id": "siglip2-base-int8",
+      "id": "multilingual-clip-vitb32-lite",
       "displayName": {
-        "en": "SigLIP 2 · Compact",
-        "zh-Hans": "SigLIP 2 · 紧凑版"
+        "en": "Multilingual CLIP · Lite",
+        "zh-Hans": "多语 CLIP · 轻量版"
       },
       "runtime": "onnx",
-      "revision": "ba1f3b0843f24bc5417d38e19c37b287d719b2f4",
-      "upstream": "https://huggingface.co/onnx-community/siglip2-base-patch16-224-ONNX",
+      "revision": "bbc629465ebb027948d64b7261011165076ffacc",
+      "revisionKind": "composition-sha1",
+      "upstream": "https://huggingface.co/sentence-transformers/clip-ViT-B-32-multilingual-v1",
       "languages": [
         "en",
         "zh-Hans"
       ],
-      "embeddingDimension": 768,
+      "embeddingDimension": 512,
       "files": [
         {
-          "name": "model_quantized.onnx",
-          "role": "model",
-          "size": 378000135,
-          "sha256": "87fb1dbb1c091ea083e71a6c6a92fb2a39dd360ef1415314d9d645ca2b22057d",
+          "name": "text_model_int8.onnx",
+          "role": "text",
+          "size": 135336307,
+          "sha256": "3bed77e83926519660b5c0833cb3321cfde952331edec4f7d501c7d384b8a8a7",
+          "revision": "58edf8cada9e398793dca955574a48cbb7f18be2",
           "urls": {
             "international": [
-              "https://huggingface.co/onnx-community/siglip2-base-patch16-224-ONNX/resolve/ba1f3b0843f24bc5417d38e19c37b287d719b2f4/onnx/model_quantized.onnx"
+              "https://huggingface.co/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/58edf8cada9e398793dca955574a48cbb7f18be2/onnx/model_qint8_arm64.onnx"
             ],
             "domestic": [
-              "https://hf-mirror.com/onnx-community/siglip2-base-patch16-224-ONNX/resolve/ba1f3b0843f24bc5417d38e19c37b287d719b2f4/onnx/model_quantized.onnx"
+              "https://modelscope.cn/models/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/e8721d65650e509c422d91f8e42057b751e44d8f/onnx/model_qint8_arm64.onnx",
+              "https://hf-mirror.com/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/58edf8cada9e398793dca955574a48cbb7f18be2/onnx/model_qint8_arm64.onnx"
             ]
+          },
+          "sourceRevisions": {
+            "modelscope.cn": "e8721d65650e509c422d91f8e42057b751e44d8f"
           }
         },
         {
-          "name": "tokenizer.model",
-          "role": "tokenizer",
-          "size": 4241003,
-          "sha256": "61a7b147390c64585d6c3543dd6fc636906c9af3865a5548f27f31aee1d4c8e2",
+          "name": "vision_model_q4.onnx",
+          "role": "model",
+          "size": 63642858,
+          "sha256": "0769eb1d2f6f68927bbfa6e5330df4c4c3c112f89cd43eae28baafa9e6bd34b4",
+          "revision": "6b7c523703ae26e39be4b03774966f8571c7f523",
           "urls": {
             "international": [
-              "https://huggingface.co/onnx-community/siglip2-base-patch16-224-ONNX/resolve/ba1f3b0843f24bc5417d38e19c37b287d719b2f4/tokenizer.model"
+              "https://huggingface.co/Xenova/clip-vit-base-patch32/resolve/6b7c523703ae26e39be4b03774966f8571c7f523/onnx/vision_model_q4.onnx"
             ],
             "domestic": [
-              "https://hf-mirror.com/onnx-community/siglip2-base-patch16-224-ONNX/resolve/ba1f3b0843f24bc5417d38e19c37b287d719b2f4/tokenizer.model"
+              "https://modelscope.cn/models/Xenova/clip-vit-base-patch32/resolve/cd8e8fac174dd664b6e5b584d05abb025694b49c/onnx/vision_model_q4.onnx",
+              "https://hf-mirror.com/Xenova/clip-vit-base-patch32/resolve/6b7c523703ae26e39be4b03774966f8571c7f523/onnx/vision_model_q4.onnx"
             ]
+          },
+          "sourceRevisions": {
+            "modelscope.cn": "cd8e8fac174dd664b6e5b584d05abb025694b49c"
+          }
+        },
+        {
+          "name": "projection.safetensors",
+          "role": "projection",
+          "size": 1572984,
+          "sha256": "d12568dc7300970a4d3dbb49068ad16cd89b99840b74b026f8e48071e9414f74",
+          "revision": "58edf8cada9e398793dca955574a48cbb7f18be2",
+          "urls": {
+            "international": [
+              "https://huggingface.co/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/58edf8cada9e398793dca955574a48cbb7f18be2/2_Dense/model.safetensors"
+            ],
+            "domestic": [
+              "https://modelscope.cn/models/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/e8721d65650e509c422d91f8e42057b751e44d8f/2_Dense/model.safetensors",
+              "https://hf-mirror.com/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/58edf8cada9e398793dca955574a48cbb7f18be2/2_Dense/model.safetensors"
+            ]
+          },
+          "sourceRevisions": {
+            "modelscope.cn": "e8721d65650e509c422d91f8e42057b751e44d8f"
+          }
+        },
+        {
+          "name": "vocab.txt",
+          "role": "tokenizer",
+          "size": 995526,
+          "sha256": "fe0fda7c425b48c516fc8f160d594c8022a0808447475c1a7c6d6479763f310c",
+          "revision": "58edf8cada9e398793dca955574a48cbb7f18be2",
+          "urls": {
+            "international": [
+              "https://huggingface.co/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/58edf8cada9e398793dca955574a48cbb7f18be2/vocab.txt"
+            ],
+            "domestic": [
+              "https://modelscope.cn/models/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/e8721d65650e509c422d91f8e42057b751e44d8f/vocab.txt",
+              "https://hf-mirror.com/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/58edf8cada9e398793dca955574a48cbb7f18be2/vocab.txt"
+            ]
+          },
+          "sourceRevisions": {
+            "modelscope.cn": "e8721d65650e509c422d91f8e42057b751e44d8f"
           }
         }
       ],
-      "defaultThreshold": 0.075
+      "defaultThreshold": 0.24
     }
   ]
 }

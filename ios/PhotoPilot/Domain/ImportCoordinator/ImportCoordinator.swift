@@ -316,6 +316,7 @@ actor ImportCoordinator {
                 if otherOrigins.isEmpty {
                     let assetID = asset.value(forKey: "id") as? String ?? ""
                     deletedAssetIDs.append(assetID)
+                    try AIFrameStore.removeFeatures(context: context, assetID: assetID)
                     let identity = AssetRepository.TombstoneIdentity(
                         contentHash: asset.value(forKey: "content_hash") as? String ?? "",
                         byteSize: asset.value(forKey: "byte_size") as? Int,

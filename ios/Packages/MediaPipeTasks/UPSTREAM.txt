@@ -1,0 +1,20 @@
+Google MediaPipe Tasks 1.2.3 binary Swift package wrapper.
+Source https://github.com/google-ai-edge/mediapipe
+Revision 02ca022d573c004c463d8c61eb3f8ce17e95a7fc
+Sources/MediaPipeTasksCommon are copied unchanged from that revision.
+
+Package.swift retains the official binary URLs and SHA256 checksums and is
+adapted for PhotoPilot's UniversalEmbedder direct LiteRT-LM API. Unused products
+and dependencies (Audio, Decision, Text, Vision) and blanket -all_load/-ObjC flags
+are omitted. The official SDK archives remain unchanged.
+
+rebuild_categories.py verifies both pinned Common archive hashes, extracts the
+three required original conversion-category objects, combines them with the
+no-op CategoryAnchor.c, and creates MediaPipeRequiredCategories.xcframework.
+Sources/MediaPipeCategoryLinkage exposes a standard C reference to the anchor,
+which retains these categories without pulling unused recording classes.
+Exact input, original member, and output hashes are in categories-provenance.json.
+Both architecture outputs have been rebuilt and compared byte-for-byte.
+
+License Apache-2.0, see LICENSE. Original category implementations are from the
+same pinned Google archive and retain the upstream license and copyright.

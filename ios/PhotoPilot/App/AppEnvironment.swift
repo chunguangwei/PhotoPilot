@@ -9,6 +9,7 @@ final class AppEnvironment: @unchecked Sendable {
     let sources: SourceRepository
     let assets: AssetRepository
     let frames: FrameRepository
+    let aiFrames: AIFrameService
     let frameManager: FrameManager
     let holidayStore: HolidayStore
     let photoLibraryAdapter: PhotoLibrarySourceAdapter
@@ -38,6 +39,7 @@ final class AppEnvironment: @unchecked Sendable {
         self.assets = AssetRepository(controller: persistence)
         self.frames = FrameRepository(controller: persistence)
         self.frameManager = FrameManager(controller: persistence)
+        self.aiFrames = AIFrameService(controller: persistence)
         self.holidayStore = HolidayStore(controller: persistence)
         self.photoLibraryAdapter = PhotoLibrarySourceAdapter(networkPolicy: networkPolicy)
         self.weatherRepository = WeatherRepository(controller: persistence)
@@ -264,9 +266,10 @@ final class AppEnvironment: @unchecked Sendable {
 
     private func registerRunner(coordinator: ImportCoordinator, jobID: String, networkPolicy: NasNetworkPolicy? = nil, requiresNetwork: Bool = true) -> ImportRunner {
         let runner = ImportRunner(coordinator: coordinator, jobID: jobID, networkPolicy: networkPolicy, requiresNetwork: requiresNetwork)
-        Task {
+        Task { [weak self] in
             await runner.setOnTerminal { [weak self] finishedJobID in
                 self?.runners.removeValue(forKey: finishedJobID)
+                Task { await self?.aiFrames.processPending() }
             }
         }
         runners[jobID] = runner
