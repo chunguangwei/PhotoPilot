@@ -307,6 +307,48 @@ class FrameEditView(
         if (inFoldersTab) loadFolders()
     }
 
+    fun draftState(): Map<String, String> {
+        val state = currentState()
+        return mapOf(
+            "name" to state.name,
+            "selected" to org.json.JSONArray(state.selectedAssetIds.toList()).toString(),
+            "removedExcludes" to org.json.JSONArray(state.removedExcludes.toList()).toString(),
+            "cover" to state.pendingCoverId.orEmpty(),
+            "manualOrder" to (state.manualOrder?.let { org.json.JSONArray(it).toString() } ?: ""),
+            "rules" to org.json.JSONObject(state.ruleStates.mapValues { (_, rule) -> org.json.JSONObject().put("checked", rule.checked).put("recursive", rule.recursive).put("dynamic", rule.dynamic) }).toString(),
+        )
+    }
+
+    fun restoreDraft(draft: Map<String, String>) {
+        fun values(key: String): List<String> = draft[key]?.takeIf { it.isNotEmpty() }?.let { raw -> org.json.JSONArray(raw).let { array -> (0 until array.length()).map { array.getString(it) } } }.orEmpty()
+        draft["name"]?.let { nameInput.setText(it) }
+        if ("selected" in draft) { selectedAssetIds.clear(); selectedAssetIds.addAll(values("selected")) }
+        removedExcludes.addAll(values("removedExcludes"))
+        draft["cover"]?.let { pendingCoverId = it.takeIf { it.isNotEmpty() }; displayCoverId = pendingCoverId }
+        draft["manualOrder"]?.takeIf { it.isNotEmpty() }?.let { setManualOrder(values("manualOrder")) }
+        draft["rules"]?.let { raw ->
+            val rules = org.json.JSONObject(raw)
+            ruleStates.clear()
+            for (key in rules.keys()) {
+                val rule = rules.getJSONObject(key)
+                ruleStates[key] = RuleUiState(rule.getBoolean("checked"), rule.getBoolean("recursive"), rule.getBoolean("dynamic"))
+            }
+        }
+        updateSummary()
+        gridAdapter.notifyDataSetChanged()
+        if (inFoldersTab) loadFolders()
+    }
+
+    private val disabledControls = mutableMapOf<View, Boolean>()
+    fun setSaving(saving: Boolean) {
+        fun update(view: View) {
+            if (saving) { disabledControls[view] = view.isEnabled; view.isEnabled = false }
+            else disabledControls.remove(view)?.let { view.isEnabled = it }
+            if (view is ViewGroup) for (index in 0 until view.childCount) update(view.getChildAt(index))
+        }
+        update(this)
+    }
+
     fun currentState(): State = State(
         name = nameInput.text.toString().trim().ifEmpty { model?.name.orEmpty() },
         selectedAssetIds = selectedAssetIds.toSet(),
@@ -336,7 +378,7 @@ class FrameEditView(
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
         val height = MeasureSpec.getSize(heightMeasureSpec)
-        applyCompactLayout(height > 0 && width > height && height < 480 * resources.displayMetrics.density * resources.configuration.fontScale.coerceAtLeast(1f))
+        applyCompactLayout(height > 0 && (width > height || resources.configuration.fontScale >= 1.5f) && height < 900 * resources.displayMetrics.density * resources.configuration.fontScale.coerceAtLeast(1f))
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
     }
 

@@ -51,13 +51,15 @@ class RemoteLegacySelectionTest {
                 view.onSaved = { saved.countDown() }
                 activity.setContentView(view)
             }
-            delay(600)
+            kotlinx.coroutines.withTimeout(15000) {
+                while (org.json.JSONArray(view.draftState().getValue("selected")).length() != 2) delay(100)
+            }
             instrumentation.runOnMainSync {
                 assertEquals("Legacy selections appear before save without database mutation", setOf("$id-remote-1", "$id-remote-3"), org.json.JSONArray(view.draftState().getValue("selected")).let { array -> (0 until array.length()).map { array.getString(it) }.toSet() })
             }
             assertNotNull(db.frameSelectionDao().getByRef(frame.id, "$id-asset-1"))
             instrumentation.runOnMainSync { RemoteFrameView::class.java.getDeclaredMethod("save").apply { isAccessible = true }.invoke(view) }
-            assertTrue(saved.await(5, TimeUnit.SECONDS))
+            assertTrue(saved.await(15, TimeUnit.SECONDS))
             val migrated = requireNotNull(db.frameDao().getById(frame.id))
             assertNull(migrated.coverAssetId)
             assertEquals("$id-remote-1", org.json.JSONObject(migrated.settingsJson).getString("remoteCoverRef"))

@@ -80,6 +80,10 @@ class LocalReferencePickerWorkflowTest {
             assertTrue(env.database.importJobDao().getBySource(source.id).isEmpty())
             assertTrue(env.database.assetOriginDao().getBySourceAssets(listOf(selected.id)).isEmpty())
             assertEquals(originals, File(context.filesDir, "originals").walkTopDown().filter { it.isFile }.map { it.absolutePath }.toSet())
+            assertFalse(descendants(activity.window.decorView).any { it is RemoteFrameView })
+            instrumentation.runOnMainSync {
+                MainActivity::class.java.getDeclaredMethod("openRemoteFrame", dev.photopilot.scaffold.data.db.FrameEntity::class.java, Map::class.java).apply { isAccessible = true }.invoke(activity, null, mapOf("sourceId" to source.id))
+            }
             await("Reference grid must show the selected file") {
                 val editor = descendants(activity.window.decorView).filterIsInstance<RemoteFrameView>().lastOrNull()
                 editor != null && descendants(editor).filterIsInstance<CheckBox>().any { it.text.toString() == name }
@@ -178,6 +182,10 @@ class LocalReferencePickerWorkflowTest {
             assertTrue(resolver.persistedUriPermissions.any { it.uri.toString() == grantUri && it.isReadPermission })
             assertTrue(env.database.importJobDao().getBySource(source.id).isEmpty())
             assertTrue(env.database.assetOriginDao().getBySourceAssets(listOf(selected.id)).isEmpty())
+            assertFalse(descendants(activity.window.decorView).any { it is RemoteFrameView })
+            instrumentation.runOnMainSync {
+                MainActivity::class.java.getDeclaredMethod("openRemoteFrame", dev.photopilot.scaffold.data.db.FrameEntity::class.java, Map::class.java).apply { isAccessible = true }.invoke(activity, null, mapOf("sourceId" to source.id))
+            }
             await("Tree selection grid must expose the generated image") { descendants(activity.window.decorView).filterIsInstance<CheckBox>().any { it.text.toString() == name } }
             val editor = descendants(activity.window.decorView).filterIsInstance<RemoteFrameView>().last()
             val checkbox = descendants(editor).filterIsInstance<CheckBox>().single { it.text.toString() == name }

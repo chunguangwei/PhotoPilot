@@ -218,17 +218,18 @@ class MainActivity : Activity() {
                             openPhotoDetail(asset)
                         }
                     }
-                    "remoteFrame" -> if (permissionOnly) continue else {
+                    "remoteFrame" -> if (permissionOnly && entry["firstUse"] != "true") continue else {
                         val id = entry["frameId"] as? String
                         val target = id?.takeIf { it.isNotEmpty() }?.let { env.database.frameDao().getById(it) }
                         openRemoteFrame(target, entry.entries.mapNotNull { (key, value) -> if (key is String && value is String) key to value else null }.toMap())
                     }
-                    "frameEdit" -> if (permissionOnly) continue else (entry["frameId"] as? String)?.takeIf { it.isNotEmpty() }?.let { id ->
+                    "frameEdit" -> if (permissionOnly) continue else {
+                        val id = (entry["frameId"] as? String).orEmpty()
                         val frame = withContext(Dispatchers.IO) {
-                            env.database.frameDao().getById(id)
+                            id.takeIf { it.isNotEmpty() }?.let { env.database.frameDao().getById(it) }
                         }
-                        if (frame != null) {
-                            openFrameEditor(frame)
+                        if (id.isEmpty() || frame != null) {
+                            openFrameEditor(frame, entry.entries.mapNotNull { (key, value) -> if (key is String && value is String) key to value else null }.toMap())
                         }
                     }
                     "aiFrame" -> if (permissionOnly) continue else {
@@ -478,7 +479,7 @@ class MainActivity : Activity() {
             onLocalReferenceClick = { sourceId ->
                 scope.launch {
                     val source = withContext(Dispatchers.IO) { environment?.database?.sourceDao()?.getById(sourceId) }
-                    if (source?.status == SourceStatus.ACTIVE) openRemoteFrame(null, mapOf("sourceId" to sourceId))
+                    if (source?.status == SourceStatus.ACTIVE) finishSourceConnection(source)
                     else if (source?.type == SourceType.LOCAL_PHOTOS) showPhotoPermissionOverlay()
                     else showLocalFilesChoices()
                 }
@@ -951,17 +952,58 @@ class MainActivity : Activity() {
 
     private var remoteFrameView: dev.photopilot.scaffold.ui.remote.RemoteFrameView? = null
 
+    private suspend fun finishSourceConnection(source: SourceEntity, selectedIds: List<String>? = null) {
+        val draft = mutableMapOf("sourceId" to source.id)
+        selectedIds?.let {
+            draft["scopeIds"] = org.json.JSONArray(it).toString()
+            draft["selected"] = org.json.JSONArray(it).toString()
+        }
+        val editor = remoteFrameView
+        if (editor != null) {
+            editor.acceptSource(source.id, selectedIds)
+            return
+        }
+        val firstUse = root.baseView is WelcomeView && withContext(Dispatchers.IO) {
+            environment?.database?.frameDao()?.getAll().orEmpty().isEmpty()
+        }
+        if (firstUse) {
+            draft["firstUse"] = "true"
+            openRemoteFrame(null, draft)
+        } else {
+            activeSourcesView?.let { refreshNasSources(it) }
+            Toast.makeText(this, if (resources.configuration.locales[0].language == "zh") "来源已连接" else "Source connected", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun openRemoteFrame(frame: FrameEntity?, draft: Map<String, String>? = null) {
         val env = environment ?: return
         val view = dev.photopilot.scaffold.ui.remote.RemoteFrameView(this, env, frame, draft)
         remoteFrameView = view
         view.onBack = { remoteFrameView = null; popOverlayTracked() }
         view.onConnect = { openNasForm() }
+        view.onLocalPhotos = { showPhotoPermissionOverlay() }
+        view.onLocalFiles = { showLocalFilesChoices() }
         view.onSaved = {
             remoteFrameView = null
             framesDirty = true
-            while (root.topOverlay() != null) popOverlayTracked()
-            showMainContainer()
+            if (draft?.get("firstUse") == "true") {
+                scope.launch {
+                    env.settings.setOnboardingCompleted(true)
+                    while (root.topOverlay() != null) popOverlayTracked()
+                    showMainContainer()
+                    view.savedFrame?.let { openPlayer(it, fromSnapshot = false) }
+                }
+            } else {
+                popOverlayTracked()
+                val editor = frameEditView
+                if (editor != null && root.topOverlay() === editor) {
+                    scope.launch {
+                        val fresh = withContext(Dispatchers.IO) { frame?.id?.let { env.database.frameDao().getById(it) } }
+                        closeFrameEditor()
+                        openFrameEditor(fresh)
+                    }
+                }
+            }
         }
         pushOverlayTracked(view, mapOf("type" to "remoteFrame", "frameId" to (frame?.id ?: "")))
     }
@@ -1304,7 +1346,7 @@ class MainActivity : Activity() {
                     mapOf("catalogOnly" to conn.form.catalogOnly, "directories" to dirs),
             )
             val editContext = nasEditContext
-            val jobId = try {
+            try {
                 withContext(Dispatchers.IO) {
                     existing?.let { source ->
                         env.remoteCopies.cancelSource(source.id)
@@ -1327,7 +1369,7 @@ class MainActivity : Activity() {
                     } else {
                         val id = env.coordinator.createJob(source.id, scopeJson)
                         env.registerNasAdapter(id, conn.adapterFor(recursive))
-                        env.settings.setOnboardingCompleted(true)
+                        env.remoteMedia.index(source.id, scopeJson, conn.adapterFor(recursive), expectedEpoch = source.epoch)
                         env.runner.start(id)
                         id
                     }
@@ -1350,15 +1392,10 @@ class MainActivity : Activity() {
             nasEditContext = null
             nasFormView = null
             framesDirty = true
-            if (jobId != null) {
-                while (root.topOverlay() != null) popOverlayTracked()
-                openImportProgress(jobId)
-            } else {
-                popOverlayTracked()
-                popOverlayTracked()
-                remoteFrameView?.reloadSources()
-                activeSourcesView?.let { refreshNasSources(it) }
-            }
+            popOverlayTracked()
+            popOverlayTracked()
+            val connected = withContext(Dispatchers.IO) { env.database.sourceDao().getAll().firstOrNull { it.endpointKey == conn.fingerprint } }
+            if (connected != null) finishSourceConnection(connected)
         } finally {
             nasSaveInFlight = false
         }
@@ -1789,7 +1826,7 @@ class MainActivity : Activity() {
         pushOverlayTracked(view, mapOf("type" to "aiFrame", "frameId" to (frame?.id ?: "")))
     }
 
-    private fun openFrameEditor(frame: FrameEntity?) {
+    private fun openFrameEditor(frame: FrameEntity?, draft: Map<String, String>? = null) {
         val env = environment ?: return
         val view = FrameEditView(this, File(filesDir, "originals"))
         val referenceSources = mutableSetOf<String>()
@@ -1830,14 +1867,14 @@ class MainActivity : Activity() {
         }
         view.onBack = { hasChanges -> handleEditorBack(view, hasChanges) }
         view.onSave = { state -> saveFrameEdit(view, frame, state) }
-        view.onRemotePhotos = { openRemoteFrame(frame, mapOf("name" to view.currentState().name)) }
+        view.onRemotePhotos = { leaveEditorFor(view, frame) { target -> openRemoteFrame(target) } }
         view.onOpenReferenceCollection = { collection ->
             if (collection.sourceId in referenceSources && collection.relPath != null) {
-                openRemoteFrame(frame, mapOf("sourceId" to requireNotNull(collection.sourceId), "folder" to collection.relPath, "name" to view.currentState().name))
+                leaveEditorFor(view, frame) { target -> openRemoteFrame(target, mapOf("sourceId" to requireNotNull(collection.sourceId), "folder" to collection.relPath)) }
                 true
             } else false
         }
-        view.onAISettings = { frame?.let { openAIFrameEditor(it) } ?: openAIFrameEditor(null) }
+        view.onAISettings = { leaveEditorFor(view, frame) { target -> openAIFrameEditor(target) } }
         view.onManualOrder = { frame?.let { target -> openManualOrder(view, target) } }
         view.onConfirmDynamic = { completion -> confirmDynamicRule(completion) }
         frameEditView = view
@@ -1847,8 +1884,29 @@ class MainActivity : Activity() {
             editorModel = model
             if (frameEditView === view) {
                 view.bind(model)
+                draft?.let { view.restoreDraft(it) }
             }
         }
+    }
+
+    private fun leaveEditorFor(view: FrameEditView, frame: FrameEntity?, continuation: (FrameEntity?) -> Unit) {
+        if (!view.hasChanges()) {
+            continuation(frame)
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.playback_unsaved_title)
+            .setPositiveButton(R.string.common_save) { _, _ -> saveFrameEdit(view, frame, view.currentState(), continuation) }
+            .setNeutralButton(R.string.common_discard) { _, _ ->
+                scope.launch {
+                    val model = loadEditModel(frame)
+                    editorModel = model
+                    view.bind(model)
+                    continuation(frame)
+                }
+            }
+            .setNegativeButton(R.string.common_cancel, null)
+            .show()
     }
 
     private suspend fun loadEditModel(frame: FrameEntity?): FrameEditView.Model {
@@ -1910,6 +1968,7 @@ class MainActivity : Activity() {
     }
 
     private fun handleEditorBack(view: FrameEditView, hasChanges: Boolean) {
+        if (frameSaveInFlight) return
         if (!hasChanges) {
             closeFrameEditor()
             return
@@ -1935,16 +1994,23 @@ class MainActivity : Activity() {
             .show()
     }
 
-    private fun saveFrameEdit(view: FrameEditView, frame: FrameEntity?, state: FrameEditView.State) {
+    private fun saveFrameEdit(view: FrameEditView, frame: FrameEntity?, state: FrameEditView.State, continuation: ((FrameEntity?) -> Unit)? = null) {
         if (frameSaveInFlight) return
         val env = environment ?: return
         val model = editorModel ?: return
         frameSaveInFlight = true
+        view.setSaving(true)
+        Toast.makeText(this, if (resources.configuration.locales[0].language == "zh") "正在保存…" else "Saving…", Toast.LENGTH_SHORT).show()
         scope.launch {
             try {
-                saveFrameEditInternal(env, model, frame, state)
+                saveFrameEditInternal(env, model, frame, state, continuation)
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Exception) {
+                AlertDialog.Builder(this@MainActivity).setMessage(R.string.error_store_write_failed_body).setPositiveButton(R.string.common_close, null).show()
             } finally {
                 frameSaveInFlight = false
+                view.setSaving(false)
             }
         }
     }
@@ -1954,82 +2020,67 @@ class MainActivity : Activity() {
         model: FrameEditView.Model,
         frame: FrameEntity?,
         state: FrameEditView.State,
+        continuation: ((FrameEntity?) -> Unit)? = null,
     ) {
-        val now = System.currentTimeMillis()
-        val target = if (frame != null) {
-            if (state.name != frame.name) {
-                env.frameManager.renameFrame(frame.id, state.name)
-            }
-            frame
-        } else {
-            env.frameManager.createFrame(
-                state.name.ifEmpty { getString(R.string.frames_name_default) },
-            )
-        }
-        val staticMembers = mutableMapOf<String, List<String>>()
-        state.ruleStates
-            .filter { it.value.checked && !it.value.dynamic }
-            .keys
-            .forEach { collectionId ->
-                staticMembers[collectionId] = withContext(Dispatchers.IO) {
-                    env.database.collectionAssetDao().getByCollection(collectionId)
-                        .map { it.assetId }
-                }
-            }
-        val diff = FrameEditDiff.plan(
-            includedAssetIds = model.includedAssetIds,
-            dynamicRules = model.dynamicRules,
-            selectedAssetIds = state.selectedAssetIds,
-            removedExcludes = state.removedExcludes,
-            ruleStates = state.ruleStates,
-            staticMembers = staticMembers,
-            now = now,
-        )
-        val result = env.frames.save(
-            frameId = target.id,
-            baseVersion = frame?.selectionVersion ?: 0L,
-            addIncludes = diff.addIncludes.map {
-                SelectionRefEdit(assetId = it.ref, sourceAssetId = null)
-            },
-            removeRefs = diff.removeRefs.map {
-                SelectionRefEdit(assetId = it, sourceAssetId = null)
-            },
-            ruleChanges = diff.ruleChanges,
-            removeRules = diff.removeRules,
-            manualOrderRefs = state.manualOrder,
-            now = now,
-        )
-        when (result) {
-            is SelectionSaveResult.Ok -> {
-                if (state.pendingCoverId != frame?.coverAssetId) {
-                    withContext(Dispatchers.IO) {
-                        env.frameManager.setCover(target.id, state.pendingCoverId)
+        val saved = withContext(Dispatchers.IO) {
+            env.database.withTransaction {
+                val now = System.currentTimeMillis()
+                val target = if (frame != null) {
+                    if (state.name != frame.name) {
+                        env.frameManager.renameFrame(frame.id, state.name)
                     }
+                    requireNotNull(env.database.frameDao().getById(frame.id))
+                } else {
+                    env.frameManager.createFrame(
+                        state.name.ifEmpty { getString(R.string.frames_name_default) },
+                    )
                 }
-                framesDirty = true
-                closeFrameEditor()
-                if (root.baseView !is MainContainerView) {
-                    showMainContainer()
-                    openPlaybackSettings(target)
-                }
-            }
-            is SelectionSaveResult.Conflict,
-            SelectionSaveResult.Rejected,
-            -> {
-                AlertDialog.Builder(this@MainActivity)
-                    .setMessage(R.string.error_selection_conflict_body)
-                    .setPositiveButton(R.string.common_done) { _, _ ->
-                        scope.launch {
-                            val fresh = withContext(Dispatchers.IO) {
-                                env.database.frameDao().getById(target.id)
-                            }
-                            val reloaded = loadEditModel(fresh)
-                            editorModel = reloaded
-                            frameEditView?.bind(reloaded)
+                val staticMembers = mutableMapOf<String, List<String>>()
+                state.ruleStates
+                    .filter { it.value.checked && !it.value.dynamic }
+                    .keys
+                    .forEach { collectionId ->
+                        staticMembers[collectionId] = withContext(Dispatchers.IO) {
+                            env.database.collectionAssetDao().getByCollection(collectionId)
+                                .map { it.assetId }
                         }
                     }
-                    .show()
+                val diff = FrameEditDiff.plan(
+                    includedAssetIds = model.includedAssetIds,
+                    dynamicRules = model.dynamicRules,
+                    selectedAssetIds = state.selectedAssetIds,
+                    removedExcludes = state.removedExcludes,
+                    ruleStates = state.ruleStates,
+                    staticMembers = staticMembers,
+                    now = now,
+                )
+                val result = env.frames.save(
+                    frameId = target.id,
+                    baseVersion = target.selectionVersion,
+                    addIncludes = diff.addIncludes.map {
+                        SelectionRefEdit(assetId = it.ref, sourceAssetId = null)
+                    },
+                    removeRefs = diff.removeRefs.map {
+                        SelectionRefEdit(assetId = it, sourceAssetId = null)
+                    },
+                    ruleChanges = diff.ruleChanges,
+                    removeRules = diff.removeRules,
+                    manualOrderRefs = state.manualOrder,
+                    now = now,
+                )
+                if (result !is SelectionSaveResult.Ok) throw java.io.IOException("SELECTION_CONFLICT")
+                if (state.pendingCoverId != model.coverAssetId) env.frameManager.setCover(target.id, state.pendingCoverId)
+                requireNotNull(env.database.frameDao().getById(target.id))
             }
+        }
+        framesDirty = true
+        closeFrameEditor()
+        if (continuation != null) {
+            openFrameEditor(saved)
+            continuation(saved)
+        } else if (root.baseView !is MainContainerView) {
+            showMainContainer()
+            openPlayer(saved, fromSnapshot = false)
         }
     }
 
@@ -3133,8 +3184,7 @@ class MainActivity : Activity() {
                 val previous = env.localSources.ensureLocalPhotos()
                 env.database.importJobDao().getBySource(previous.id).forEach { env.runner.cancel(it.id) }
                 val source = env.localReferences.indexPhotos()
-                env.settings.setOnboardingCompleted(true)
-                openRemoteFrame(null, mapOf("sourceId" to source.id))
+                finishSourceConnection(source)
             } catch (failure: CancellationException) {
                 throw failure
             } catch (failure: Exception) {
@@ -3189,8 +3239,7 @@ class MainActivity : Activity() {
             scope.launch {
                 try {
                     val source = env.localReferences.indexTree(uri, data.flags)
-                    env.settings.setOnboardingCompleted(true)
-                    openRemoteFrame(null, mapOf("sourceId" to source.id))
+                    finishSourceConnection(source)
                 } catch (failure: CancellationException) {
                     throw failure
                 } catch (failure: Exception) {
@@ -3216,8 +3265,13 @@ class MainActivity : Activity() {
         scope.launch {
             try {
                 val source = env.localReferences.indexFiles(uris, grantFlags)
-                env.settings.setOnboardingCompleted(true)
-                openRemoteFrame(null, mapOf("sourceId" to source.id))
+                val selectedUris = uris.map { it.toString() }.toSet()
+                val selectedIds = withContext(Dispatchers.IO) {
+                    env.database.sourceAssetDao().getBySource(source.id).filter { asset ->
+                        JsonMini.parseObject(env.database.settingsKvDao().get("reference.asset.${asset.id}")?.valueJson)["uri"] in selectedUris
+                    }.map { it.id }
+                }
+                finishSourceConnection(source, selectedIds)
             } catch (failure: CancellationException) {
                 throw failure
             } catch (failure: Exception) {
@@ -3496,7 +3550,7 @@ class MainActivity : Activity() {
         if (overlayMeta.isNotEmpty()) {
             outState.putString(
                 KEY_OVERLAYS,
-                JsonMini.toJson(mapOf("stack" to overlayMeta.map { (view, meta) -> when (view) { is dev.photopilot.scaffold.ui.aiframes.AIFrameView -> meta + view.draftState(); is dev.photopilot.scaffold.ui.remote.RemoteFrameView -> meta + view.draftState(); else -> meta } })),
+                JsonMini.toJson(mapOf("stack" to overlayMeta.map { (view, meta) -> when (view) { is dev.photopilot.scaffold.ui.aiframes.AIFrameView -> meta + view.draftState(); is dev.photopilot.scaffold.ui.remote.RemoteFrameView -> meta + view.draftState(); is FrameEditView -> meta + view.draftState(); else -> meta } })),
             )
         }
     }
@@ -3507,6 +3561,10 @@ class MainActivity : Activity() {
         val editor = frameEditView
         if (top != null && editor != null && top === editor) {
             handleEditorBack(editor, editor.hasChanges())
+            return
+        }
+        if (top != null && top === remoteFrameView) {
+            remoteFrameView?.requestBack()
             return
         }
         val manual = manualOrderView

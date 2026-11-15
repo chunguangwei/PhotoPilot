@@ -43,7 +43,7 @@ class FrameEditorLayoutInstrumentation : Instrumentation() {
         val context = targetContext.createConfigurationContext(config)
         val view = FrameEditView(context, targetContext.cacheDir)
         view.bind(FrameEditView.Model("Synthetic", FrameOrderMode.CAPTURED_ASC, emptySet(), emptySet(), emptyMap(), false))
-        for ((width, height) in listOf(1080 to 2440, 2440 to 1080, 2440 to 900, 1080 to 2440)) {
+        for ((width, height) in listOf(1080 to 2440, 2440 to 1080, 2440 to 900, 640 to 1600, 1600 to 640, 1080 to 2440)) {
             fun layout() {
                 view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
                 view.layout(0, 0, width, height)
