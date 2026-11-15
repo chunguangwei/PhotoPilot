@@ -655,4 +655,6 @@
     <string name="source.local_reference.mode">Use original photos directly</string>
     <string name="source.local_reference.body">Frames store photo references and preview caches. Originals are managed by Photos or the selected folder.</string>
     <string name="source.local_reference.unavailable">The original photo is unavailable. Check its source or grant access again.</string>
+    <string name="sources.browse_photos">Browse photos</string>
+    <string name="sources.refresh_index">Refresh photo list</string>
 </resources>

@@ -33,6 +33,8 @@ data class FramePlaybackSettings(
     }
 
     companion object {
+        fun requiresLocalCopies(settingsJson: String?): Boolean = JsonMini.parseObject(settingsJson)["mediaStorageMode"] == "local"
+
         const val FIT_BLUR = "fit_blur"
         const val FIT_COLOR = "fit_color"
         const val FILL_CROP = "fill_crop"

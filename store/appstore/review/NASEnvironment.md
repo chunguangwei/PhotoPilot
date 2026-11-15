@@ -76,3 +76,12 @@ The final1.1.53 archive was signed with the existing development identity and in
 ## 2026-10-21 physical55 UI follow-up
 
 The final55 isolated app completed the reviewer UI workflow on both iPhone13 and iPadAir4 for encrypted SMB5005 and trusted HTTPS WebDAV5006: recursive six-image import, explicit six-image selection, frame creation, playback and exit. iPhone passed its final2/2 NAS suite; iPad passed SMB in the initial suite and WebDAV in a separate corrected-driver retry. The original personal applications were not reset. Four private playback captures were inspected; all display in portrait after EXIF orientation is applied. They establish photo rendering, not stable transition timing or actual rotation acceptance. See [PhysicalRegression.md](PhysicalRegression.md) for exact result paths, test-driver failures, cleanup and remaining device coverage. This does not replace final Distribution/TestFlight verification before submission.
+
+
+## 2026-11-15 Android on-demand regression
+
+The owner's existing private review-access record was reused without changing the server or writing source photos. Independent read-only protocol clients listed and fetched all six synthetic photos over encrypted SMB and HTTPS WebDAV; both returned the same photo hashes. Local evidence: `.build/nas-online-fix/review-nas-readonly-check.json`.
+
+Android emulator native tests then used the app's actual NAS form, connection test, folder selection, automatic metadata index, photo selector, frame save, home model and decoded player for both protocols. Additional paths covered Frames → New → Folders and appending to an existing remote frame. On-demand paths created no source ImportJob or AssetOrigin. Credential input came only from a private runtime cache fixture, not a compiled resource. Evidence: `.build/nas-online-fix/private-native.log` and the passing private-server case in `final-native.log`.
+
+The disposable local SMB2 diagnostic could enumerate photos but failed payload reads in SMBJ; it is not passing evidence. The existing encrypted SMB3 service passed the actual app workflow. These results establish the tested server/emulator paths, not every NAS implementation, physical-device acceptance or long-duration playback. Offline-toggle and subsequent default-mode regression results belong to the release handoff.

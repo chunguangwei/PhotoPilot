@@ -1,0 +1,89 @@
+{
+  "version": "1.4.1",
+  "build": 62,
+  "status": "verified-candidate-publication-pending",
+  "scope": [
+    "Android NAS metadata browsing and frame selection",
+    "Previous bilingual photo-to-play interaction changes"
+  ],
+  "actualNasEvidence": {
+    "environment": "Existing private read-only review server",
+    "platform": "Android emulator",
+    "protocols": [
+      "encrypted SMB3",
+      "HTTPS WebDAV"
+    ],
+    "photosPerProtocol": 6,
+    "paths": [
+      "NAS form connection and directory selection",
+      "automatic metadata indexing",
+      "source browser to new frame",
+      "Frames New Folders to NAS selection",
+      "append to existing remote frame",
+      "home playable count and decoded playback"
+    ],
+    "onDemandImportJobs": 0,
+    "onDemandAssetOrigins": 0
+  },
+  "pending": [
+    "GitHub publication and anonymous download verification"
+  ],
+  "limitations": [
+    "No new physical-device or minimum-OS acceptance",
+    "No every-vendor NAS compatibility claim",
+    "Disposable SMB2 fixture payload read failed; real encrypted SMB3 passed",
+    "No App Store upload or submission"
+  ],
+  "legacyModeRepair": [
+    "Missing storage mode permits on-demand playback before editing",
+    "Offline copy start and frame-scoped import commit require explicit local mode",
+    "First NAS addition preserves local photos and persists remote mode",
+    "Explicit offline preference and retained copies are preserved"
+  ],
+  "verification": {
+    "sharedToolTests": 58,
+    "androidJvmTests": 441,
+    "androidNativeExecuted": 17,
+    "androidNativePassed": 16,
+    "androidNativeSkipped": 1,
+    "skipReason": "Optional disposable SMB2 diagnostic requires explicit fixture argument",
+    "androidNativeFailures": 0,
+    "lintErrors": 0,
+    "lintWarnings": 205,
+    "nativeLog": ".build/nas-online-fix/final-native-green.log",
+    "ios": "build and analyze passed; unsigned 1.4.1 (62) archive prepared",
+    "androidPackage": {
+      "version": "1.4.1",
+      "build": 62,
+      "apk": "PhotoPilot-v1.4.1-62.apk",
+      "bytes": 154204042,
+      "sha256": "85d67432d1e7e1e0945d3b0a75efe2ee8cfe11c8160123907bb3ff519e28cf47",
+      "certificateSHA256": "9cd985f16aec8a0e492ff834aa7a07de6b426f224b2fd6d788a5965cc1b4f37c",
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86",
+        "x86_64"
+      ],
+      "assets": {
+        "assets/ai-models.json": "bb654fafba45429fb7e7139a2b4bbb4f94f80ab83598337cc9885f49aec44da4",
+        "assets/ai-third-party-notices.txt": "edc8e4cf9fc789df613fc002bca7531de93033745a297e80f7359566a146f4b3"
+      },
+      "forbidden": [],
+      "jvm": {
+        "tests": 441,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "lint": {
+        "Error": 0,
+        "Fatal": 0,
+        "Warning": 205
+      }
+    },
+    "additionalVisibleFirstUseTests": 1,
+    "visibleFirstUse": "Opaque two-color fixture: decoded foreground pixels asserted; root visually verified screenshot",
+    "independentReview": "No open findings"
+  }
+}

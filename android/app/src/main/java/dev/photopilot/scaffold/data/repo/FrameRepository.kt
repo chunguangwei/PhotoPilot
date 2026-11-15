@@ -163,8 +163,8 @@ class FrameRepository(
         }
         val localResolution = SelectionResolver.resolve(skeleton.copy(assets = assets))
         val remote = remoteItems(frameId)
-        val mode = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode
-        val ready = remote.filter { mode == "remote" || it.local != null || remoteMedia?.isLocalReference(it) == true }.map { it.id }
+        val requiresLocalCopies = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies(frame.settingsJson)
+        val ready = remote.filter { !requiresLocalCopies || it.local != null || remoteMedia?.isLocalReference(it) == true }.map { it.id }
         val referencedLocalIds = remote.flatMap { item ->
             listOfNotNull(item.local?.id) + db.assetOriginDao().getBySourceAssets(listOfNotNull(item.sourceAssetId)).map { it.assetId }
         }.toSet()
@@ -314,8 +314,8 @@ class FrameRepository(
     suspend fun playbackItems(frameId: String): List<dev.photopilot.scaffold.data.remote.PlaybackItem> = withIo {
         val frame = db.frameDao().getById(frameId) ?: return@withIo emptyList()
         val remote = remoteItems(frameId)
-        val mode = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode
-        val includedRemote = remote.filter { mode == "remote" || it.local != null || remoteMedia?.isLocalReference(it) == true }
+        val requiresLocalCopies = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies(frame.settingsJson)
+        val includedRemote = remote.filter { !requiresLocalCopies || it.local != null || remoteMedia?.isLocalReference(it) == true }
         val localIds = resolve(frameId).playable.filter { !it.startsWith("remote:") }
         val remoteLocalIds = includedRemote.flatMap { item ->
             listOfNotNull(item.local?.id) + db.assetOriginDao().getBySourceAssets(listOfNotNull(item.sourceAssetId)).map { it.assetId }

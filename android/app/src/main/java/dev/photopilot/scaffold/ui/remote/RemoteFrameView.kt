@@ -9,6 +9,7 @@ import android.widget.*
 import dev.photopilot.scaffold.data.AppEnvironment
 import dev.photopilot.scaffold.data.db.*
 import dev.photopilot.scaffold.data.logic.JsonMini
+import dev.photopilot.scaffold.data.logic.FramePlaybackSettings
 import dev.photopilot.scaffold.data.repo.SelectionRefEdit
 import dev.photopilot.scaffold.data.logic.SelectionSaveResult
 import dev.photopilot.scaffold.ui.widget.primaryButton as styledPrimary
@@ -25,7 +26,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     private var loaded = false
     private var scopeIds = restoredDraft?.get("scopeIds")?.takeIf { it.isNotEmpty() }?.let { raw -> org.json.JSONArray(raw).let { values -> (0 until values.length()).map { values.getString(it) }.toSet() } }
     private val initialName = frame?.name
-    private val initialMode = frame?.let { dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(it.settingsJson).mediaStorageMode == "local" } ?: false
+    private val initialMode = FramePlaybackSettings.requiresLocalCopies(frame?.settingsJson)
     private val initialCover = (JsonMini.parseObject(frame?.settingsJson)["remoteCoverRef"] as? String)
     private val zh = resources.configuration.locales[0].language == "zh"
     private val confirm = primaryButton(context, if (firstUse) text("Confirm and play", "确认并播放") else text("Save frame", "保存相框"))
@@ -80,7 +81,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         if (!firstUse) add(TextView(context).apply { text = this@RemoteFrameView.text("Frame name", "相框名称") })
         name.setText(restoredDraft?.get("name") ?: frame?.name ?: text("My frame", "我的相框")); if (!firstUse) add(name)
         sync.text = text("Sync selected NAS photos locally for offline playback", "同步所选 NAS 照片到本地，支持离线播放")
-        sync.isChecked = restoredDraft?.get("mode")?.let { it == "local" } ?: frame?.let { dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(it.settingsJson).mediaStorageMode == "local" } ?: false
+        sync.isChecked = restoredDraft?.get("mode")?.let { it == "local" } ?: initialMode
         if (!firstUse) add(sync)
         if (!firstUse) add(storageHint)
         add(status)
@@ -204,7 +205,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         val request = ++sourceRequest
         sourceLoad?.cancel()
         sourceLoad = scope.launch {
-            val sources = withContext(Dispatchers.IO) { env.database.sourceDao().getAll().filter { (it.type in setOf(SourceType.SMB, SourceType.WEBDAV) || JsonMini.parseObject(it.settingsJson)["referenceOnly"] == true) && it.status == SourceStatus.ACTIVE } }
+            val sources = withContext(Dispatchers.IO) { env.database.sourceDao().getAll().filter { env.remoteMedia.isMetadataSource(it) && it.status == SourceStatus.ACTIVE } }
             if (request != sourceRequest) return@launch
             availableSources = sources
             sourceList.removeAllViews()
@@ -365,7 +366,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
             storageHint.text = if (nasSources) text("Online playback uses a shared 128 MiB temporary cache. Source-level imports may also occupy storage.", "在线播放共用 128 MiB 临时缓存。来源级导入也可能占用存储。")
                 else text("Uses your original photos directly. Keep access to the selected photos or folders enabled.", "直接使用本机原照片，请保留对已选照片或目录的访问权限。")
         }
-        val localMode = frame?.let { dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(it.settingsJson).mediaStorageMode == "local" } == true
+        val localMode = FramePlaybackSettings.requiresLocalCopies(frame?.settingsJson)
         val running = frame?.let { env.remoteCopies.isRunning(it.id) } == true
         pauseControl?.isEnabled = localMode && running && !busy
         resumeControl?.isEnabled = localMode && !running && !busy
@@ -417,7 +418,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                         env.frames.migrateNasSelections(current.id, beforeMigration.selectionVersion)
                         val latest = requireNotNull(env.database.frameDao().getById(current.id))
                         val settings = JsonMini.parseObject(latest.settingsJson).toMutableMap()
-                        if (localMode != initialMode || frame == null) settings["mediaStorageMode"] = if (localMode) "local" else "remote"
+                        if (localMode != initialMode || frame == null || settings["mediaStorageMode"] !in setOf("local", "remote")) settings["mediaStorageMode"] = if (localMode) "local" else "remote"
                         coverSourceAssetId?.takeIf { it != initialCover }?.let { ref ->
                             if (env.remoteMedia.item(ref) == null) throw java.io.IOException("REMOTE_REVOKED")
                             settings["remoteCoverRef"] = ref
@@ -438,14 +439,14 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                         )
                         if (result !is SelectionSaveResult.Ok) throw java.io.IOException("REMOTE_SELECTION_CONFLICT")
                         val now = System.currentTimeMillis()
-                        env.database.settingsKvDao().upsert(SettingsKvEntity("remote.sync.${current.id}", JsonMini.toJson(mapOf("frameId" to current.id, "state" to if (localMode) "running" else "paused", "done" to 0, "total" to selectedIds.size)), now, now))
+                        env.database.settingsKvDao().upsert(SettingsKvEntity("remote.sync.${current.id}", JsonMini.toJson(mapOf("frameId" to current.id, "state" to if (settings["mediaStorageMode"] == "local") "running" else "paused", "done" to 0, "total" to selectedIds.size)), now, now))
                         requireNotNull(env.database.frameDao().getById(current.id))
                     }
                 }
                 frame = saved
                 val current = saved
                 runCatching {
-                    if (localMode) env.remoteCopies.start(current.id) else env.remoteCopies.pause(current.id)
+                    if (FramePlaybackSettings.requiresLocalCopies(current.settingsJson)) env.remoteCopies.start(current.id) else env.remoteCopies.pause(current.id)
                 }
             }.onSuccess { onSaved?.invoke() }.onFailure { showError(it) }
             busy = false

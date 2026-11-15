@@ -639,4 +639,6 @@
     <string name="source.local_reference.mode">直接引用原照片</string>
     <string name="source.local_reference.body">相框保存照片关联与必要的预览缓存。原照片由系统相册或所选目录管理。</string>
     <string name="source.local_reference.unavailable">原照片暂不可访问，请检查来源或重新授权。</string>
+    <string name="sources.browse_photos">浏览照片</string>
+    <string name="sources.refresh_index">刷新照片列表</string>
 </resources>

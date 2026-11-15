@@ -216,7 +216,7 @@ class FramesView(
                 topMargin = res.getDimensionPixelSize(margin)
             })
         }
-        val remoteMode = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(model.frame.settingsJson).mediaStorageMode == "remote"
+        val remoteMode = !dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies(model.frame.settingsJson)
         val photoCount = when {
             model.hasDeviceReferences -> if (resources.configuration.locales[0].language == "zh") "${model.playable} 张照片" else "${model.playable} ${if (model.playable == 1) "photo" else "photos"}"
             remoteMode && model.hasNasSource -> remotePhotoCount(model.playable, resources.configuration.locales[0].language == "zh")

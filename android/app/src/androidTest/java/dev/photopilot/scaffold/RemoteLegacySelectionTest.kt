@@ -15,6 +15,84 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class RemoteLegacySelectionTest {
+    @Test fun firstNasAdditionToLegacyLocalFrameDefaultsOnlineAndPreservesLocalPhoto() = runBlocking {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
+        val env = AppEnvironment.shared(context)
+        val db = env.database
+        val id = "legacy-storage-" + UUID.randomUUID()
+        val now = System.currentTimeMillis()
+        val bytes = java.io.ByteArrayOutputStream().also {
+            android.graphics.Bitmap.createBitmap(16, 16, android.graphics.Bitmap.Config.ARGB_8888)
+                .compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+        }.toByteArray()
+        val file = java.io.File(context.filesDir, "originals/$id.png").apply { parentFile!!.mkdirs(); writeBytes(bytes) }
+        val localSource = SourceEntity("$id-local", SourceType.LOCAL_FILES, "Local fixture", null, null, null, 0, RetentionPolicy.USER_MANAGED, SourceStatus.ACTIVE, 1, null, "{}", now, now)
+        val nasSource = localSource.copy(id = "$id-nas", type = SourceType.SMB, settingsJson = "{\"catalogOnly\":true}")
+        db.sourceDao().upsert(localSource)
+        db.sourceDao().upsert(nasSource)
+        val localRef = SourceAssetEntity("$id-local-ref", localSource.id, "local.png", null, "1", bytes.size.toLong(), null, now, 0, AccessState.ACCESSIBLE, now, now)
+        val nasRef = localRef.copy(id = "$id-nas-ref", sourceId = nasSource.id, remoteKey = "online.png")
+        db.sourceAssetDao().upsert(localRef)
+        db.sourceAssetDao().upsert(nasRef)
+        val asset = AssetEntity(id, dev.photopilot.scaffold.data.logic.ContentHash.sha256Hex(bytes), bytes.size.toLong(), AssetFormat.PNG, 16, 16, 1, OrientationClass.SQUARE, null, CapturedAtSource.UNKNOWN, now, "$id.png", "local.png", AssetReadiness.READY, null, false, null, deletedAt = null, createdAt = now, updatedAt = now)
+        db.assetDao().upsert(asset)
+        db.assetOriginDao().upsert(AssetOriginEntity(id, localRef.id, now, PolicyState.ALLOWED, OriginState.ACTIVE, now, now))
+        val frame = env.frameManager.createFrame("Legacy local fixture")
+        assertFalse(org.json.JSONObject(frame.settingsJson).has("mediaStorageMode"))
+        env.frames.save(frame.id, 0, addIncludes = listOf(SelectionRefEdit(id, null)))
+        env.settings.setOnboardingCompleted(true)
+        val activity = instrumentation.startActivitySync(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+        val saved = CountDownLatch(1)
+        lateinit var view: RemoteFrameView
+        try {
+            val current = requireNotNull(db.frameDao().getById(frame.id))
+            instrumentation.runOnMainSync {
+                view = RemoteFrameView(activity, env, current, mapOf("sourceId" to nasSource.id, "selected" to "[\"${nasRef.id}\"]"))
+                view.onSaved = { saved.countDown() }
+                activity.setContentView(view)
+            }
+            withTimeout(15000) { while (org.json.JSONArray(view.draftState().getValue("selected")).length() != 1) delay(100) }
+            instrumentation.runOnMainSync {
+                val sync = descendants(view).filterIsInstance<android.widget.Switch>().single()
+                assertFalse("Adding first NAS photo requires explicit offline opt-in", sync.isChecked)
+            }
+            withTimeout(15000) {
+                while (descendants(view).filterIsInstance<android.widget.TextView>().first { it.text.toString() in listOf("Resume local sync", "继续本地同步") }.isEnabled) delay(100)
+            }
+            instrumentation.runOnMainSync {
+                descendants(view).filterIsInstance<android.widget.TextView>().first { it.text.toString() in listOf("Save frame", "保存相框") }.performClick()
+            }
+            assertTrue(saved.await(15, TimeUnit.SECONDS))
+            val updated = requireNotNull(db.frameDao().getById(frame.id))
+            assertEquals("remote", org.json.JSONObject(updated.settingsJson).getString("mediaStorageMode"))
+            val selections = db.frameSelectionDao().getByFrame(frame.id)
+            assertTrue(selections.any { it.assetId == id && it.mode == FrameSelectionMode.INCLUDE })
+            assertTrue(selections.any { it.sourceAssetId == nasRef.id && it.mode == FrameSelectionMode.INCLUDE })
+            assertTrue(file.isFile)
+            assertEquals(2, env.frames.playbackItems(frame.id).size)
+            assertTrue(db.assetOriginDao().getBySourceAssets(listOf(nasRef.id)).isEmpty())
+            assertTrue(db.importJobDao().getBySource(nasSource.id).isEmpty())
+            assertEquals("paused", org.json.JSONObject(requireNotNull(db.settingsKvDao().get("remote.sync.${frame.id}")).valueJson).getString("state"))
+            instrumentation.runOnMainSync {
+                val explicitLocal = updated.copy(settingsJson = org.json.JSONObject(updated.settingsJson).put("mediaStorageMode", "local").toString())
+                val explicitView = RemoteFrameView(activity, env, explicitLocal)
+                activity.setContentView(explicitView)
+                assertTrue("Explicit offline preference remains selected", descendants(explicitView).filterIsInstance<android.widget.Switch>().single().isChecked)
+            }
+        } finally {
+            instrumentation.runOnMainSync { activity.finish() }
+            env.frameManager.deleteFrame(frame.id)
+            db.assetDao().delete(asset)
+            db.sourceDao().delete(localSource)
+            db.sourceDao().delete(nasSource)
+            file.delete()
+        }
+        Unit
+    }
+
+    private fun descendants(view: android.view.View): List<android.view.View> = listOf(view) + if (view is android.view.ViewGroup) (0 until view.childCount).flatMap { descendants(view.getChildAt(it)) } else emptyList()
+
     @Test fun savingLegacyNasFrameMigratesSelectionsOrderAndOwnershipTogether() = runBlocking {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext

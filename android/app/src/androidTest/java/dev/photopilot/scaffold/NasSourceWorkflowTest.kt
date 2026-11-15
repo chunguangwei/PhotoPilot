@@ -99,7 +99,7 @@ class NasSourceWorkflowTest {
             await { env.database.importJobDao().getBySource(source.id).any { it.state == ImportJobState.COMPLETED } }
             assertTrue(env.database.sourceAssetDao().getBySource(source.id).isNotEmpty())
             assertTrue(env.database.assetOriginDao().getBySourceAssets(env.database.sourceAssetDao().getBySource(source.id).map { it.id }).isNotEmpty())
-            instrumentation.runOnMainSync { activity.onBackPressed() }
+            await { descendants(activity.window.decorView).none { it is NasFormView || it is dev.photopilot.scaffold.ui.nas.NasDirectoryPickerView } }
             editStorage(false)
             assertTrue(env.database.importJobDao().getBySource(source.id).none { it.state == ImportJobState.RUNNING })
             env.localSources.disconnect(source.id, true, System.currentTimeMillis())
@@ -144,11 +144,8 @@ class NasSourceWorkflowTest {
     private fun text(activity: Activity, resource: Int): View = descendants(activity.window.decorView).filterIsInstance<TextView>().last { it.text.toString() == activity.getString(resource) }
     private fun descendants(view: View): List<View> = listOf(view) + if (view is ViewGroup) (0 until view.childCount).flatMap { descendants(view.getChildAt(it)) } else emptyList()
     private fun touch(view: View) {
-        instrumentation.runOnMainSync { view.requestRectangleOnScreen(Rect(0, 0, view.width, view.height), true) }
-        SystemClock.sleep(150)
-        val location = IntArray(2)
-        instrumentation.runOnMainSync { view.getLocationOnScreen(location) }
-        touchAt(location[0] + view.width / 2f, location[1] + view.height / 2f)
+        instrumentation.runOnMainSync { view.performClick() }
+        instrumentation.waitForIdleSync()
     }
     private fun touchAt(x: Float, y: Float) {
         val time = SystemClock.uptimeMillis()

@@ -4583,6 +4583,20 @@
       "platform": "all",
       "zh": "原照片暂不可访问，请检查来源或重新授权。",
       "en": "The original photo is unavailable. Check its source or grant access again."
+    },
+    {
+      "key": "sources.browse_photos",
+      "section": "4. 照片来源",
+      "platform": "all",
+      "zh": "浏览照片",
+      "en": "Browse photos"
+    },
+    {
+      "key": "sources.refresh_index",
+      "section": "4. 照片来源",
+      "platform": "all",
+      "zh": "刷新照片列表",
+      "en": "Refresh photo list"
     }
   ]
 }

@@ -9,6 +9,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FramePlaybackSettingsTest {
+    @org.junit.Test fun localCopiesRequireExplicitOptIn() {
+        org.junit.Assert.assertFalse(dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies(null))
+        org.junit.Assert.assertFalse(dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies("{}"))
+        org.junit.Assert.assertFalse(dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies("{\"mediaStorageMode\":\"remote\"}"))
+        org.junit.Assert.assertTrue(dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies("{\"mediaStorageMode\":\"local\"}"))
+    }
+
 
     @Test
     fun parsesContractTemplate() {

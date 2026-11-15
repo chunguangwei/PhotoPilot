@@ -144,7 +144,7 @@ class RoomCommitScope(private val db: PhotoPilotDatabase) : CommitScope {
         val scope = dev.photopilot.scaffold.data.logic.JsonMini.parseObject(scopeJson)
         val frameId = scope["frameId"] as? String ?: return true
         val frame = db.frameDao().getById(frameId) ?: return false
-        if (dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode != "local" || frame.selectionVersion != (scope["selectionVersion"] as? Number)?.toLong()) return false
+        if (!dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies(frame.settingsJson) || frame.selectionVersion != (scope["selectionVersion"] as? Number)?.toLong()) return false
         val revisions = scope["sourceRevisions"] as? Map<*, *> ?: emptyMap<Any, Any>()
         return revisions.all { (id, revision) -> db.sourceAssetDao().getById(id as? String ?: "")?.revision == revision }
     }

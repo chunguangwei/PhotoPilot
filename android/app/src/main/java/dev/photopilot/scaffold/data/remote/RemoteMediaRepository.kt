@@ -17,6 +17,9 @@ class RemoteMediaRepository(
     private val adapterFor: (SourceEntity) -> SourceAdapter?,
     private val networkAllowed: () -> Boolean,
 ) {
+    fun isMetadataSource(source: SourceEntity): Boolean = source.type in setOf(SourceType.SMB, SourceType.WEBDAV) ||
+        (source.type in setOf(SourceType.LOCAL_PHOTOS, SourceType.LOCAL_FILES) && JsonMini.parseObject(source.settingsJson)["referenceOnly"] == true)
+
     var onCatalogUpdated: ((String) -> Unit)? = null
     var localReferences: dev.photopilot.scaffold.data.references.LocalReferenceRepository? = null
     suspend fun isLocalReference(item: PlaybackItem): Boolean {

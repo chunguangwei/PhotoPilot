@@ -14,6 +14,16 @@ Turn a spare iPad or Android tablet into a digital photo frame: reference device
 - 照片只在本机处理；不上传、不记录照片名与路径
 - Android 内置 GitHub 更新检查（断点续传 + 前台保活下载）
 
+## NAS 浏览与选片修复 / NAS browsing and selection（1.4.1）
+
+Android 的 SMB、WebDAV 来源可直接选择“浏览照片”，按需模式通过“刷新照片列表”更新目录。图库和相框选片显示 NAS 索引中的照片数量，无需先下载原图。确认选片后首页显示相框并支持在线播放，临时缓存有容量上限；离线同步由用户主动开启。
+
+Android SMB and WebDAV sources offer **Browse photos** and an on-demand **Refresh photo list** action. Folder counts and frame selection use the NAS photo index. Confirmed frames appear on Home and play online with bounded temporary caching. Enable local sync explicitly when offline copies are needed. Legacy frames without an explicit storage preference also play NAS photos on demand and do not start offline downloads.
+
+未明确设置同步模式的旧相框也按需播放 NAS 照片，不会自动启动离线下载；已有本机照片及副本保留。
+
+首次选片确认后直接播放，默认相框名称可随后修改。来源管理保持独立，从图库或来源选片时可选择已有相框或明确新建。
+
 ## 本机引用与来源管理 / Local references and source management（1.4.0）
 
 本机相册、所选文件与目录默认保存照片关联和持久访问授权，建立索引时无需复制原图。预览、播放与 AI 按需读取，仍需确认选片后才展示。原照片由系统相册或文件供应商管理，移动、删除或撤销授权后可重新选择来源。云端相册或文件供应商可能由系统按需下载内容。

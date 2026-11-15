@@ -20,6 +20,7 @@ class SourcesView(context: Context) : ScrollView(context) {
     var onLocalReferenceClick: ((String) -> Unit)? = null
     var onLocalReferenceRemove: ((String) -> Unit)? = null
     var onJobStatusClick: (() -> Unit)? = null
+    var onNasBrowse: ((String) -> Unit)? = null
     var onNasSync: ((String) -> Unit)? = null
     var onNasDisconnect: ((String) -> Unit)? = null
     var onNasReauth: ((String) -> Unit)? = null
@@ -146,6 +147,7 @@ class SourcesView(context: Context) : ScrollView(context) {
         val needsReauth: Boolean = false,
         val isDisconnected: Boolean = false,
         val mirrorDelete: Boolean = false,
+        val catalogOnly: Boolean = false,
     )
 
     data class LocalReferenceModel(val sourceId: String, val displayName: String, val statusText: String)
@@ -235,7 +237,7 @@ class SourcesView(context: Context) : ScrollView(context) {
                 isBaselineAligned = false
             }
             val sync = TextView(context).apply {
-                text = res.getString(if (model.isDisconnected) R.string.sources_reconfigure else R.string.sources_sync_now)
+                text = res.getString(if (model.isDisconnected) R.string.sources_reconfigure else if (model.catalogOnly) R.string.sources_refresh_index else R.string.sources_sync_now)
                 contentDescription = text
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
                 setTextColor(context.getColor(R.color.pp_accent_action))
@@ -255,6 +257,19 @@ class SourcesView(context: Context) : ScrollView(context) {
                 isClickable = true
                 isFocusable = true
                 setOnClickListener { onNasDisconnect?.invoke(model.sourceId) }
+            }
+            if (!model.isDisconnected && !model.needsReauth) {
+                actions.addView(TextView(context).apply {
+                    text = res.getString(R.string.sources_browse_photos)
+                    contentDescription = text
+                    setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
+                    setTextColor(context.getColor(R.color.pp_accent_action))
+                    minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+                    gravity = Gravity.CENTER
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener { onNasBrowse?.invoke(model.sourceId) }
+                }, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
             }
             actions.addView(sync, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
             if (!model.isDisconnected) {

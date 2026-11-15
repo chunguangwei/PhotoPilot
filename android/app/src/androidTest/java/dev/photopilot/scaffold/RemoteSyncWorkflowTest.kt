@@ -38,8 +38,22 @@ class RemoteSyncWorkflowTest {
         var assetId: String? = null
         var legacyFrameId: String? = null
         try {
-            db.frameDao().update(frame.copy(settingsJson = "{\"mediaStorageMode\":\"local\"}"))
             env.frames.save(frame.id, 0, addIncludes = listOf(SelectionRefEdit(null, remote.id)))
+            assertEquals("Legacy missing mode remains playable on demand", 1, env.frames.playbackItems(frame.id).size)
+            assertEquals(1, env.frames.resolve(frame.id).playable.size)
+            val selected = requireNotNull(db.frameDao().getById(frame.id))
+            val frameScope = dev.photopilot.scaffold.data.logic.JsonMini.toJson(mapOf("frameId" to frame.id, "selectionVersion" to selected.selectionVersion))
+            assertFalse(RoomCommitScope(db).frameScopeValid(frameScope))
+            assertTrue(RoomCommitScope(db).frameScopeValid("{\"directories\":[\"\"]}"))
+            copies.sync(frame.id)
+            copies.metadataUpdated(id)
+            kotlinx.coroutines.delay(750)
+            assertTrue("Missing mode never opens originals for background copies", opened.isEmpty())
+            assertFalse(copies.isRunning(frame.id))
+            assertTrue(db.importJobDao().getBySource(id).isEmpty())
+            assertTrue(db.assetOriginDao().getBySourceAssets(listOf(remote.id)).isEmpty())
+            db.frameDao().update(selected.copy(settingsJson = "{\"mediaStorageMode\":\"local\"}"))
+            assertTrue(RoomCommitScope(db).frameScopeValid(frameScope))
             copies.sync(frame.id)
             assertEquals(listOf("chosen.png"), opened)
             val origin = db.assetOriginDao().getBySourceAssets(listOf(remote.id)).single()

@@ -34,7 +34,7 @@ class RemoteLocalCopies(private val context: Context, private val env: AppEnviro
     init { db.invalidationTracker.addObserver(selectionObserver) }
     private suspend fun refreshLocalFrames(sourceId: String?) {
         for (frame in db.frameDao().getAll()) {
-            if (FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode != "local") continue
+            if (!FramePlaybackSettings.requiresLocalCopies(frame.settingsJson)) continue
             if (JsonMini.parseObject(db.settingsKvDao().get("remote.sync.${frame.id}")?.valueJson)["state"] == "paused") continue
             val items = env.frames.remoteItems(frame.id)
             if (sourceId != null && items.none { it.remote?.sourceId == sourceId }) continue
@@ -87,7 +87,7 @@ class RemoteLocalCopies(private val context: Context, private val env: AppEnviro
     }
     suspend fun sync(frameId: String) = lock.withLock {
         val frame = db.frameDao().getById(frameId) ?: return@withLock
-        if (FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode != "local") return@withLock
+        if (!FramePlaybackSettings.requiresLocalCopies(frame.settingsJson)) return@withLock
         versions[frameId] = frame.selectionVersion
         val items = env.frames.remoteItems(frameId).filter { !env.remoteMedia.isLocalReference(it) }
         var done = 0

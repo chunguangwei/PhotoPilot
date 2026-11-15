@@ -488,6 +488,16 @@ class MainActivity : Activity() {
                 }
             }
             onLocalReferenceRemove = { sourceId -> confirmNasDisconnect(sourceId) }
+            onNasBrowse = { sourceId ->
+                scope.launch {
+                    val source = withContext(Dispatchers.IO) { environment?.database?.sourceDao()?.getById(sourceId) }
+                    if (source?.status == SourceStatus.ACTIVE) {
+                        val editor = remoteFrameView
+                        if (editor != null) editor.acceptSource(source.id, null)
+                        else chooseRemoteFrame(mapOf("sourceId" to source.id))
+                    } else openNasEdit(sourceId)
+                }
+            }
             onNasSync = { sourceId -> nasSyncNow(sourceId) }
             onNasDisconnect = { sourceId -> confirmNasDisconnect(sourceId) }
             onNasReauth = { sourceId -> openNasEdit(sourceId) }
@@ -1553,6 +1563,7 @@ class MainActivity : Activity() {
                             },
                             needsReauth = orphan || source.status == SourceStatus.NEEDS_AUTH,
                             isDisconnected = source.status == SourceStatus.DISCONNECTED,
+                            catalogOnly = JsonMini.parseObject(source.settingsJson)["catalogOnly"] == true,
                             mirrorDelete = NasSourceLifecycle.mirrorDeleteFromSettings(
                                 source.settingsJson,
                             ),
@@ -1751,7 +1762,7 @@ class MainActivity : Activity() {
                     val coverItem = env.frames.coverItem(frame.id)
                     val cover = coverItem?.takeIf { it.remote == null }?.local
                     val playable = env.frames.resolve(frame.id).playable.size
-                    val remoteMode = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode == "remote"
+                    val remoteMode = !dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies(frame.settingsJson)
                     val readySources = env.frames.remoteItems(frame.id).filter { it.local != null || env.remoteMedia.isLocalReference(it) }.mapNotNull { it.sourceAssetId }.toSet()
                     val includedSources = env.database.frameSelectionDao().pendingIncludedSourceAssets(frame.id)
                     val pending = if (remoteMode) 0 else includedSources.count { it.id !in readySources }
@@ -1761,7 +1772,7 @@ class MainActivity : Activity() {
                     FramesView.CardModel(frame, cover, playable, pending, coverItem?.takeIf { it.remote != null }, hasNas, hasDeviceReferences)
                 }
                 val empty = env.database.assetDao().browsePage(1, 0).isEmpty() && sources.values.none { source ->
-                    JsonMini.parseObject(source.settingsJson)["referenceOnly"] == true && env.remoteMedia.members(source.id, "", true).isNotEmpty()
+                    env.remoteMedia.isMetadataSource(source) && env.remoteMedia.members(source.id, "", true).isNotEmpty()
                 }
                 cardModels to empty
             }
@@ -1845,7 +1856,7 @@ class MainActivity : Activity() {
     private fun openFrameEditor(frame: FrameEntity?, draft: Map<String, String>? = null) {
         val env = environment ?: return
         val view = FrameEditView(this, File(filesDir, "originals"))
-        val referenceSources = mutableSetOf<String>()
+        var referenceSources = emptySet<String>()
         view.dataSource = object : FrameEditView.DataSource {
             override fun fetchPhotos(limit: Int, offset: Int, callback: (List<AssetEntity>) -> Unit) {
                 scope.launch {
@@ -1859,16 +1870,16 @@ class MainActivity : Activity() {
             override fun fetchCollections(callback: (List<Pair<CollectionEntity, Long>>) -> Unit) {
                 scope.launch {
                     val collections = withContext(Dispatchers.IO) {
-                        referenceSources.clear()
-                        referenceSources.addAll(env.database.sourceDao().getAll().filter { JsonMini.parseObject(it.settingsJson)["referenceOnly"] == true }.map { it.id })
+                        val metadataSources = env.database.sourceDao().getAll().filter { env.remoteMedia.isMetadataSource(it) }.map { it.id }.toSet()
                         env.database.collectionDao().getAll().map { collection ->
-                            val count = if (collection.sourceId in referenceSources && collection.relPath != null) {
+                            val count = if (collection.sourceId in metadataSources && collection.relPath != null) {
                                 env.remoteMedia.members(requireNotNull(collection.sourceId), collection.relPath, false).size.toLong()
                             } else env.database.collectionAssetDao().getByCollection(collection.id).size.toLong()
                             collection to count
-                        }.filter { dev.photopilot.scaffold.data.logic.CollectionListing.visibleInFolderList(it.first.type, it.second) }
+                        }.filter { dev.photopilot.scaffold.data.logic.CollectionListing.visibleInFolderList(it.first.type, it.second) } to metadataSources
                     }
-                    callback(collections)
+                    referenceSources = collections.second
+                    callback(collections.first)
                 }
             }
 
@@ -2778,7 +2789,7 @@ class MainActivity : Activity() {
 
     private fun buildLibraryView(): LibraryView {
         val env = environment
-        val referenceSources = mutableSetOf<String>()
+        var referenceSources = emptySet<String>()
         val view = LibraryView(this, File(filesDir, "originals"))
         if (env != null) {
             view.dataSource = object : LibraryView.DataSource {
@@ -2818,18 +2829,18 @@ class MainActivity : Activity() {
                 override fun fetchCollections(callback: (List<Pair<CollectionEntity, Long>>) -> Unit) {
                     scope.launch {
                         val collections = withContext(Dispatchers.IO) {
-                            referenceSources.clear()
-                            referenceSources.addAll(env.database.sourceDao().getAll().filter { JsonMini.parseObject(it.settingsJson)["referenceOnly"] == true }.map { it.id })
+                            val metadataSources = env.database.sourceDao().getAll().filter { env.remoteMedia.isMetadataSource(it) }.map { it.id }.toSet()
                             env.database.collectionDao().getAll()
                                 .map { collection ->
-                                    val count = if (collection.sourceId in referenceSources && collection.relPath != null) {
+                                    val count = if (collection.sourceId in metadataSources && collection.relPath != null) {
                                         env.remoteMedia.members(requireNotNull(collection.sourceId), collection.relPath, false).size.toLong()
                                     } else env.database.collectionAssetDao().getByCollection(collection.id).size.toLong()
                                     collection to count
                                 }
-                                .filter { dev.photopilot.scaffold.data.logic.CollectionListing.visibleInFolderList(it.first.type, it.second) }
+                                .filter { dev.photopilot.scaffold.data.logic.CollectionListing.visibleInFolderList(it.first.type, it.second) } to metadataSources
                         }
-                        callback(collections)
+                        referenceSources = collections.second
+                        callback(collections.first)
                     }
                 }
 
