@@ -7,6 +7,7 @@ struct AIFrameCandidate: Sendable {
     let contentHash: String
     let relativePath: String
     var remoteDescriptor: RemoteMediaDescriptor? = nil
+    var cacheable = true
 }
 
 /// AI configuration, progress and membership changes share the library's SQLite transaction.
@@ -103,6 +104,7 @@ actor AIFrameStore {
     func cachedVector(assetID: String, version: String, expectedDimension: Int? = nil) async throws -> [Float]? {
         let context = controller.container.newBackgroundContext()
         return try await context.perform {
+            guard try Self.canCache(context: context, assetID: assetID) else { return nil }
             guard let row = try Self.setting(context, key: Self.cacheKey(assetID: assetID, version: version)),
                   let string = row.value(forKey: "value_json") as? String,
                   let data = string.data(using: .utf8) else { return nil }
@@ -120,7 +122,7 @@ actor AIFrameStore {
         let context = controller.container.newBackgroundContext()
         try await context.perform {
             // A deletion racing inference must never recreate the deleted photo's features.
-            guard let media = try Self.eligibleAsset(context, id: assetID) else { return }
+            guard try Self.canCache(context: context, assetID: assetID), let media = try Self.eligibleAsset(context, id: assetID) else { return }
             if assetID.hasPrefix("remote:"), !version.hasPrefix(try Self.contentVersion(media, context: context) + ":") { return }
             let key = Self.cacheKey(assetID: assetID, version: version)
             let row = try Self.setting(context, key: key) ?? NSEntityDescription.insertNewObject(forEntityName: "SettingsKV", into: context)
@@ -296,11 +298,14 @@ actor AIFrameStore {
         if let row = try setting(context, key: prefix + frameID) { context.delete(row) }
     }
 
-    static func remapReferences(context: NSManagedObjectContext, frameID: String, mapping: [String: String]) throws {
-        guard !mapping.isEmpty, var state = try read(context: context, frameID: frameID) else { return }
+    static func remapReferences(context: NSManagedObjectContext, frameID: String, mapping: [String: String], removed: Set<String> = []) throws {
+        guard !mapping.isEmpty || !removed.isEmpty else { return }
+        guard var state = try read(context: context, frameID: frameID) else { return }
         state.ownedAssetIDs = Set(state.ownedAssetIDs.map { mapping[$0] ?? $0 })
         state.manualExcludedAssetIDs = Set(state.manualExcludedAssetIDs.map { mapping[$0] ?? $0 })
-        for id in mapping.keys {
+        state.ownedAssetIDs.subtract(removed)
+        state.manualExcludedAssetIDs.subtract(removed)
+        for id in Set(mapping.keys).union(removed) {
             state.completedContentVersions.removeValue(forKey: id)
             state.matches.removeValue(forKey: id)
         }
@@ -381,7 +386,7 @@ actor AIFrameStore {
                 }
             }
             let hash = SHA256Hex.digest(data: Data(record.descriptor.identity.utf8))
-            result.append(AIFrameCandidate(id: record.descriptor.runtimeID, contentHash: hash, relativePath: record.descriptor.runtimeID, remoteDescriptor: record.descriptor))
+            result.append(AIFrameCandidate(id: record.descriptor.runtimeID, contentHash: hash, relativePath: record.descriptor.runtimeID, remoteDescriptor: record.descriptor, cacheable: record.cacheable))
         }
         return result.filter { !aliases.contains($0.id) }.sorted { $0.id < $1.id }
     }
@@ -432,6 +437,13 @@ actor AIFrameStore {
 
     private static func originalsRoot(_ context: NSManagedObjectContext) -> URL {
         (context.persistentStoreCoordinator?.persistentStores.first?.url?.deletingLastPathComponent() ?? FileManager.default.temporaryDirectory).appendingPathComponent("originals")
+    }
+
+    private static func canCache(context: NSManagedObjectContext, assetID: String) throws -> Bool {
+        guard case .sourceAsset(let id) = MediaReference(runtimeID: assetID) else { return true }
+        guard let row = try RemoteMediaRepository.fetch(context, entity: "SourceAsset", id: id),
+              let record = try RemoteMediaRepository.record(context: context, row: row, originals: originalsRoot(context)) else { return false }
+        return record.cacheable
     }
 
     private static func contentVersion(_ media: NSManagedObject, context: NSManagedObjectContext) throws -> String {

@@ -231,7 +231,7 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
     }
 
     @objc private func remoteMediaChanged() {
-        guard includesRemoteMedia, viewIfLoaded?.window != nil else { return }
+        guard viewIfLoaded?.window != nil, includesRemoteMedia || items.contains(where: { $0.id.hasPrefix("remote:") }) else { return }
         reload()
     }
 

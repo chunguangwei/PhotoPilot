@@ -657,15 +657,15 @@
       "key": "sources.empty_body",
       "section": "4.1 来源列表与通用",
       "platform": "all",
-      "zh": "添加一个来源，把照片导入到这台设备。",
-      "en": "Add a source to import photos onto this device."
+      "zh": "添加来源，选择要展示的照片。",
+      "en": "Add a source and choose photos to display."
     },
     {
       "key": "sources.import_vs_display",
       "section": "4.1 来源列表与通用",
       "platform": "all",
-      "zh": "导入后，你仍可选择展示哪些照片。",
-      "en": "After importing, choose which photos to display."
+      "zh": "确认选片后，照片才会展示。",
+      "en": "Photos are displayed after you confirm your selection."
     },
     {
       "key": "sources.sync_now",
@@ -793,8 +793,8 @@
       "key": "source.local_photos.body",
       "section": "4.2 本地与苹果端图库",
       "platform": "all",
-      "zh": "从系统照片库选择照片，或从文件应用导入图片。",
-      "en": "Choose photos from the photo library, or import images from Files."
+      "zh": "引用系统相册或所选文件中的照片，节省副本空间。",
+      "en": "Reference photos in your library or selected files to save copy storage."
     },
     {
       "key": "source.local_files.title",
@@ -807,8 +807,8 @@
       "key": "source.local_files.body",
       "section": "4.2 本地与苹果端图库",
       "platform": "all",
-      "zh": "从系统文件中选择图片，包括 iCloud 云盘中的文件。",
-      "en": "Choose images from Files, including iCloud Drive."
+      "zh": "引用所选文件或目录中的照片，包括 iCloud 云盘。",
+      "en": "Reference photos in selected files or folders, including iCloud Drive."
     },
     {
       "key": "source.icloud.title",
@@ -821,15 +821,15 @@
       "key": "source.icloud.body.ios",
       "section": "4.2 本地与苹果端图库",
       "platform": "ios",
-      "zh": "从这台设备的系统照片库读取，云端照片会先下载到本机。",
-      "en": "Reads from this device’s photo library. Cloud photos download to this device first."
+      "zh": "引用这台设备的系统照片库，云端照片由系统按需读取。",
+      "en": "Reference this device’s photo library. The system fetches cloud photos as needed."
     },
     {
       "key": "source.icloud.body.android",
       "section": "4.2 本地与苹果端图库",
       "platform": "android",
-      "zh": "请先将 iCloud 照片导出到本地，再从文件导入。",
-      "en": "Export your iCloud photos to this device first, then import from Files."
+      "zh": "请先将 iCloud 照片保存到本机，再从文件选择。",
+      "en": "Save iCloud photos to this device, then choose them from Files."
     },
     {
       "key": "source.icloud.not_a_login",
@@ -967,8 +967,8 @@
       "key": "source.nas.body",
       "section": "4.4 NAS",
       "platform": "all",
-      "zh": "连接家中的 NAS，按目录导入照片。",
-      "en": "Connect your home NAS and import photos by folder."
+      "zh": "连接 NAS，按需读取或同步所选目录中的照片。",
+      "en": "Connect a NAS and read on demand or sync selected photo folders."
     },
     {
       "key": "source.nas.protocol",
@@ -4318,8 +4318,8 @@
       "key": "source.local_files.body.android",
       "section": "4.2 本地与苹果端图库",
       "platform": "android",
-      "zh": "从系统文件选择器导入已保存在设备上的图片。",
-      "en": "Import images saved on this device using the system file picker.",
+      "zh": "从系统文件选择器选择照片或目录，直接引用原照片。",
+      "en": "Choose photos or folders in the system picker and use originals directly.",
       "note": "Android SAF 口径，不提 iCloud 云盘"
     },
     {
@@ -4485,6 +4485,104 @@
       "platform": "all",
       "zh": "节日时段结束，已回到之前的相框",
       "en": "Holiday window ended — back to your last frame"
+    },
+    {
+      "key": "sources.remove_configuration",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "删除来源配置",
+      "en": "Delete source configuration"
+    },
+    {
+      "key": "sources.remove_configuration_body",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "删除连接配置并保留已下载的照片。未下载的照片将从相框中移除。",
+      "en": "Remove the connection configuration and keep downloaded photos. Photos without a local copy will be removed from frames."
+    },
+    {
+      "key": "sources.remove_failed",
+      "section": "4.1 来源列表与通用",
+      "platform": "all",
+      "zh": "删除来源失败，请重试。",
+      "en": "Could not remove the source. Try again."
+    },
+    {
+      "key": "source.nas.storage",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "照片存储",
+      "en": "Photo storage"
+    },
+    {
+      "key": "source.nas.storage_remote",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "按需读取，节省空间",
+      "en": "Read on demand, save space"
+    },
+    {
+      "key": "source.nas.storage_local",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "同步所选目录到本地，支持离线",
+      "en": "Sync selected folders locally for offline access"
+    },
+    {
+      "key": "source.nas.storage_hint",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "开启本地同步会下载所选目录中的照片。切回按需读取会保留已有副本，可另行管理。",
+      "en": "Local sync downloads photos in the selected folders. Switching to on-demand access keeps existing copies for you to manage."
+    },
+    {
+      "key": "source.local_files.choose_files",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "选择照片文件",
+      "en": "Choose photo files"
+    },
+    {
+      "key": "source.local_files.choose_folder",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "选择照片目录",
+      "en": "Choose photo folder"
+    },
+    {
+      "key": "source.local_reference.reselect",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "无法持续访问所选照片或目录，请重新选择并允许访问。",
+      "en": "Access to the selected photos or folder could not be retained. Select them again and allow access."
+    },
+    {
+      "key": "source.local_reference.title",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "本机照片引用",
+      "en": "Device photo references"
+    },
+    {
+      "key": "source.local_reference.mode",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "直接引用原照片",
+      "en": "Use original photos directly"
+    },
+    {
+      "key": "source.local_reference.body",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "相框保存照片关联与必要的预览缓存。原照片由系统相册或所选目录管理。",
+      "en": "Frames store photo references and preview caches. Originals are managed by Photos or the selected folder."
+    },
+    {
+      "key": "source.local_reference.unavailable",
+      "section": "4.4 NAS",
+      "platform": "all",
+      "zh": "原照片暂不可访问，请检查来源或重新授权。",
+      "en": "The original photo is unavailable. Check its source or grant access again."
     }
   ]
 }

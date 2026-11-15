@@ -6,15 +6,20 @@ struct RemoteMediaLease: Sendable {
     let descriptor: RemoteMediaDescriptor
     private let owner: RemoteMediaCache?
     private let token: UUID
+    private let cleanup: (@Sendable () async -> Void)?
 
-    init(fileURL: URL, descriptor: RemoteMediaDescriptor, owner: RemoteMediaCache? = nil, token: UUID = UUID()) {
+    init(fileURL: URL, descriptor: RemoteMediaDescriptor, owner: RemoteMediaCache? = nil, token: UUID = UUID(), cleanup: (@Sendable () async -> Void)? = nil) {
         self.fileURL = fileURL
         self.descriptor = descriptor
         self.owner = owner
         self.token = token
+        self.cleanup = cleanup
     }
 
-    func release() async { await owner?.release(identity: descriptor.identity, token: token) }
+    func release() async {
+        await owner?.release(identity: descriptor.identity, token: token)
+        await cleanup?()
+    }
 }
 
 actor RemoteMediaCache {
@@ -56,6 +61,7 @@ actor RemoteMediaCache {
     private var entries: [String: Entry] = [:]
     private var readers: [String: Set<UUID>] = [:]
     private var work: [String: Work] = [:]
+    private var transientReservations: [UUID: Int64] = [:]
     private var restored = false
     private var queued: [UUID: Queued] = [:]
     private var queueOrder: [UUID] = []
@@ -208,7 +214,23 @@ actor RemoteMediaCache {
 
     func usage() -> Int64 {
         if !restored { try? restore() }
-        return entries.values.reduce(0) { $0 + $1.bytes } + work.values.reduce(0) { $0 + $1.reserved }
+        return entries.values.reduce(0) { $0 + $1.bytes } + work.values.reduce(0) { $0 + $1.reserved } + transientReservations.values.reduce(0, +)
+    }
+
+    func reserveTransient(bytes: Int64) throws -> UUID {
+        guard bytes > 0, bytes <= budget else { throw RemoteMediaError.tooLarge }
+        try restore()
+        try makeRoom(bytes)
+        guard freeSpace() >= bytes + freeReserve else { throw RemoteMediaError.lowSpace }
+        let token = UUID()
+        transientReservations[token] = bytes
+        saveIndex()
+        return token
+    }
+
+    func releaseTransient(_ token: UUID) {
+        guard transientReservations.removeValue(forKey: token) != nil else { return }
+        drainQueue()
     }
 
     func clear() async {

@@ -76,6 +76,7 @@ class FrameEditView(
     var onBack: ((Boolean) -> Unit)? = null
     var onSave: ((State) -> Unit)? = null
     var onRemotePhotos: (() -> Unit)? = null
+    var onOpenReferenceCollection: ((CollectionEntity) -> Boolean)? = null
     var onAISettings: (() -> Unit)? = null
     var onManualOrder: (() -> Unit)? = null
     var onConfirmDynamic: ((confirmed: (Boolean) -> Unit) -> Unit)? = null
@@ -149,7 +150,7 @@ class FrameEditView(
         )
 
         addView(secondaryButton(context, R.string.common_done).apply {
-            text = if (resources.configuration.locales[0].language == "zh") "远端照片与本地同步" else "Remote photos and local sync"
+            text = resources.getString(R.string.sources_title)
             setOnClickListener { onRemotePhotos?.invoke() }
         }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { marginStart = inset; marginEnd = inset })
 
@@ -450,7 +451,9 @@ class FrameEditView(
         ) { checked ->
             val current = ruleStates[collection.id]
                 ?: RuleUiState(checked = false, recursive = false, dynamic = false)
-            ruleStates[collection.id] = current.copy(checked = checked)
+            if (!checked || onOpenReferenceCollection?.invoke(collection) != true) {
+                ruleStates[collection.id] = current.copy(checked = checked)
+            }
             loadFolders()
         }
         container.addView(mainToggle, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))

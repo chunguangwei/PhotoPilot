@@ -86,11 +86,20 @@ actor ImportCoordinator {
             .appendingPathComponent("\(itemID).part")
     }
 
+    private static func ensureLocalImportAllowed(context: NSManagedObjectContext, source: NSManagedObject) throws {
+        if LocalReferenceService.isReference(source) { throw RemoteMediaError.revoked }
+        guard [SourceRepository.localPhotosID, SourceRepository.localFilesID].contains(source.value(forKey: "id") as? String ?? "") else { return }
+        let request = NSFetchRequest<NSManagedObject>(entityName: "Source")
+        request.predicate = NSPredicate(format: "type == %@", source.value(forKey: "type") as? String ?? "")
+        if try context.fetch(request).contains(where: { LocalReferenceService.isReference($0) }) { throw RemoteMediaError.revoked }
+    }
+
     func createJob(sourceID: String, scopeJSON: String) async throws -> ImportJobDTO {
         let now = nowMillis()
         let context = makeContext()
         let job = try await context.perform {
             let source = try Self.fetchSource(context: context, sourceID: sourceID)
+            try Self.ensureLocalImportAllowed(context: context, source: source)
             let row = NSEntityDescription.insertNewObject(forEntityName: "ImportJob", into: context)
             let jobId = UUID().uuidString
             row.setValue(jobId, forKey: "id")
@@ -133,6 +142,11 @@ actor ImportCoordinator {
 
     @discardableResult
     func enqueueItems(jobID: String) async throws -> Int {
+        let guardContext = makeContext()
+        try await guardContext.perform {
+            let job = try Self.fetchJob(context: guardContext, jobID: jobID)
+            if let source = job.value(forKey: "source") as? NSManagedObject { try Self.ensureLocalImportAllowed(context: guardContext, source: source) }
+        }
         var cursor: String? = try await persistedCursor(jobID: jobID)
         if cursor == Self.enumerationDoneCursor {
             try await recomputeAggregate(jobID: jobID)
@@ -890,6 +904,7 @@ actor ImportCoordinator {
         let context = makeContext()
         return try await context.perform {
             let job = try Self.fetchJob(context: context, jobID: jobID)
+            if case .none = signal, let source = job.value(forKey: "source") as? NSManagedObject { try Self.ensureLocalImportAllowed(context: context, source: source) }
             let terminal: Set<String> = [
                 ImportItemState.imported.rawValue,
                 ImportItemState.failed.rawValue,
@@ -1044,6 +1059,8 @@ actor ImportCoordinator {
         let signal = signals[jobID] ?? .none
         let context = makeContext()
         return try await context.perform {
+            let job = try Self.fetchJob(context: context, jobID: jobID)
+            if let source = job.value(forKey: "source") as? NSManagedObject { try Self.ensureLocalImportAllowed(context: context, source: source) }
             let request = NSFetchRequest<NSManagedObject>(entityName: "ImportItem")
             request.predicate = NSPredicate(
                 format: "job.id == %@ AND state == %@",

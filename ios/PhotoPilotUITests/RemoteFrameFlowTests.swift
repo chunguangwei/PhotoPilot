@@ -26,7 +26,7 @@ final class RemoteFrameFlowTests: XCTestCase {
         XCTAssertEqual(toggle.value as? String, "0")
         capture("storage-online", chinese: chinese, large: large, dark: dark)
         toggle.tap()
-        let ready = app.staticTexts[chinese ? "离线照片已就绪" : "Ready for offline playback"]
+        let ready = app.staticTexts[chinese ? "NAS 离线照片已就绪" : "NAS photos ready for offline playback"]
         XCTAssertTrue(ready.waitForExistence(timeout: 30))
         capture("storage-offline", chinese: chinese, large: large, dark: dark)
         toggle.tap()

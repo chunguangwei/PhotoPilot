@@ -9,6 +9,7 @@ struct FrameCardDTO: Sendable {
     let pendingCount: Int
     let updatedAt: Int
     var storageMode: FrameStorageMode = .local
+    var hasReferencedDevicePhotos = false
 }
 
 struct FrameDetailDTO: Sendable {
@@ -161,10 +162,24 @@ actor FrameManager {
                     playableCount: 0,
                     pendingCount: 0,
                     updatedAt: $0.value(forKey: "updated_at") as? Int ?? 0,
-                    storageMode: FrameStorageMode.read($0.value(forKey: "settings_json") as? String ?? "{}")
+                    storageMode: FrameStorageMode.read($0.value(forKey: "settings_json") as? String ?? "{}"),
+                    hasReferencedDevicePhotos: Self.hasReferencedDevicePhotos(frame: $0)
                 )
             }
             .sorted { $0.updatedAt > $1.updatedAt }
+        }
+    }
+
+    private static func hasReferencedDevicePhotos(frame: NSManagedObject) -> Bool {
+        let selections = frame.value(forKey: "selections") as? Set<NSManagedObject> ?? []
+        let selected = selections.contains {
+            guard $0.value(forKey: "mode") as? String == "include", let source = $0.value(forKeyPath: "sourceAsset.source") as? NSManagedObject else { return false }
+            return LocalReferenceService.isReference(source)
+        }
+        let rules = frame.value(forKey: "directoryRules") as? Set<NSManagedObject> ?? []
+        return selected || rules.contains {
+            guard let source = $0.value(forKeyPath: "collection.source") as? NSManagedObject else { return false }
+            return LocalReferenceService.isReference(source)
         }
     }
 
@@ -310,6 +325,7 @@ actor FrameManager {
         let now = nowMillis()
         try await context.perform {
             let frame = try Self.fetchFrame(context: context, frameID: frameID)
+            guard try !RemoteMediaRepository.isExcluded(context: context, frameID: frameID, runtimeID: assetID) else { throw RemoteMediaError.revoked }
             var settings = (try? JSONSerialization.jsonObject(with: Data((frame.value(forKey: "settings_json") as? String ?? "{}").utf8)) as? [String: Any]) ?? [:]
             switch MediaReference(runtimeID: assetID) {
             case .sourceAsset(let id):

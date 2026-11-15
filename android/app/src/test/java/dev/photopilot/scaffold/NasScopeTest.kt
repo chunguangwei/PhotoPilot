@@ -62,4 +62,15 @@ class NasScopeTest {
             NasScope.scopeJson(listOf("a", "b")),
         )
     }
+    @Test
+    fun configuredSourceScopeOverridesOldImportsAndFrameJobs() {
+        assertEquals("{\"directories\":[\"current\"]}", NasScope.sourceScope("{\"directories\":[\"current\"]}", listOf("{\"directories\":[\"old\"]}", "{\"frameId\":\"frame\",\"directories\":[\"other\"]}")))
+    }
+
+    @Test
+    fun legacySourcesUseLatestSourceJobAndInvalidConfiguredScopeNeverReverts() {
+        val jobs = listOf("{\"frameId\":\"frame\",\"directories\":[\"other\"]}", "{\"directories\":[\"legacy\"]}")
+        assertEquals(jobs.last(), NasScope.sourceScope(null, jobs))
+        assertNull(NasScope.sourceScope("{\"directories\":[]}", jobs))
+    }
 }

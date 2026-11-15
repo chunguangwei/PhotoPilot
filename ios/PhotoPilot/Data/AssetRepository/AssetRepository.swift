@@ -301,6 +301,10 @@ actor AssetRepository {
     }
 
     func hideAssetGlobally(id: String) async throws {
+        if case .sourceAsset(let sourceAssetID) = MediaReference(runtimeID: id) {
+            try await hideSourceReference(sourceAssetID: sourceAssetID)
+            return
+        }
         let identity = try await tombstoneIdentity(assetId: id)
         let head64kHash = try? AssetFileProber.head64kHash(of: originalsFileURL(relPath: identity.originalRelPath))
         let now = nowMillis()
@@ -322,6 +326,34 @@ actor AssetRepository {
             try AIFrameStore.removeFeatures(context: context, assetID: id)
             asset.setValue(NSNumber(value: true), forKey: "privacy_excluded")
             asset.setValue(now, forKey: "updated_at")
+            _ = try PersistenceController.bumpLibraryVersionValue(in: context)
+            try context.save()
+        }
+    }
+
+    private func hideSourceReference(sourceAssetID: String) async throws {
+        let context = makeContext()
+        try await context.perform {
+            guard let sourceAsset = try RemoteMediaRepository.fetch(context, entity: "SourceAsset", id: sourceAssetID),
+                  let source = sourceAsset.value(forKey: "source") as? NSManagedObject,
+                  let key = sourceAsset.value(forKey: "remote_key") as? String else { throw RemoteMediaError.revoked }
+            let now = self.nowMillis()
+            let tombstone = NSEntityDescription.insertNewObject(forEntityName: "LocalTombstone", into: context)
+            tombstone.setValue(UUID().uuidString, forKey: "id")
+            tombstone.setValue(ImportCoordinator.sourceFingerprint(source), forKey: "source_fingerprint")
+            tombstone.setValue(key, forKey: "remote_id")
+            tombstone.setValue(TombstoneReason.privacyDelete.rawValue, forKey: "reason")
+            tombstone.setValue(now, forKey: "created_at")
+            tombstone.setValue(now, forKey: "updated_at")
+            let aliases = try RemoteMediaRepository.referenceAliases(context: context, runtimeID: "remote:" + sourceAssetID)
+            for alias in aliases {
+                if case .asset(let id) = MediaReference(runtimeID: alias), let asset = try RemoteMediaRepository.fetch(context, entity: "Asset", id: id) {
+                    asset.setValue(true, forKey: "privacy_excluded")
+                    asset.setValue(now, forKey: "updated_at")
+                }
+                try AIFrameStore.removeFeatures(context: context, assetID: alias)
+            }
+            sourceAsset.setValue(now, forKey: "updated_at")
             _ = try PersistenceController.bumpLibraryVersionValue(in: context)
             try context.save()
         }
@@ -387,10 +419,11 @@ actor AssetRepository {
         }
     }
 
-    func disconnectSource(sourceID: String, keepCopies: Bool) async throws {
+    func disconnectSource(sourceID: String, keepCopies: Bool, removeConfiguration: Bool = false) async throws {
         let context = makeContext()
         let now = nowMillis()
-        let filesToDelete: [String] = try await context.perform {
+        let filesToDelete: [String] = try await LibraryStorageGate.shared(storeURL: controller.storeURL).perform {
+            try await context.perform {
             let request = NSFetchRequest<NSManagedObject>(entityName: "Source")
             request.predicate = NSPredicate(format: "id == %@", sourceID)
             request.fetchLimit = 1
@@ -401,6 +434,140 @@ actor AssetRepository {
             let fingerprint = ImportCoordinator.sourceFingerprint(source)
             let sourceAssets = source.value(forKey: "sourceAssets") as? Set<NSManagedObject> ?? []
             var files: [String] = []
+            if keepCopies && removeConfiguration {
+                let localID = SourceRepository.localFilesID
+                let localSource = try RemoteMediaRepository.fetch(context, entity: "Source", id: localID)
+                    ?? NSEntityDescription.insertNewObject(forEntityName: "Source", into: context)
+                if localSource.value(forKey: "id") == nil {
+                    for (key, value) in ["id": localID, "type": "local_files", "display_name": "Files", "retention_policy": "user_managed", "status": "active"] {
+                        localSource.setValue(value, forKey: key)
+                    }
+                    localSource.setValue(0, forKey: "capability_flags")
+                    localSource.setValue(1, forKey: "epoch")
+                    localSource.setValue(now, forKey: "created_at")
+                    localSource.setValue(now, forKey: "updated_at")
+                }
+                var mapping: [String: String] = [:]
+                let retainedCollections = source.value(forKey: "collections") as? Set<NSManagedObject> ?? []
+                let legacyFolderAssets = Set(retainedCollections.flatMap { collection in
+                    (collection.value(forKey: "collectionAssets") as? Set<NSManagedObject> ?? []).compactMap { $0.value(forKey: "asset") as? NSManagedObject }
+                })
+                for collection in retainedCollections {
+                    for member in collection.value(forKey: "collectionAssets") as? Set<NSManagedObject> ?? [] {
+                        member.setValue(nil, forKey: "collection")
+                        member.setValue(nil, forKey: "asset")
+                        context.delete(member)
+                    }
+                }
+                for sourceAsset in sourceAssets {
+                    let origins = sourceAsset.value(forKey: "assetOrigins") as? Set<NSManagedObject> ?? []
+                    let localAssets = origins.compactMap { $0.value(forKey: "asset") as? NSManagedObject }.filter {
+                        guard let path = $0.value(forKey: "original_rel_path") as? String else { return false }
+                        return FileManager.default.fileExists(atPath: self.originalsFileURL(relPath: path).path)
+                    }
+                    var currentAsset: NSManagedObject?
+                    var hasVersionEvidence = false
+                    for asset in localAssets.sorted(by: { ($0.value(forKey: "id") as? String ?? "") < ($1.value(forKey: "id") as? String ?? "") }) {
+                        guard let assetID = asset.value(forKey: "id") as? String,
+                              let sourceAssetID = sourceAsset.value(forKey: "id") as? String else { continue }
+                        let version = try RemoteMediaRepository.provenance(context: context, assetID: assetID, sourceAssetID: sourceAssetID)
+                        if let version {
+                            hasVersionEvidence = true
+                            if version.importedRevision == sourceAsset.value(forKey: "revision") as? String,
+                               version.contentHash == asset.value(forKey: "content_hash") as? String {
+                                currentAsset = asset
+                                break
+                            }
+                        }
+                    }
+                    if currentAsset == nil && !hasVersionEvidence {
+                        let members = localAssets.filter { legacyFolderAssets.contains($0) }
+                        if localAssets.count == 1 { currentAsset = localAssets.first }
+                        else if members.count == 1 { currentAsset = members.first }
+                    }
+                    if let asset = currentAsset, let id = asset.value(forKey: "id") as? String,
+                       let remoteID = sourceAsset.value(forKey: "id") as? String {
+                        mapping["remote:" + remoteID] = id
+                        let selections = sourceAsset.value(forKey: "selections") as? Set<NSManagedObject> ?? []
+                        for selection in selections {
+                            guard let frame = selection.value(forKey: "frame") as? NSManagedObject else { continue }
+                            let request = NSFetchRequest<NSManagedObject>(entityName: "FrameSelection")
+                            request.predicate = NSPredicate(format: "frame == %@ AND asset == %@", frame, asset)
+                            if let existing = try context.fetch(request).first {
+                                if selection.value(forKey: "mode") as? String == "exclude" { existing.setValue("exclude", forKey: "mode") }
+                                selection.setValue(nil, forKey: "frame")
+                                context.delete(selection)
+                            } else {
+                                selection.setValue(nil, forKey: "sourceAsset")
+                                selection.setValue(asset, forKey: "asset")
+                                selection.setValue(id, forKey: "ref_key")
+                            }
+                        }
+                    }
+                    if let remoteID = sourceAsset.value(forKey: "id") as? String, mapping["remote:" + remoteID] == nil {
+                        for selection in sourceAsset.value(forKey: "selections") as? Set<NSManagedObject> ?? [] {
+                            selection.setValue(nil, forKey: "frame")
+                            context.delete(selection)
+                        }
+                    }
+                    let parentPath = ((sourceAsset.value(forKey: "remote_key") as? String ?? "") as NSString).deletingLastPathComponent
+                    for collection in retainedCollections where (collection.value(forKey: "rel_path") as? String ?? "") == parentPath {
+                        if let asset = currentAsset {
+                            let members = collection.value(forKey: "collectionAssets") as? Set<NSManagedObject> ?? []
+                            if !members.contains(where: { $0.value(forKey: "asset") as? NSManagedObject == asset }) {
+                                let member = NSEntityDescription.insertNewObject(forEntityName: "CollectionAsset", into: context)
+                                member.setValue(collection, forKey: "collection")
+                                member.setValue(asset, forKey: "asset")
+                                member.setValue(now, forKey: "created_at")
+                                member.setValue(now, forKey: "updated_at")
+                            }
+                        }
+                    }
+                    for origin in origins {
+                        guard let asset = origin.value(forKey: "asset") as? NSManagedObject,
+                              localAssets.contains(asset), let id = asset.value(forKey: "id") as? String else {
+                            context.delete(origin)
+                            continue
+                        }
+                        let preservedID = "source_asset.kept." + id
+                        let preserved = try RemoteMediaRepository.fetch(context, entity: "SourceAsset", id: preservedID)
+                            ?? NSEntityDescription.insertNewObject(forEntityName: "SourceAsset", into: context)
+                        if preserved.value(forKey: "id") == nil {
+                            for (key, value) in ["id": preservedID, "remote_key": "kept/" + id, "revision": asset.value(forKey: "content_hash") as? String ?? "", "access_state": "accessible"] { preserved.setValue(value, forKey: key) }
+                            preserved.setValue(localSource, forKey: "source")
+                            preserved.setValue(now, forKey: "last_seen_at")
+                            preserved.setValue(now, forKey: "created_at")
+                            preserved.setValue(now, forKey: "updated_at")
+                        }
+                        let existingOrigins = preserved.value(forKey: "assetOrigins") as? Set<NSManagedObject> ?? []
+                        if existingOrigins.contains(where: { $0.value(forKey: "asset") as? NSManagedObject == asset }) { context.delete(origin) }
+                        else { origin.setValue(preserved, forKey: "sourceAsset"); origin.setValue("active", forKey: "origin_state") }
+                    }
+                }
+                let removed = Set(sourceAssets.compactMap { $0.value(forKey: "id") as? String }.map { "remote:" + $0 }).subtracting(mapping.keys)
+                let frames = try context.fetch(NSFetchRequest<NSManagedObject>(entityName: "Frame"))
+                for frame in frames {
+                    if let id = frame.value(forKey: "id") as? String { try AIFrameStore.remapReferences(context: context, frameID: id, mapping: mapping, removed: removed) }
+                    let raw = frame.value(forKey: "settings_json") as? String ?? "{}"
+                    var settings = (try? JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any]) ?? [:]
+                    if let ref = settings["remoteCoverRef"] as? String, let id = mapping[ref] {
+                        frame.setValue(try RemoteMediaRepository.fetch(context, entity: "Asset", id: id), forKey: "coverAsset")
+                        settings.removeValue(forKey: "remoteCoverRef")
+                        frame.setValue(String(decoding: try JSONSerialization.data(withJSONObject: settings), as: UTF8.self), forKey: "settings_json")
+                    } else if let ref = settings["remoteCoverRef"] as? String, removed.contains(ref) {
+                        settings.removeValue(forKey: "remoteCoverRef")
+                        frame.setValue(String(decoding: try JSONSerialization.data(withJSONObject: settings), as: UTF8.self), forKey: "settings_json")
+                    }
+                }
+                for collection in retainedCollections {
+                    collection.setValue(nil, forKey: "source")
+                    collection.setValue("user_folder", forKey: "type")
+                }
+                context.delete(source)
+                _ = try PersistenceController.bumpLibraryVersionValue(in: context)
+                try context.save()
+                return files
+            }
             if keepCopies {
                 for sourceAsset in sourceAssets {
                     let origins = sourceAsset.value(forKey: "assetOrigins") as? Set<NSManagedObject> ?? []
@@ -468,13 +635,22 @@ actor AssetRepository {
                     sourceAsset.value(forKey: "id") as? String ?? ""
                 )
                 for selection in try context.fetch(selections) {
+                    selection.setValue(nil, forKey: "frame")
                     context.delete(selection)
+                }
+            }
+            for collection in source.value(forKey: "collections") as? Set<NSManagedObject> ?? [] {
+                collection.setValue(nil, forKey: "parent")
+                for rule in collection.value(forKey: "directoryRules") as? Set<NSManagedObject> ?? [] {
+                    rule.setValue(nil, forKey: "frame")
+                    context.delete(rule)
                 }
             }
             context.delete(source)
             _ = try PersistenceController.bumpLibraryVersionValue(in: context)
             try context.save()
             return files
+        }
         }
         for relPath in filesToDelete {
             try? FileManager.default.removeItem(at: originalsFileURL(relPath: relPath))
@@ -545,10 +721,10 @@ actor AssetRepository {
                     isPending: false
                 )
             }
-            if includeRemote {
+            if readiness == Readiness.ready.rawValue {
                 let remote = try RemoteMediaRepository.records(context: context,
                     originals: self.controller.storeURL.deletingLastPathComponent().appendingPathComponent("originals"),
-                    sourceID: remoteSourceID, collectionID: collectionID, recursive: false).filter { $0.remoteAllowed || $0.localReady }
+                    sourceID: remoteSourceID, collectionID: collectionID, recursive: false).filter { (includeRemote || $0.referenceOnly) && ($0.remoteAllowed || $0.localReady) }
                 if remoteSourceID != nil { items.removeAll() }
                 let localIDs = Set(remote.compactMap(\.localAssetID))
                 items.removeAll { localIDs.contains($0.id) }
@@ -633,8 +809,9 @@ actor AssetRepository {
         return try await context.perform {
             var result = Set<String>()
             let sourceAssets = NSFetchRequest<NSManagedObject>(entityName: "SourceAsset")
-            sourceAssets.predicate = NSPredicate(format: "remote_key CONTAINS[cd] %@", text)
+            sourceAssets.predicate = NSPredicate(format: "remote_key CONTAINS[cd] %@ OR source.display_name CONTAINS[cd] %@", text, text)
             for row in try context.fetch(sourceAssets) {
+                if let source = row.value(forKey: "source") as? NSManagedObject, LocalReferenceService.isReference(source), let id = row.value(forKey: "id") as? String { result.insert("remote:" + id) }
                 let origins = row.value(forKey: "assetOrigins") as? Set<NSManagedObject> ?? []
                 for origin in origins {
                     if let assetID = origin.value(forKeyPath: "asset.id") as? String {
@@ -659,6 +836,10 @@ actor AssetRepository {
                     }
                 }
             }
+            for collectionID in collectionIDs {
+                let records = try RemoteMediaRepository.records(context: context, originals: self.controller.storeURL.deletingLastPathComponent().appendingPathComponent("originals"), collectionID: collectionID)
+                result.formUnion(records.filter(\.referenceOnly).map { $0.descriptor.runtimeID })
+            }
             return result
         }
     }
@@ -674,6 +855,11 @@ actor AssetRepository {
                 if let assetID = row.value(forKeyPath: "asset.id") as? String {
                     result.insert(assetID)
                 }
+            }
+            let references = NSFetchRequest<NSManagedObject>(entityName: "SourceAsset")
+            references.predicate = NSPredicate(format: "source.id IN %@", Array(sourceIDs))
+            for row in try context.fetch(references) {
+                if let source = row.value(forKey: "source") as? NSManagedObject, LocalReferenceService.isReference(source), let id = row.value(forKey: "id") as? String { result.insert("remote:" + id) }
             }
             return result
         }
@@ -711,10 +897,9 @@ actor AssetRepository {
             let local = try context.fetch(request).compactMap {
                 $0.value(forKeyPath: "asset.id") as? String
             }
-            guard includeRemote else { return local }
             let remote = try RemoteMediaRepository.records(context: context,
                 originals: self.controller.storeURL.deletingLastPathComponent().appendingPathComponent("originals"),
-                collectionID: collectionID, recursive: recursive).filter { $0.remoteAllowed || $0.localReady }
+                collectionID: collectionID, recursive: recursive).filter { (includeRemote || $0.referenceOnly) && ($0.remoteAllowed || $0.localReady) }
             return Array(Set(local + remote.map { $0.descriptor.runtimeID })).sorted()
         }
     }
@@ -735,7 +920,8 @@ actor AssetRepository {
         let context = makeContext()
         return try await context.perform {
             let request = NSFetchRequest<NSManagedObject>(entityName: "FrameSelection")
-            request.predicate = NSPredicate(format: "asset.id == %@", assetID)
+            let reference = MediaReference(runtimeID: assetID)
+            request.predicate = NSPredicate(format: reference.runtimeID.hasPrefix("remote:") ? "sourceAsset.id == %@" : "asset.id == %@", reference.rawID)
             return try context.count(for: request)
         }
     }

@@ -57,6 +57,8 @@ class LibraryView(
     private enum class Tab { PHOTOS, FOLDERS }
 
     private var tab = Tab.PHOTOS
+    var onOpenReferenceCollection: ((CollectionEntity) -> Boolean)? = null
+    var onBrowseSourcePhotos: (() -> Unit)? = null
     private var activeCollection: CollectionEntity? = null
     private val assets = mutableListOf<AssetEntity>()
     private val pendingItems = mutableListOf<SourceAssetEntity>()
@@ -125,6 +127,13 @@ class LibraryView(
                 topMargin = inset
             },
         )
+
+        addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, R.string.sources_title).apply {
+            setOnClickListener { onBrowseSourcePhotos?.invoke() }
+        }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+            marginStart = inset
+            marginEnd = inset
+        })
 
         val searchRow = LinearLayout(context).apply {
             orientation = HORIZONTAL
@@ -417,6 +426,7 @@ class LibraryView(
     }
 
     private fun enterCollection(collection: CollectionEntity) {
+        if (onOpenReferenceCollection?.invoke(collection) == true) return
         activeCollection = collection
         updateVisibility()
         reloadAssets()

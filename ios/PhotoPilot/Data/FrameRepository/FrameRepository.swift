@@ -79,9 +79,7 @@ actor FrameRepository {
             )
         )
         let settings = frame.value(forKey: "settings_json") as? String ?? "{}"
-        let merged = FrameStorageMode.isExplicit(settings)
-            ? try remoteResolution(context: context, frameID: frameID, mode: FrameStorageMode.read(settings), local: resolution, skeleton: skeleton)
-            : resolution
+        let merged = try remoteResolution(context: context, frameID: frameID, mode: FrameStorageMode.read(settings), local: resolution, skeleton: skeleton)
         self.cache.put(cacheKey, resolution: merged)
         return merged
     }
@@ -104,8 +102,11 @@ actor FrameRepository {
             }
         }
         let sourceIDs = Set(records.values.map { $0.descriptor.sourceAssetID })
-        var allowed = Set(local.allowed.filter { !sourceIDs.contains($0) })
-        var playable = Set(local.playable)
+        let excludedLocal = excluded.isEmpty ? Set<String>() : Set(try local.allowed.filter {
+            try RemoteMediaRepository.isExcluded(context: context, frameID: frameID, runtimeID: $0)
+        })
+        var allowed = Set(local.allowed.filter { !sourceIDs.contains($0) }).subtracting(excludedLocal)
+        var playable = Set(local.playable).subtracting(excludedLocal)
         var pending = Set(local.pending.filter { !sourceIDs.contains($0) })
         var candidates = Set(local.candidates)
         for record in records.values {
@@ -116,7 +117,7 @@ actor FrameRepository {
                   mode != .remote || record.sourceStatus != "disconnected" else { continue }
             candidates.insert(id)
             allowed.insert(id)
-            if record.localReady || (mode == .remote && record.remoteAllowed) { playable.insert(id) }
+            if record.localReady || ((mode == .remote || record.referenceOnly) && record.remoteAllowed) { playable.insert(id) }
             else { pending.insert(id) }
         }
         return SelectionResolution(candidates: candidates.sorted(), pending: pending.sorted(), allowed: allowed.sorted(), playable: playable.sorted())
@@ -291,6 +292,15 @@ actor FrameRepository {
 
             try AIFrameStore.manualChange(context: context, frameID: frameID, includes: Set(addIncludes.map { $0.sourceAssetId.map { "remote:" + $0 } ?? $0.refKey }),
                 removed: Set((removeRefs + addExcludes).map { $0.sourceAssetId.map { "remote:" + $0 } ?? $0.refKey }))
+            if let coverID = frame.value(forKeyPath: "coverAsset.id") as? String,
+               try RemoteMediaRepository.isExcluded(context: context, frameID: frameID, runtimeID: coverID) { frame.setValue(nil, forKey: "coverAsset") }
+            let rawSettings = frame.value(forKey: "settings_json") as? String ?? "{}"
+            if var settings = (try? JSONSerialization.jsonObject(with: Data(rawSettings.utf8))) as? [String: Any],
+               let cover = settings["remoteCoverRef"] as? String,
+               try RemoteMediaRepository.isExcluded(context: context, frameID: frameID, runtimeID: cover) {
+                settings.removeValue(forKey: "remoteCoverRef")
+                frame.setValue(String(decoding: try JSONSerialization.data(withJSONObject: settings), as: UTF8.self), forKey: "settings_json")
+            }
             frame.setValue(Int(newVersion), forKey: "selection_version")
             frame.setValue(now, forKey: "updated_at")
             try context.save()

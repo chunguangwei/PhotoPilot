@@ -99,8 +99,8 @@
     </plurals>
     <string name="sources.title">Sources</string>
     <string name="sources.add">Add a photo source</string>
-    <string name="sources.empty_body">Add a source to import photos onto this device.</string>
-    <string name="sources.import_vs_display">After importing, choose which photos to display.</string>
+    <string name="sources.empty_body">Add a source and choose photos to display.</string>
+    <string name="sources.import_vs_display">Photos are displayed after you confirm your selection.</string>
     <string name="sources.sync_now">Sync now</string>
     <string name="sources.last_sync">Last synced %1$s</string>
     <string name="sources.last_import">Last imported %1$s</string>
@@ -119,11 +119,11 @@
     </plurals>
     <string name="sources.reconfigure">Reconfigure</string>
     <string name="source.local_photos.title">Photos on this device</string>
-    <string name="source.local_photos.body">Choose photos from the photo library, or import images from Files.</string>
+    <string name="source.local_photos.body">Reference photos in your library or selected files to save copy storage.</string>
     <string name="source.local_files.title">Files</string>
-    <string name="source.local_files.body">Choose images from Files, including iCloud Drive.</string>
+    <string name="source.local_files.body">Reference photos in selected files or folders, including iCloud Drive.</string>
     <string name="source.icloud.title">iCloud Photos</string>
-    <string name="source.icloud.body.android">Export your iCloud photos to this device first, then import from Files.</string>
+    <string name="source.icloud.body.android">Save iCloud photos to this device, then choose them from Files.</string>
     <string name="source.icloud.not_a_login">No Apple ID password is required.</string>
     <string name="source.icloud.track_album">Keep this album in sync</string>
     <string name="source.icloud.track_album_body">Checks the album for new photos. Requires photo library access.</string>
@@ -142,7 +142,7 @@
     <string name="source.google.unavailable_body">This source is still being prepared and can’t be used in this version.</string>
     <string name="source.google.retention_gated">How photos from this source may be kept is still being confirmed.</string>
     <string name="source.nas.title">NAS shared folder</string>
-    <string name="source.nas.body">Connect your home NAS and import photos by folder.</string>
+    <string name="source.nas.body">Connect a NAS and read on demand or sync selected photo folders.</string>
     <string name="source.nas.protocol">Protocol</string>
     <string name="source.nas.protocol_webdav_https">WebDAV (HTTPS)</string>
     <string name="source.nas.protocol_webdav_http">WebDAV (HTTP)</string>
@@ -618,7 +618,7 @@
     <string name="settings.storage_threshold_help">Reserve at least 1 GB or 5% of total capacity, whichever is larger. Imports pause below this limit; photos are not deleted automatically.</string>
     <string name="settings.storage_threshold_risk">Reducing reserved space may cause later imports to fail. Apply only after confirmation; existing photos will not be deleted.</string>
     <string name="settings.import_originals">Keep imported originals and generate display copies as needed</string>
-    <string name="source.local_files.body.android">Import images saved on this device using the system file picker.</string>
+    <string name="source.local_files.body.android">Choose photos or folders in the system picker and use originals directly.</string>
     <string name="settings.holiday">Holiday playback</string>
     <string name="holiday.title">Holiday playback</string>
     <string name="holiday.empty">No holiday rules yet. Add one and the app plays its frame automatically during that window.</string>
@@ -641,4 +641,18 @@
     <string name="holiday.notice_switched">"%1$s" started — switched to its holiday frame</string>
     <string name="holiday.notice_missing">Frame for "%1$s" is missing or empty; fell back</string>
     <string name="holiday.notice_returned">Holiday window ended — back to your last frame</string>
+    <string name="sources.remove_configuration">Delete source configuration</string>
+    <string name="sources.remove_configuration_body">Remove the connection configuration and keep downloaded photos. Photos without a local copy will be removed from frames.</string>
+    <string name="sources.remove_failed">Could not remove the source. Try again.</string>
+    <string name="source.nas.storage">Photo storage</string>
+    <string name="source.nas.storage_remote">Read on demand, save space</string>
+    <string name="source.nas.storage_local">Sync selected folders locally for offline access</string>
+    <string name="source.nas.storage_hint">Local sync downloads photos in the selected folders. Switching to on-demand access keeps existing copies for you to manage.</string>
+    <string name="source.local_files.choose_files">Choose photo files</string>
+    <string name="source.local_files.choose_folder">Choose photo folder</string>
+    <string name="source.local_reference.reselect">Access to the selected photos or folder could not be retained. Select them again and allow access.</string>
+    <string name="source.local_reference.title">Device photo references</string>
+    <string name="source.local_reference.mode">Use original photos directly</string>
+    <string name="source.local_reference.body">Frames store photo references and preview caches. Originals are managed by Photos or the selected folder.</string>
+    <string name="source.local_reference.unavailable">The original photo is unavailable. Check its source or grant access again.</string>
 </resources>

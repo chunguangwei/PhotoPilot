@@ -11,6 +11,7 @@ struct SourceInfoDTO: Sendable {
     let directories: [String]
     let mirrorDelete: Bool
     var catalogOnly = false
+    var referenceOnly = false
 }
 
 final class SourceRepository {
@@ -35,14 +36,16 @@ final class SourceRepository {
         endpointKey: String,
         displayName: String,
         recursive: Bool,
-        directories: [String]
+        directories: [String],
+        catalogOnly: Bool? = nil
     ) throws -> String {
         try ensureRemoteSource(
             type: "webdav",
             endpointKey: endpointKey,
             displayName: displayName,
             recursive: recursive,
-            directories: directories
+            directories: directories,
+            catalogOnly: catalogOnly
         )
     }
 
@@ -50,14 +53,16 @@ final class SourceRepository {
         endpointKey: String,
         displayName: String,
         recursive: Bool,
-        directories: [String]
+        directories: [String],
+        catalogOnly: Bool? = nil
     ) throws -> String {
         try ensureRemoteSource(
             type: "smb",
             endpointKey: endpointKey,
             displayName: displayName,
             recursive: recursive,
-            directories: directories
+            directories: directories,
+            catalogOnly: catalogOnly
         )
     }
 
@@ -66,10 +71,12 @@ final class SourceRepository {
         endpointKey: String,
         displayName: String,
         recursive: Bool,
-        directories: [String]
+        directories: [String],
+        catalogOnly: Bool? = nil
     ) throws -> String {
         let context = container.viewContext
         let request = NSFetchRequest<NSManagedObject>(entityName: "Source")
+        request.shouldRefreshRefetchedObjects = true
         request.predicate = NSPredicate(
             format: "type == %@ AND endpoint_key == %@",
             type,
@@ -79,8 +86,9 @@ final class SourceRepository {
         if let existing = try context.fetch(request).first {
             let oldJSON = existing.value(forKey: "settings_json") as? String ?? "{}"
             let oldSettings = try? JSONSerialization.jsonObject(with: Data(oldJSON.utf8)) as? [String: Any]
+            let selectedCatalogOnly = catalogOnly ?? oldSettings?["catalogOnly"] as? Bool ?? false
             let oldDirectories = (oldSettings?["directories"] as? [String] ?? []).map { Data($0.utf8) }
-            let changed = oldDirectories != directories.map { Data($0.utf8) } || oldSettings?["recursive"] as? Bool != recursive
+            let changed = oldDirectories != directories.map { Data($0.utf8) } || oldSettings?["recursive"] as? Bool != recursive || (oldSettings?["catalogOnly"] as? Bool ?? false) != selectedCatalogOnly
             if (existing.value(forKey: "status") as? String) == "disconnected" || changed {
                 if changed { existing.setValue((existing.value(forKey: "epoch") as? Int ?? 1) + 1, forKey: "epoch") }
                 var merged: [String: Any] = [:]
@@ -91,6 +99,7 @@ final class SourceRepository {
                 }
                 merged["recursive"] = recursive
                 merged["directories"] = directories
+                if catalogOnly != nil { merged["catalogOnly"] = selectedCatalogOnly }
                 let settings = try? JSONSerialization.data(
                     withJSONObject: merged,
                     options: [.sortedKeys]
@@ -121,7 +130,7 @@ final class SourceRepository {
             throw PersistenceError.dbConstraintViolation
         }
         let settings = try? JSONSerialization.data(
-            withJSONObject: ["recursive": recursive, "directories": directories, "catalogOnly": true],
+            withJSONObject: ["recursive": recursive, "directories": directories, "catalogOnly": catalogOnly ?? true],
             options: [.sortedKeys]
         )
         let now = Int(Date().timeIntervalSince1970 * 1000)
@@ -197,6 +206,7 @@ final class SourceRepository {
     func setWebdavMirrorDelete(sourceID: String, enabled: Bool) throws {
         let context = container.viewContext
         let request = NSFetchRequest<NSManagedObject>(entityName: "Source")
+        request.shouldRefreshRefetchedObjects = true
         request.predicate = NSPredicate(format: "id == %@", sourceID)
         request.fetchLimit = 1
         guard let row = try context.fetch(request).first else {
@@ -229,6 +239,7 @@ final class SourceRepository {
     func webdavMirrorDeleteEnabled(sourceID: String) throws -> Bool {
         let context = container.viewContext
         let request = NSFetchRequest<NSManagedObject>(entityName: "Source")
+        request.shouldRefreshRefetchedObjects = true
         request.predicate = NSPredicate(format: "id == %@", sourceID)
         request.fetchLimit = 1
         guard let row = try context.fetch(request).first,
@@ -243,6 +254,7 @@ final class SourceRepository {
     func webdavSources() throws -> [SourceInfoDTO] {
         let context = container.viewContext
         let request = NSFetchRequest<NSManagedObject>(entityName: "Source")
+        request.shouldRefreshRefetchedObjects = true
         request.predicate = NSPredicate(format: "type IN %@", ["webdav", "smb"])
         return try context.fetch(request).map { row in
             var recursive = true
@@ -271,9 +283,19 @@ final class SourceRepository {
         }
     }
 
+    func referenceSources() throws -> [SourceInfoDTO] {
+        let request = NSFetchRequest<NSManagedObject>(entityName: "Source")
+        request.shouldRefreshRefetchedObjects = true
+        request.predicate = NSPredicate(format: "type IN %@", ["local_photos", "local_files"])
+        return try container.viewContext.fetch(request).filter { LocalReferenceService.isReference($0) }.map { row in
+            SourceInfoDTO(id: row.value(forKey: "id") as? String ?? "", type: row.value(forKey: "type") as? String ?? "", displayName: row.value(forKey: "display_name") as? String ?? "", endpointKey: nil, status: row.value(forKey: "status") as? String ?? "", recursive: true, directories: [], mirrorDelete: false, catalogOnly: true, referenceOnly: true)
+        }
+    }
+
     private func ensureSource(id: String, type: String, displayName: String) throws -> String {
         let context = container.viewContext
         let request = NSFetchRequest<NSManagedObject>(entityName: "Source")
+        request.shouldRefreshRefetchedObjects = true
         request.predicate = NSPredicate(format: "id == %@", id)
         request.fetchLimit = 1
         if try context.fetch(request).first != nil {

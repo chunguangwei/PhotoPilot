@@ -95,8 +95,8 @@
     </plurals>
     <string name="sources.title">来源</string>
     <string name="sources.add">添加照片来源</string>
-    <string name="sources.empty_body">添加一个来源，把照片导入到这台设备。</string>
-    <string name="sources.import_vs_display">导入后，你仍可选择展示哪些照片。</string>
+    <string name="sources.empty_body">添加来源，选择要展示的照片。</string>
+    <string name="sources.import_vs_display">确认选片后，照片才会展示。</string>
     <string name="sources.sync_now">立即同步</string>
     <string name="sources.last_sync">上次同步 %1$s</string>
     <string name="sources.last_import">上次导入 %1$s</string>
@@ -114,11 +114,11 @@
     </plurals>
     <string name="sources.reconfigure">重新配置</string>
     <string name="source.local_photos.title">本机照片</string>
-    <string name="source.local_photos.body">从系统照片库选择照片，或从文件应用导入图片。</string>
+    <string name="source.local_photos.body">引用系统相册或所选文件中的照片，节省副本空间。</string>
     <string name="source.local_files.title">文件</string>
-    <string name="source.local_files.body">从系统文件中选择图片，包括 iCloud 云盘中的文件。</string>
+    <string name="source.local_files.body">引用所选文件或目录中的照片，包括 iCloud 云盘。</string>
     <string name="source.icloud.title">iCloud 照片</string>
-    <string name="source.icloud.body.android">请先将 iCloud 照片导出到本地，再从文件导入。</string>
+    <string name="source.icloud.body.android">请先将 iCloud 照片保存到本机，再从文件选择。</string>
     <string name="source.icloud.not_a_login">不需要输入 Apple ID 密码。</string>
     <string name="source.icloud.track_album">跟踪相册变化</string>
     <string name="source.icloud.track_album_body">开启后会持续检查该相册的新照片，需要照片库访问权限。</string>
@@ -137,7 +137,7 @@
     <string name="source.google.unavailable_body">这个来源还在准备中，当前版本无法使用。</string>
     <string name="source.google.retention_gated">该来源的照片保留方式仍在确认中。</string>
     <string name="source.nas.title">NAS 共享文件夹</string>
-    <string name="source.nas.body">连接家中的 NAS，按目录导入照片。</string>
+    <string name="source.nas.body">连接 NAS，按需读取或同步所选目录中的照片。</string>
     <string name="source.nas.protocol">协议</string>
     <string name="source.nas.protocol_webdav_https">WebDAV（HTTPS）</string>
     <string name="source.nas.protocol_webdav_http">WebDAV（HTTP）</string>
@@ -602,7 +602,7 @@
     <string name="settings.storage_threshold_help">默认保留至少 1 GB 或总容量的 5%，取较大值。低于阈值暂停导入，不自动删除照片。</string>
     <string name="settings.storage_threshold_risk">降低保留空间可能使后续导入失败。确认后才会应用，不删除已有照片。</string>
     <string name="settings.import_originals">保留导入原文件，按需生成展示副本</string>
-    <string name="source.local_files.body.android">从系统文件选择器导入已保存在设备上的图片。</string>
+    <string name="source.local_files.body.android">从系统文件选择器选择照片或目录，直接引用原照片。</string>
     <string name="settings.holiday">节日播放</string>
     <string name="holiday.title">节日播放</string>
     <string name="holiday.empty">还没有节日规则。添加一条后，节日期间会自动播放指定相框。</string>
@@ -625,4 +625,18 @@
     <string name="holiday.notice_switched">进入「%1$s」，已切换到节日相框</string>
     <string name="holiday.notice_missing">节日规则「%1$s」的相框缺失或没有可播照片，已回落</string>
     <string name="holiday.notice_returned">节日时段结束，已回到之前的相框</string>
+    <string name="sources.remove_configuration">删除来源配置</string>
+    <string name="sources.remove_configuration_body">删除连接配置并保留已下载的照片。未下载的照片将从相框中移除。</string>
+    <string name="sources.remove_failed">删除来源失败，请重试。</string>
+    <string name="source.nas.storage">照片存储</string>
+    <string name="source.nas.storage_remote">按需读取，节省空间</string>
+    <string name="source.nas.storage_local">同步所选目录到本地，支持离线</string>
+    <string name="source.nas.storage_hint">开启本地同步会下载所选目录中的照片。切回按需读取会保留已有副本，可另行管理。</string>
+    <string name="source.local_files.choose_files">选择照片文件</string>
+    <string name="source.local_files.choose_folder">选择照片目录</string>
+    <string name="source.local_reference.reselect">无法持续访问所选照片或目录，请重新选择并允许访问。</string>
+    <string name="source.local_reference.title">本机照片引用</string>
+    <string name="source.local_reference.mode">直接引用原照片</string>
+    <string name="source.local_reference.body">相框保存照片关联与必要的预览缓存。原照片由系统相册或所选目录管理。</string>
+    <string name="source.local_reference.unavailable">原照片暂不可访问，请检查来源或重新授权。</string>
 </resources>

@@ -19,6 +19,16 @@ object NasScope {
         return out
     }
 
+    fun sourceScope(settingsJson: String?, scopesNewestFirst: List<String>): String? {
+        val settings = JsonMini.parseObject(settingsJson)
+        if (settings.containsKey("directories")) {
+            val directories = settings["directories"] as? List<*> ?: return null
+            if (directories.any { it !is String }) return null
+            return normalizeDirectories(directories.filterIsInstance<String>())?.let(::scopeJson)
+        }
+        return latestSourceScope(scopesNewestFirst)
+    }
+
     fun latestSourceScope(scopesNewestFirst: List<String>): String? =
         scopesNewestFirst.firstOrNull { JsonMini.parseObject(it)["frameId"] == null }
 

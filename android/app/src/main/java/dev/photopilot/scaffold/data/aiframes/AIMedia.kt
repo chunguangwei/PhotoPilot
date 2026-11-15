@@ -18,7 +18,6 @@ internal suspend fun AIFrameService.mediaCandidates(collections: List<String>, r
     remoteMedia?.let { media ->
         for (collection in all.filter { it.id in ids && it.sourceId != null && it.relPath != null }) {
             for (sourceAsset in media.members(requireNotNull(collection.sourceId), collection.relPath.orEmpty(), false)) {
-                if (!RemotePaths.contains(collection.relPath.orEmpty(), sourceAsset.remoteKey, false)) continue
                 val item = media.item(sourceAsset.id) ?: continue
                 remoteLocals.addAll(db.assetOriginDao().getBySourceAssets(listOf(sourceAsset.id)).map { it.assetId })
                 result[item.id] = AIMedia(item.id, "${sourceAsset.sourceId}:${item.sourceEpoch}:${sourceAsset.revision}:${item.local?.contentHash.orEmpty()}", item)
@@ -50,7 +49,7 @@ internal suspend fun AIFrameService.excluded(candidate: AIMedia, frameId: String
 
 internal suspend fun AIFrameService.mediaVector(candidate: AIMedia, engine: AIEmbedder, model: AIModel): FloatArray {
     val cacheKey = "ai.vector." + java.security.MessageDigest.getInstance("SHA-256").digest("${candidate.id}:${candidate.fingerprint}:${model.id}:${model.revision}:${model.preprocessingVersion}".toByteArray()).joinToString("") { "%02x".format(it) }
-    db.settingsKvDao().get(cacheKey)?.let { row ->
+    db.settingsKvDao().get(cacheKey)?.takeIf { candidate.item.referenceCacheable }?.let { row ->
         val array = JSONArray(row.valueJson)
         val now = System.currentTimeMillis()
         db.settingsKvDao().upsert(row.copy(updatedAt = now))
@@ -58,7 +57,10 @@ internal suspend fun AIFrameService.mediaVector(candidate: AIMedia, engine: AIEm
     }
     val vector = if (candidate.item.remote != null) {
         val media = requireNotNull(remoteMedia)
-        media.read(candidate.item) { file, orientation ->
+        if (media.isLocalReference(candidate.item)) {
+            val bitmap = requireNotNull(media.bitmap(candidate.item, 1024, 1024)) { "LOCAL_REFERENCE_UNAVAILABLE" }
+            engine.image(bitmap)
+        } else media.read(candidate.item) { file, orientation ->
             val bitmap = AIImageDecoder.decode(file, orientation)
             try { engine.image(bitmap) } finally { bitmap.recycle() }
         }
@@ -75,11 +77,13 @@ internal suspend fun AIFrameService.mediaVector(candidate: AIMedia, engine: AIEm
             val current = db.assetDao().getById(original.id)
             if (current == null || current.privacyExcluded || current.deletedAt != null || current.contentHash != original.contentHash) throw java.io.IOException("REMOTE_REVOKED")
         }
-        db.settingsKvDao().upsert(SettingsKvEntity(cacheKey, value, now, now))
-        var bytes = 0L
-        for (row in db.settingsKvDao().getByPrefix("ai.vector.").sortedByDescending { it.updatedAt }) {
-            bytes += row.valueJson.toByteArray(Charsets.UTF_8).size
-            if (bytes > 16777216) db.settingsKvDao().delete(row)
+        if (candidate.item.referenceCacheable) {
+            db.settingsKvDao().upsert(SettingsKvEntity(cacheKey, value, now, now))
+            var bytes = 0L
+            for (row in db.settingsKvDao().getByPrefix("ai.vector.").sortedByDescending { it.updatedAt }) {
+                bytes += row.valueJson.toByteArray(Charsets.UTF_8).size
+                if (bytes > 16777216) db.settingsKvDao().delete(row)
+            }
         }
     }
     return vector

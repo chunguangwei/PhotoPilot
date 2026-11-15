@@ -1,0 +1,142 @@
+{
+  "version": "1.4.0",
+  "build": 61,
+  "screenshots": [
+    {
+      "file": "store/appstore/local-references-v1.4.0/iphone-en-real-photokit-restart-playback.png",
+      "device": "iphone",
+      "language": "en",
+      "dimensions": [
+        1206,
+        2622
+      ],
+      "mode": "RGB",
+      "sha256": "51b0e73f0660b5c3829e1b565d3ae3f8bb86131ba51b9ba9cc09d262823eccbe",
+      "capture": "XCUIScreen main screenshot, real PhotoKit synthetic-album flow",
+      "storeCandidate": false,
+      "purpose": "real-photokit-restart-playback",
+      "test": "LocalReferenceFlowTests/testRealPhotoLibraryReferenceSelectionSavePlaybackAndRestart()"
+    },
+    {
+      "file": "store/appstore/local-references-v1.4.0/iphone-en-real-photokit-playback.png",
+      "device": "iphone",
+      "language": "en",
+      "dimensions": [
+        1206,
+        2622
+      ],
+      "mode": "RGB",
+      "sha256": "49b7ce58ff605e580cd1bd4c14f427f1db97315360a102ed5f2a60d052bfca7c",
+      "capture": "XCUIScreen main screenshot, real PhotoKit synthetic-album flow",
+      "storeCandidate": true,
+      "purpose": "real-photokit-playback",
+      "test": "LocalReferenceFlowTests/testRealPhotoLibraryReferenceSelectionSavePlaybackAndRestart()"
+    },
+    {
+      "file": "store/appstore/local-references-v1.4.0/iphone-en-real-photokit-second-selection.png",
+      "device": "iphone",
+      "language": "en",
+      "dimensions": [
+        1206,
+        2622
+      ],
+      "mode": "RGB",
+      "sha256": "2807702e9493d4535589bd0af576c8e383e17b68ca928a951e5979a05853e4c0",
+      "capture": "XCUIScreen main screenshot, real PhotoKit synthetic-album flow",
+      "storeCandidate": true,
+      "purpose": "real-photokit-second-selection",
+      "test": "LocalReferenceFlowTests/testRealPhotoLibraryReferenceSelectionSavePlaybackAndRestart()"
+    },
+    {
+      "file": "store/appstore/local-references-v1.4.0/iphone-en-real-photokit-albums.png",
+      "device": "iphone",
+      "language": "en",
+      "dimensions": [
+        1206,
+        2622
+      ],
+      "mode": "RGB",
+      "sha256": "6827c39c1fbe42cc38687ce348c05efac92f209651f7dd82c0610fe83f3636bf",
+      "capture": "XCUIScreen main screenshot, real PhotoKit synthetic-album flow",
+      "storeCandidate": false,
+      "purpose": "real-photokit-albums",
+      "test": "LocalReferenceFlowTests/testRealPhotoLibraryReferenceSelectionSavePlaybackAndRestart()"
+    },
+    {
+      "file": "store/appstore/local-references-v1.4.0/ipad-en-real-photokit-restart-playback.png",
+      "device": "ipad",
+      "language": "en",
+      "dimensions": [
+        2064,
+        2752
+      ],
+      "mode": "RGB",
+      "sha256": "35ee56595036b7db5d3f0fb40adb5c10ecb12446ecb7f28c2135fd3ed69fef31",
+      "capture": "XCUIScreen main screenshot, real PhotoKit synthetic-album flow",
+      "storeCandidate": false,
+      "purpose": "real-photokit-restart-playback",
+      "test": "LocalReferenceFlowTests/testRealPhotoLibraryReferenceSelectionSavePlaybackAndRestart()"
+    },
+    {
+      "file": "store/appstore/local-references-v1.4.0/ipad-en-real-photokit-playback.png",
+      "device": "ipad",
+      "language": "en",
+      "dimensions": [
+        2064,
+        2752
+      ],
+      "mode": "RGB",
+      "sha256": "87e565d5561c2382a438c1ac99fc023d4f46363baec101c69ce356ba84a5e1b0",
+      "capture": "XCUIScreen main screenshot, real PhotoKit synthetic-album flow",
+      "storeCandidate": true,
+      "purpose": "real-photokit-playback",
+      "test": "LocalReferenceFlowTests/testRealPhotoLibraryReferenceSelectionSavePlaybackAndRestart()"
+    },
+    {
+      "file": "store/appstore/local-references-v1.4.0/ipad-en-real-photokit-second-selection.png",
+      "device": "ipad",
+      "language": "en",
+      "dimensions": [
+        2064,
+        2752
+      ],
+      "mode": "RGB",
+      "sha256": "f54c8949f86dd8e98251a0a5b3ac9ed46f072950c903b5163fb9f4ef6f1f2fcf",
+      "capture": "XCUIScreen main screenshot, real PhotoKit synthetic-album flow",
+      "storeCandidate": true,
+      "purpose": "real-photokit-second-selection",
+      "test": "LocalReferenceFlowTests/testRealPhotoLibraryReferenceSelectionSavePlaybackAndRestart()"
+    },
+    {
+      "file": "store/appstore/local-references-v1.4.0/ipad-en-real-photokit-albums.png",
+      "device": "ipad",
+      "language": "en",
+      "dimensions": [
+        2064,
+        2752
+      ],
+      "mode": "RGB",
+      "sha256": "2e26bb678fd045bee2058cf4bb94f9dbfd847a2d4f16598ee2f620607418091a",
+      "capture": "XCUIScreen main screenshot, real PhotoKit synthetic-album flow",
+      "storeCandidate": false,
+      "purpose": "real-photokit-albums",
+      "test": "LocalReferenceFlowTests/testRealPhotoLibraryReferenceSelectionSavePlaybackAndRestart()"
+    }
+  ],
+  "storeCandidateCount": 4,
+  "syntheticContent": "Three repository-owned SeedMedia photos, no personal photos or model validation images.",
+  "qaMatrix": {
+    "languages": [
+      "en",
+      "zh-Hans"
+    ],
+    "iphoneNativeCaptures": 19,
+    "ipadNativeCaptures": 18,
+    "capture": "Native UIKit window render with normal and accessibility text, light/dark, portrait/narrow/landscape configurations. Final local manifests retained under .build.",
+    "storeUpload": "Use the XCUIScreen Store candidates above. Native component/window renders serve QA.",
+    "additionalNasActionCaptures": 3,
+    "totalLocalCapturesIncludingActualUI": 48,
+    "localManifest": ".build/releases/v1.4.0/ios-ui-evidence-manifest.json"
+  },
+  "pending": "Final screenshot choice and App Store upload after matching publishing signature becomes available."
+}

@@ -11,6 +11,7 @@ final class FrameStorageViewController: UITableViewController {
     private var selectionVersion: Int64 = 0
     private var monitoring: Task<Void, Never>?
     private var changing = false
+    private var hasNasPhotos = true
     private var lastStatus = ""
     private var displayedState = ""
 
@@ -61,6 +62,9 @@ final class FrameStorageViewController: UITableViewController {
             let bundle = try await environment.frameManager.framePlaybackBundle(frameID: frameID)
             mode = FrameStorageMode.read(bundle.settingsJSON)
             selectionVersion = bundle.selectionVersion
+            let references = Set(try await environment.frames.resolve(frameID: frameID).candidates)
+            let records = try await environment.remoteMedia.repository.records()
+            hasNasPhotos = records.contains { !$0.referenceOnly && references.contains($0.descriptor.runtimeID) }
             progress = try await environment.frameStorage.state(frameID: frameID)
             cacheBytes = await environment.remoteMedia.cache.usage()
             if force || progress.status != lastStatus {
@@ -85,10 +89,10 @@ final class FrameStorageViewController: UITableViewController {
         (view as? UITableViewHeaderFooterView)?.textLabel?.textColor = ThemeColor.textSecondary
     }
 
-    override func numberOfSections(in tableView: UITableView) -> Int { 3 }
+    override func numberOfSections(in tableView: UITableView) -> Int { hasNasPhotos ? 3 : 1 }
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
-        case 0: return mode == .local ? 3 : 1
+        case 0: return hasNasPhotos && mode == .local ? 3 : 1
         case 1: return 2
         default: return 2
         }
@@ -104,7 +108,7 @@ final class FrameStorageViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
         switch section {
-        case 0: return AIText.value("Online playback reads NAS photos when needed. Local synchronization downloads only this frame’s selected photos for offline playback. Device photos and imported files retain their existing storage.", "在线播放按需读取 NAS 照片。本地同步仅下载此相框选中的照片，以供离线播放。本机相册及文件导入仍使用已有原图。")
+        case 0: return !hasNasPhotos ? AIText.value("Directly references device photos. Existing imported originals remain on this device.", "直接引用本机照片，已有导入原图继续保留在本机。") : AIText.value("Online playback reads NAS photos when needed. Local synchronization downloads only this frame’s selected NAS photos for offline playback. Device photo and file references use system access. Private imports use app storage.", "在线播放按需读取 NAS 照片。本地同步仅下载此相框选中的 NAS 照片，以供离线播放。本机照片和文件引用通过系统授权读取，私有导入照片使用应用存储。")
         case 1: return AIText.value("All online frames, thumbnails, covers and AI reads share 128 MiB. Downloads and reservations count toward the limit. At least 64 MiB of device space is reserved.", "所有在线相框、缩略图、封面及 AI 读取共用 128 MiB，下载中数据和预约空间均计入限额，并保留至少 64 MiB 设备可用空间。")
         default: return AIText.value("Releasing copies preserves your selections, frame rules and NAS originals. Copies used by other offline frames, local imports, source-wide synchronization or unverified versions are protected. Legacy copies can be checked against the remote file before release.", "释放副本会保留选片、相框规则和 NAS 原图。其他离线相框、本机导入、来源级同步及未经核验的版本所使用的副本会保留。旧副本可先从远端逐张核验，再释放符合条件的文件。")
         }
@@ -123,11 +127,11 @@ final class FrameStorageViewController: UITableViewController {
         cell.detailTextLabel?.numberOfLines = 0
         if indexPath.section == 0 {
             if indexPath.row == 0 {
-                cell.textLabel?.text = AIText.value("Synchronize selected photos locally", "将选中照片同步到本地")
-                cell.accessoryView = localSwitch
+                cell.textLabel?.text = hasNasPhotos ? AIText.value("Synchronize selected NAS photos locally", "将选中的 NAS 照片同步到本地") : AIText.value("Directly references device photos", "直接引用本机照片")
+                cell.accessoryView = hasNasPhotos ? localSwitch : nil
                 cell.accessibilityIdentifier = "storage.mode"
             } else if indexPath.row == 1 {
-                cell.textLabel?.text = progress.status == "complete" ? AIText.value("Ready for offline playback", "离线照片已就绪")
+                cell.textLabel?.text = progress.status == "complete" ? AIText.value("NAS photos ready for offline playback", "NAS 离线照片已就绪")
                     : AIText.value("Synchronization", "同步进度")
                 cell.detailTextLabel?.text = "\(progress.completed) / \(progress.total)" + (progress.error.map { "\n" + $0 } ?? "")
                 cell.accessibilityIdentifier = "storage.progress"

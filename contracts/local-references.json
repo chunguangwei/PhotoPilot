@@ -1,0 +1,18 @@
+{
+  "formatVersion": 1,
+  "version": "1.4.0",
+  "build": 61,
+  "sourceModeKey": "referenceOnly",
+  "runtimeSourcePrefix": "remote:",
+  "persistedSelection": "existing raw sourceAsset FK",
+  "metadataMembershipPrefix": "reference.membership.",
+  "indexPhotoBodyReads": 0,
+  "indexOriginalCopies": 0,
+  "indexImportJobs": 0,
+  "schemaTables": 17,
+  "unknownProviderVersion": "readable, refresh generation and no long-lived image/feature cache",
+  "nasNewSourceCatalogOnly": true,
+  "retainedCopySelection": "current revision/hash provenance, uniquely committed folder membership, or sole legacy copy",
+  "ambiguousHistoricalCopies": "retain original files and require explicit photo reselection",
+  "nasAutomaticConnectionError": "local boolean status, preserve temporary-offline cache authority"
+}

@@ -187,12 +187,20 @@ final class FramesListViewController: UIViewController {
                     playableCount: counts.playable,
                     pendingCount: counts.pending,
                     updatedAt: card.updatedAt,
-                    storageMode: card.storageMode
+                    storageMode: card.storageMode,
+                    hasReferencedDevicePhotos: card.hasReferencedDevicePhotos
                 ))
             }
             cards = enriched
             renderCards()
         }
+    }
+
+    static func playableCountText(for card: FrameCardDTO) -> String {
+        if card.storageMode == .remote || card.hasReferencedDevicePhotos {
+            return AIText.value(card.playableCount == 1 ? "1 photo" : "\(card.playableCount) photos", "\(card.playableCount) 张照片")
+        }
+        return String(format: L10n.string("frames.playable_count"), card.playableCount)
     }
 
     private func renderCards() {
@@ -287,9 +295,7 @@ final class FramesListViewController: UIViewController {
         nameLabel.numberOfLines = 0
 
         let playableLabel = UILabel()
-        playableLabel.text = card.storageMode == .remote
-            ? AIText.value(card.playableCount == 1 ? "1 photo" : "\(card.playableCount) photos", "\(card.playableCount) 张照片")
-            : String(format: L10n.string("frames.playable_count"), card.playableCount)
+        playableLabel.text = Self.playableCountText(for: card)
         playableLabel.font = ThemeFont.meta()
         playableLabel.adjustsFontForContentSizeCategory = true
         playableLabel.textColor = ThemeColor.textSecondary

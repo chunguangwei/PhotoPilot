@@ -184,14 +184,12 @@ final class PhotoPermissionViewController: UIViewController {
     }
 
     @objc private func handleContinue() {
-        Task { [weak self] in
-            guard let self else { return }
-            do {
-                let runner = try await environment.startPhotoLibraryImport()
-                try? environment.settings.setOnboardingCompleted(true)
-                show(ImportProgressViewController(runner: runner, environment: environment))
-            } catch {
-            }
+        let albums = LocalPhotoAlbumsViewController(environment: environment)
+        if let navigationController { navigationController.pushViewController(albums, animated: true) }
+        else {
+            let navigation = UINavigationController(rootViewController: albums)
+            navigation.modalPresentationStyle = .fullScreen
+            present(navigation, animated: true)
         }
     }
 

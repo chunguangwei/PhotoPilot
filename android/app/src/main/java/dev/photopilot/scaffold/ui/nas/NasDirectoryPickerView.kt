@@ -37,6 +37,12 @@ class NasDirectoryPickerView(context: Context) : LinearLayout(context) {
         val res = resources
         val inset = res.getDimensionPixelSize(R.dimen.pp_content_inset)
 
+        val content = LinearLayout(context).apply { orientation = VERTICAL }
+        val scroll = ScrollView(context).apply {
+            isFillViewport = true
+            addView(content, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        }
+        addView(scroll, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         val fixedTop = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
@@ -65,15 +71,13 @@ class NasDirectoryPickerView(context: Context) : LinearLayout(context) {
             setOnClickListener { ascend() }
         }
         fixedTop.addView(parentRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-        addView(fixedTop, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        content.addView(fixedTop, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
-        val scroll = ScrollView(context)
         listColumn = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(inset, res.getDimensionPixelSize(R.dimen.pp_space_8), inset, 0)
         }
-        scroll.addView(listColumn)
-        addView(scroll, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
+        content.addView(listColumn, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
         val bottomBar = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -114,7 +118,7 @@ class NasDirectoryPickerView(context: Context) : LinearLayout(context) {
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_8)
             },
         )
-        addView(
+        content.addView(
             bottomBar,
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
                 marginStart = inset

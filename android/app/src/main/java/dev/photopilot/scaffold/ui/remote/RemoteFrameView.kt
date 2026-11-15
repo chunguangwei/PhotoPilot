@@ -30,6 +30,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     private val initial = mutableSetOf<String>()
     private val name = EditText(context)
     private val sync = Switch(context)
+    private val storageHint = TextView(context)
     private val status = TextView(context)
     private val feedback = TextView(context)
     private val directoryRules = mutableMapOf<String, dev.photopilot.scaffold.data.logic.SaveRuleRow>()
@@ -44,6 +45,12 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     private var releaseControl: TextView? = null
     private var clearControl: TextView? = null
     private var busy = false
+    private var sourceLoad: Job? = null
+    private var photoLoad: Job? = null
+    private var sourceRequest = 0L
+    private var photoRequest = 0L
+    private var coverSourceAssetId: String? = restoredDraft?.get("coverRef")?.takeIf { it.isNotEmpty() }
+        ?: (JsonMini.parseObject(frame?.settingsJson)["remoteCoverRef"] as? String)
     private var previewDialog: AlertDialog? = null
     private val pageSize = 20
     init {
@@ -56,13 +63,13 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         scroll.addView(content)
         addView(scroll, LayoutParams(-1, 0, 1f))
         fun add(view: View) { content.addView(view, LayoutParams(-1, -2).apply { bottomMargin = dp(8) }) }
-        add(TextView(context).apply { text = this@RemoteFrameView.text("Remote photos", "远端照片"); textSize = 22f })
+        add(TextView(context).apply { text = this@RemoteFrameView.text("Photo sources", "照片来源"); textSize = 22f })
         add(TextView(context).apply { text = this@RemoteFrameView.text("Frame name", "相框名称") })
-        name.setText(restoredDraft?.get("name") ?: frame?.name ?: text("Remote frame", "远端相框")); add(name)
-        sync.text = text("Sync selected photos locally for offline playback", "同步所选照片到本地，支持离线播放")
+        name.setText(restoredDraft?.get("name") ?: frame?.name ?: text("My frame", "我的相框")); add(name)
+        sync.text = text("Sync selected NAS photos locally for offline playback", "同步所选 NAS 照片到本地，支持离线播放")
         sync.isChecked = restoredDraft?.get("mode")?.let { it == "local" } ?: frame?.let { dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(it.settingsJson).mediaStorageMode == "local" } ?: false
         add(sync)
-        add(TextView(context).apply { text = this@RemoteFrameView.text("Online playback uses a shared 128 MiB temporary cache. Source-level imports may also occupy storage.", "在线播放共用 128 MiB 临时缓存。来源级导入也可能占用存储。") })
+        add(storageHint)
         add(status)
         add(feedback)
         add(secondaryButton(context, text("Connect WebDAV / SMB", "连接 WebDAV / SMB")).apply { setOnClickListener { onConnect?.invoke() } })
@@ -70,7 +77,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         add(secondaryButton(context, text("Refresh metadata", "刷新照片索引")).apply { setOnClickListener { refreshIndex() } })
         add(secondaryButton(context, text("Select this folder", "选择此目录照片")).apply { setOnClickListener {
             scope.launch { sourceId?.let { id ->
-                val rows = withContext(Dispatchers.IO) { env.remoteMedia.members(id, folder, false).filter { it.remoteKey.substringAfterLast('.').lowercase() in dev.photopilot.scaffold.data.imports.LocalFilesSourceAdapter.MEDIA_EXTENSIONS } }
+                val rows = withContext(Dispatchers.IO) { env.remoteMedia.members(id, folder, false).filter { env.remoteMedia.item(it.id, allowRetainedCopy = false) != null } }
                 selected.addAll(rows.map { it.id }); loadPhotos()
             } }
         } })
@@ -120,7 +127,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         scope.launch { while (isActive) { delay(500); if (isAttachedToWindow && !busy) updateStatus() } }
     }
     fun draftState(): Map<String, String> = mapOf(
-        "name" to name.text.toString(), "mode" to if (sync.isChecked) "local" else "remote",
+        "name" to name.text.toString(), "coverRef" to coverSourceAssetId.orEmpty(), "mode" to if (sync.isChecked) "local" else "remote",
         "selected" to org.json.JSONArray(selected.toList()).toString(),
         "manualOrder" to org.json.JSONArray(manualOrder).toString(), "manualOrderEdited" to manualOrderEdited.toString(),
         "rules" to org.json.JSONArray(directoryRules.values.map { org.json.JSONObject().put("id", it.collectionId).put("recursive", it.recursive) }).toString(),
@@ -128,8 +135,11 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     )
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
     fun reloadSources() {
-        scope.launch {
-            val sources = withContext(Dispatchers.IO) { env.database.sourceDao().getAll().filter { it.type in setOf(SourceType.SMB, SourceType.WEBDAV) && it.status == SourceStatus.ACTIVE } }
+        val request = ++sourceRequest
+        sourceLoad?.cancel()
+        sourceLoad = scope.launch {
+            val sources = withContext(Dispatchers.IO) { env.database.sourceDao().getAll().filter { (it.type in setOf(SourceType.SMB, SourceType.WEBDAV) || JsonMini.parseObject(it.settingsJson)["referenceOnly"] == true) && it.status == SourceStatus.ACTIVE } }
+            if (request != sourceRequest) return@launch
             sourceList.removeAllViews()
             sources.forEach { source -> sourceList.addView(secondaryButton(context, source.displayName).apply { setOnClickListener { sourceId = source.id; folder = ""; page = 0; loadPhotos() } }) }
             if (sourceId == null) sourceId = sources.firstOrNull()?.id
@@ -142,25 +152,36 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         busy = true
         status.text = text("Refreshing photo metadata…", "正在刷新照片索引…")
         scope.launch {
-            runCatching { env.remoteMedia.index(id, JsonMini.toJson(mapOf("directories" to listOf(folder)))) }.onFailure { showError(it) }
+            runCatching {
+                val source = withContext(Dispatchers.IO) { env.database.sourceDao().getById(id) }
+                if (JsonMini.parseObject(source?.settingsJson)["referenceOnly"] == true) env.localReferences.refresh(id)
+                else env.remoteMedia.index(id, JsonMini.toJson(mapOf("directories" to listOf(folder))))
+            }.onFailure { showError(it) }
             busy = false; page = 0; loadPhotos()
         }
     }
     private fun loadPhotos() {
         val id = sourceId ?: return
-        scope.launch {
-            val prefix = if (folder.isEmpty()) "" else "$folder/"
+        val requestedFolder = folder
+        val requestedPage = page
+        val request = ++photoRequest
+        photoLoad?.cancel()
+        photoLoad = scope.launch {
             val loaded = withContext(Dispatchers.IO) {
-                val total = env.database.sourceAssetDao().countFolder(id, prefix, false)
-                page = page.coerceIn(0, ((total - 1).coerceAtLeast(0) / pageSize).toInt())
-                val files = env.database.sourceAssetDao().browseFolder(id, prefix, false, pageSize, page * pageSize)
-                val children = env.database.collectionDao().getBySource(id).filter { it.relPath != folder && dev.photopilot.scaffold.data.remote.RemotePaths.contains(folder, it.relPath.orEmpty() + "/_", true) && it.relPath?.substringBeforeLast('/', "") == folder }
-                files to children
+                val members = env.remoteMedia.members(id, requestedFolder, false)
+                val actualPage = requestedPage.coerceIn(0, ((members.size - 1).coerceAtLeast(0) / pageSize))
+                val files = members.drop(actualPage * pageSize).take(pageSize)
+                val children = env.database.collectionDao().getBySource(id).filter { it.relPath != requestedFolder && dev.photopilot.scaffold.data.remote.RemotePaths.contains(requestedFolder, it.relPath.orEmpty() + "/_", true) && it.relPath?.substringBeforeLast('/', "") == requestedFolder }
+                Triple(files, children, actualPage)
             }
+            if (request != photoRequest || sourceId != id || folder != requestedFolder || page != requestedPage) return@launch
+            page = loaded.third
+            fun current() = request == photoRequest && sourceId == id && folder == requestedFolder && page == loaded.third
             photos.removeAllViews()
             photos.addView(TextView(context).apply { text = folder.ifEmpty { this@RemoteFrameView.text("Root folder", "根目录") } })
             if (folder.isNotEmpty()) photos.addView(secondaryButton(context, text("Parent folder", "上级目录")).apply { setOnClickListener { folder = folder.substringBeforeLast('/', ""); page = 0; loadPhotos() } })
             val currentCollection = withContext(Dispatchers.IO) { env.database.collectionDao().getBySourceAndPath(id, folder) }
+            if (!current()) return@launch
             currentCollection?.let { collection ->
                 val recursive = CheckBox(context).apply { text = this@RemoteFrameView.text("Include subfolders", "包含子目录"); isChecked = directoryRules[collection.id]?.recursive == true }
                 val future = CheckBox(context).apply {
@@ -178,13 +199,15 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                 photos.addView(secondaryButton(context, child.name).apply { setOnClickListener { folder = child.relPath.orEmpty(); page = 0; loadPhotos() } })
             }
             for (asset in loaded.first) {
+                val displayName = withContext(Dispatchers.IO) { env.remoteMedia.displayName(asset) }
+                if (!current()) return@launch
                 val row = LinearLayout(context).apply {
                     isBaselineAligned = false
                     gravity = android.view.Gravity.CENTER_VERTICAL
                     minimumHeight = dp(56)
                 }
                 val check = CheckBox(context).apply {
-                    text = asset.remoteKey.substringAfterLast('/'); isChecked = asset.id in selected
+                    text = displayName; isChecked = asset.id in selected
                     minimumHeight = dp(48)
                     setSingleLine(true)
                     ellipsize = android.text.TextUtils.TruncateAt.END
@@ -196,6 +219,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                     setOnCheckedChangeListener { _, enabled -> if (enabled) selected.add(asset.id) else selected.remove(asset.id); updateStatus() }
                 }
                 val item = withContext(Dispatchers.IO) { env.remoteMedia.item(asset.id, allowRetainedCopy = false) }
+                if (!current()) return@launch
                 if (item != null) row.addView(RemoteThumbnailView(context, env.remoteMedia, item), LayoutParams(dp(56), dp(56)))
                 check.isEnabled = item != null
                 row.addView(check, LayoutParams(0, -2, 1f))
@@ -208,8 +232,15 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                             val image = RemoteThumbnailView(context, env.remoteMedia, item, 640).apply {
                                 scaleType = ImageView.ScaleType.FIT_CENTER
                                 minimumHeight = dp(240)
+                                onUnavailable = { previewDialog?.setMessage(context.getString(dev.photopilot.scaffold.R.string.source_local_reference_unavailable)) }
                             }
-                            previewDialog = AlertDialog.Builder(context).setTitle(asset.remoteKey.substringAfterLast('/')).setView(image).setPositiveButton(text("Close", "关闭"), null).create().also { dialog ->
+                            val reference = env.remoteMedia.isLocalReference(item)
+                            previewDialog = AlertDialog.Builder(context).setTitle(displayName).setView(image).setNeutralButton(context.getString(dev.photopilot.scaffold.R.string.frames_set_cover)) { _, _ ->
+                                coverSourceAssetId = asset.id
+                                feedback.text = context.getString(dev.photopilot.scaffold.R.string.frames_cover_set)
+                            }.setPositiveButton(text("Close", "关闭"), null).apply {
+                                if (reference) setNegativeButton(context.getString(dev.photopilot.scaffold.R.string.delete_hide_globally)) { _, _ -> confirmHideReference(asset.id) }
+                            }.create().also { dialog ->
                                 dialog.setOnDismissListener { if (previewDialog === dialog) previewDialog = null }
                                 dialog.show()
                             }
@@ -221,7 +252,45 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
             updateStatus()
         }
     }
+    private fun confirmHideReference(sourceAssetId: String) {
+        AlertDialog.Builder(context)
+            .setTitle(dev.photopilot.scaffold.R.string.delete_hide_globally)
+            .setMessage(dev.photopilot.scaffold.R.string.delete_hide_globally_body)
+            .setNegativeButton(dev.photopilot.scaffold.R.string.common_cancel, null)
+            .setPositiveButton(dev.photopilot.scaffold.R.string.delete_hide_globally) { _, _ ->
+                scope.launch {
+                    try {
+                        env.localReferences.hide(sourceAssetId, System.currentTimeMillis())
+                        selected.remove(sourceAssetId)
+                        initial.remove(sourceAssetId)
+                        manualOrder.remove(sourceAssetId)
+                        if (coverSourceAssetId == sourceAssetId) coverSourceAssetId = null
+                        frame = frame?.let { current -> withContext(Dispatchers.IO) { env.database.frameDao().getById(current.id) } }
+                        loadPhotos()
+                    } catch (failure: CancellationException) {
+                        throw failure
+                    } catch (failure: Exception) {
+                        showError(failure)
+                    }
+                }
+            }.show()
+    }
+
     private fun updateStatus() {
+        scope.launch {
+            val nasSources = withContext(Dispatchers.IO) {
+                val referenced = selected.mapNotNull { env.database.sourceAssetDao().getById(it)?.sourceId }.toSet() +
+                    directoryRules.keys.mapNotNull { env.database.collectionDao().getById(it)?.sourceId } + listOfNotNull(sourceId.takeIf { selected.isEmpty() })
+                referenced.any { id -> env.database.sourceDao().getById(id)?.type in setOf(SourceType.SMB, SourceType.WEBDAV) }
+            }
+            sync.visibility = if (nasSources) View.VISIBLE else View.GONE
+            pauseControl?.visibility = sync.visibility
+            resumeControl?.visibility = sync.visibility
+            releaseControl?.visibility = sync.visibility
+            clearControl?.visibility = sync.visibility
+            storageHint.text = if (nasSources) text("Online playback uses a shared 128 MiB temporary cache. Source-level imports may also occupy storage.", "在线播放共用 128 MiB 临时缓存。来源级导入也可能占用存储。")
+                else text("Uses your original photos directly. Keep access to the selected photos or folders enabled.", "直接使用本机原照片，请保留对已选照片或目录的访问权限。")
+        }
         val localMode = frame?.let { dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(it.settingsJson).mediaStorageMode == "local" } == true
         val running = frame?.let { env.remoteCopies.isRunning(it.id) } == true
         pauseControl?.isEnabled = localMode && running && !busy
@@ -237,7 +306,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         manualOrder.addAll(selected.filter { it !in manualOrder })
         if (manualOrder.isEmpty()) return
         scope.launch {
-            val labels = withContext(Dispatchers.IO) { manualOrder.map { id -> env.database.sourceAssetDao().getById(id)?.remoteKey?.substringAfterLast('/') ?: id } }
+            val labels = withContext(Dispatchers.IO) { manualOrder.map { id -> env.database.sourceAssetDao().getById(id)?.let { env.remoteMedia.displayName(it) } ?: id } }
             AlertDialog.Builder(context).setTitle(text("Photo order", "照片顺序")).setItems(labels.toTypedArray()) { _, index ->
                 AlertDialog.Builder(context).setTitle(labels[index]).setItems(arrayOf(text("Move earlier", "向前移动"), text("Move later", "向后移动"), text("Move to start", "移至开头"), text("Move to end", "移至末尾"))) { _, action ->
                     val target = when (action) { 0 -> (index - 1).coerceAtLeast(0); 1 -> (index + 1).coerceAtMost(manualOrder.lastIndex); 2 -> 0; else -> manualOrder.lastIndex }
@@ -253,7 +322,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         if (frame == null && selected.isEmpty() && directoryRules.isEmpty()) { feedback.text = text("Select photos or a folder first.", "请先选择照片或目录。"); return }
         busy = true
         val savedName = name.text.toString().trim()
-        val localMode = sync.isChecked
+        val localMode = sync.visibility == View.VISIBLE && sync.isChecked
         val selectedIds = selected.toSet()
         val rules = directoryRules.values.toList()
         manualOrder.retainAll(selectedIds)
@@ -263,15 +332,20 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
             runCatching {
                 val saved = withContext(Dispatchers.IO) {
                     env.database.withTransaction {
-                        val current = frame ?: env.frameManager.createFrame(savedName.ifEmpty { text("Remote frame", "远端相框") })
+                        val current = frame ?: env.frameManager.createFrame(savedName.ifEmpty { text("My frame", "我的相框") })
                         val beforeMigration = requireNotNull(env.database.frameDao().getById(current.id))
                         if (beforeMigration.selectionVersion != current.selectionVersion) throw java.io.IOException("REMOTE_SELECTION_CONFLICT")
                         env.frames.migrateNasSelections(current.id, current.selectionVersion)
                         val latest = requireNotNull(env.database.frameDao().getById(current.id))
                         val settings = JsonMini.parseObject(latest.settingsJson).toMutableMap()
                         settings["mediaStorageMode"] = if (localMode) "local" else "remote"
+                        coverSourceAssetId?.let { ref ->
+                            if (env.remoteMedia.item(ref) == null) throw java.io.IOException("REMOTE_REVOKED")
+                            settings["remoteCoverRef"] = ref
+                        }
                         env.database.frameDao().update(latest.copy(
                             name = savedName.ifEmpty { latest.name },
+                            coverAssetId = latest.coverAssetId.takeIf { coverSourceAssetId == null },
                             settingsJson = JsonMini.toJson(settings),
                             orderMode = if (order != null) FrameOrderMode.MANUAL else latest.orderMode,
                             updatedAt = System.currentTimeMillis(),

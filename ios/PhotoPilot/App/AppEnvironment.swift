@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 
 final class AppEnvironment: @unchecked Sendable {
@@ -98,6 +99,41 @@ final class AppEnvironment: @unchecked Sendable {
             networkPolicy: adapter == nil ? nasNetworkPolicy : nil,
             requiresNetwork: false
         )
+    }
+
+    func stopSourceWork(sourceID: String) async throws {
+        let context = persistence.container.newBackgroundContext()
+        let ids = try await context.perform {
+            let request = NSFetchRequest<NSManagedObject>(entityName: "ImportJob")
+            request.predicate = NSPredicate(format: "source.id == %@ AND NOT (state IN %@)", sourceID, [ImportJobState.completed.rawValue, ImportJobState.canceled.rawValue])
+            return try context.fetch(request).compactMap { $0.value(forKey: "id") as? String }
+        }
+        for id in ids {
+            if let runner = runners[id] { try await runner.cancel() }
+            else {
+                let coordinator = ImportCoordinator(controller: persistence, adapter: photoLibraryAdapter)
+                _ = try await coordinator.handleSignal(jobID: id, signal: .userCancel)
+            }
+        }
+        await remoteMedia.cancelIndex(sourceID: sourceID)
+    }
+
+    func connectLocalPhotoReferences(albumIDs: [String]) async throws -> String {
+        try await stopSourceWork(sourceID: SourceRepository.localPhotosID)
+        return try await remoteMedia.references.connectPhotos(albumIDs: albumIDs)
+    }
+
+    func connectLocalFileReferences(root: URL) async throws -> String {
+        try await stopSourceWork(sourceID: SourceRepository.localFilesID)
+        return try await remoteMedia.references.connectFiles(root: root)
+    }
+
+    func disconnectSource(sourceID: String, keepCopies: Bool, removeConfiguration: Bool = false) async throws {
+        let source = try sources.webdavSources().first { $0.id == sourceID }
+        try await stopSourceWork(sourceID: sourceID)
+        try await assets.disconnectSource(sourceID: sourceID, keepCopies: keepCopies, removeConfiguration: removeConfiguration)
+        if let key = source?.endpointKey { credentialStore.delete(fingerprint: key) }
+        await remoteMedia.clearCache()
     }
 
     func latestLocalPhotosJob() async throws -> ImportJobDTO? {
@@ -225,17 +261,27 @@ final class AppEnvironment: @unchecked Sendable {
     func runStartupMaintenance() async {
         try? await frameStorage.recoverCleanup()
         _ = try? await assets.purgeExpiredDeletedAssets()
+        await remoteMedia.references.refreshAll()
         let coordinator = ImportCoordinator(controller: persistence, adapter: photoLibraryAdapter)
         let interruptedJobs = (try? await coordinator.fetchJobs(
             withState: ImportJobState.running.rawValue
         )) ?? []
+        let referenceTypes = Set(((try? sources.referenceSources()) ?? []).map(\.type))
         for job in interruptedJobs {
+            if (job.sourceId == SourceRepository.localPhotosID && referenceTypes.contains("local_photos")) || (job.sourceId == SourceRepository.localFilesID && referenceTypes.contains("local_files")) {
+                _ = try? await coordinator.handleSignal(jobID: job.id, signal: .userCancel)
+                continue
+            }
             _ = try? await coordinator.handleSignal(jobID: job.id, signal: .autoPause)
         }
         let pausedJobs = (try? await coordinator.fetchJobs(
             withState: ImportJobState.pausedAuto.rawValue
         )) ?? []
         for job in pausedJobs {
+            if (job.sourceId == SourceRepository.localPhotosID && referenceTypes.contains("local_photos")) || (job.sourceId == SourceRepository.localFilesID && referenceTypes.contains("local_files")) {
+                _ = try? await coordinator.handleSignal(jobID: job.id, signal: .userCancel)
+                continue
+            }
             if let raw = try? await coordinator.scopeJSON(jobID: job.id),
                let scope = try? JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any], scope["frameID"] != nil { continue }
             if job.sourceId == SourceRepository.localPhotosID {
@@ -260,6 +306,7 @@ final class AppEnvironment: @unchecked Sendable {
     static let autoSyncThrottleMillis = 60_000
 
     func autoSyncWebDavSources() async {
+        await remoteMedia.references.refreshAll()
         let now = Int(Date().timeIntervalSince1970 * 1000)
         let lookup = ImportCoordinator(controller: persistence, adapter: photoLibraryAdapter)
         let activeJobs = ((try? await lookup.fetchJobs(withState: ImportJobState.running.rawValue)) ?? [])

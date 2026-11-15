@@ -12,6 +12,8 @@ struct RemoteMediaRecord: Sendable {
     let localRelativePath: String?
     let localContentHash: String?
     let indexedAt: Int64
+    var referenceOnly = false
+    var cacheable: Bool { !referenceOnly || (!descriptor.revision.isEmpty && !descriptor.revision.hasPrefix("unknown:")) }
 
     var remoteAllowed: Bool { !blocked && policyAllowed && sourceStatus == "active" && accessState == "accessible" }
     var localReady: Bool { !blocked && policyAllowed && localAssetID != nil && localRelativePath != nil }
@@ -114,18 +116,31 @@ actor RemoteMediaRepository {
 
     static func records(context: NSManagedObjectContext, originals: URL, sourceID: String? = nil, collectionID: String? = nil, recursive: Bool = true) throws -> [RemoteMediaRecord] {
         var sourceID = sourceID
+        var memberIDs: Set<String>?
         var folder: String?
         if let collectionID {
-            guard let collection = try fetch(context, entity: "Collection", id: collectionID), collection.value(forKey: "type") as? String == "source_folder" else { return [] }
+            guard let collection = try fetch(context, entity: "Collection", id: collectionID) else { return [] }
             sourceID = collection.value(forKeyPath: "source.id") as? String
-            folder = collection.value(forKey: "rel_path") as? String ?? ""
+            guard let source = collection.value(forKey: "source") as? NSManagedObject else { return [] }
+            if LocalReferenceService.isReference(source), source.value(forKey: "type") as? String == "local_photos" {
+                let membership = NSFetchRequest<NSManagedObject>(entityName: "SettingsKV")
+                membership.predicate = NSPredicate(format: "key == %@", "reference.membership." + collectionID)
+                guard let json = try context.fetch(membership).first?.value(forKey: "value_json") as? String,
+                      let value = try? JSONDecoder().decode(LocalReferenceMembership.self, from: Data(json.utf8)), value.version == 1,
+                      value.sourceID == sourceID, value.epoch == source.value(forKey: "epoch") as? Int else { return [] }
+                memberIDs = Set(value.sourceAssetIDs)
+            } else {
+                guard collection.value(forKey: "type") as? String == "source_folder" else { return [] }
+                folder = collection.value(forKey: "rel_path") as? String ?? ""
+            }
         }
         let request = NSFetchRequest<NSManagedObject>(entityName: "SourceAsset")
         request.predicate = sourceID.map { NSPredicate(format: "source.id == %@", $0) }
-            ?? NSPredicate(format: "source.type IN %@", ["webdav", "smb"])
+            ?? NSPredicate(format: "source.type IN %@", ["webdav", "smb", "local_photos", "local_files"])
         var result: [RemoteMediaRecord] = []
         for row in try context.fetch(request) {
             let path = row.value(forKey: "remote_key") as? String ?? ""
+            if let memberIDs, !memberIDs.contains(row.value(forKey: "id") as? String ?? "") { continue }
             if let folder, !RemoteMediaPath.contains(folder: folder, remoteKey: path, recursive: recursive) { continue }
             if AssetFileProber.videoExtensions.contains((path as NSString).pathExtension.lowercased()) { continue }
             if let item = try record(context: context, row: row, originals: originals) { result.append(item) }
@@ -135,7 +150,7 @@ actor RemoteMediaRepository {
 
     static func record(context: NSManagedObjectContext, row: NSManagedObject, originals: URL) throws -> RemoteMediaRecord? {
         guard let source = row.value(forKey: "source") as? NSManagedObject,
-              ["smb", "webdav"].contains(source.value(forKey: "type") as? String ?? ""),
+              (["smb", "webdav"].contains(source.value(forKey: "type") as? String ?? "") || LocalReferenceService.isReference(source)),
               let id = row.value(forKey: "id") as? String,
               let sourceID = source.value(forKey: "id") as? String,
               let path = row.value(forKey: "remote_key") as? String,
@@ -143,15 +158,23 @@ actor RemoteMediaRepository {
               RemoteMediaPath.normalized(path) != nil else { return nil }
         let epoch = source.value(forKey: "epoch") as? Int ?? 1
         let revision = row.value(forKey: "revision") as? String ?? ""
-        let origins = row.value(forKey: "assetOrigins") as? Set<NSManagedObject> ?? []
+        var origins = row.value(forKey: "assetOrigins") as? Set<NSManagedObject> ?? []
+        if LocalReferenceService.isReference(source), source.value(forKey: "type") as? String == "local_photos" {
+            let legacy = NSFetchRequest<NSManagedObject>(entityName: "AssetOrigin")
+            legacy.predicate = NSPredicate(format: "sourceAsset.source.id == %@ AND sourceAsset.remote_key == %@", SourceRepository.localPhotosID, path)
+            origins.formUnion(try context.fetch(legacy))
+        }
         var blocked = origins.contains { origin in
             guard let asset = origin.value(forKey: "asset") as? NSManagedObject else { return false }
             return asset.value(forKey: "privacy_excluded") as? Bool == true || asset.value(forKey: "deleted_at") != nil
                 || origin.value(forKey: "policy_state") as? String == "revoked"
         }
-        let fingerprint = ImportCoordinator.sourceFingerprint(source)
+        var fingerprints: Set<String> = [ImportCoordinator.sourceFingerprint(source)]
+        if source.value(forKey: "type") as? String == "local_photos" {
+            fingerprints.insert("local_photos:" + SourceRepository.localPhotosID)
+        }
         let tombstones = NSFetchRequest<NSManagedObject>(entityName: "LocalTombstone")
-        tombstones.predicate = NSPredicate(format: "source_fingerprint == %@ AND remote_id == %@", fingerprint, path)
+        tombstones.predicate = NSPredicate(format: "source_fingerprint IN %@ AND remote_id == %@", Array(fingerprints), path)
         if try context.fetch(tombstones).contains(where: { Data(($0.value(forKey: "remote_id") as? String ?? "").utf8) == Data(path.utf8) }) { blocked = true }
         let policyAllowed = source.value(forKey: "retention_policy") as? String == "user_managed" || origins.contains { $0.value(forKey: "policy_state") as? String == "allowed" }
         var local: NSManagedObject?
@@ -177,7 +200,7 @@ actor RemoteMediaRepository {
             sourceStatus: source.value(forKey: "status") as? String ?? "", accessState: row.value(forKey: "access_state") as? String ?? "",
             policyAllowed: policyAllowed, blocked: blocked, localAssetID: local?.value(forKey: "id") as? String,
             localRelativePath: local?.value(forKey: "original_rel_path") as? String, localContentHash: local?.value(forKey: "content_hash") as? String,
-            indexedAt: Int64(row.value(forKey: "last_seen_at") as? Int ?? 0))
+            indexedAt: Int64(row.value(forKey: "last_seen_at") as? Int ?? 0), referenceOnly: LocalReferenceService.isReference(source))
     }
 
     static func referenceAliases(context: NSManagedObjectContext, runtimeID: String) throws -> Set<String> {
@@ -191,6 +214,25 @@ actor RemoteMediaRepository {
         for row in try context.fetch(request) {
             if let id = row.value(forKeyPath: "asset.id") as? String { result.insert(id) }
             if let id = row.value(forKeyPath: "sourceAsset.id") as? String { result.insert("remote:" + id) }
+        }
+        var photoKeys = Set<String>()
+        if case .sourceAsset(let id) = reference,
+           let sourceAsset = try fetch(context, entity: "SourceAsset", id: id), sourceAsset.value(forKeyPath: "source.type") as? String == "local_photos",
+           let key = sourceAsset.value(forKey: "remote_key") as? String { photoKeys.insert(key) }
+        for origin in try context.fetch(request) where origin.value(forKeyPath: "sourceAsset.source.type") as? String == "local_photos" {
+            if let key = origin.value(forKeyPath: "sourceAsset.remote_key") as? String { photoKeys.insert(key) }
+        }
+        if !photoKeys.isEmpty {
+            let photos = NSFetchRequest<NSManagedObject>(entityName: "SourceAsset")
+            let sources = NSFetchRequest<NSManagedObject>(entityName: "Source")
+            sources.predicate = NSPredicate(format: "type == %@", "local_photos")
+            photos.predicate = NSPredicate(format: "source IN %@ AND remote_key IN %@", try context.fetch(sources), Array(photoKeys))
+            for photo in try context.fetch(photos) {
+                if let id = photo.value(forKey: "id") as? String { result.insert("remote:" + id) }
+                for origin in photo.value(forKey: "assetOrigins") as? Set<NSManagedObject> ?? [] {
+                    if let id = origin.value(forKeyPath: "asset.id") as? String { result.insert(id) }
+                }
+            }
         }
         return result
     }

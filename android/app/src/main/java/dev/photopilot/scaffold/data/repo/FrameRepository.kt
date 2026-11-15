@@ -63,7 +63,10 @@ class FrameRepository(
             if (asset.privacyExcluded || asset.deletedAt != null || asset.mediaKind != dev.photopilot.scaffold.data.db.MediaKind.IMAGE) continue
             val origins = db.assetOriginDao().getByAsset(assetId)
             val candidates = origins.mapNotNull { origin -> db.sourceAssetDao().getById(origin.sourceAssetId)?.let { origin to it } }
-            if (candidates.isEmpty() || candidates.size != origins.size || candidates.any { sources[it.second.sourceId]?.type !in setOf(dev.photopilot.scaffold.data.db.SourceType.SMB, dev.photopilot.scaffold.data.db.SourceType.WEBDAV) }) continue
+            if (candidates.isEmpty() || candidates.size != origins.size || candidates.any { candidate ->
+                val source = sources[candidate.second.sourceId]
+                source?.type !in setOf(dev.photopilot.scaffold.data.db.SourceType.SMB, dev.photopilot.scaffold.data.db.SourceType.WEBDAV) && dev.photopilot.scaffold.data.logic.JsonMini.parseObject(source?.settingsJson)["referenceOnly"] != true
+            }) continue
             val allowed = candidates.sortedBy { it.second.id }.firstOrNull { (origin, remote) ->
                 origin.policyState == dev.photopilot.scaffold.data.db.PolicyState.ALLOWED && remoteMedia?.item(remote.id, allowRetainedCopy = false) != null
             } ?: continue
@@ -161,10 +164,13 @@ class FrameRepository(
         val localResolution = SelectionResolver.resolve(skeleton.copy(assets = assets))
         val remote = remoteItems(frameId)
         val mode = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode
-        val ready = remote.filter { mode == "remote" || it.local != null }.map { it.id }
+        val ready = remote.filter { mode == "remote" || it.local != null || remoteMedia?.isLocalReference(it) == true }.map { it.id }
+        val referencedLocalIds = remote.flatMap { item ->
+            listOfNotNull(item.local?.id) + db.assetOriginDao().getBySourceAssets(listOfNotNull(item.sourceAssetId)).map { it.assetId }
+        }.toSet()
         val resolution = localResolution.copy(
             allowed = (localResolution.allowed + remote.map { it.id }).distinct(),
-            playable = (localResolution.playable.filter { it !in remote.mapNotNull { item -> item.local?.id }.toSet() } + ready).distinct(),
+            playable = (localResolution.playable.filter { it !in referencedLocalIds } + ready).distinct(),
         )
         cache.put(cacheKey, resolution)
         resolution
@@ -309,9 +315,11 @@ class FrameRepository(
         val frame = db.frameDao().getById(frameId) ?: return@withIo emptyList()
         val remote = remoteItems(frameId)
         val mode = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode
-        val includedRemote = remote.filter { mode == "remote" || it.local != null }
+        val includedRemote = remote.filter { mode == "remote" || it.local != null || remoteMedia?.isLocalReference(it) == true }
         val localIds = resolve(frameId).playable.filter { !it.startsWith("remote:") }
-        val remoteLocalIds = includedRemote.mapNotNull { it.local?.id }.toSet()
+        val remoteLocalIds = includedRemote.flatMap { item ->
+            listOfNotNull(item.local?.id) + db.assetOriginDao().getBySourceAssets(listOfNotNull(item.sourceAssetId)).map { it.assetId }
+        }.toSet()
         db.assetDao().getByIds(localIds).filter { it.id !in remoteLocalIds }.map { dev.photopilot.scaffold.data.remote.PlaybackItem(local = it) } + includedRemote
     }
 
@@ -336,7 +344,7 @@ class FrameRepository(
             val collection = db.collectionDao().getById(rule.collectionId) ?: continue
             val sourceId = collection.sourceId ?: continue
             for (asset in media.members(sourceId, collection.relPath.orEmpty(), rule.recursive)) {
-                if (dev.photopilot.scaffold.data.remote.RemotePaths.contains(collection.relPath.orEmpty(), asset.remoteKey, rule.recursive)) ids.add(asset.id)
+                ids.add(asset.id)
             }
         }
         return ids.filter { it !in excluded }.mapNotNull { media.item(it, allowRetainedCopy = allowRetained) }.filter { item ->

@@ -279,6 +279,21 @@ final class RemoteProtocolTests: XCTestCase {
         let selections = try context.fetch(NSFetchRequest<NSManagedObject>(entityName: "FrameSelection"))
         XCTAssertNotNil(selections.first?.value(forKey: "sourceAsset"))
         XCTAssertNil(selections.first?.value(forKey: "asset"))
+        let localFile = controller.storeURL.deletingLastPathComponent().appendingPathComponent("local-reference-fixture.png")
+        try RemoteIndexFixture.pixels.write(to: localFile)
+        let localSource = try await media.references.connectFiles(root: localFile)
+        let localFolders = try await AssetRepository(controller: controller).collections().filter { $0.sourceID == localSource }
+        let localFrame = try await FrameManager(controller: controller).createFrame(name: "Local reference AI", storageMode: .local)
+        let localConfiguration = AIFrameConfiguration(frameID: localFrame, modelID: model.id, modelRevision: model.revision, collectionIDs: localFolders.map(\.id), rule: AIFrameRule(category: "a colorful abstract image", threshold: 0))
+        let localMatches = try await service.preview(configuration: localConfiguration, progress: { _ in })
+        XCTAssertEqual(localMatches.count, 1)
+        XCTAssertTrue(localMatches.first?.score.isFinite == true)
+        try await service.savePreview(frameID: localFrame, configuration: localConfiguration, matches: localMatches)
+        let localResolution = try await FrameRepository(controller: controller).resolve(frameID: localFrame)
+        XCTAssertEqual(localResolution.playable, localMatches.map(\.assetID))
+        context.reset()
+        XCTAssertEqual(try context.count(for: NSFetchRequest<NSFetchRequestResult>(entityName: "Asset")), 0)
+        XCTAssertEqual(try Data(contentsOf: localFile), RemoteIndexFixture.pixels)
     }
 
     func testRemoteCoverPreviewClearsImmediatelyOnAuthorityRevocation() async throws {

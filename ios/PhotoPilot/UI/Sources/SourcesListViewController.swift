@@ -59,12 +59,12 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
 
         rowsStack.addArrangedSubview(makeRow(
             titleKey: "source.local_photos.title",
-            bodyKey: "source.local_photos.body",
+            bodyKey: "source.local_reference.body",
             action: #selector(handleLocalSource)
         ))
         rowsStack.addArrangedSubview(makeRow(
             titleKey: "source.icloud.title",
-            bodyKey: "source.icloud.body.ios",
+            bodyKey: "source.local_reference.body",
             action: #selector(handleICloudPhotos)
         ))
         rowsStack.addArrangedSubview(makeRow(
@@ -147,7 +147,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         nasStatusViews.forEach { $0.removeFromSuperview() }
         nasStatusViews = []
         nasEndpointKeys = [:]
-        let sources = (try? environment.sources.webdavSources()) ?? []
+        let sources = ((try? environment.sources.webdavSources()) ?? []) + ((try? environment.sources.referenceSources()) ?? [])
         for source in sources {
             rowsStack.addArrangedSubview(makeNasStatusRow(source))
         }
@@ -274,7 +274,9 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         titleLabel.numberOfLines = 0
 
         let statusLabel = UILabel()
-        statusLabel.text = L10n.string(statusKey)
+        statusLabel.text = source.referenceOnly
+            ? (source.status == "unavailable" ? AIText.value("Choose the source again to restore access", "请重新选择来源以恢复访问") : L10n.string("source.local_reference.mode"))
+            : L10n.string(statusKey)
         statusLabel.font = ThemeFont.meta()
         statusLabel.adjustsFontForContentSizeCategory = true
         statusLabel.textColor = ThemeColor.textSecondary
@@ -288,7 +290,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         syncButton.addTarget(self, action: #selector(handleNasSync(_:)), for: .touchUpInside)
         syncButton.setContentHuggingPriority(.required, for: .horizontal)
 
-        let disconnectButton = ActionButton(titleKey: "sources.disconnect", style: .destructive)
+        let disconnectButton = ActionButton(titleKey: source.status == "disconnected" || source.referenceOnly ? "sources.remove_configuration" : "sources.disconnect", style: .destructive)
         disconnectButton.addTarget(
             self,
             action: #selector(handleNasDisconnect(_:)),
@@ -299,17 +301,20 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         syncButton.accessibilityIdentifier = source.id
         disconnectButton.accessibilityIdentifier = source.id
         syncButton.isHidden = source.status == "disconnected"
-        disconnectButton.isHidden = source.status == "disconnected"
 
         let reconfigureButton = ActionButton(
             titleKey: source.status == "needs_auth" ? "sources.reconfigure" : "common.edit",
             style: .secondary
         )
+        if source.referenceOnly {
+            reconfigureButton.setTitle(AIText.value("Choose again", "重新选择"))
+        }
         reconfigureButton.addTarget(
             self,
-            action: #selector(handleNasReconfigure(_:)),
+            action: source.referenceOnly ? #selector(handleLocalSource(_:)) : #selector(handleNasReconfigure(_:)),
             for: .touchUpInside
         )
+        reconfigureButton.accessibilityIdentifier = source.referenceOnly ? source.id + ".reselect" : nil
         reconfigureButton.setContentHuggingPriority(.required, for: .horizontal)
         reconfigureButton.isHidden = source.status == "disconnected"
         if let endpointKey = source.endpointKey {
@@ -334,16 +339,15 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         mirrorRow.axis = .horizontal
         mirrorRow.alignment = .center
         mirrorRow.spacing = ThemeMetrics.space8
-        mirrorRow.isHidden = source.status == "disconnected"
+        mirrorRow.isHidden = source.status == "disconnected" || source.referenceOnly
         mirrorRow.heightAnchor.constraint(
             greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
         ).isActive = true
 
         let buttonsRow = UIStackView(arrangedSubviews: [syncButton, reconfigureButton, disconnectButton, UIView()])
-        buttonsRow.axis = .horizontal
-        buttonsRow.alignment = .center
+        buttonsRow.axis = source.referenceOnly ? .vertical : .horizontal
+        buttonsRow.alignment = source.referenceOnly ? .fill : .center
         buttonsRow.spacing = ThemeMetrics.space8
-        buttonsRow.isHidden = source.status == "disconnected"
 
         let content = UIStackView(arrangedSubviews: [textStack, buttonsRow, mirrorRow])
         content.axis = .vertical
@@ -396,7 +400,8 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
             prefillEndpoint: endpoint,
             prefillCredential: credential,
             prefillDirectories: source?.directories ?? [],
-            prefillRecursive: source?.recursive ?? false
+            prefillRecursive: source?.recursive ?? false,
+            prefillCatalogOnly: source?.catalogOnly ?? true
         )
         let navigation = UINavigationController(rootViewController: controller)
         navigation.modalPresentationStyle = .fullScreen
@@ -405,7 +410,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
 
     @objc private func handleNasSync(_ sender: ActionButton) {
         guard let sourceID = sender.accessibilityIdentifier,
-              let source = try? environment.sources.webdavSources()
+              let source = try? (environment.sources.webdavSources() + environment.sources.referenceSources())
                 .first(where: { $0.id == sourceID }) else { return }
         Task { [weak self] in
             guard let self else { return }
@@ -427,27 +432,29 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
 
     @objc private func handleNasDisconnect(_ sender: ActionButton) {
         guard let sourceID = sender.accessibilityIdentifier,
-              let source = try? environment.sources.webdavSources()
+              let source = try? (environment.sources.webdavSources() + environment.sources.referenceSources())
                 .first(where: { $0.id == sourceID }) else { return }
         let sheet = UIAlertController(
-            title: FormatStrings.string("sources.disconnect_confirm_title", source.displayName),
-            message: L10n.string("sources.disconnect_body"),
+            title: source.status == "disconnected" || source.referenceOnly ? L10n.string("sources.remove_configuration") : FormatStrings.string("sources.disconnect_confirm_title", source.displayName),
+            message: L10n.string(source.status == "disconnected" || source.referenceOnly ? "sources.remove_configuration_body" : "sources.disconnect_body"),
             preferredStyle: .actionSheet
         )
         sheet.addAction(UIAlertAction(
-            title: L10n.string("sources.disconnect_keep_copies"),
+            title: source.status == "disconnected" ? AIText.value("Keep downloaded photos", "保留已下载照片") : L10n.string("sources.disconnect_keep_copies"),
             style: .default,
             handler: { [weak self] _ in
                 self?.disconnect(source: source, keepCopies: true)
             }
         ))
-        sheet.addAction(UIAlertAction(
-            title: L10n.string("delete.from_device_action"),
-            style: .destructive,
-            handler: { [weak self] _ in
-                self?.disconnect(source: source, keepCopies: false)
-            }
-        ))
+        if !source.referenceOnly {
+            sheet.addAction(UIAlertAction(
+                title: L10n.string("delete.from_device_action"),
+                style: .destructive,
+                handler: { [weak self] _ in
+                    self?.disconnect(source: source, keepCopies: false)
+                }
+            ))
+        }
         sheet.addAction(UIAlertAction(
             title: L10n.string("common.cancel"),
             style: .cancel
@@ -459,14 +466,14 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
     private func disconnect(source: SourceInfoDTO, keepCopies: Bool) {
         Task { [weak self] in
             guard let self else { return }
-            try? await environment.assets.disconnectSource(
-                sourceID: source.id,
-                keepCopies: keepCopies
-            )
-            if let endpointKey = source.endpointKey {
-                environment.credentialStore.delete(fingerprint: endpointKey)
+            do {
+                try await environment.disconnectSource(sourceID: source.id, keepCopies: keepCopies, removeConfiguration: source.status == "disconnected" || source.referenceOnly)
+                refreshNasSources()
+            } catch {
+                let alert = UIAlertController(title: AIText.value("Unable to remove source", "无法移除来源"), message: L10n.string("sources.remove_failed"), preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .default))
+                present(alert, animated: true)
             }
-            refreshNasSources()
         }
     }
 
@@ -575,10 +582,16 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
             handler: { [weak self] _ in self?.handleLocalPhotos() }
         ))
         sheet.addAction(UIAlertAction(
-            title: L10n.string("source.local_files.title"),
+            title: L10n.string("source.local_files.choose_files"),
             style: .default,
             handler: { [weak self] _ in self?.handleLocalFiles() }
         ))
+        sheet.addAction(UIAlertAction(title: L10n.string("source.local_files.choose_folder"), style: .default) { [weak self] _ in
+            guard let self else { return }
+            let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: false)
+            picker.delegate = self
+            present(picker, animated: true)
+        })
         sheet.addAction(UIAlertAction(
             title: L10n.string("common.cancel"),
             style: .cancel
@@ -599,7 +612,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
     private func handleLocalFiles() {
         let picker = UIDocumentPickerViewController(
             forOpeningContentTypes: [UTType.image],
-            asCopy: true
+            asCopy: false
         )
         picker.allowsMultipleSelection = true
         picker.delegate = self
@@ -621,22 +634,15 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         Task { [weak self] in
             guard let self else { return }
             do {
-                let staged = try await Task.detached {
-                    try PickedFilesSourceAdapter.stage(urls: urls)
-                }.value
-                guard !staged.supported.isEmpty else { return }
-                let adapter = PickedFilesSourceAdapter(
-                    files: staged.supported,
-                    stagingDirectory: staged.directory
-                )
-                let runner = try await environment.startPickedFilesImport(adapter: adapter)
-                try? environment.settings.setOnboardingCompleted(true)
-                show(ImportProgressViewController(
-                    runner: runner,
-                    environment: environment,
-                    skippedUnsupported: staged.skipped
-                ))
+                var sourceID: String?
+                for url in urls { sourceID = try await environment.connectLocalFileReferences(root: url) }
+                try environment.settings.setOnboardingCompleted(true)
+                let editor = FrameEditViewController(environment: environment, frameID: nil, routeToMainAfterSave: true, remoteSourceID: urls.count == 1 ? sourceID : nil)
+                show(editor)
             } catch {
+                let alert = UIAlertController(title: L10n.string("source.local_reference.reselect"), message: L10n.string("source.local_reference.unavailable"), preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .default))
+                present(alert, animated: true)
             }
         }
     }

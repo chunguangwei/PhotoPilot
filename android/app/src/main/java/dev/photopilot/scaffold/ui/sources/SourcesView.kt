@@ -17,6 +17,8 @@ class SourcesView(context: Context) : ScrollView(context) {
     var onLocalPhotosClick: (() -> Unit)? = null
     var onLocalFilesClick: (() -> Unit)? = null
     var onNasClick: (() -> Unit)? = null
+    var onLocalReferenceClick: ((String) -> Unit)? = null
+    var onLocalReferenceRemove: ((String) -> Unit)? = null
     var onJobStatusClick: (() -> Unit)? = null
     var onNasSync: ((String) -> Unit)? = null
     var onNasDisconnect: ((String) -> Unit)? = null
@@ -27,6 +29,9 @@ class SourcesView(context: Context) : ScrollView(context) {
     private val jobStatusRow: LinearLayout
     private val jobStatusState: TextView
     private val nasSourcesColumn: LinearLayout
+    private val localReferencesColumn = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+    private var renderedNasModels: List<NasSourceModel>? = null
+    private var renderedLocalModels: List<LocalReferenceModel>? = null
 
     init {
         setBackgroundColor(context.getColor(R.color.pp_surface_canvas))
@@ -99,6 +104,7 @@ class SourcesView(context: Context) : ScrollView(context) {
                 topMargin = res.getDimensionPixelSize(R.dimen.pp_space_24)
             },
         )
+        column.addView(localReferencesColumn, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         column.addView(
             nasRow,
             LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
@@ -142,7 +148,41 @@ class SourcesView(context: Context) : ScrollView(context) {
         val mirrorDelete: Boolean = false,
     )
 
+    data class LocalReferenceModel(val sourceId: String, val displayName: String, val statusText: String)
+
+    fun renderLocalReferences(models: List<LocalReferenceModel>) {
+        if (renderedLocalModels == models) return
+        renderedLocalModels = models
+        localReferencesColumn.removeAllViews()
+        for (model in models) {
+            localReferencesColumn.addView(panelRow().apply {
+                setOnClickListener { onLocalReferenceClick?.invoke(model.sourceId) }
+                addView(TextView(context).apply {
+                    text = model.displayName
+                    setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.pp_text_body))
+                    setTextColor(context.getColor(R.color.pp_text_primary))
+                })
+                addView(TextView(context).apply {
+                    text = model.statusText
+                    setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.pp_text_meta))
+                    setTextColor(context.getColor(R.color.pp_text_secondary))
+                })
+                addView(TextView(context).apply {
+                    text = resources.getString(R.string.sources_remove_configuration)
+                    setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.pp_text_body))
+                    setTextColor(context.getColor(R.color.pp_status_error))
+                    minimumHeight = resources.getDimensionPixelSize(R.dimen.pp_touch_target)
+                    gravity = Gravity.CENTER_VERTICAL
+                    isFocusable = true
+                    setOnClickListener { onLocalReferenceRemove?.invoke(model.sourceId) }
+                })
+            }, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        }
+    }
+
     fun renderNasSources(models: List<NasSourceModel>) {
+        if (renderedNasModels == models) return
+        renderedNasModels = models
         nasSourcesColumn.removeAllViews()
         val res = resources
         models.forEach { model ->
@@ -195,7 +235,7 @@ class SourcesView(context: Context) : ScrollView(context) {
                 isBaselineAligned = false
             }
             val sync = TextView(context).apply {
-                text = res.getString(R.string.sources_sync_now)
+                text = res.getString(if (model.isDisconnected) R.string.sources_reconfigure else R.string.sources_sync_now)
                 contentDescription = text
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
                 setTextColor(context.getColor(R.color.pp_accent_action))
@@ -203,10 +243,10 @@ class SourcesView(context: Context) : ScrollView(context) {
                 gravity = Gravity.CENTER
                 isClickable = true
                 isFocusable = true
-                setOnClickListener { onNasSync?.invoke(model.sourceId) }
+                setOnClickListener { if (model.isDisconnected) onNasEdit?.invoke(model.sourceId) else onNasSync?.invoke(model.sourceId) }
             }
             val disconnect = TextView(context).apply {
-                text = res.getString(R.string.sources_disconnect)
+                text = res.getString(if (model.isDisconnected) R.string.sources_remove_configuration else R.string.sources_disconnect)
                 contentDescription = text
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
                 setTextColor(context.getColor(R.color.pp_status_error))

@@ -61,6 +61,9 @@ class AppEnvironment private constructor(
     private val nasAdapters: ConcurrentHashMap<String, SourceAdapter>,
 ) {
 
+    lateinit var localReferences: dev.photopilot.scaffold.data.references.LocalReferenceRepository
+        private set
+
     lateinit var remoteMedia: dev.photopilot.scaffold.data.remote.RemoteMediaRepository
         private set
 
@@ -107,6 +110,10 @@ class AppEnvironment private constructor(
                             .also { database = it }
                         val environment = create(appContext, db)
                         try {
+                            environment.localReferences.refreshAll()
+                            for (source in environment.database.sourceDao().getAll().filter { JsonMini.parseObject(it.settingsJson)["referenceOnly"] == true }) {
+                                environment.database.importJobDao().getBySource(source.id).forEach { environment.runner.cancel(it.id) }
+                            }
                             environment.remoteCopies.recover()
                             environment.runner.markInterruptedJobsRecoverable()
                             environment.deletedSweeper.sweepExpired(System.currentTimeMillis())
@@ -136,6 +143,7 @@ class AppEnvironment private constructor(
                 environment.remoteMedia.close()
                 LocalUserDataCleaner.clear(appContext.filesDir, appContext.cacheDir)
                 environment.database.clearAllTables()
+                environment.localReferences.releaseUnusedGrants()
             }
         }
 
@@ -298,6 +306,8 @@ class AppEnvironment private constructor(
                 pickedAdapters = pickedAdapters,
                 nasAdapters = nasAdapters,
             ).also { env ->
+                env.localReferences = dev.photopilot.scaffold.data.references.LocalReferenceRepository(appContext, database)
+                env.localSources.onConfigurationRemoved = { env.localReferences.releaseUnusedGrants() }
                 env.remoteMedia = dev.photopilot.scaffold.data.remote.RemoteMediaRepository(appContext, database, env::nasAdapterFor) {
                     val manager = appContext.getSystemService(android.net.ConnectivityManager::class.java)
                     val capabilities = manager.getNetworkCapabilities(manager.activeNetwork)
@@ -305,6 +315,7 @@ class AppEnvironment private constructor(
                         capabilities?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED) == true,
                         kotlinx.coroutines.runBlocking { env.settings.isWifiOnly() })
                 }
+                env.remoteMedia.localReferences = env.localReferences
                 env.frames.remoteMedia = env.remoteMedia
                 env.aiFrames.remoteMedia = env.remoteMedia
                 env.remoteCopies = dev.photopilot.scaffold.data.remote.RemoteLocalCopies(appContext, env)

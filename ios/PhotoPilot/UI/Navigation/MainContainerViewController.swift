@@ -106,7 +106,10 @@ final class MainContainerViewController: UIViewController {
 
     @objc private func handleForegroundSync() {
         Task { await environment.aiFrames.processPending() }
-        guard presentedViewController == nil else { return }
+        guard presentedViewController == nil else {
+            Task { await environment.remoteMedia.references.refreshAll() }
+            return
+        }
         Task {
             await environment.autoSyncWebDavSources()
         }

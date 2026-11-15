@@ -129,14 +129,14 @@ actor AIFrameService {
             leasedID = descriptor.id
             let engine = try AIEmbeddingEngine(model: descriptor, directory: directory)
             let candidates = try await store.candidates(configuration: configuration)
-            let skipped = candidates.filter { initialState.completedContentVersions[$0.id] == Self.version($0, configuration: configuration) }.count
+            let skipped = candidates.filter { $0.cacheable && initialState.completedContentVersions[$0.id] == Self.version($0, configuration: configuration) }.count
             let (state, token) = try await store.begin(frameID: frameID, configuration: configuration, total: candidates.count, skipped: skipped)
             let text = try await textEmbeddings(configuration.rule, engine: engine)
             for candidate in candidates {
                 try Task.checkCancellation()
                 try await checkForeground()
                 let version = Self.version(candidate, configuration: configuration)
-                if state.completedContentVersions[candidate.id] == version { continue }
+                if candidate.cacheable && state.completedContentVersions[candidate.id] == version { continue }
                 do {
                     let match = try await classify(candidate, configuration: configuration, engine: engine, text: text)
                     try Task.checkCancellation()
@@ -222,7 +222,7 @@ actor AIFrameService {
             if let data = try? Data(contentsOf: previewURL),
                let saved = try? JSONDecoder().decode(PreviewCheckpoint.self, from: data),
                saved.schemaVersion == 1, saved.matchesConfiguration(configuration) { checkpoint = saved }
-            let content = Dictionary(uniqueKeysWithValues: candidates.map { ($0.id, $0.contentHash) })
+            let content = Dictionary(uniqueKeysWithValues: candidates.filter(\.cacheable).map { ($0.id, $0.contentHash) })
             checkpoint.matches = checkpoint.matches.filter { checkpoint.contentVersions[$0.key] == content[$0.key] && content[$0.key] != nil }
             var results = Array(checkpoint.matches.values)
             var failed = 0
@@ -234,8 +234,10 @@ actor AIFrameService {
                         let match = try await classify(candidate, configuration: configuration, engine: engine, text: text)
                         results.append(match)
                         guard try await store.libraryVersion() == libraryVersion else { throw AIFrameError.staleRun }
-                        checkpoint.matches[candidate.id] = match
-                        checkpoint.contentVersions[candidate.id] = candidate.contentHash
+                        if candidate.cacheable {
+                            checkpoint.matches[candidate.id] = match
+                            checkpoint.contentVersions[candidate.id] = candidate.contentHash
+                        }
                         try JSONEncoder().encode(checkpoint).write(to: previewURL, options: .atomic)
                     } catch is CancellationError { throw CancellationError() }
                     catch AIFrameError.staleRun { throw AIFrameError.staleRun }
@@ -261,6 +263,9 @@ actor AIFrameService {
         var saved = configuration
         saved.frameID = frameID
         let committed = try await configure(saved)
+        for id in Set(matches.map(\.assetID)).union(manualIncludes) where id.hasPrefix("remote:") {
+            guard await media.authorized(runtimeID: id) else { throw AIFrameError.staleRun }
+        }
         try await store.applyPreview(frameID: frameID, configuration: committed, matches: matches, manualIncludes: manualIncludes, manualExcludes: manualExcludes)
         try? FileManager.default.removeItem(at: previewURL)
     }
@@ -291,11 +296,11 @@ actor AIFrameService {
     private func classify(_ candidate: AIFrameCandidate, configuration: AIFrameConfiguration,
                           engine: AIEmbeddingEngine, text: TextEmbeddings) async throws -> AIFrameMatch {
         if let descriptor = candidate.remoteDescriptor {
-            guard await media.repository.authorized(descriptor, allowLocal: true) else { throw AIFrameError.staleRun }
+            guard await media.repository.authorized(descriptor, allowLocal: true), await media.authorized(runtimeID: candidate.id) else { throw AIFrameError.staleRun }
         }
         let cacheVersion = candidate.contentHash + ":" + configuration.modelID + ":" + configuration.modelRevision + ":preprocess2"
         let vector: [Float]
-        if let cached = try await store.cachedVector(assetID: candidate.id, version: cacheVersion, expectedDimension: text.category.count) { vector = cached }
+        if candidate.cacheable, let cached = try await store.cachedVector(assetID: candidate.id, version: cacheVersion, expectedDimension: text.category.count) { vector = cached }
         else {
             let lease: RemoteMediaLease
             do { lease = try await media.acquire(runtimeID: candidate.id, priority: .background) }
@@ -308,8 +313,10 @@ actor AIFrameService {
                 await lease.release()
                 throw error
             }
-            try await store.cacheVector(vector, assetID: candidate.id, version: cacheVersion)
+            guard await media.authorized(runtimeID: candidate.id) else { throw AIFrameError.staleRun }
+            if candidate.cacheable { try await store.cacheVector(vector, assetID: candidate.id, version: cacheVersion) }
         }
+        guard await media.authorized(runtimeID: candidate.id) else { throw AIFrameError.staleRun }
         let category = try AIFrameScoring.cosine(vector, text.category)
         let includes = try text.includes.map { try AIFrameScoring.cosine(vector, $0) }
         let excludes = try text.excludes.map { try AIFrameScoring.cosine(vector, $0) }

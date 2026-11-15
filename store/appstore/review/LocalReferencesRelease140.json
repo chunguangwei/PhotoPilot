@@ -1,0 +1,137 @@
+{
+  "version": "1.4.0",
+  "build": 61,
+  "publication": "prepared",
+  "sourceTag": "v1.4.0",
+  "android": {
+    "version": "1.4.0",
+    "build": 61,
+    "apk": "PhotoPilot-v1.4.0-61.apk",
+    "bytes": 154171126,
+    "sha256": "b2574f03a6280119e61a3bbe3a162fd2e8b37a71ba88ad1a3313bb92c761d1b6",
+    "certificateSHA256": "9cd985f16aec8a0e492ff834aa7a07de6b426f224b2fd6d788a5965cc1b4f37c",
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86",
+      "x86_64"
+    ],
+    "assets": {
+      "assets/ai-models.json": "bb654fafba45429fb7e7139a2b4bbb4f94f80ab83598337cc9885f49aec44da4",
+      "assets/ai-third-party-notices.txt": "edc8e4cf9fc789df613fc002bca7531de93033745a297e80f7359566a146f4b3"
+    },
+    "forbidden": [],
+    "jvm": {
+      "tests": 440,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "lint": {
+      "Error": 0,
+      "Warning": 205,
+      "Fatal": 0
+    },
+    "rootLog": "/private/tmp/photopilot-local-reference-android-layout-final-root.log",
+    "status": "final frozen source and scroll-layout APK verified",
+    "nativeTests": 31,
+    "nativeFailures": 0,
+    "nativeLog": "/private/tmp/android-final-native-suite-after-layout.log",
+    "realSAFPhaseTests": 6,
+    "realSAFFailures": 0,
+    "realSAFIncludesDistinctPIDs": true,
+    "realSAFLog": "/private/tmp/android-evidence-final.log",
+    "uiScreenshotCount": 8,
+    "componentLayoutConfigurations": 16,
+    "uiScope": "English narrow portrait light, Chinese dark large text portrait, Chinese landscape-shaped 1136x640 viewport with font1.5. Supplemental landscape picker and sensor rotation remain unverified.",
+    "aiTransport": "Real resolver bitmap with test embedder. Full Android model inference not rerun in this slice."
+  },
+  "ios": {
+    "version": "1.4.0",
+    "build": 61,
+    "bundleIdentifier": "dev.photopilot.scaffold",
+    "minimumOS": "15.0",
+    "deviceFamilies": [
+      1,
+      2
+    ],
+    "archive": ".build/releases/v1.4.0/PhotoPilot-1.4.0-61.xcarchive",
+    "signing": "unsigned archive",
+    "architectures": "arm64",
+    "executableSHA256": "de3136f79b4d5f61365a3e98ea0eacd9ec1e53e2ab6c7030252c3eb4be4249fe",
+    "appBytes": 40611324,
+    "assets": {
+      "ai-models.json": "bb654fafba45429fb7e7139a2b4bbb4f94f80ab83598337cc9885f49aec44da4",
+      "AIThirdPartyNotices.txt": "edc8e4cf9fc789df613fc002bca7531de93033745a297e80f7359566a146f4b3",
+      "PrivacyInfo.xcprivacy": "bfb5f56805f55643946da231027d994ae8f057033983a100484bdd71c6c2e0c6"
+    },
+    "fileTimestampReasons": [
+      "C617.1",
+      "3B52.1"
+    ],
+    "forbidden": [],
+    "archiveLog": ".build/ios-v1.4-final-current-version-archive.log",
+    "rootBuildAndAnalyzeLog": "/private/tmp/photopilot-local-reference-ios-delivery-make.log",
+    "status": "final current-version mapping payload and standard build/analyze verified",
+    "nativeExecuted": 278,
+    "nativePassed": 272,
+    "nativeSkipped": 6,
+    "nativeFailures": 0,
+    "nativeLog": ".build/ios-v1.4-final-current-version-native.log",
+    "isolatedModelTests": 6,
+    "isolatedModelFailures": 0,
+    "syntheticAlbumSetupPassed": 1,
+    "iphonePhotoKitUITests": 1,
+    "ipadPhotoKitUITests": 1,
+    "localScreenshotCount": 48,
+    "fixtureGateUITestsSkipped": 2,
+    "externalFilesUIStatus": "environment_blocked by system source=null also reproduced in standalone Files",
+    "actualPhotoKitDatabase": {
+      "device": "PhotoPilot Local References QA iPhone17",
+      "syntheticPhotos": 3,
+      "counts": {
+        "ZASSET": 0,
+        "ZASSETORIGIN": 0,
+        "ZIMPORTJOB": 0,
+        "ZSOURCEASSET": 3,
+        "ZFRAME": 1,
+        "ZFRAMESELECTION": 1
+      },
+      "originalFiles": 0,
+      "databaseCheck": "ok",
+      "readOnly": true
+    }
+  },
+  "shared": {
+    "toolTests": 58,
+    "aiSourceTests": 6,
+    "schemaTables": 17,
+    "result": "passed"
+  },
+  "review": {
+    "seats": 1,
+    "criticalOpen": 0,
+    "importantOpen": 0,
+    "minorOpen": 0,
+    "verdict": "Ready to merge",
+    "scope": "Three requested issues and confirmed implementation/fix deltas. Validation boundaries retained."
+  },
+  "screenshotEvidence": "store/appstore/review/ScreenshotEvidence140.json",
+  "store": {
+    "materials": "store/appstore/review/LocalReferencesUpdate.md",
+    "archiveSigning": "unsigned",
+    "matchingLocalStoreProfile": false,
+    "remoteSigningAssetsTouched": false,
+    "exportDependency": "Explicit owner authorization for signing-asset refresh and usable original publishing account with matching Store profile. Automatic approval previously rejected production signing-asset refresh."
+  },
+  "pendingValidation": [
+    "iOS real external Files picker/provider selection and cross-restart grants (simulator system provider source-null failure also reproduced in standalone Files)",
+    "third-party cloud file providers",
+    "physical old devices",
+    "minimum OS runtime",
+    "physical NAS",
+    "long-running playback",
+    "Android supplemental landscape system-picker combination and sensor-driven rotation",
+    "full Android model inference for new reference transport"
+  ]
+}

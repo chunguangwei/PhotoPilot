@@ -184,13 +184,7 @@ final class PhotoLibrarySourceAdapter: SourceAdapter {
         return "\(modified):\(asset.pixelWidth)x\(asset.pixelHeight)"
     }
 
-    private static func byteSize(of asset: PHAsset) -> Int? {
-        let resources = PHAssetResource.assetResources(for: asset)
-        guard let resource = resources.first(where: { $0.type == .photo }) ?? resources.first else {
-            return nil
-        }
-        return (resource.value(forKey: "fileSize") as? NSNumber)?.intValue
-    }
+    private static func byteSize(of asset: PHAsset) -> Int? { nil }
 
     private static func tempFileName(for remoteID: String) -> String {
         let safe = remoteID.replacingOccurrences(of: "/", with: "_")

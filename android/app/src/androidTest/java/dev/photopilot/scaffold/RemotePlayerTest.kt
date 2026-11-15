@@ -78,13 +78,22 @@ class RemotePlayerTest {
             delay(300)
             assertEquals("current and next only", 2, requests.get())
             val source = requireNotNull(db.sourceDao().getById(id))
+            server.close()
+            serverJob.cancelAndJoin()
+            assertTrue(env.localSources.recordSyncError(id, source.epoch, source.status, false, System.currentTimeMillis()))
+            assertEquals(source, db.sourceDao().getById(id))
+            val firstId = env.frames.buildPlayQueue(frame.id).first()
+            val cached = env.frames.playbackItems(frame.id).single { it.id == firstId }
+            assertNotNull("Transient sync error must preserve offline temporary-cache playback", env.remoteMedia.bitmap(cached, 640, 640))
             db.sourceDao().update(source.copy(epoch = 2, status = SourceStatus.DISCONNECTED))
+            assertFalse(env.remoteMedia.valid(cached))
             assertTrue("revoked image cleared", cleared.await(5, TimeUnit.SECONDS))
         } finally {
             instrumentation.runOnMainSync { engine?.stop(true) }
             uiScope.cancel(); server.close(); serverJob.cancelAndJoin()
             env.credentialStore.delete(id)
             env.frameManager.deleteFrame(frame.id)
+            db.settingsKvDao().get("nas.connection_error.$id")?.let { db.settingsKvDao().delete(it) }
             db.sourceDao().getById(id)?.let { db.sourceDao().delete(it) }
         }
         Unit

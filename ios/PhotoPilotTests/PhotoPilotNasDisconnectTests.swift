@@ -1,7 +1,9 @@
 import CoreData
 import XCTest
+import UIKit
 @testable import PhotoPilot
 
+@MainActor
 final class PhotoPilotNasDisconnectTests: XCTestCase {
     var controller: PersistenceController!
     var repository: AssetRepository!
@@ -277,6 +279,222 @@ final class PhotoPilotNasDisconnectTests: XCTestCase {
             "{\"directories\":[\"photos\"],\"recursive\":true}"
         )
         XCTAssertEqual(try freshCount("Source"), 1)
+    }
+
+    func testRemoveDisconnectedConfigurationKeepsCopiesAndSelection() async throws {
+        try seedNasSource()
+        let context = controller.container.viewContext
+        let frame = insert("Frame", ["id": "f1", "name": "Frame", "order_mode": "captured_asc", "settings_json": "{}", "created_at": 0, "updated_at": 0])
+        let selection = insert("FrameSelection", ["ref_key": "sa1", "mode": "include", "added_at": 0, "created_at": 0, "updated_at": 0])
+        selection.setValue(frame, forKey: "frame")
+        selection.setValue(try fetch("SourceAsset", "id", "sa1"), forKey: "sourceAsset")
+        try context.save()
+        try await repository.disconnectSource(sourceID: "sw1", keepCopies: true)
+        try await repository.disconnectSource(sourceID: "sw1", keepCopies: true, removeConfiguration: true)
+        XCTAssertNil(try fetchFresh("Source", "id", "sw1"))
+        XCTAssertNotNil(try fetchFresh("Asset", "id", "a1"))
+        XCTAssertEqual(try freshCount("AssetOrigin"), 1)
+        let fresh = controller.container.newBackgroundContext()
+        let references = try fresh.performAndWait {
+            try fresh.fetch(NSFetchRequest<NSManagedObject>(entityName: "FrameSelection")).map {
+                $0.value(forKeyPath: "asset.id") as? String ?? ""
+            }
+        }
+        XCTAssertEqual(references, ["a1"])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: originalsRoot.appendingPathComponent("a1.jpg").path))
+    }
+
+    func testRemovingConfigurationRetainsPrivateCopiesAndFolderMemberships() async throws {
+        try seedNasSource()
+        let context = controller.container.viewContext
+        let source = try XCTUnwrap(fetch("Source", "id", "sw1"))
+        let asset = try XCTUnwrap(fetch("Asset", "id", "a1"))
+        asset.setValue(true, forKey: "privacy_excluded")
+        let parent = insert("Collection", ["id": "parent", "name": "NAS", "type": "source_folder", "rel_path": "", "sort_key": "", "created_at": 0, "updated_at": 0])
+        parent.setValue(source, forKey: "source")
+        let folder = insert("Collection", ["id": "folder", "name": "Photos", "type": "source_folder", "rel_path": "photos", "sort_key": "photos", "created_at": 0, "updated_at": 0])
+        folder.setValue(source, forKey: "source")
+        folder.setValue(parent, forKey: "parent")
+        try context.save()
+        try await repository.disconnectSource(sourceID: "sw1", keepCopies: true, removeConfiguration: true)
+        XCTAssertNil(try fetchFresh("Source", "id", "sw1"))
+        XCTAssertEqual(try fetchFresh("Asset", "id", "a1")?["privacy_excluded"] as? Bool, true)
+        XCTAssertEqual(try fetchFresh("Collection", "id", "folder")?["type"] as? String, "user_folder")
+        XCTAssertEqual(try freshCount("CollectionAsset"), 1)
+        let fresh = controller.container.newBackgroundContext()
+        let types = try fresh.performAndWait {
+            try fresh.fetch(NSFetchRequest<NSManagedObject>(entityName: "AssetOrigin")).map { $0.value(forKeyPath: "sourceAsset.source.type") as? String ?? "" }
+        }
+        XCTAssertEqual(types, ["local_files"])
+    }
+
+    func testRemovingConfigurationMapsOnlyCurrentCopyAndFolderMembership() async throws {
+        try await verifyCurrentCopyMapping(versioned: true)
+    }
+
+    func testRemovingLegacyConfigurationUsesUniqueCommittedFolderCopy() async throws {
+        try await verifyCurrentCopyMapping(versioned: false)
+    }
+
+    private func verifyCurrentCopyMapping(versioned: Bool) async throws {
+        try seedNasSource()
+        let context = controller.container.viewContext
+        let source = try XCTUnwrap(fetch("Source", "id", "sw1"))
+        let sourceAsset = try XCTUnwrap(fetch("SourceAsset", "id", "sa1"))
+        let old = try XCTUnwrap(fetch("Asset", "id", "a1"))
+        if versioned { try RemoteMediaRepository.writeProvenance(context: context, asset: old, sourceAsset: sourceAsset, frameScoped: false) }
+        sourceAsset.setValue("etag-2", forKey: "revision")
+        let current = insert("Asset", old.dictionaryWithValues(forKeys: Array(old.entity.attributesByName.keys)))
+        current.setValue("a2", forKey: "id")
+        current.setValue("sha256:current", forKey: "content_hash")
+        current.setValue("a2.jpg", forKey: "original_rel_path")
+        let origin = insert("AssetOrigin", ["imported_at": 1, "policy_state": "allowed", "origin_state": "active", "created_at": 1, "updated_at": 1])
+        origin.setValue(current, forKey: "asset")
+        origin.setValue(sourceAsset, forKey: "sourceAsset")
+        if versioned { try RemoteMediaRepository.writeProvenance(context: context, asset: current, sourceAsset: sourceAsset, frameScoped: false) }
+        try Data([5, 4, 3, 2, 1]).write(to: originalsRoot.appendingPathComponent("a2.jpg"))
+        let folder = insert("Collection", ["id": "folder", "name": "Photos", "type": "source_folder", "rel_path": "photos", "sort_key": "photos", "created_at": 0, "updated_at": 0])
+        folder.setValue(source, forKey: "source")
+        let stale = insert("CollectionAsset", ["created_at": 0, "updated_at": 0])
+        stale.setValue(folder, forKey: "collection")
+        stale.setValue(versioned ? old : current, forKey: "asset")
+        let frame = insert("Frame", ["id": "f1", "name": "Frame", "order_mode": "captured_asc", "settings_json": "{\"remoteCoverRef\":\"remote:sa1\"}", "created_at": 0, "updated_at": 0])
+        let selection = insert("FrameSelection", ["ref_key": "sa1", "mode": "include", "added_at": 0, "created_at": 0, "updated_at": 0])
+        selection.setValue(frame, forKey: "frame")
+        selection.setValue(sourceAsset, forKey: "sourceAsset")
+        var aiState = AIFrameState(configuration: AIFrameConfiguration(frameID: "f1", modelID: "multilingual-clip-vitb32-lite", modelRevision: "fixed", collectionIDs: ["folder"], rule: AIFrameRule(category: "cats")))
+        aiState.ownedAssetIDs = ["remote:sa1"]
+        _ = insert("SettingsKV", ["key": AIFrameStore.prefix + "f1", "value_json": String(decoding: try JSONEncoder().encode(aiState), as: UTF8.self), "created_at": 0, "updated_at": 0])
+        try context.save()
+        try await repository.disconnectSource(sourceID: "sw1", keepCopies: true)
+        try await repository.disconnectSource(sourceID: "sw1", keepCopies: true, removeConfiguration: true)
+        let fresh = controller.container.newBackgroundContext()
+        try fresh.performAndWait {
+            let selections = try fresh.fetch(NSFetchRequest<NSManagedObject>(entityName: "FrameSelection"))
+            XCTAssertEqual(selections.map { $0.value(forKeyPath: "asset.id") as? String }, ["a2"])
+            let members = try fresh.fetch(NSFetchRequest<NSManagedObject>(entityName: "CollectionAsset"))
+            XCTAssertEqual(members.map { $0.value(forKeyPath: "asset.id") as? String }, ["a2"])
+            let frames = try fresh.fetch(NSFetchRequest<NSManagedObject>(entityName: "Frame"))
+            XCTAssertEqual(frames.first?.value(forKeyPath: "coverAsset.id") as? String, "a2")
+        }
+        let remappedAI = try await AIFrameStore(controller: controller).state(frameID: "f1")
+        XCTAssertEqual(remappedAI?.ownedAssetIDs, ["a2"])
+        XCTAssertEqual(try freshCount("Asset"), 2)
+        XCTAssertEqual(try freshCount("AssetOrigin"), 2)
+        for name in ["a1.jpg", "a2.jpg"] { XCTAssertTrue(FileManager.default.fileExists(atPath: originalsRoot.appendingPathComponent(name).path)) }
+    }
+
+    func testRemoveConfigurationWithoutLocalFileClearsRemoteSelectionAndKeepsFrame() async throws {
+        try seedNasSource()
+        let context = controller.container.viewContext
+        let frame = insert("Frame", ["id": "empty", "name": "Empty", "order_mode": "captured_asc", "settings_json": "{\"remoteCoverRef\":\"remote:sa1\"}", "created_at": 0, "updated_at": 0])
+        let selection = insert("FrameSelection", ["ref_key": "sa1", "mode": "include", "added_at": 0, "created_at": 0, "updated_at": 0])
+        selection.setValue(frame, forKey: "frame")
+        selection.setValue(try fetch("SourceAsset", "id", "sa1"), forKey: "sourceAsset")
+        try context.save()
+        try FileManager.default.removeItem(at: originalsRoot.appendingPathComponent("a1.jpg"))
+        try await repository.disconnectSource(sourceID: "sw1", keepCopies: true, removeConfiguration: true)
+        XCTAssertNil(try fetchFresh("Source", "id", "sw1"))
+        XCTAssertEqual(try freshCount("FrameSelection"), 0)
+        let keptFrame = try XCTUnwrap(fetchFresh("Frame", "id", "empty"))
+        XCTAssertEqual(keptFrame["settings_json"] as? String, "{}")
+    }
+
+    func testSourceStorageChoicePersistsAndInvalidatesEpoch() throws {
+        let id = try sources.ensureWebdavSource(endpointKey: "webdav_https://fixture.invalid:443/photos", displayName: "Fixture NAS", recursive: true, directories: ["photos"], catalogOnly: true)
+        XCTAssertTrue(try XCTUnwrap(sources.webdavSources().first { $0.id == id }).catalogOnly)
+        _ = try sources.ensureWebdavSource(endpointKey: "webdav_https://fixture.invalid:443/photos", displayName: "Fixture NAS", recursive: true, directories: ["photos"], catalogOnly: false)
+        XCTAssertFalse(try XCTUnwrap(sources.webdavSources().first { $0.id == id }).catalogOnly)
+        XCTAssertEqual(try fetchFresh("Source", "id", id)?["epoch"] as? Int, 2)
+        _ = try sources.ensureWebdavSource(endpointKey: "webdav_https://fixture.invalid:443/photos", displayName: "Fixture NAS", recursive: true, directories: ["photos"], catalogOnly: true)
+        XCTAssertTrue(try XCTUnwrap(sources.webdavSources().first { $0.id == id }).catalogOnly)
+        XCTAssertEqual(try fetchFresh("Source", "id", id)?["epoch"] as? Int, 3)
+    }
+
+    @MainActor
+    func testDisconnectedSourceDeleteAndStorageChoicesAreReachable() async throws {
+        try seedNasSource()
+        try await repository.disconnectSource(sourceID: "sw1", keepCopies: true)
+        controller.container.viewContext.reset()
+        let environment = AppEnvironment(persistence: controller)
+        let sourceScreen = SourcesListViewController(environment: environment)
+        let window = UIWindow(frame: UIScreen.main.bounds)
+        window.rootViewController = sourceScreen
+        window.makeKeyAndVisible()
+        sourceScreen.viewWillAppear(false)
+        sourceScreen.view.layoutIfNeeded()
+        func buttons(in view: UIView) -> [ActionButton] {
+            (view as? ActionButton).map { [$0] } ?? view.subviews.flatMap { buttons(in: $0) }
+        }
+        let delete = try XCTUnwrap(buttons(in: sourceScreen.view).first { $0.accessibilityIdentifier == "sw1" && !$0.isHidden })
+        XCTAssertGreaterThanOrEqual(delete.bounds.height, 44)
+        XCTAssertFalse(delete.isHidden)
+        let sourceImage = UIGraphicsImageRenderer(bounds: sourceScreen.view.bounds).image { _ in
+            sourceScreen.view.drawHierarchy(in: sourceScreen.view.bounds, afterScreenUpdates: true)
+        }
+        let sourceAttachment = XCTAttachment(image: sourceImage)
+        sourceAttachment.name = "ios-disconnected-source-delete"
+        sourceAttachment.lifetime = .keepAlways
+        add(sourceAttachment)
+        delete.sendActions(for: .touchUpInside)
+        XCTAssertTrue(sourceScreen.presentedViewController is UIAlertController)
+        try await Task.sleep(nanoseconds: 700_000_000)
+        await withCheckedContinuation { continuation in
+            sourceScreen.dismiss(animated: false) { continuation.resume() }
+        }
+        let form = NasAddViewController(environment: environment, prefillCatalogOnly: false)
+        window.rootViewController = form
+        window.layoutIfNeeded()
+        form.view.layoutIfNeeded()
+        try await Task.sleep(nanoseconds: 100_000_000)
+        form.view.layoutIfNeeded()
+        let choices = buttons(in: form.view)
+        let online = try XCTUnwrap(choices.first { $0.accessibilityIdentifier == "nas.storage.online" })
+        let local = try XCTUnwrap(choices.first { $0.accessibilityIdentifier == "nas.storage.local" })
+        XCTAssertTrue(local.isSelected)
+        online.sendActions(for: .touchUpInside)
+        XCTAssertTrue(online.isSelected)
+        XCTAssertFalse(local.isSelected)
+        var ancestor = local.superview
+        while let current = ancestor {
+            if let scroll = current as? UIScrollView {
+                scroll.layoutIfNeeded()
+                scroll.setContentOffset(CGPoint(x: 0, y: max(0, scroll.contentSize.height - scroll.bounds.height)), animated: false)
+                break
+            }
+            ancestor = current.superview
+        }
+        form.view.layoutIfNeeded()
+        let formImage = UIGraphicsImageRenderer(bounds: form.view.bounds).image { _ in
+            form.view.drawHierarchy(in: form.view.bounds, afterScreenUpdates: true)
+        }
+        let attachment = XCTAttachment(image: formImage)
+        attachment.name = "ios-nas-storage-choices"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        form.overrideUserInterfaceStyle = .dark
+        if #available(iOS 17.0, *) { form.traitOverrides.preferredContentSizeCategory = .accessibilityExtraExtraExtraLarge }
+        form.view.setNeedsLayout()
+        form.view.layoutIfNeeded()
+        try await Task.sleep(nanoseconds: 100_000_000)
+        ancestor = local.superview
+        while let current = ancestor {
+            if let scroll = current as? UIScrollView {
+                scroll.layoutIfNeeded()
+                let start = online.convert(online.bounds, to: scroll).minY
+                scroll.setContentOffset(CGPoint(x: 0, y: max(0, start - 16)), animated: false)
+                break
+            }
+            ancestor = current.superview
+        }
+        let dark = UIGraphicsImageRenderer(bounds: form.view.bounds).image { _ in
+            form.view.drawHierarchy(in: form.view.bounds, afterScreenUpdates: true)
+        }
+        let darkAttachment = XCTAttachment(image: dark)
+        darkAttachment.name = "ios-nas-storage-choices-dark-large"
+        darkAttachment.lifetime = .keepAlways
+        add(darkAttachment)
+        window.isHidden = true
     }
 
     func testDisconnectDeleteCopies() async throws {

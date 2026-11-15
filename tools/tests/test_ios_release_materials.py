@@ -22,6 +22,16 @@ class IOSReleaseMaterialsTests(unittest.TestCase):
         }
         self.assertIn("35F9.1", reasons.get("NSPrivacyAccessedAPICategorySystemBootTime", []))
 
+    def test_user_selected_reference_metadata_has_required_reason(self):
+        manifest = plistlib.loads((ROOT / "ios/PhotoPilot/Resources/PrivacyInfo.xcprivacy").read_bytes())
+        reasons = {
+            entry["NSPrivacyAccessedAPIType"]: entry["NSPrivacyAccessedAPITypeReasons"]
+            for entry in manifest["NSPrivacyAccessedAPITypes"]
+        }
+        file_reasons = reasons.get("NSPrivacyAccessedAPICategoryFileTimestamp", [])
+        self.assertIn("C617.1", file_reasons)
+        self.assertIn("3B52.1", file_reasons)
+
     def test_review_sample_archive_is_not_ignored(self):
         archive = ROOT / "store/appstore/review/ReviewPhotos.zip"
         self.assertTrue(archive.is_file())

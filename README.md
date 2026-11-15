@@ -1,18 +1,28 @@
 # PhotoPilot
 
-一个把旧 iPad / Android 平板变成数字相框的应用：导入本机与文件照片，或按需播放 NAS（WebDAV/SMB）远端照片，按相框精选内容，配上时钟、日期与天气，常亮播放。
+一个把旧 iPad / Android 平板变成数字相框的应用：引用本机相册与文件照片，或按需播放 NAS（WebDAV/SMB）远端照片，按相框精选内容，配上时钟、日期与天气，常亮播放。
 
-Turn a spare iPad or Android tablet into a digital photo frame: import from the device or files, or play NAS (WebDAV/SMB) photos on demand, curate frames, and play them with clock, date and weather overlays.
+Turn a spare iPad or Android tablet into a digital photo frame: reference device albums or files, or play NAS (WebDAV/SMB) photos on demand, curate frames, and play them with clock, date and weather overlays.
 
 ## 特性 / Features
 
-- 本地导入、二次选片、手动排序与自动播放（中英双语）
+- 本机照片/目录直接引用、二次选片、手动排序与自动播放（中英双语）
 - NAS 来源：WebDAV（HTTPS/HTTP 私网）与 SMB，凭证安全存储（Keychain / Keystore）、TLS TOFU 证书信任、增量同步与墓碑删除保护
 - 天气叠字（Open-Meteo，CC-BY 4.0 署名）、时钟与休息时段、节日专属播放
 - RAW 照片按系统解码能力支持
 - 背景音乐：14 首内置循环曲（5 首历史旋律自有合成编曲 + 9 首程序原创）或本地音频文件，随播放/暂停/休息联动
 - 照片只在本机处理；不上传、不记录照片名与路径
 - Android 内置 GitHub 更新检查（断点续传 + 前台保活下载）
+
+## 本机引用与来源管理 / Local references and source management（1.4.0）
+
+本机相册、所选文件与目录默认保存照片关联和持久访问授权，建立索引时无需复制原图。预览、播放与 AI 按需读取，仍需确认选片后才展示。原照片由系统相册或文件供应商管理，移动、删除或撤销授权后可重新选择来源。云端相册或文件供应商可能由系统按需下载内容。
+
+新建及编辑 NAS 来源都可选择按需读取或同步所选目录到本地，新来源默认按需读取。来源级同步和逐相框同步分别按各自确认范围占用空间。断开后的来源卡片可删除配置，保留已下载私有副本及有确定版本依据的相框关联。历史多版本缺少关联依据时，文件继续保留，相关相框可重新选片。历史导入副本继续可用，沿用原有资料库管理流程。
+
+Device albums, selected files and directories use persistent references by default. Indexing stores metadata and frame relationships without copying originals. Previews, playback and AI read on demand. Confirm your selection before displaying photos. Reselect the source when an original moves, disappears or loses permission. System photo libraries and file providers may fetch cloud content as needed.
+
+NAS setup and edit offer on-demand access or local sync of the selected folders. New sources default to on-demand access. Source-level and frame-level sync use their confirmed scopes. Disconnected cards allow configuration removal while retaining downloaded private photos and deterministically mapped frame relationships. Ambiguous historical versions retain their files and require photo reselection. Existing imported copies remain usable and retain their existing library lifecycle.
 
 ## 远端按需相框 / On-demand remote frames（1.3.0）
 

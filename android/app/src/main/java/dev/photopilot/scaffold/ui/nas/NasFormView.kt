@@ -25,6 +25,7 @@ class NasFormView(context: Context) : LinearLayout(context) {
         val path: String,
         val username: String,
         val password: String,
+        val catalogOnly: Boolean = true,
     )
 
     var onBack: (() -> Unit)? = null
@@ -47,6 +48,13 @@ class NasFormView(context: Context) : LinearLayout(context) {
     private var testPassed = false
     private var pendingSave = false
     private var pathLabel: TextView? = null
+    private val storageOptions = android.widget.RadioGroup(context)
+    private val remoteStorage = android.widget.RadioButton(context)
+    private val localStorage = android.widget.RadioButton(context)
+
+    fun setCatalogOnly(catalogOnly: Boolean) {
+        storageOptions.check(if (catalogOnly) remoteStorage.id else localStorage.id)
+    }
 
     private var protocolControl: dev.photopilot.scaffold.ui.widget.SegmentedControl? = null
     private var transportControl: dev.photopilot.scaffold.ui.widget.SegmentedControl? = null
@@ -198,6 +206,24 @@ class NasFormView(context: Context) : LinearLayout(context) {
             LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
         )
 
+        addLabel(column, R.string.source_nas_storage)
+        storageOptions.orientation = VERTICAL
+        listOf(remoteStorage to R.string.source_nas_storage_remote, localStorage to R.string.source_nas_storage_local).forEach { (option, label) ->
+            option.id = View.generateViewId()
+            option.text = res.getString(label)
+            option.setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
+            option.setTextColor(context.getColor(R.color.pp_text_primary))
+            option.minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+            storageOptions.addView(option, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        }
+        setCatalogOnly(true)
+        column.addView(storageOptions, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        column.addView(TextView(context).apply {
+            text = res.getString(R.string.source_nas_storage_hint)
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_meta))
+            setTextColor(context.getColor(R.color.pp_text_secondary))
+        }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+
         statusLine = TextView(context).apply {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
             setTextColor(context.getColor(R.color.pp_text_secondary))
@@ -272,6 +298,7 @@ class NasFormView(context: Context) : LinearLayout(context) {
             path = pathInput.text.toString(),
             username = usernameInput.text.toString(),
             password = passwordInput.text.toString(),
+            catalogOnly = storageOptions.checkedRadioButtonId == remoteStorage.id,
         )
     }
 

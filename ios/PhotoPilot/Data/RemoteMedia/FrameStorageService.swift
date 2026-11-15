@@ -211,7 +211,7 @@ actor FrameStorageService {
         guard FrameStorageMode.read(bundle.settingsJSON) == .local else { throw RemoteMediaError.changed }
         let references = try await FrameRepository(controller: controller).resolve(frameID: frameID).candidates
         let records = try await media.repository.records()
-        let selected = records.filter { references.contains($0.descriptor.runtimeID) }
+        let selected = records.filter { !($0.referenceOnly) && references.contains($0.descriptor.runtimeID) }
         var progress = FrameStorageState()
         progress.status = "running"
         progress.total = selected.count
@@ -423,7 +423,7 @@ actor FrameStorageService {
     private func verifyLegacyCopies(frameID: String) async throws {
         let resolution = try await FrameRepository(controller: controller).resolve(frameID: frameID)
         let refs = Set(resolution.candidates + ((try? await state(frameID: frameID).sourceRefs) ?? []))
-        for record in try await media.repository.records() where refs.contains(record.descriptor.runtimeID) && record.remoteAllowed {
+        for record in try await media.repository.records() where !record.referenceOnly && refs.contains(record.descriptor.runtimeID) && record.remoteAllowed {
             let lease = try await media.acquire(runtimeID: record.descriptor.runtimeID)
             do {
                 let hash = try AssetFileProber.contentHash(of: lease.fileURL)

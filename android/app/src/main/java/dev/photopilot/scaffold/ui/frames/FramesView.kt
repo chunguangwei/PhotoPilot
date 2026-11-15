@@ -39,6 +39,8 @@ class FramesView(
         val playable: Int,
         val pending: Int,
         val remoteCover: dev.photopilot.scaffold.data.remote.PlaybackItem? = null,
+        val hasNasSource: Boolean = true,
+        val hasDeviceReferences: Boolean = false,
     )
 
     var remoteMedia: dev.photopilot.scaffold.data.remote.RemoteMediaRepository? = null
@@ -215,8 +217,11 @@ class FramesView(
             })
         }
         val remoteMode = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(model.frame.settingsJson).mediaStorageMode == "remote"
-        val photoCount = if (remoteMode) remotePhotoCount(model.playable, resources.configuration.locales[0].language == "zh")
-            else res.getQuantityString(R.plurals.frames_playable_count, model.playable, model.playable)
+        val photoCount = when {
+            model.hasDeviceReferences -> if (resources.configuration.locales[0].language == "zh") "${model.playable} 张照片" else "${model.playable} ${if (model.playable == 1) "photo" else "photos"}"
+            remoteMode && model.hasNasSource -> remotePhotoCount(model.playable, resources.configuration.locales[0].language == "zh")
+            else -> res.getQuantityString(R.plurals.frames_playable_count, model.playable, model.playable)
+        }
         addCount(photoCount, R.dimen.pp_space_8)
         if (model.pending > 0) {
             addCount(res.getQuantityString(R.plurals.frames_pending_count, model.pending, model.pending), R.dimen.pp_space_4)

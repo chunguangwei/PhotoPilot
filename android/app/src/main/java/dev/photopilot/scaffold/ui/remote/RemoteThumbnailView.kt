@@ -9,6 +9,7 @@ import dev.photopilot.scaffold.data.remote.RemoteMediaRepository
 import kotlinx.coroutines.*
 
 class RemoteThumbnailView(context: Context, private val media: RemoteMediaRepository, private val item: PlaybackItem, private val targetSize: Int = 192) : ImageView(context) {
+    var onUnavailable: (() -> Unit)? = null
     private var scope: CoroutineScope? = null
     private var job: Job? = null
     private var loaded = false
@@ -22,6 +23,7 @@ class RemoteThumbnailView(context: Context, private val media: RemoteMediaReposi
         job = scope?.launch {
             val bitmap = runCatching { media.bitmap(item, targetSize, targetSize) }.getOrNull()
             if (bitmap != null && media.valid(item) && isAttachedToWindow) { setImageBitmap(bitmap); loaded = true }
+            else if (isAttachedToWindow) onUnavailable?.invoke()
         }
     }
     override fun onAttachedToWindow() {
@@ -33,7 +35,7 @@ class RemoteThumbnailView(context: Context, private val media: RemoteMediaReposi
         scope?.launch {
             while (isAttachedToWindow) {
                 delay(250)
-                if (loaded && !media.valid(item)) { setImageDrawable(null); loaded = false; job?.cancel() }
+                if (loaded && !media.valid(item)) { setImageDrawable(null); loaded = false; job?.cancel(); onUnavailable?.invoke() }
             }
         }
     }

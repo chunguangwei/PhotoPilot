@@ -451,7 +451,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             let trimmed = nameField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if frameID == nil {
                 let createdName = trimmed.isEmpty ? L10n.string("frames.name_default") : trimmed
-                guard let created = try? await environment.frameManager.createFrame(name: createdName, storageMode: includesRemoteMedia ? .remote : nil) else { return }
+                guard let created = try? await environment.frameManager.createFrame(name: createdName, storageMode: includesRemoteMedia || selectedAssetIDs.contains(where: { $0.hasPrefix("remote:") }) ? .remote : nil) else { return }
                 frameID = created
                 detail = try? await environment.frameManager.frameDetail(frameID: created)
             }

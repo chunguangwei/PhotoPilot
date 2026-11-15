@@ -1,5 +1,17 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+**来源管理与本机引用v1.4.0候选验证完成（2026-11-15，1.4.0/61）**：已修复NAS断开后删除配置无响应。保留私有副本的独立origin，处理共享来源、当前版本、目录/选片/排除/排序/封面与AI ownership，后续自动分类和其他来源删除保持已确认副本。NAS新建及编辑均提供按需读取与同步所选目录，新增来源默认按需。后台NAS失败使用无路径/凭据的本地错误状态，临时连接失败保持缓存读取authority，自动任务不会弹窗打断本机选片。跨配置异步状态写入采用epoch/status事务守卫。横屏大字目录选择页采用整体滚动，保存可达。
+
+本机Photos、文件及目录新入口默认元数据引用，复用17表及SourceAsset身份。索引不创建原图副本、Asset或ImportJob，预览/封面/播放/AI按需直接读取。保留持久授权/书签、当前版本及隐私/墓碑守卫，补双向旧副本别名排除、全局隐藏、未知版本缓存与可见UI撤权清屏。已导入旧副本继续保留。历史多版本缺少可确定版本或成员证据时保留文件，相关选片由用户重新确认。系统照片库/文件供应商可按自身设置取回云端内容。
+
+Android440JVM、31native及6段实际SAF文件/目录流程通过，含不同PID重启、持久授权、直接读取及真实撤权。AI新引用输入使用实际resolver bitmap与测试embedder，本轮未重跑Android完整模型推理。16种组件语言/字号/主题/宽度配置、8张真实UI截图留私有release目录。NAS中文暗色1.5倍字号1136×640横屏形状viewport可保存，英文窄屏删除确认完整。额外横屏系统picker及传感器旋转组合未验证。root独立build/lint/test/原签名Release通过，lint0error205warnings。最终APK154171126bytes，SHA `b2574f03a6280119e61a3bbe3a162fd2e8b37a71ba88ad1a3313bb92c761d1b6`，原证书及4ABI/catalog/notices/权重排除均核。
+
+iOS278native执行、272通过、6环境case跳过、0失败，另隔离模型6/6及合成相册setup通过。真实PhotoKit iPhone/iPad各1/1，选片保存→播放→重启。root独立只读实证3SourceAsset/1Frame/1Selection，Asset/Origin/ImportJob/原图副本均0，DB quick_check ok。真实撤权后停止显示并保留选片，原生delegate/bookmark/FileCoordinator直接读取与重启通过。48张中英/暗色/窄屏/大字及真实UI截图有本地manifest，8张opaqueRGB iPhone/iPad实际屏幕图见`store/appstore/review/ScreenshotEvidence140.json`。最终unsigned61归档`.build/releases/v1.4.0/PhotoPilot-1.4.0-61.xcarchive`，executable SHA `de3136f79b4d5f61365a3e98ea0eacd9ec1e53e2ab6c7030252c3eb4be4249fe`。root标准make build/analyze及最终payload验证通过，FileTimestamp声明C617.1+3B52.1。
+
+唯一fresh综合review及确认delta开放Critical/Important/Minor均0，Ready to merge。共享check58工具+6AI来源、612词条/16复数/8产物、17表通过。版本/资源/验证范围见`store/appstore/review/LocalReferencesRelease140.json`，更新文案与Store准备见`store/appstore/review/LocalReferencesUpdate.md`。当前GitHub提交/合并/tag/公开发布仍待执行，完成后另回填实证。
+
+iOS真实外部Files系统picker链路仍有环境阻碍。独立标准UIKit scene共享文件夹在PhotoPilot picker与系统Files中都可见，点击时系统DocumentManager均source=null。实际外部文件/目录选取、跨重启grant及移动失效闭环未完成，失败/对照日志及skip留`.build/releases/v1.4.0/ios-external-files-verification.json`。普通sim缺fixture的两项UI测试已明确skip。实体旧机、最低OS、实体NAS、第三方云文件供应商及长稳待实测。新只读签名核查仍无匹配Store profile，未刷新签名资产。自动审批此前以生产签名资产变更风险拒绝刷新，正式导出需用户明确授权及可用原发布账号/匹配profile，未生成Store IPA、上传或提交。
+
 **远端按需相框v1.3.0已发布（2026-11-15，1.3.0/60）**：已实现WebDAV/SMB元数据选片、按需播放和逐相框可选本地同步。照片原始文件缓存全应用共用128MiB（含partial/预约），磁盘写入保留64MiB余量；解码缓存32MiB，可重算AI向量16MiB。选片/封面/播放/AI与同步均使用typed来源身份、epoch/revision及隐私守卫；17表。旧NAS引用、顺序、人工排除、AI归属和自选封面支持切换迁移；副本释放有确认、共享保护、provenance与恢复intent。
 
 Android435JVM、22native、中英/横竖/大字/暗色8种UI配置、旧5类instrumentation通过；root独立build/lint/test通过，lint0error204warnings。最终原签名四ABI APK153988162bytes、SHA `224743a5fde03991a010d0e8fe27c643186326814d837e8bfe64cb8e00e3a372`。iOS260native（真实Lite远端中英分类）、iPhone3UI+iPad3UI及增量1UI通过，root独立build/analyze通过；unsigned archive保留`.build/releases/v1.3.0/PhotoPilot-1.3.0-60.xcarchive`，executable SHA `11a23b91b508f592f0a3ef609ad9a943a50bd35f31d51fd7ba5ff301f75718c6`。21张真实iPhone/iPad截图及尺寸/SHA见`store/appstore/review/ScreenshotEvidence130.json`，Android24张QA截图留私有release目录。shared check57+6通过，唯一fresh综合review本轮确认项均已修复并逐项验diff，开放Critical/Important/Minor均0。

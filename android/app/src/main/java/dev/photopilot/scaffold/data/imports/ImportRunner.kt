@@ -161,13 +161,15 @@ class ImportRunner(
 
     suspend fun cancel(jobId: String) {
         coordinator.signal(jobId, ImportJobAggregate.Signal.USER_CANCEL)
-        queueMutex.withLock {
+        val active = queueMutex.withLock {
             pendingJobIds.remove(jobId)
-            if (activeJobId == jobId) {
-                activeJobHandle?.cancel()
-            }
+            networkPausedJobs.remove(jobId)
+            val handle = activeJobHandle.takeIf { activeJobId == jobId }
+            handle?.cancel()
             notifyActiveDrivers()
+            handle
         }
+        active?.join()
     }
 
     suspend fun shutdownAndJoin() {

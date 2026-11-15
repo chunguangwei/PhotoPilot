@@ -81,7 +81,6 @@ import dev.photopilot.scaffold.data.net.TofuPinStore
 import dev.photopilot.scaffold.data.net.WebDavClient
 import dev.photopilot.scaffold.data.repo.AppSettingsRepository
 import dev.photopilot.scaffold.data.repo.AssetRepository
-import dev.photopilot.scaffold.data.repo.NasSourceProvisioner
 import dev.photopilot.scaffold.data.repo.SelectionRefEdit
 import dev.photopilot.scaffold.data.update.UpdateChecker
 import dev.photopilot.scaffold.data.update.UpdateDownloadService
@@ -361,6 +360,15 @@ class MainActivity : Activity() {
         super.onResume()
         pollHandler.removeCallbacks(pollRunnable)
         pollHandler.post(pollRunnable)
+        environment?.let { env ->
+            val referenceEditor = remoteFrameView
+            scope.launch {
+                env.localReferences.refreshAll()
+                playerEngine?.onExternalSelectionChanged()
+                if (remoteFrameView === referenceEditor) referenceEditor?.reloadSources()
+                activeSourcesView?.let { refreshNasSources(it) }
+            }
+        }
         environment?.aiFrames?.foreground = true
         environment?.aiFrames?.resumeAutomatic()
         maybeAutoSyncNas()
@@ -465,8 +473,17 @@ class MainActivity : Activity() {
     private fun buildSourcesView(): SourcesView =
         SourcesView(this).apply {
             onLocalPhotosClick = { showPhotoPermissionOverlay() }
-            onLocalFilesClick = { launchFilePicker() }
+            onLocalFilesClick = { showLocalFilesChoices() }
             onNasClick = { onNasSourceClicked() }
+            onLocalReferenceClick = { sourceId ->
+                scope.launch {
+                    val source = withContext(Dispatchers.IO) { environment?.database?.sourceDao()?.getById(sourceId) }
+                    if (source?.status == SourceStatus.ACTIVE) openRemoteFrame(null, mapOf("sourceId" to sourceId))
+                    else if (source?.type == SourceType.LOCAL_PHOTOS) showPhotoPermissionOverlay()
+                    else showLocalFilesChoices()
+                }
+            }
+            onLocalReferenceRemove = { sourceId -> confirmNasDisconnect(sourceId) }
             onNasSync = { sourceId -> nasSyncNow(sourceId) }
             onNasDisconnect = { sourceId -> confirmNasDisconnect(sourceId) }
             onNasReauth = { sourceId -> openNasEdit(sourceId) }
@@ -920,17 +937,18 @@ class MainActivity : Activity() {
     }
 
     private var nasFormView: NasFormView? = null
+    private var nasSaveInFlight = false
 
     private data class NasEditContext(
         val sourceId: String,
         val endpointKey: String,
         val directories: Set<String>,
         val recursive: Boolean,
+        val catalogOnly: Boolean,
     )
 
     private var nasEditContext: NasEditContext? = null
 
-    private var remoteConnectionOnly = false
     private var remoteFrameView: dev.photopilot.scaffold.ui.remote.RemoteFrameView? = null
 
     private fun openRemoteFrame(frame: FrameEntity?, draft: Map<String, String>? = null) {
@@ -938,7 +956,7 @@ class MainActivity : Activity() {
         val view = dev.photopilot.scaffold.ui.remote.RemoteFrameView(this, env, frame, draft)
         remoteFrameView = view
         view.onBack = { remoteFrameView = null; popOverlayTracked() }
-        view.onConnect = { remoteConnectionOnly = true; openNasForm() }
+        view.onConnect = { openNasForm() }
         view.onSaved = {
             remoteFrameView = null
             framesDirty = true
@@ -959,11 +977,11 @@ class MainActivity : Activity() {
     ) {
         nasEditContext = editContext
         val view = NasFormView(this)
+        view.setCatalogOnly(editContext?.catalogOnly ?: true)
         nasFormView = view
         view.onBack = {
             nasFormView = null
             nasEditContext = null
-            remoteConnectionOnly = false
             popOverlayTracked()
         }
         view.onTest = { form -> testNasConnection(view, form) }
@@ -1265,157 +1283,142 @@ class MainActivity : Activity() {
     private suspend fun createNasSourceAndImport(conn: NasConnection, selected: Set<String>, recursive: Boolean) {
         val env = environment ?: return
         val dirs = NasScope.normalizeDirectories(selected.toList()) ?: return
-        val scopeJson = NasScope.scopeJson(dirs)
-        val settingsJson = NasSourceLifecycle.settingsJsonWithRecursive(recursive)
-        val credentialJson = JsonMini.toJson(
-            mapOf(
-                "protocol" to conn.protocol,
-                "host" to conn.host,
-                "port" to conn.port.toDouble(),
-                "path" to conn.path,
-                "username" to conn.username,
-                "password" to conn.password,
-            ),
-        )
-        val existing = withContext(Dispatchers.IO) { env.database.sourceDao().getAll().firstOrNull { it.endpointKey == conn.fingerprint && it.type == if (conn.protocol == "smb") SourceType.SMB else SourceType.WEBDAV } }
-        val editingSource = nasEditContext?.sourceId?.let { id -> withContext(Dispatchers.IO) { env.database.sourceDao().getById(id) } }
-        val previousCredential = withContext(Dispatchers.IO) { env.credentialStore.load(conn.fingerprint) }
-        val credentialsChanged = previousCredential != credentialJson
-        if (NasSourceLifecycle.usesCatalogIndex(remoteConnectionOnly, existing?.settingsJson) || NasSourceLifecycle.usesCatalogIndex(false, editingSource?.settingsJson)) {
-            runCatching {
+        if (nasSaveInFlight) return
+        nasSaveInFlight = true
+        try {
+            val scopeJson = NasScope.scopeJson(dirs)
+            val settingsJson = NasSourceLifecycle.settingsJsonWithRecursive(recursive)
+            val credentialJson = JsonMini.toJson(
+                mapOf(
+                    "protocol" to conn.protocol,
+                    "host" to conn.host,
+                    "port" to conn.port.toDouble(),
+                    "path" to conn.path,
+                    "username" to conn.username,
+                    "password" to conn.password,
+                ),
+            )
+            val existing = withContext(Dispatchers.IO) { env.database.sourceDao().getAll().firstOrNull { it.endpointKey == conn.fingerprint && it.type == if (conn.protocol == "smb") SourceType.SMB else SourceType.WEBDAV } }
+            val requestedSettings = JsonMini.toJson(
+                JsonMini.parseObject(NasSourceLifecycle.mergeSettings(existing?.settingsJson ?: settingsJson, recursive = recursive)) +
+                    mapOf("catalogOnly" to conn.form.catalogOnly, "directories" to dirs),
+            )
+            val editContext = nasEditContext
+            val jobId = try {
                 withContext(Dispatchers.IO) {
-                    env.credentialStore.save(conn.fingerprint, credentialJson)
-                    val settings = when {
-                        existing != null && !NasSourceLifecycle.usesCatalogIndex(false, existing.settingsJson) -> existing.settingsJson
-                        else -> JsonMini.toJson(JsonMini.parseObject(NasSourceLifecycle.mergeSettings(existing?.settingsJson ?: settingsJson, recursive = recursive)) + mapOf("catalogOnly" to true, "directories" to dirs))
+                    existing?.let { source ->
+                        env.remoteCopies.cancelSource(source.id)
+                        env.database.importJobDao().getBySource(source.id).forEach { env.runner.cancel(it.id) }
                     }
-                    val ensured = env.localSources.ensureNasSource(if (conn.protocol == "smb") SourceType.SMB else SourceType.WEBDAV, conn.fingerprint, NasAddress.displayName(conn.protocol, conn.host, conn.port), WebDavSourceAdapter.WEBDAV_CAPABILITY_FLAGS, settings)
-                    val source = if (existing != null && ensured.epoch == existing.epoch && (credentialsChanged || ensured.status != SourceStatus.ACTIVE)) {
+                    env.credentialStore.save(conn.fingerprint, credentialJson)
+                    val ensured = env.localSources.ensureNasSource(
+                        if (conn.protocol == "smb") SourceType.SMB else SourceType.WEBDAV,
+                        conn.fingerprint,
+                        NasAddress.displayName(conn.protocol, conn.host, conn.port),
+                        WebDavSourceAdapter.WEBDAV_CAPABILITY_FLAGS,
+                        requestedSettings,
+                    )
+                    val source = if (existing != null && ensured.epoch == existing.epoch) {
                         ensured.copy(status = SourceStatus.ACTIVE, epoch = ensured.epoch + 1, updatedAt = System.currentTimeMillis()).also { env.database.sourceDao().update(it) }
                     } else ensured
-                    env.remoteMedia.index(source.id, scopeJson, conn.adapterFor(recursive))
+                    val newJobId = if (conn.form.catalogOnly) {
+                        env.remoteMedia.index(source.id, scopeJson, conn.adapterFor(recursive), expectedEpoch = source.epoch)
+                        null
+                    } else {
+                        val id = env.coordinator.createJob(source.id, scopeJson)
+                        env.registerNasAdapter(id, conn.adapterFor(recursive))
+                        env.settings.setOnboardingCompleted(true)
+                        env.runner.start(id)
+                        id
+                    }
+                    env.localSources.clearSyncError(source.id, source.epoch, source.status)
+                    newJobId
                 }
-            }.onFailure {
-                AlertDialog.Builder(this).setMessage(if (resources.configuration.locales[0].language == "zh") "读取远端目录失败，请检查连接后重试。" else "Unable to read remote folders. Check the connection and retry.").setPositiveButton(R.string.common_close, null).show()
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Exception) {
+                AlertDialog.Builder(this).setMessage(R.string.error_store_write_failed_body).setPositiveButton(R.string.common_close, null).show()
                 return
             }
-            val editContext = nasEditContext
             if (editContext != null && editContext.endpointKey != conn.fingerprint) {
-                withContext(Dispatchers.IO) { env.localSources.disconnect(editContext.sourceId, true, System.currentTimeMillis()); env.credentialStore.delete(editContext.endpointKey) }
+                withContext(Dispatchers.IO) {
+                    env.database.importJobDao().getBySource(editContext.sourceId).forEach { env.runner.cancel(it.id) }
+                    env.localSources.disconnect(editContext.sourceId, true, System.currentTimeMillis())
+                    env.credentialStore.delete(editContext.endpointKey)
+                }
             }
             nasEditContext = null
             nasFormView = null
-            remoteConnectionOnly = false
-            popOverlayTracked()
-            popOverlayTracked()
-            remoteFrameView?.reloadSources()
-            activeSourcesView?.let { refreshNasSources(it) }
-            return
-        }
-        val provisioner = NasSourceProvisioner(
-            saveCredential = { fingerprint, json ->
-                env.credentialStore.save(fingerprint, json)
-            },
-            ensureSource = { fingerprint, displayName, flags, settings ->
-                val source = env.localSources.ensureNasSource(
-                    type = if (conn.protocol == "smb") SourceType.SMB else SourceType.WEBDAV,
-                    endpointKey = fingerprint,
-                    displayName = displayName,
-                    capabilityFlags = flags,
-                    settingsJson = NasSourceLifecycle.mergeSettings(existing?.settingsJson ?: settings, recursive = recursive),
-                )
-                if (existing != null && source.epoch == existing.epoch && credentialsChanged) {
-                    env.database.sourceDao().update(source.copy(epoch = source.epoch + 1, status = SourceStatus.ACTIVE, updatedAt = System.currentTimeMillis()))
-                }
-                source.id
-            },
-            createJob = { sourceId, scope ->
-                env.coordinator.createJob(sourceId, scope)
-            },
-            registerAndStart = { jobId ->
-                env.registerNasAdapter(jobId, conn.adapterFor(recursive))
-                env.runner.start(jobId)
-            },
-            markOnboardingCompleted = {
-                env.settings.setOnboardingCompleted(true)
-            },
-        )
-        val jobId = runCatching {
-            provisioner.provision(
-                fingerprint = conn.fingerprint,
-                credentialJson = credentialJson,
-                displayName = NasAddress.displayName(conn.protocol, conn.host, conn.port),
-                capabilityFlags = WebDavSourceAdapter.WEBDAV_CAPABILITY_FLAGS,
-                settingsJson = settingsJson,
-                scopeJson = scopeJson,
-            )
-        }.getOrElse { error ->
-            if (error is CancellationException) throw error
-            AlertDialog.Builder(this)
-                .setMessage(R.string.error_store_write_failed_body)
-                .setPositiveButton(R.string.common_close, null)
-                .show()
-            return
-        } ?: return
-        val editContext = nasEditContext
-        nasEditContext = null
-        if (editContext != null && editContext.endpointKey != conn.fingerprint) {
-            withContext(Dispatchers.IO) {
-                env.localSources.disconnect(
-                    editContext.sourceId,
-                    keepCopies = true,
-                    now = System.currentTimeMillis(),
-                )
-                env.credentialStore.delete(editContext.endpointKey)
-            }
             framesDirty = true
+            if (jobId != null) {
+                while (root.topOverlay() != null) popOverlayTracked()
+                openImportProgress(jobId)
+            } else {
+                popOverlayTracked()
+                popOverlayTracked()
+                remoteFrameView?.reloadSources()
+                activeSourcesView?.let { refreshNasSources(it) }
+            }
+        } finally {
+            nasSaveInFlight = false
         }
-        nasFormView = null
-        while (root.topOverlay() != null) {
-            popOverlayTracked()
-        }
-        openImportProgress(jobId)
     }
 
-    private fun nasSyncNow(sourceId: String) {
+    private fun nasSyncNow(sourceId: String, reportFailure: Boolean = true) {
         val env = environment ?: return
+        val requestingView = activeSourcesView
+        val requestingOverlay = root.topOverlay()
         scope.launch {
-            val result = withContext(Dispatchers.IO) {
-                val source = env.database.sourceDao().getById(sourceId) ?: return@withContext null
-                val adapter = env.nasAdapterFor(source)
-                if (adapter == null) {
-                    env.database.sourceDao().update(
-                        source.copy(
-                            status = SourceStatus.NEEDS_AUTH,
-                            updatedAt = System.currentTimeMillis(),
-                        ),
-                    )
-                    return@withContext null
+            var authority: SourceEntity? = null
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val captured = env.database.sourceDao().getById(sourceId) ?: return@withContext null
+                    authority = captured
+                    val adapter = env.nasAdapterFor(captured)
+                    val source = env.localSources.prepareSync(captured.id, captured.epoch, captured.status, adapter != null, System.currentTimeMillis()) ?: return@withContext null
+                    authority = source
+                    if (adapter == null) return@withContext null
+                    if (JsonMini.parseObject(source.settingsJson)["catalogOnly"] == true) {
+                        val directories = JsonMini.parseObject(source.settingsJson)["directories"] ?: listOf("")
+                        env.remoteMedia.index(sourceId, JsonMini.toJson(mapOf("directories" to directories)), adapter, expectedEpoch = source.epoch)
+                        if (env.localSources.clearSyncError(sourceId, source.epoch, source.status)) env.aiFrames.resumeAutomatic()
+                        return@withContext null
+                    }
+                    val scopeJson = NasScope.sourceScope(source.settingsJson, env.database.importJobDao().getBySource(sourceId).sortedByDescending { it.createdAt }.map { it.scopeJson }) ?: throw java.io.IOException("NAS_SCOPE_UNAVAILABLE")
+                    val jobId = env.database.withTransaction {
+                        val current = env.database.sourceDao().getById(source.id)
+                        if (current?.epoch != source.epoch || current.status != source.status || current.status == SourceStatus.DISCONNECTED) throw java.io.IOException("REMOTE_REVOKED")
+                        env.coordinator.createJob(source.id, scopeJson)
+                    }
+                    env.registerNasAdapter(jobId, adapter)
+                    env.runner.start(jobId)
+                    env.localSources.clearSyncError(sourceId, source.epoch, source.status)
+                    jobId
                 }
-                if (JsonMini.parseObject(source.settingsJson)["catalogOnly"] == true) {
-                    val directories = JsonMini.parseObject(source.settingsJson)["directories"] ?: listOf("")
-                    env.remoteMedia.index(sourceId, JsonMini.toJson(mapOf("directories" to directories)), adapter)
-                    env.aiFrames.resumeAutomatic()
-                    return@withContext null
+                if (result != null) refreshJobUi()
+                activeSourcesView?.let { refreshNasSources(it) }
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Exception) {
+                var message = R.string.error_src_unavailable_body
+                var currentAuthority = false
+                val captured = authority
+                try {
+                    if (captured != null) {
+                        val code = (failure as? WebDavClient.DavException)?.code ?: (failure as? SmbClient.SmbException)?.code
+                        currentAuthority = env.localSources.recordSyncError(sourceId, captured.epoch, captured.status,
+                            code in setOf(WebDavClient.ERR_SRC_AUTH_FAILED, SmbClient.ERR_SRC_PERMISSION_DENIED), System.currentTimeMillis())
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (storeFailure: Exception) {
+                    message = R.string.error_store_write_failed_body
                 }
-                val scopeJson = NasScope.latestSourceScope(env.database.importJobDao().getBySource(sourceId).sortedByDescending { it.createdAt }.map { it.scopeJson }) ?: return@withContext null
-                if (source.status != SourceStatus.ACTIVE) {
-                    env.database.sourceDao().update(
-                        source.copy(
-                            status = SourceStatus.ACTIVE,
-                            updatedAt = System.currentTimeMillis(),
-                        ),
-                    )
+                if (reportFailure && currentAuthority && activeSourcesView === requestingView && root.topOverlay() === requestingOverlay) {
+                    AlertDialog.Builder(this@MainActivity).setMessage(message).setPositiveButton(R.string.common_close, null).show()
                 }
-                val jobId = env.coordinator.createJob(source.id, scopeJson)
-                env.registerNasAdapter(jobId, adapter)
-                env.runner.start(jobId)
-                jobId
+                activeSourcesView?.let { refreshNasSources(it) }
             }
-            if (result != null) {
-                refreshJobUi()
-            }
-            activeSourcesView?.let { refreshNasSources(it) }
         }
     }
 
@@ -1425,32 +1428,44 @@ class MainActivity : Activity() {
             val source = withContext(Dispatchers.IO) {
                 env.database.sourceDao().getById(sourceId)
             } ?: return@launch
+            val removeConfiguration = source.status == SourceStatus.DISCONNECTED || JsonMini.parseObject(source.settingsJson)["referenceOnly"] == true
             AlertDialog.Builder(this@MainActivity)
-                .setTitle(getString(R.string.sources_disconnect_confirm_title, source.displayName))
-                .setMessage(R.string.sources_disconnect_body)
+                .setTitle(if (removeConfiguration) getString(R.string.sources_remove_configuration) else getString(R.string.sources_disconnect_confirm_title, source.displayName))
+                .setMessage(if (removeConfiguration) R.string.sources_remove_configuration_body else R.string.sources_disconnect_body)
                 .setNeutralButton(R.string.sources_disconnect_keep_copies) { _, _ ->
                     nasDisconnect(source, keepCopies = true)
                 }
                 .setPositiveButton(R.string.common_delete) { _, _ ->
-                    nasDisconnect(source, keepCopies = false)
+                    nasDisconnect(source, keepCopies = removeConfiguration, removeConfiguration = true)
                 }
                 .setNegativeButton(R.string.common_cancel, null)
-                .show()
+                .show().also { dialog ->
+                    if (removeConfiguration) dialog.getButton(AlertDialog.BUTTON_NEUTRAL).visibility = View.GONE
+                }
         }
     }
 
-    private fun nasDisconnect(source: SourceEntity, keepCopies: Boolean) {
+    private fun nasDisconnect(source: SourceEntity, keepCopies: Boolean, removeConfiguration: Boolean = !keepCopies || source.status == SourceStatus.DISCONNECTED) {
         val env = environment ?: return
         scope.launch {
-            withContext(Dispatchers.IO) {
-                env.localSources.disconnect(
-                    source.id,
-                    keepCopies,
-                    System.currentTimeMillis(),
-                )
-                source.endpointKey?.let { env.credentialStore.delete(it) }
+            try {
+                withContext(Dispatchers.IO) {
+                    env.remoteCopies.cancelSource(source.id)
+                    env.database.importJobDao().getBySource(source.id).forEach { env.runner.cancel(it.id) }
+                    try {
+                        env.localSources.disconnect(source.id, keepCopies, System.currentTimeMillis(), removeConfiguration = removeConfiguration)
+                    } finally {
+                        val current = env.database.sourceDao().getById(source.id)
+                        if (current == null || current.status == SourceStatus.DISCONNECTED) source.endpointKey?.let { env.credentialStore.delete(it) }
+                    }
+                }
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Exception) {
+                AlertDialog.Builder(this@MainActivity).setMessage(R.string.sources_remove_failed).setPositiveButton(R.string.common_close, null).show()
             }
             framesDirty = true
+            remoteFrameView?.reloadSources()
             activeSourcesView?.let { refreshNasSources(it) }
             refreshJobUi()
         }
@@ -1459,6 +1474,13 @@ class MainActivity : Activity() {
     private fun refreshNasSources(view: SourcesView) {
         val env = environment ?: return
         scope.launch {
+            val references = withContext(Dispatchers.IO) {
+                env.database.sourceDao().getAll().filter { JsonMini.parseObject(it.settingsJson)["referenceOnly"] == true }.map { source ->
+                    SourcesView.LocalReferenceModel(source.id, source.displayName,
+                        getString(if (source.status == SourceStatus.ACTIVE) R.string.source_local_reference_mode else R.string.source_local_reference_unavailable))
+                }
+            }
+            if (activeSourcesView === view) view.renderLocalReferences(references)
             val models = withContext(Dispatchers.IO) {
                 env.database.sourceDao().getAll()
                     .filter { it.type == SourceType.WEBDAV || it.type == SourceType.SMB }
@@ -1471,6 +1493,8 @@ class MainActivity : Activity() {
                             displayName = source.displayName,
                             statusText = if (orphan) {
                                 getString(R.string.sources_status_needs_auth)
+                            } else if (source.status == SourceStatus.ACTIVE && env.database.settingsKvDao().get("nas.connection_error.${source.id}") != null) {
+                                getString(R.string.sources_status_unavailable)
                             } else {
                                 nasStatusText(source.status)
                             },
@@ -1505,7 +1529,7 @@ class MainActivity : Activity() {
             }
             due.forEach { source ->
                 lastAutoSyncMs[source.id] = now
-                nasSyncNow(source.id)
+                nasSyncNow(source.id, reportFailure = false)
             }
         }
     }
@@ -1517,7 +1541,7 @@ class MainActivity : Activity() {
                 val source = env.database.sourceDao().getById(sourceId) ?: return@withContext null
                 val endpointKey = source.endpointKey ?: return@withContext null
                 val credentialJson = env.credentialStore.load(endpointKey)
-                val scopeJson = NasScope.latestSourceScope(env.database.importJobDao().getBySource(sourceId).sortedByDescending { it.createdAt }.map { it.scopeJson }) ?: source.settingsJson
+                val scopeJson = NasScope.sourceScope(source.settingsJson, env.database.importJobDao().getBySource(sourceId).sortedByDescending { it.createdAt }.map { it.scopeJson })
                 NasEditContext(
                     sourceId = source.id,
                     endpointKey = endpointKey,
@@ -1528,6 +1552,7 @@ class MainActivity : Activity() {
                         ?.toSet()
                         .orEmpty(),
                     recursive = NasSourceLifecycle.recursiveFromSettings(source.settingsJson),
+                    catalogOnly = JsonMini.parseObject(source.settingsJson)["catalogOnly"] == true,
                 ) to credentialJson
             } ?: return@launch
             val (editContext, credentialJson) = loaded
@@ -1668,17 +1693,23 @@ class MainActivity : Activity() {
         scope.launch {
             val (cards, libraryEmpty) = withContext(Dispatchers.IO) {
                 val frames = env.frameManager.listFrames()
+                val sources = env.database.sourceDao().getAll().associateBy { it.id }
                 val cardModels = frames.map { frame ->
                     val coverItem = env.frames.coverItem(frame.id)
                     val cover = coverItem?.takeIf { it.remote == null }?.local
                     val playable = env.frames.resolve(frame.id).playable.size
                     val remoteMode = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode == "remote"
-                    val readySources = env.frames.remoteItems(frame.id).filter { it.local != null }.mapNotNull { it.sourceAssetId }.toSet()
-                    val pending = if (remoteMode) 0 else env.database.frameSelectionDao()
-                        .pendingIncludedSourceAssets(frame.id).count { it.id !in readySources }
-                    FramesView.CardModel(frame, cover, playable, pending, coverItem?.takeIf { it.remote != null })
+                    val readySources = env.frames.remoteItems(frame.id).filter { it.local != null || env.remoteMedia.isLocalReference(it) }.mapNotNull { it.sourceAssetId }.toSet()
+                    val includedSources = env.database.frameSelectionDao().pendingIncludedSourceAssets(frame.id)
+                    val pending = if (remoteMode) 0 else includedSources.count { it.id !in readySources }
+                    val sourceIds = includedSources.map { it.sourceId } + env.database.frameDirectoryRuleDao().getByFrame(frame.id).mapNotNull { env.database.collectionDao().getById(it.collectionId)?.sourceId }
+                    val hasNas = sourceIds.any { sources[it]?.type in setOf(SourceType.SMB, SourceType.WEBDAV) }
+                    val hasDeviceReferences = sourceIds.any { JsonMini.parseObject(sources[it]?.settingsJson)["referenceOnly"] == true }
+                    FramesView.CardModel(frame, cover, playable, pending, coverItem?.takeIf { it.remote != null }, hasNas, hasDeviceReferences)
                 }
-                val empty = env.database.assetDao().browsePage(1, 0).isEmpty()
+                val empty = env.database.assetDao().browsePage(1, 0).isEmpty() && sources.values.none { source ->
+                    JsonMini.parseObject(source.settingsJson)["referenceOnly"] == true && env.remoteMedia.members(source.id, "", true).isNotEmpty()
+                }
                 cardModels to empty
             }
             if (activeFramesView === view) {
@@ -1761,6 +1792,7 @@ class MainActivity : Activity() {
     private fun openFrameEditor(frame: FrameEntity?) {
         val env = environment ?: return
         val view = FrameEditView(this, File(filesDir, "originals"))
+        val referenceSources = mutableSetOf<String>()
         view.dataSource = object : FrameEditView.DataSource {
             override fun fetchPhotos(limit: Int, offset: Int, callback: (List<AssetEntity>) -> Unit) {
                 scope.launch {
@@ -1774,8 +1806,13 @@ class MainActivity : Activity() {
             override fun fetchCollections(callback: (List<Pair<CollectionEntity, Long>>) -> Unit) {
                 scope.launch {
                     val collections = withContext(Dispatchers.IO) {
-                        env.database.collectionDao().getAll().map {
-                            it to env.database.collectionAssetDao().getByCollection(it.id).size.toLong()
+                        referenceSources.clear()
+                        referenceSources.addAll(env.database.sourceDao().getAll().filter { JsonMini.parseObject(it.settingsJson)["referenceOnly"] == true }.map { it.id })
+                        env.database.collectionDao().getAll().map { collection ->
+                            val count = if (collection.sourceId in referenceSources && collection.relPath != null) {
+                                env.remoteMedia.members(requireNotNull(collection.sourceId), collection.relPath, false).size.toLong()
+                            } else env.database.collectionAssetDao().getByCollection(collection.id).size.toLong()
+                            collection to count
                         }.filter { dev.photopilot.scaffold.data.logic.CollectionListing.visibleInFolderList(it.first.type, it.second) }
                     }
                     callback(collections)
@@ -1794,6 +1831,12 @@ class MainActivity : Activity() {
         view.onBack = { hasChanges -> handleEditorBack(view, hasChanges) }
         view.onSave = { state -> saveFrameEdit(view, frame, state) }
         view.onRemotePhotos = { openRemoteFrame(frame, mapOf("name" to view.currentState().name)) }
+        view.onOpenReferenceCollection = { collection ->
+            if (collection.sourceId in referenceSources && collection.relPath != null) {
+                openRemoteFrame(frame, mapOf("sourceId" to requireNotNull(collection.sourceId), "folder" to collection.relPath, "name" to view.currentState().name))
+                true
+            } else false
+        }
         view.onAISettings = { frame?.let { openAIFrameEditor(it) } ?: openAIFrameEditor(null) }
         view.onManualOrder = { frame?.let { target -> openManualOrder(view, target) } }
         view.onConfirmDynamic = { completion -> confirmDynamicRule(completion) }
@@ -2668,6 +2711,7 @@ class MainActivity : Activity() {
 
     private fun buildLibraryView(): LibraryView {
         val env = environment
+        val referenceSources = mutableSetOf<String>()
         val view = LibraryView(this, File(filesDir, "originals"))
         if (env != null) {
             view.dataSource = object : LibraryView.DataSource {
@@ -2707,10 +2751,14 @@ class MainActivity : Activity() {
                 override fun fetchCollections(callback: (List<Pair<CollectionEntity, Long>>) -> Unit) {
                     scope.launch {
                         val collections = withContext(Dispatchers.IO) {
+                            referenceSources.clear()
+                            referenceSources.addAll(env.database.sourceDao().getAll().filter { JsonMini.parseObject(it.settingsJson)["referenceOnly"] == true }.map { it.id })
                             env.database.collectionDao().getAll()
-                                .map {
-                                    it to env.database.collectionAssetDao()
-                                        .getByCollection(it.id).size.toLong()
+                                .map { collection ->
+                                    val count = if (collection.sourceId in referenceSources && collection.relPath != null) {
+                                        env.remoteMedia.members(requireNotNull(collection.sourceId), collection.relPath, false).size.toLong()
+                                    } else env.database.collectionAssetDao().getByCollection(collection.id).size.toLong()
+                                    collection to count
                                 }
                                 .filter { dev.photopilot.scaffold.data.logic.CollectionListing.visibleInFolderList(it.first.type, it.second) }
                         }
@@ -2737,6 +2785,13 @@ class MainActivity : Activity() {
                 }
             }
         }
+        view.onOpenReferenceCollection = { collection ->
+            if (collection.sourceId in referenceSources && collection.relPath != null) {
+                openRemoteFrame(null, mapOf("sourceId" to requireNotNull(collection.sourceId), "folder" to collection.relPath))
+                true
+            } else false
+        }
+        view.onBrowseSourcePhotos = { openRemoteFrame(null) }
         view.onPhotoClick = { asset -> openPhotoDetail(asset) }
         view.onAddToFrame = { selected ->
             showFramePickerForAssets(selected) { view.exitSelectionMode() }
@@ -3074,22 +3129,49 @@ class MainActivity : Activity() {
         val env = environment ?: return
         dismissPermissionOverlay()
         scope.launch {
-            val source = env.localSources.ensureLocalPhotos()
-            val jobId = env.coordinator.createJob(source.id, SCOPE_ALL)
-            env.settings.setOnboardingCompleted(true)
-            env.runner.start(jobId)
-            openImportProgress(jobId)
+            try {
+                val previous = env.localSources.ensureLocalPhotos()
+                env.database.importJobDao().getBySource(previous.id).forEach { env.runner.cancel(it.id) }
+                val source = env.localReferences.indexPhotos()
+                env.settings.setOnboardingCompleted(true)
+                openRemoteFrame(null, mapOf("sourceId" to source.id))
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Exception) {
+                showLocalReferenceFailure()
+            }
         }
+    }
+
+    private fun showLocalFilesChoices() {
+        AlertDialog.Builder(this)
+            .setItems(arrayOf(getString(R.string.source_local_files_choose_files), getString(R.string.source_local_files_choose_folder))) { _, choice ->
+                if (choice == 0) launchFilePicker() else launchFolderPicker()
+            }
+            .setNegativeButton(R.string.common_cancel, null)
+            .show()
     }
 
     private fun launchFilePicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
             putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             type = "*/*"
             putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*"))
         }
         startActivityForResult(intent, REQUEST_PICK_FILES)
+    }
+
+    private fun launchFolderPicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION)
+        }
+        startActivityForResult(intent, REQUEST_PICK_FOLDER)
+    }
+
+    private fun showLocalReferenceFailure() {
+        AlertDialog.Builder(this).setMessage(R.string.source_local_reference_reselect).setPositiveButton(R.string.common_close, null).show()
     }
 
     @Deprecated("framework-only result API")
@@ -3098,6 +3180,22 @@ class MainActivity : Activity() {
         if (requestCode == REQUEST_PICK_MUSIC) {
             if (resultCode == RESULT_OK) {
                 data?.data?.let { importLocalMusic(it) }
+            }
+            return
+        }
+        if (requestCode == REQUEST_PICK_FOLDER && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+            val env = environment ?: return
+            scope.launch {
+                try {
+                    val source = env.localReferences.indexTree(uri, data.flags)
+                    env.settings.setOnboardingCompleted(true)
+                    openRemoteFrame(null, mapOf("sourceId" to source.id))
+                } catch (failure: CancellationException) {
+                    throw failure
+                } catch (failure: Exception) {
+                    showLocalReferenceFailure()
+                }
             }
             return
         }
@@ -3110,21 +3208,21 @@ class MainActivity : Activity() {
         }
         data?.data?.let { uris.add(it) }
         if (uris.isEmpty()) return
-        startLocalFilesImport(uris)
+        startLocalFilesImport(uris.distinct(), data?.flags ?: 0)
     }
 
-    private fun startLocalFilesImport(uris: List<Uri>) {
+    private fun startLocalFilesImport(uris: List<Uri>, grantFlags: Int) {
         val env = environment ?: return
         scope.launch {
-            val source = env.localSources.ensureLocalFiles()
-            val jobId = env.coordinator.createJob(source.id, SCOPE_ALL)
-            val staged = withContext(Dispatchers.IO) {
-                PickedFilesStager(this@MainActivity).stage(uris, jobId)
+            try {
+                val source = env.localReferences.indexFiles(uris, grantFlags)
+                env.settings.setOnboardingCompleted(true)
+                openRemoteFrame(null, mapOf("sourceId" to source.id))
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Exception) {
+                showLocalReferenceFailure()
             }
-            env.registerPickedAdapter(jobId, PickedFilesSourceAdapter(staged.entries))
-            env.settings.setOnboardingCompleted(true)
-            env.runner.start(jobId)
-            openImportProgress(jobId, showSkippedNotice = staged.skippedUnsupported > 0)
         }
     }
 
@@ -3437,7 +3535,7 @@ class MainActivity : Activity() {
                 playerView = null
             }
             if (popped === remoteFrameView) remoteFrameView = null
-            if (popped === nasFormView) { nasFormView = null; remoteConnectionOnly = false }
+            if (popped === nasFormView) nasFormView = null
             if (popped === activeSourcesView) activeSourcesView = null
             return
         }
@@ -3457,6 +3555,7 @@ class MainActivity : Activity() {
         const val KEY_OVERLAYS = "overlay_stack"
         const val REQUEST_PHOTOS = 41
         const val REQUEST_PICK_FILES = 42
+        const val REQUEST_PICK_FOLDER = 43
         const val REQUEST_LOCATION = 43
         const val LOCATION_FIX_TIMEOUT_MS = 10_000L
         const val GEOCODE_TIMEOUT_MS = 5_000L

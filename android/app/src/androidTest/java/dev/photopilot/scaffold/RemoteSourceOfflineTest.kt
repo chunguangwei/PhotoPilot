@@ -27,12 +27,15 @@ class RemoteSourceOfflineTest {
         env.database.sourceDao().upsert(SourceEntity(id, SourceType.WEBDAV, "Offline fixture", id, null, null, 0, RetentionPolicy.USER_MANAGED, SourceStatus.ACTIVE, 1, null, "{\"catalogOnly\":true,\"directories\":[\"\"]}", now, now))
         try {
             instrumentation.runOnMainSync {
-                MainActivity::class.java.getDeclaredMethod("nasSyncNow", String::class.java).apply { isAccessible = true }.invoke(activity, id)
+                MainActivity::class.java.getDeclaredMethod("nasSyncNow", String::class.java, Boolean::class.javaPrimitiveType).apply { isAccessible = true }.invoke(activity, id, false)
             }
             delay(1200)
             instrumentation.runOnMainSync { assertFalse(activity.isFinishing) }
             assertTrue(env.database.importJobDao().getBySource(id).isEmpty())
             assertEquals(SourceStatus.ACTIVE, env.database.sourceDao().getById(id)?.status)
+            assertNotNull(env.database.settingsKvDao().get("nas.connection_error.$id"))
+            val root = instrumentation.uiAutomation.rootInActiveWindow
+            assertTrue(root?.findAccessibilityNodeInfosByText(context.getString(R.string.error_src_unavailable_body)).orEmpty().isEmpty())
         } finally {
             instrumentation.runOnMainSync { activity.finish() }
             env.credentialStore.delete(id)

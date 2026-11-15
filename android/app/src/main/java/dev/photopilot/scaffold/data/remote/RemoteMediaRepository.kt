@@ -18,6 +18,12 @@ class RemoteMediaRepository(
     private val networkAllowed: () -> Boolean,
 ) {
     var onCatalogUpdated: ((String) -> Unit)? = null
+    var localReferences: dev.photopilot.scaffold.data.references.LocalReferenceRepository? = null
+    suspend fun isLocalReference(item: PlaybackItem): Boolean {
+        val source = item.remote?.let { db.sourceDao().getById(it.sourceId) } ?: return false
+        return source.type in setOf(SourceType.LOCAL_PHOTOS, SourceType.LOCAL_FILES) && JsonMini.parseObject(source.settingsJson)["referenceOnly"] == true
+    }
+    suspend fun displayName(asset: SourceAssetEntity): String = localReferences?.displayName(asset) ?: asset.remoteKey.substringAfterLast('/')
     fun allowsNetwork() = networkAllowed()
     val cache = RemoteFileCache(File(context.cacheDir, "remote-media"))
     private val decoded = object : android.util.LruCache<String, android.graphics.Bitmap>(33554432) {
@@ -38,10 +44,14 @@ class RemoteMediaRepository(
         if (!valid(item)) return null
         authorities[item.id] = item
         val key = "${item.id}:${item.sourceEpoch}:${item.remote?.revision}:${item.local?.contentHash}:$width:$height"
-        decoded.get(key)?.let { return it }
-        val bitmap = read(item, priority) { file, orientation -> dev.photopilot.scaffold.data.render.BitmapRenderer.decodeToTarget(file, width, height, orientation) }
+        if (item.referenceCacheable) decoded.get(key)?.let { return it }
+        val bitmap = if (isLocalReference(item)) {
+            readGate.acquire(priority)
+            try { localReferences?.bitmap(requireNotNull(item.remote), width, height) }
+            finally { readGate.release() }
+        } else read(item, priority) { file, orientation -> dev.photopilot.scaffold.data.render.BitmapRenderer.decodeToTarget(file, width, height, orientation) }
         if (!valid(item)) return null
-        if (bitmap != null && bitmap.allocationByteCount <= 33554432) decoded.put(key, bitmap)
+        if (item.referenceCacheable && bitmap != null && bitmap.allocationByteCount <= 33554432) decoded.put(key, bitmap)
         return bitmap
     }
     fun close() { authorityScope.cancel(); db.invalidationTracker.removeObserver(observer); cache.clear(force = true); decoded.evictAll() }
@@ -49,12 +59,16 @@ class RemoteMediaRepository(
     suspend fun item(sourceAssetId: String, allowRetainedCopy: Boolean = true): PlaybackItem? {
         val remote = db.sourceAssetDao().getById(sourceAssetId) ?: return null
         val source = db.sourceDao().getById(remote.sourceId) ?: return null
-        if (source.type !in setOf(SourceType.SMB, SourceType.WEBDAV)) return null
         val origins = db.assetOriginDao().getBySourceAssets(listOf(remote.id))
         if (origins.any { it.policyState != PolicyState.ALLOWED }) return null
         val assets = origins.mapNotNull { db.assetDao().getById(it.assetId) }
         if (assets.any { it.privacyExcluded || it.deletedAt != null }) return null
         if (db.localTombstoneDao().getByFingerprintAndRemoteId(source.endpointKey.orEmpty(), remote.remoteKey).isNotEmpty()) return null
+        if (source.type in setOf(SourceType.LOCAL_PHOTOS, SourceType.LOCAL_FILES) && JsonMini.parseObject(source.settingsJson)["referenceOnly"] == true) {
+            if (source.status != SourceStatus.ACTIVE || remote.accessState != AccessState.ACCESSIBLE || localReferences?.valid(remote) != true) return null
+            return PlaybackItem(remote = remote, sourceEpoch = source.epoch, referenceDisplayName = localReferences?.displayName(remote), referenceCacheable = localReferences?.cacheable(remote) == true)
+        }
+        if (source.type !in setOf(SourceType.SMB, SourceType.WEBDAV)) return null
         if (remote.remoteKey.substringAfterLast('.').lowercase() !in LocalFilesSourceAdapter.MEDIA_EXTENSIONS) return null
         val local = assets.sortedWith(compareBy<AssetEntity> { asset -> origins.first { it.assetId == asset.id }.originState != OriginState.ACTIVE }.thenBy { it.id }).firstOrNull { asset ->
             val origin = origins.first { it.assetId == asset.id }
@@ -114,6 +128,10 @@ class RemoteMediaRepository(
         } finally { readGate.release() }
     }
     suspend fun members(sourceId: String, folder: String, recursive: Boolean): List<SourceAssetEntity> {
+        val source = db.sourceDao().getById(sourceId) ?: return emptyList()
+        if (source.type in setOf(SourceType.LOCAL_PHOTOS, SourceType.LOCAL_FILES) && JsonMini.parseObject(source.settingsJson)["referenceOnly"] == true) {
+            return localReferences?.members(sourceId, folder, recursive).orEmpty()
+        }
         val normalized = RemotePaths.normalize(folder) ?: return emptyList()
         val prefix = if (normalized.isEmpty()) "" else "$normalized/"
         val result = mutableListOf<SourceAssetEntity>()
@@ -142,8 +160,9 @@ class RemoteMediaRepository(
             parentId = id
         }
     }
-    suspend fun index(sourceId: String, scopeJson: String, adapter: SourceAdapter? = null) = withContext(Dispatchers.IO) {
+    suspend fun index(sourceId: String, scopeJson: String, adapter: SourceAdapter? = null, expectedEpoch: Long? = null) = withContext(Dispatchers.IO) {
         val source = db.sourceDao().getById(sourceId) ?: throw IOException("REMOTE_REVOKED")
+        if (expectedEpoch != null && source.epoch != expectedEpoch) throw IOException("REMOTE_REVOKED")
         val reader = adapter ?: adapterFor(source) ?: throw IOException("REMOTE_AUTH_REQUIRED")
         val scanStarted = System.currentTimeMillis()
         val roots = (JsonMini.parseObject(scopeJson)["directories"] as? List<*>)?.mapNotNull { (it as? String)?.let(RemotePaths::normalize) }.orEmpty()

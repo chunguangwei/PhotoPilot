@@ -55,6 +55,16 @@ class RemoteLocalCopies(private val context: Context, private val env: AppEnviro
     }
     suspend fun shutdown() { db.invalidationTracker.removeObserver(selectionObserver); scope.coroutineContext[Job]?.cancelAndJoin() }
     fun pause(frameId: String) { synchronized(jobs) { jobs.remove(frameId)?.cancel() }; scope.launch { writeStatus(frameId, "paused", 0, 0) } }
+    suspend fun cancelSource(sourceId: String) {
+        val sourceCollections = db.collectionDao().getBySource(sourceId).map { it.id }.toSet()
+        val frameIds = db.frameDao().getAll().filter { frame ->
+            db.frameSelectionDao().getByFrame(frame.id).any { selection ->
+                selection.sourceAssetId?.let { db.sourceAssetDao().getById(it)?.sourceId == sourceId } == true
+            } || db.frameDirectoryRuleDao().getByFrame(frame.id).any { it.collectionId in sourceCollections }
+        }.map { it.id }.toSet()
+        val cancelled = synchronized(jobs) { frameIds.mapNotNull { jobs.remove(it) }.also { active -> active.forEach { it.cancel() } } }
+        cancelled.forEach { it.join() }
+    }
     suspend fun status(frameId: String): String? {
         val value = JsonMini.parseObject(db.settingsKvDao().get("remote.sync.$frameId")?.valueJson)
         val state = value["state"] as? String ?: return null
@@ -79,7 +89,7 @@ class RemoteLocalCopies(private val context: Context, private val env: AppEnviro
         val frame = db.frameDao().getById(frameId) ?: return@withLock
         if (FramePlaybackSettings.parse(frame.settingsJson).mediaStorageMode != "local") return@withLock
         versions[frameId] = frame.selectionVersion
-        val items = env.frames.remoteItems(frameId)
+        val items = env.frames.remoteItems(frameId).filter { !env.remoteMedia.isLocalReference(it) }
         var done = 0
         writeStatus(frameId, "running", done, items.size)
         for ((sourceId, selected) in items.groupBy { requireNotNull(it.remote).sourceId }) {

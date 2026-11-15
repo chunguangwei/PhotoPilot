@@ -37,6 +37,7 @@ final class PhotoDetailViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        NotificationCenter.default.addObserver(self, selector: #selector(referenceAuthorityChanged), name: .remoteMediaChanged, object: nil)
         enableEdgeSwipeBack()
         view.backgroundColor = ThemeColor.canvas
 
@@ -100,6 +101,24 @@ final class PhotoDetailViewController: UIViewController {
         undoBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(undoBar)
 
+        let scroll = UIScrollView()
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scroll)
+        let content = UIView()
+        content.translatesAutoresizingMaskIntoConstraints = false
+        scroll.addSubview(content)
+        let photoContainer = UIView()
+        photoContainer.translatesAutoresizingMaskIntoConstraints = false
+        content.addSubview(photoContainer)
+        photoContainer.addSubview(imageView)
+        photoContainer.addSubview(unavailableLabel)
+        photoContainer.addSubview(retryButton)
+        content.addSubview(metadataStack)
+        content.addSubview(actionsStack)
+        view.bringSubviewToFront(undoBar)
+        let imageHeight = photoContainer.heightAnchor.constraint(equalTo: scroll.frameLayoutGuide.heightAnchor, multiplier: 0.45)
+        imageHeight.priority = .defaultHigh
+
         let readable = metadataStack.widthAnchor.constraint(
             lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
         )
@@ -118,16 +137,26 @@ final class PhotoDetailViewController: UIViewController {
                 equalTo: view.safeAreaLayoutGuide.trailingAnchor,
                 constant: -ThemeMetrics.contentInsetCompact
             ),
-            imageView.topAnchor.constraint(
-                equalTo: backRow.bottomAnchor,
-                constant: ThemeMetrics.space8
-            ),
-            imageView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-            imageView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-            imageView.bottomAnchor.constraint(
-                equalTo: metadataStack.topAnchor,
-                constant: -ThemeMetrics.space16
-            ),
+            scroll.topAnchor.constraint(equalTo: backRow.bottomAnchor, constant: ThemeMetrics.space8),
+            scroll.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            scroll.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            content.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
+            content.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
+            content.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
+            content.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor),
+            photoContainer.topAnchor.constraint(equalTo: content.topAnchor),
+            photoContainer.leadingAnchor.constraint(equalTo: content.leadingAnchor),
+            photoContainer.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            photoContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 180),
+            photoContainer.heightAnchor.constraint(lessThanOrEqualToConstant: 480),
+            imageHeight,
+            imageView.topAnchor.constraint(equalTo: photoContainer.topAnchor),
+            imageView.bottomAnchor.constraint(equalTo: photoContainer.bottomAnchor),
+            imageView.leadingAnchor.constraint(equalTo: photoContainer.leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: photoContainer.trailingAnchor),
+            metadataStack.topAnchor.constraint(equalTo: photoContainer.bottomAnchor, constant: ThemeMetrics.space16),
             unavailableLabel.centerXAnchor.constraint(equalTo: imageView.centerXAnchor),
             unavailableLabel.centerYAnchor.constraint(equalTo: imageView.centerYAnchor),
             retryButton.centerXAnchor.constraint(equalTo: imageView.centerXAnchor),
@@ -135,7 +164,7 @@ final class PhotoDetailViewController: UIViewController {
                 equalTo: unavailableLabel.bottomAnchor,
                 constant: ThemeMetrics.space16
             ),
-            metadataStack.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+            metadataStack.centerXAnchor.constraint(equalTo: content.centerXAnchor),
             metadataStack.leadingAnchor.constraint(
                 greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor,
                 constant: ThemeMetrics.contentInset
@@ -153,7 +182,7 @@ final class PhotoDetailViewController: UIViewController {
             actionsStack.centerXAnchor.constraint(equalTo: metadataStack.centerXAnchor),
             actionsStack.widthAnchor.constraint(equalTo: metadataStack.widthAnchor),
             actionsStack.bottomAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.bottomAnchor,
+                equalTo: content.bottomAnchor,
                 constant: -ThemeMetrics.space16
             ),
             undoBar.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
@@ -171,10 +200,19 @@ final class PhotoDetailViewController: UIViewController {
         loadTask?.cancel()
     }
 
+    @objc private func referenceAuthorityChanged() {
+        guard assetID.hasPrefix("remote:"), viewIfLoaded?.window != nil else { return }
+        load()
+    }
+
     private func load() {
         loadTask?.cancel()
         loadTask = Task { [weak self] in
             guard let self else { return }
+            if assetID.hasPrefix("remote:") {
+                await renderReference()
+                return
+            }
             guard let asset = try? await environment.assets.fetchAsset(id: assetID) else {
                 showUnavailable()
                 return
@@ -183,6 +221,26 @@ final class PhotoDetailViewController: UIViewController {
             await renderMetadata(asset)
             await renderImage(asset)
         }
+    }
+
+    private func renderReference() async {
+        deleteButton.isHidden = true
+        do {
+            let reference = MediaReference(runtimeID: assetID)
+            guard let record = try await environment.remoteMedia.repository.record(id: reference.rawID) else { throw RemoteMediaError.revoked }
+            let frames = try await environment.assets.frameCount(assetID: assetID)
+            for row in metadataStack.arrangedSubviews { row.removeFromSuperview() }
+            metadataStack.addArrangedSubview(makeRow(labelKey: nil, value: record.sourceName))
+            if record.referenceOnly { metadataStack.addArrangedSubview(makeRow(labelKey: nil, value: L10n.string("source.local_reference.mode"))) }
+            removeFromFrameButton.isHidden = frames == 0
+            let scale = view.traitCollection.displayScale
+            let image = try await environment.remoteMedia.image(runtimeID: assetID, width: min(4096, Int(max(view.bounds.width, 320) * scale)), height: min(4096, Int(max(view.bounds.height, 320) * scale)))
+            guard !Task.isCancelled else { return }
+            imageView.image = image
+            imageView.isHidden = false
+            unavailableLabel.isHidden = true
+            retryButton.isHidden = true
+        } catch { if !Task.isCancelled { showUnavailable() } }
     }
 
     override func viewDidLayoutSubviews() {
@@ -394,7 +452,7 @@ final class PhotoDetailViewController: UIViewController {
             guard let detail = try? await environment.frameManager.frameDetail(frameID: frameID) else {
                 return
             }
-            let edit = SelectionRefEdit(assetId: assetID, sourceAssetId: nil)
+            let edit = MediaReference(runtimeID: assetID).selection
             let result = try? await environment.frames.save(
                 frameID: frameID,
                 baseVersion: detail.selectionVersion,
@@ -436,12 +494,7 @@ final class PhotoDetailViewController: UIViewController {
             style: .destructive,
             handler: { [weak self] _ in
                 guard let self else { return }
-                Task {
-                    try? await self.environment.assets.hideAssetGlobally(id: self.assetID)
-                    ThumbnailLoader.clearMemoryCache()
-                    PlayerImageLoader.clearMemoryCache()
-                    self.dismiss(animated: true)
-                }
+                self.performHideGlobally()
             }
         ))
         alert.addAction(UIAlertAction(
@@ -449,6 +502,23 @@ final class PhotoDetailViewController: UIViewController {
             style: .cancel
         ))
         present(alert, animated: true)
+    }
+
+    private func performHideGlobally() {
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await environment.assets.hideAssetGlobally(id: assetID)
+                ThumbnailLoader.clearMemoryCache()
+                PlayerImageLoader.clearMemoryCache()
+                dismiss(animated: true)
+            } catch {
+                let alert = UIAlertController(title: L10n.string("delete.hide_globally"), message: AIText.value("The photo could not be hidden. Please retry.", "未能隐藏照片，请重试。"), preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: L10n.string("common.retry"), style: .default) { [weak self] _ in self?.performHideGlobally() })
+                alert.addAction(UIAlertAction(title: L10n.string("common.cancel"), style: .cancel))
+                present(alert, animated: true)
+            }
+        }
     }
 
     @objc private func handleDelete() {

@@ -41,6 +41,7 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        NotificationCenter.default.addObserver(self, selector: #selector(referenceAuthorityChanged), name: .remoteMediaChanged, object: nil)
         view.backgroundColor = ThemeColor.canvas
 
         let titleLabel = UILabel()
@@ -171,6 +172,12 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        refreshItems()
+        refreshCollections()
+    }
+
+    @objc private func referenceAuthorityChanged() {
+        guard viewIfLoaded?.window != nil else { return }
         refreshItems()
         refreshCollections()
     }
@@ -412,7 +419,7 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
             let result = try? await environment.frames.save(
                 frameID: frameID,
                 baseVersion: detail.selectionVersion,
-                addIncludes: selected.map { SelectionRefEdit(assetId: $0, sourceAssetId: nil) }
+                addIncludes: selected.map { MediaReference(runtimeID: $0).selection }
             )
             switch result {
             case .ok:

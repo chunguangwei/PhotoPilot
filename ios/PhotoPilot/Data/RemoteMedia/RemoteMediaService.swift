@@ -27,11 +27,12 @@ private final class RemoteMediaObservation: @unchecked Sendable {
         tokens.append(center.addObserver(forName: .NSManagedObjectContextObjectsDidChange, object: nil, queue: nil) { [weak self] notification in
             guard let context = notification.object as? NSManagedObjectContext, context.persistentStoreCoordinator === coordinator else { return }
             let rows = (notification.userInfo?[NSUpdatedObjectsKey] as? Set<NSManagedObject> ?? [])
+                .union(notification.userInfo?[NSInsertedObjectsKey] as? Set<NSManagedObject> ?? [])
                 .union(notification.userInfo?[NSDeletedObjectsKey] as? Set<NSManagedObject> ?? [])
             let keys = Set(["privacy_excluded", "deleted_at", "revision", "access_state", "epoch", "status", "policy_state", "origin_state"])
             let sensitive = rows.contains { row in
-                ["Source", "SourceAsset", "Asset", "AssetOrigin"].contains(row.entity.name ?? "") &&
-                    (row.isDeleted || !keys.isDisjoint(with: row.changedValues().keys))
+                row.entity.name == "LocalTombstone" || (["Source", "SourceAsset", "Asset", "AssetOrigin"].contains(row.entity.name ?? "") &&
+                    (row.isDeleted || !keys.isDisjoint(with: row.changedValues().keys)))
             }
             if sensitive { self?.mark(context) }
         })
@@ -41,7 +42,7 @@ private final class RemoteMediaObservation: @unchecked Sendable {
             let rows = (notification.userInfo?[NSInsertedObjectsKey] as? Set<NSManagedObject> ?? [])
                 .union(notification.userInfo?[NSUpdatedObjectsKey] as? Set<NSManagedObject> ?? [])
                 .union(notification.userInfo?[NSDeletedObjectsKey] as? Set<NSManagedObject> ?? [])
-            if sensitive || rows.contains(where: { ["Frame", "FrameSelection", "FrameDirectoryRule", "Source", "SourceAsset"].contains($0.entity.name ?? "") }) { changed(sensitive) }
+            if sensitive || rows.contains(where: { ["Frame", "FrameSelection", "FrameDirectoryRule", "Source", "SourceAsset", "LocalTombstone"].contains($0.entity.name ?? "") }) { changed(sensitive) }
         })
     }
 
@@ -81,9 +82,24 @@ private enum RemoteMediaServices {
     }
 }
 
+private enum ReferenceTransientDirectory {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var prepared: Set<String> = []
+
+    static func root(storeURL: URL) -> URL {
+        let root = storeURL.deletingLastPathComponent().appendingPathComponent("cache/reference-transient", isDirectory: true)
+        lock.lock()
+        defer { lock.unlock() }
+        if prepared.insert(root.path).inserted { try? FileManager.default.removeItem(at: root) }
+        return root
+    }
+}
+
 actor RemoteMediaService {
     typealias AdapterFactory = @Sendable (RemoteSourceConnection) throws -> any RemoteReadableSource
     let repository: RemoteMediaRepository
+    let references: LocalReferenceService
+    private let transientRoot: URL
     let cache: RemoteMediaCache
     let controller: PersistenceController
     let diskReservations: RemoteDiskReservations
@@ -99,12 +115,15 @@ actor RemoteMediaService {
 
     static func shared(controller: PersistenceController) -> RemoteMediaService { RemoteMediaServices.service(controller: controller) }
 
-    init(controller: PersistenceController, cacheRoot: URL? = nil, budget: Int64 = RemoteMediaCache.budgetBytes, adapterFactory: AdapterFactory? = nil) {
+    init(controller: PersistenceController, cacheRoot: URL? = nil, budget: Int64 = RemoteMediaCache.budgetBytes, adapterFactory: AdapterFactory? = nil, referenceProvider: (any LocalReferenceProvider)? = nil) {
         self.controller = controller
+        transientRoot = ReferenceTransientDirectory.root(storeURL: controller.storeURL)
         diskReservations = RemoteDiskReservations(root: controller.storeURL.deletingLastPathComponent())
         repository = RemoteMediaRepository(controller: controller)
         let settings = AppSettingsRepository(container: controller.container)
-        network = NasNetworkPolicy(settings: settings)
+        let policy = NasNetworkPolicy(settings: settings)
+        network = policy
+        references = LocalReferenceService(controller: controller, provider: referenceProvider ?? SystemLocalReferenceProvider(networkPolicy: policy))
         factory = adapterFactory
         let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first ?? FileManager.default.temporaryDirectory
         let key = SHA256Hex.digest(data: Data(controller.storeURL.path.utf8))
@@ -112,13 +131,17 @@ actor RemoteMediaService {
     }
 
     func startObserving() {
+        Task { await references.startObserving() }
         guard observation == nil else { return }
         observation = RemoteMediaObservation(controller: controller) { [weak self] sensitive in
             Task { await self?.refreshAuthority(sensitive: sensitive) }
         }
     }
 
-    func setIndexCompletion(_ completion: @escaping @Sendable () async -> Void) { indexed = completion }
+    func setIndexCompletion(_ completion: @escaping @Sendable () async -> Void) async {
+        indexed = completion
+        await references.setIndexCompletion(completion)
+    }
 
     private func refreshAuthority(sensitive: Bool) async {
         guard !erasing else { return }
@@ -182,6 +205,7 @@ actor RemoteMediaService {
 
     @discardableResult
     func index(sourceID: String) async throws -> Int {
+        if (try? await references.source(id: sourceID)) != nil { return try await references.index(sourceID: sourceID) }
         if let active = indexTasks[sourceID] { return try await active.value }
         let adapter = try await adapter(sourceID: sourceID)
         let task = Task { try await repository.index(sourceID: sourceID, adapter: adapter) }
@@ -218,6 +242,22 @@ actor RemoteMediaService {
                 revision: info.1, remoteKey: info.0, byteSize: nil, takenAt: nil))
         case .sourceAsset(let id):
             guard let record = try await repository.record(id: id), !record.blocked, record.policyAllowed else { throw RemoteMediaError.revoked }
+            if record.referenceOnly {
+                guard record.remoteAllowed else { throw RemoteMediaError.revoked }
+                if !record.cacheable { return try await acquireTransientReference(record: record, priority: priority) }
+                return try await cache.acquire(record.descriptor, priority: priority, fetch: { [references] descriptor, destination, limit in
+                    let source = try await references.source(id: descriptor.sourceID)
+                    guard source.epoch == descriptor.sourceEpoch else { throw RemoteMediaError.revoked }
+                    let image = try await references.provider.image(source: source, key: descriptor.remoteKey, revision: descriptor.revision, width: 2048, height: 2048)
+                    guard let data = image.pngData(), data.count <= min(limit, 32 * 1024 * 1024) else { throw RemoteMediaError.tooLarge }
+                    try Task.checkCancellation()
+                    try data.write(to: destination, options: .atomic)
+                }, authorized: { [weak self] descriptor in
+                    guard let self else { return false }
+                    guard await self.repository.authorized(descriptor) else { return false }
+                    return await self.authorized(runtimeID: descriptor.runtimeID)
+                })
+            }
             guard mode != .remote || record.sourceStatus != "disconnected" else { throw RemoteMediaError.revoked }
             if record.localReady, let path = record.localRelativePath {
                 return RemoteMediaLease(fileURL: repository.originals.appendingPathComponent(path), descriptor: record.descriptor)
@@ -258,6 +298,48 @@ actor RemoteMediaService {
         }
     }
 
+    private func acquireTransientReference(record: RemoteMediaRecord, priority: RemoteMediaPriority) async throws -> RemoteMediaLease {
+        let transfer = try await transfers.acquire(priority: priority)
+        let maximum: Int64 = 32 * 1024 * 1024
+        let cacheToken: UUID
+        do { cacheToken = try await cache.reserveTransient(bytes: maximum) }
+        catch { await transfer.release(); throw error }
+        let space: RemoteSpaceLease
+        do { space = try await diskReservations.acquire(bytes: maximum) }
+        catch {
+            await cache.releaseTransient(cacheToken)
+            await transfer.release()
+            throw error
+        }
+        let url = transientRoot.appendingPathComponent(UUID().uuidString + ".png")
+        do {
+            let source = try await references.source(id: record.descriptor.sourceID)
+            guard source.epoch == record.descriptor.sourceEpoch, await authorized(runtimeID: record.descriptor.runtimeID) else { throw RemoteMediaError.revoked }
+            let image = try await references.provider.image(source: source, key: record.descriptor.remoteKey, revision: record.descriptor.revision, width: 2048, height: 2048)
+            guard let data = image.pngData(), data.count <= maximum else { throw RemoteMediaError.tooLarge }
+            try Task.checkCancellation()
+            try FileManager.default.createDirectory(at: transientRoot, withIntermediateDirectories: true)
+            var values = URLResourceValues()
+            values.isExcludedFromBackup = true
+            var directory = transientRoot
+            try directory.setResourceValues(values)
+            try data.write(to: url, options: .atomic)
+            guard await repository.authorized(record.descriptor), await authorized(runtimeID: record.descriptor.runtimeID) else { throw RemoteMediaError.revoked }
+            return RemoteMediaLease(fileURL: url, descriptor: record.descriptor, cleanup: { [cache] in
+                try? FileManager.default.removeItem(at: url)
+                await cache.releaseTransient(cacheToken)
+                await space.release()
+                await transfer.release()
+            })
+        } catch {
+            try? FileManager.default.removeItem(at: url)
+            await cache.releaseTransient(cacheToken)
+            await space.release()
+            await transfer.release()
+            throw error
+        }
+    }
+
     func authorized(runtimeID: String, mode: FrameStorageMode = .remote) async -> Bool {
         switch MediaReference(runtimeID: runtimeID) {
         case .asset:
@@ -265,6 +347,10 @@ actor RemoteMediaService {
             catch { return false }
         case .sourceAsset(let id):
             guard let record = try? await repository.record(id: id), !record.blocked, record.policyAllowed else { return false }
+            if record.referenceOnly {
+                guard record.remoteAllowed, let source = try? await references.source(id: record.descriptor.sourceID) else { return false }
+                return await references.provider.authorized(source: source, key: record.descriptor.remoteKey, revision: record.descriptor.revision)
+            }
             if let hash = learnedHashes[record.descriptor.identity], (try? await blockedHash(hash)) != false { return false }
             if mode == .remote && record.sourceStatus == "disconnected" { return false }
             return record.localReady || (mode == .remote && record.remoteAllowed)
@@ -272,6 +358,14 @@ actor RemoteMediaService {
     }
 
     func image(runtimeID: String, mode: FrameStorageMode = .remote, width: Int, height: Int, priority: RemoteMediaPriority = .visible) async throws -> UIImage {
+        if case .sourceAsset(let id) = MediaReference(runtimeID: runtimeID), let record = try await repository.record(id: id), record.referenceOnly {
+            guard record.remoteAllowed else { throw RemoteMediaError.revoked }
+            let source = try await references.source(id: record.descriptor.sourceID)
+            guard source.epoch == record.descriptor.sourceEpoch else { throw RemoteMediaError.revoked }
+            let image = try await references.provider.image(source: source, key: record.descriptor.remoteKey, revision: record.descriptor.revision, width: width, height: height)
+            guard await repository.authorized(record.descriptor), await authorized(runtimeID: runtimeID, mode: mode) else { throw RemoteMediaError.revoked }
+            return image
+        }
         let lease = try await acquire(runtimeID: runtimeID, mode: mode, priority: priority)
         let descriptor = lease.descriptor
         let cacheKey = SHA256Hex.digest(data: Data(descriptor.identity.utf8)) + ":\(width)x\(height)"
@@ -297,10 +391,19 @@ actor RemoteMediaService {
         return image
     }
 
+    func cancelIndex(sourceID: String) async {
+        await references.cancelIndex(sourceID: sourceID)
+        let task = indexTasks[sourceID]
+        task?.cancel()
+        _ = try? await task?.value
+        indexTasks[sourceID] = nil
+    }
+
     func clearCache() async { await cache.clear(); RemoteDecodedImages.shared.clear() }
 
     func prepareForErase() async {
         erasing = true
+        await references.prepareForErase()
         indexed = nil
         observation = nil
         RemoteMediaServices.forget(storeURL: controller.storeURL)

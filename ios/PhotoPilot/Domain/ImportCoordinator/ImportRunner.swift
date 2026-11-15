@@ -57,10 +57,12 @@ actor ImportRunner {
     }
 
     func cancel() async throws {
-        driveTask?.cancel()
-        driveTask = nil
+        let task = driveTask
+        task?.cancel()
         watchdogTask?.cancel()
         watchdogTask = nil
+        await task?.value
+        driveTask = nil
         _ = try await coordinator.handleSignal(jobID: jobID, signal: .userCancel)
         onTerminal?(jobID)
     }

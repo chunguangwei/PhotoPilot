@@ -2,7 +2,7 @@
 
 Effective date / 生效日期：2026-11-15
 Contact / 联系方式：chunguangwee@gmail.com
-Scope / 适用：PhotoPilot 1.1.58、1.2.0 与拟更新 1.3.0（iOS/iPadOS 与 Android）；AI 相框段适用于 1.2.0 起，远端按需段适用于 1.3.0 起。Versions 1.1.55–1.1.58 use Open-Meteo only; earlier 1.1.53/1.1.54 builds used wttr.in weather fallback. / 1.1.55–1.1.58 仅使用 Open-Meteo；旧版 1.1.53/1.1.54 包含 wttr.in 天气备用请求。
+Scope / 适用：PhotoPilot 1.1.58、1.2.0、1.3.0 与拟更新 1.4.0（iOS/iPadOS 与 Android）；AI 相框段适用于 1.2.0 起，远端按需段适用于 1.3.0 起。Versions 1.1.55–1.1.58 use Open-Meteo only; earlier 1.1.53/1.1.54 builds used wttr.in weather fallback. / 1.1.55–1.1.58 仅使用 Open-Meteo；旧版 1.1.53/1.1.54 包含 wttr.in 天气备用请求。
 
 ---
 
@@ -33,6 +33,8 @@ The current release is free, with no advertising, subscriptions or in-app purcha
 13. **AI model downloads (from 1.2.0)** — Downloads use fixed model versions. The China source prioritizes ModelScope and can fall back to hf-mirror. The international source uses Hugging Face and its delivery infrastructure. These providers see your connection IP, model-file URL and normal HTTP request headers. No photo, category prompt, private album path or NAS credential is included in those requests. The mirror may redirect to an overseas CDN; selecting it does not mean the server is physically located in China. Provider logging and retention follow their policies; PhotoPilot does not operate these download services. See the [Hugging Face Privacy Policy](https://huggingface.co/privacy) and [ModelScope Privacy Policy](https://modelscope.cn/protocol/terms-privacy-policy). Models can be removed to free space without deleting your photos or saved frames.
 
 14. **Remote frames (from 1.3.0)** — Online selection indexes metadata from a WebDAV or SMB server you configure. Playback, previews and local AI classification read selected photos into a shared app-private temporary cache. Requests send the server the requested paths, authentication and connection information. The raw-photo cache has a 128MiB shared limit, including partial downloads, and is automatically evicted. The operating system may also clear it. Enabling local sync retains selected originals for offline access. You can review and confirm release of eligible re-downloadable local copies while copies needed by other local consumers remain protected. Models, metadata, explicitly retained originals and other imports use additional storage. NAS operations are read-only.
+
+15. **Local original references (from 1.4.0)** — Device-photo, file and directory selection stores persistent photo identifiers, file-access permissions or bookmarks, metadata and confirmed frame relationships. Indexing creates no additional original-photo copy. The app reads originals for previews, playback and classification and may retain bounded derived caches. The system photo library or selected file provider may fetch cloud content under its own settings. Moving or deleting originals, or revoking access, can require source reselection. Earlier imported private copies remain until you manage or delete them. Removing a reference changes app relationships and caches. Android releases unused persistent reference permissions after removal or clearing data.
 
 ### 3. What we do not do
 
@@ -103,6 +105,8 @@ For privacy questions, contact chunguangwee@gmail.com.
 13. **AI 模型下载（1.2.0 起）**：应用按固定版本下载模型。国内源优先使用 ModelScope，并提供 hf-mirror 回退，国际源使用 Hugging Face 及其分发设施。服务方能看到连接 IP、模型文件 URL 和正常 HTTP 请求头；请求不包含照片、分类提示词、私人相册路径或 NAS 凭证。镜像可能跳转海外 CDN，选择国内镜像不等于服务器位于中国境内。服务日志及保留规则由相应服务方政策决定，PhotoPilot 不运营这些下载服务。参见 [Hugging Face 隐私政策](https://huggingface.co/privacy)与 [ModelScope 隐私政策](https://modelscope.cn/protocol/terms-privacy-policy)。删除模型不会删除已保存的相框和照片。
 
 14. **远端相框（1.3.0 起）**：在线选片会从你配置的 WebDAV 或 SMB 服务器索引照片元数据。播放、预览与本地 AI 分类按需读取所选照片，并使用应用私有的共享临时缓存。服务器接收所请求的路径、认证及连接信息。照片原始文件临时缓存全应用共用 128MiB 限额，包含未完成下载，并自动淘汰；系统也可能清理缓存。开启本地同步会保留所选原图供离线访问。你可查看并确认释放符合条件、可重新下载的本地副本，其他本地使用者需要的副本受到保护。模型、元数据、明确保留的原图及其他导入内容另行占用空间。对 NAS 的操作均为只读。
+
+15. **本机原图引用（1.4.0 起）** — 选择本机照片、文件或目录后保存照片标识、文件访问授权或书签、元数据与确认的相框关系。索引不会新增原图副本。预览、播放和分类按需读取原文件，可保留限额派生缓存。系统照片库或所选文件供应商可按其设置从云端读取内容。原图移动、删除或撤销授权后可能需要重新选择。历史私有导入副本继续保留，直到你管理或删除。移除引用更改本App关联和缓存。Android会在移除或清空数据后释放已无引用使用的持久访问授权。
 
 ### 三、我们不做的事
 

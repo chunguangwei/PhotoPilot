@@ -2,6 +2,9 @@ import UIKit
 
 final class NasAddViewController: UIViewController, UITextFieldDelegate {
     var onCatalogReady: ((String) -> Void)?
+    private let onlineButton = ActionButton(titleKey: "source.nas.storage_remote", style: .secondary)
+    private let localButton = ActionButton(titleKey: "source.nas.storage_local", style: .secondary)
+    private var catalogOnly: Bool
     private let environment: AppEnvironment
 
     private let schemeSegmented = UISegmentedControl()
@@ -10,6 +13,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
     private let httpButton = ActionButton(titleKey: "source.nas.transport_http", style: .secondary)
     private var adaptiveRows: [(UIStackView, NSLayoutConstraint)] = []
     private var transportRow: UIView?
+    private var headerStack: UIStackView?
     private let shareField = UITextField()
     private var shareRow: UIView?
     private let hostField = UITextField()
@@ -39,8 +43,10 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         prefillEndpoint: NasEndpoint? = nil,
         prefillCredential: NasCredential? = nil,
         prefillDirectories: [String] = [],
-        prefillRecursive: Bool = false
+        prefillRecursive: Bool = false,
+        prefillCatalogOnly: Bool = true
     ) {
+        self.catalogOnly = prefillCatalogOnly
         self.environment = environment
         self.prefillEndpoint = prefillEndpoint
         self.prefillCredential = prefillCredential
@@ -68,6 +74,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         titleLabel.numberOfLines = 0
         titleLabel.accessibilityTraits.insert(.header)
         let topBar = UIStackView(arrangedSubviews: [backButton, titleLabel, UIView()])
+        headerStack = topBar
         topBar.axis = .horizontal
         topBar.alignment = .center
         topBar.spacing = ThemeMetrics.space12
@@ -161,6 +168,20 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         guestHint.textColor = ThemeColor.textSecondary
         guestHint.numberOfLines = 0
 
+        onlineButton.addTarget(self, action: #selector(selectOnlineStorage), for: .touchUpInside)
+        localButton.addTarget(self, action: #selector(selectLocalStorage), for: .touchUpInside)
+        onlineButton.accessibilityIdentifier = "nas.storage.online"
+        localButton.accessibilityIdentifier = "nas.storage.local"
+        updateStorageSelection()
+        let storageChoices = UIStackView(arrangedSubviews: [onlineButton, localButton])
+        storageChoices.axis = .vertical
+        storageChoices.spacing = ThemeMetrics.space8
+        let storageHint = UILabel()
+        storageHint.text = L10n.string("source.nas.storage_hint")
+        storageHint.font = ThemeFont.meta()
+        storageHint.textColor = ThemeColor.textSecondary
+        storageHint.adjustsFontForContentSizeCategory = true
+        storageHint.numberOfLines = 0
         let form = UIStackView(arrangedSubviews: [
             makeRow(labelKey: "source.nas.protocol", control: schemeSegmented),
             transportRow ?? UIView(),
@@ -171,6 +192,8 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
             makeRow(labelKey: "source.nas.username", control: usernameField),
             makeRow(labelKey: "source.nas.password", control: passwordField),
             guestHint,
+            makeRow(labelKey: "source.nas.storage", control: storageChoices),
+            storageHint,
             testButton,
             statusLabel,
             saveButton,
@@ -249,6 +272,8 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
 
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
+        let headerAxis: NSLayoutConstraint.Axis = traitCollection.preferredContentSizeCategory.isAccessibilityCategory ? .vertical : .horizontal
+        if headerStack?.axis != headerAxis { headerStack?.axis = headerAxis }
         let stacked = view.bounds.width < 600 || traitCollection.preferredContentSizeCategory.isAccessibilityCategory
         for (row, width) in adaptiveRows {
             width.isActive = !stacked
@@ -700,6 +725,25 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         navigationController?.pushViewController(picker, animated: true)
     }
 
+    @objc private func selectOnlineStorage() {
+        catalogOnly = true
+        updateStorageSelection()
+    }
+
+    @objc private func selectLocalStorage() {
+        catalogOnly = false
+        updateStorageSelection()
+    }
+
+    private func updateStorageSelection() {
+        onlineButton.isSelected = catalogOnly
+        localButton.isSelected = !catalogOnly
+        onlineButton.accessibilityTraits = catalogOnly ? [.button, .selected] : [.button]
+        localButton.accessibilityTraits = catalogOnly ? [.button] : [.button, .selected]
+        onlineButton.isOptionSelected = catalogOnly
+        localButton.isOptionSelected = !catalogOnly
+    }
+
     private func finish(directories: [String], recursive: Bool) {
         guard let endpoint = testedEndpoint,
               let credential = testedCredential,
@@ -721,18 +765,23 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
                     navigationController?.popToViewController(self, animated: true)
                     return
                 }
+                if let current = try environment.sources.webdavSources().first(where: { $0.endpointKey == fingerprint }) {
+                    try await environment.stopSourceWork(sourceID: current.id)
+                }
                 let sourceID = isSmbSelected
                     ? try environment.sources.ensureSmbSource(
                         endpointKey: fingerprint,
                         displayName: endpoint.host,
                         recursive: recursive,
-                        directories: normalized
+                        directories: normalized,
+                        catalogOnly: catalogOnly
                     )
                     : try environment.sources.ensureWebdavSource(
                         endpointKey: fingerprint,
                         displayName: endpoint.host,
                         recursive: recursive,
-                        directories: normalized
+                        directories: normalized,
+                        catalogOnly: catalogOnly
                     )
                 if let prefillEndpoint {
                     let oldKey = NasAddress.sourceFingerprint(
@@ -742,26 +791,29 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
                         path: prefillEndpoint.path
                     )
                     if oldKey != fingerprint {
-                        if let old = try? environment.sources.webdavSources()
+                        if let old = try environment.sources.webdavSources()
                             .first(where: { $0.endpointKey == oldKey }) {
-                            try? await environment.assets.disconnectSource(
-                                sourceID: old.id,
-                                keepCopies: true
-                            )
+                            try await environment.disconnectSource(sourceID: old.id, keepCopies: true)
+                        } else {
+                            environment.credentialStore.delete(fingerprint: oldKey)
                         }
-                        environment.credentialStore.delete(fingerprint: oldKey)
                     }
                 }
                 let source = try environment.sources.webdavSources().first { $0.id == sourceID }
-                if source?.catalogOnly == true || onCatalogReady != nil {
+                if source?.catalogOnly == true {
                     _ = try await environment.remoteMedia.index(sourceID: sourceID)
                     if let onCatalogReady { onCatalogReady(sourceID) }
                     else { dismiss(animated: true) }
                     return
                 }
+                if onCatalogReady != nil { _ = try await environment.remoteMedia.index(sourceID: sourceID) }
                 let runner = isSmbSelected
                     ? try await environment.startSmbImport(sourceID: sourceID)
                     : try await environment.startWebDavImport(sourceID: sourceID)
+                if let onCatalogReady {
+                    onCatalogReady(sourceID)
+                    return
+                }
                 navigationController?.pushViewController(
                     ImportProgressViewController(runner: runner, environment: environment),
                     animated: true

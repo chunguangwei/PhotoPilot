@@ -133,3 +133,30 @@ final class RemoteCacheTests: XCTestCase {
         XCTAssertFalse((try? FileManager.default.contentsOfDirectory(atPath: root.path))?.contains(where: { $0.hasSuffix(".partial") }) ?? false)
     }
 }
+
+extension RemoteCacheTests {
+    func testTransientReservationsShareBudgetWithCachedAndPinnedFiles() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let cache = RemoteMediaCache(root: root, budget: 12, freeReserve: 0, freeSpace: { 1_000 })
+        let lease = try await cache.acquire(Self.descriptor("pinned", size: 8), fetch: { _, destination, _ in
+            try Data(repeating: 1, count: 8).write(to: destination)
+        }, authorized: { _ in true })
+        do { _ = try await cache.reserveTransient(bytes: 6); XCTFail("Pinned file exceeded shared budget") }
+        catch { XCTAssertEqual(error as? RemoteMediaError, .busy) }
+        await lease.release()
+        let first = try await cache.reserveTransient(bytes: 6)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: lease.fileURL.path))
+        let second = try await cache.reserveTransient(bytes: 6)
+        let full = await cache.usage()
+        XCTAssertEqual(full, 12)
+        do { _ = try await cache.reserveTransient(bytes: 1); XCTFail("Transient reservations exceeded shared budget") }
+        catch { XCTAssertEqual(error as? RemoteMediaError, .busy) }
+        await cache.releaseTransient(first)
+        await cache.releaseTransient(first)
+        let remaining = await cache.usage()
+        XCTAssertEqual(remaining, 6)
+        await cache.releaseTransient(second)
+        let empty = await cache.usage()
+        XCTAssertEqual(empty, 0)
+    }
+}
