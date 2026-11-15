@@ -664,7 +664,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         present(alert, animated: true)
     }
 
-    private func retryConflict() {
+    func retryConflict() {
         guard let frameID, let previous = detail else { return }
         Task { [weak self] in
             guard let self else { return }
@@ -683,6 +683,11 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
                 dynamicRules = Dictionary(uniqueKeysWithValues: latest.rules.map { ($0.collectionId, $0) })
                 for key in Set(previousRules.keys).union(draftRules.keys) where previousRules[key] != draftRules[key] {
                     dynamicRules[key] = draftRules[key]
+                }
+                if nameField.text == previous.name { nameField.text = latest.name }
+                if pendingCoverAssetID == previous.coverAssetId {
+                    pendingCoverAssetID = latest.coverAssetId
+                    gridChild?.coverAssetID = latest.coverAssetId
                 }
                 detail = latest
                 gridChild?.applySelection(selectedAssetIDs)

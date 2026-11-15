@@ -693,3 +693,140 @@ extension LocalReferenceTests {
         XCTAssertEqual(savedCards.count, 1)
     }
 }
+
+extension LocalReferenceTests {
+    func testReauthorizationChooseContentReturnsToRetainedTargetDraft() async throws {
+        UIView.setAnimationsEnabled(false)
+        defer { UIView.setAnimationsEnabled(true) }
+        let environment = environment()
+        let file = try flowImage()
+        let sourceID = try await environment.connectLocalFileReferences(root: file)
+        let items = try await environment.assets.libraryItems(includeRemote: true, remoteSourceID: sourceID)
+        let selected = Set(items.map(\.id))
+        let frameID = try await environment.frameManager.createFrame(name: "Original")
+        let editor = FrameEditViewController(environment: environment, frameID: frameID)
+        let window = flowWindow(editor)
+        defer { window.isHidden = true }
+        try await Task.sleep(nanoseconds: 300_000_000)
+        let name = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UITextField }.first)
+        name.text = "Retained draft"
+        name.sendActions(for: .editingChanged)
+        let grid = try XCTUnwrap(editor.children.compactMap { $0 as? AssetGridViewController }.first)
+        grid.onSelectionChange?(selected)
+        let add = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UIButton }.first { $0.title(for: .normal) == AIText.value("Add photos from a source", "从来源添加照片") })
+        add.sendActions(for: .touchUpInside)
+        try await Task.sleep(nanoseconds: 400_000_000)
+        let navigation = try XCTUnwrap(editor.presentedViewController as? UINavigationController)
+        let sources = try XCTUnwrap(navigation.topViewController as? SourcesListViewController)
+        let reselect = try XCTUnwrap(flowViews(sources.view).compactMap { $0 as? ActionButton }.first { $0.accessibilityIdentifier == sourceID + ".reselect" })
+        reselect.sendActions(for: .touchUpInside)
+        try await Task.sleep(nanoseconds: 400_000_000)
+        let sheet = try XCTUnwrap(navigation.presentedViewController ?? sources.presentedViewController)
+        sheet.dismiss(animated: false)
+        try await Task.sleep(nanoseconds: 200_000_000)
+        sources.documentPicker(UIDocumentPickerViewController(forOpeningContentTypes: [.image], asCopy: false), didPickDocumentsAt: [file])
+        try await Task.sleep(nanoseconds: 500_000_000)
+        let result = try XCTUnwrap((navigation.presentedViewController ?? sources.presentedViewController) as? UIAlertController)
+        XCTAssertEqual(result.title, AIText.value("Source connected", "来源已连接"))
+        XCTAssertTrue(navigation.topViewController === sources)
+        result.dismiss(animated: false)
+        try await Task.sleep(nanoseconds: 200_000_000)
+        sources.chooseContent(sourceIDs: [sourceID], initialSelection: selected)
+        try await Task.sleep(nanoseconds: 500_000_000)
+        XCTAssertNil(editor.presentedViewController)
+        XCTAssertTrue(window.rootViewController === editor)
+        XCTAssertEqual(name.text, "Retained draft")
+        XCTAssertEqual(grid.selectedAssetIDs, selected)
+        let cards = try await environment.frameManager.frameCards()
+        XCTAssertEqual(cards.count, 1)
+    }
+
+    func testPickedDirectoryAndSpecificFilesKeepDistinctDraftSemantics() async throws {
+        let environment = environment()
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let first = folder.appendingPathComponent("one.png")
+        let second = folder.appendingPathComponent("two.png")
+        try RemoteIndexFixture.pixels.write(to: first)
+        try RemoteIndexFixture.pixels.write(to: second)
+        let sources = SourcesListViewController(environment: environment)
+        let window = flowWindow(sources)
+        defer { window.isHidden = true }
+        var sourceIDs: [String] = []
+        var selection: Set<String> = []
+        var completed = false
+        sources.onConnected = { ids, selected in
+            sourceIDs = ids
+            selection = selected
+            completed = true
+        }
+        sources.documentPicker(UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: false), didPickDocumentsAt: [folder])
+        for _ in 0..<30 {
+            if completed { break }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        XCTAssertTrue(completed)
+        XCTAssertEqual(sourceIDs.count, 1)
+        XCTAssertTrue(selection.isEmpty)
+        completed = false
+        sources.documentPicker(UIDocumentPickerViewController(forOpeningContentTypes: [.image], asCopy: false), didPickDocumentsAt: [first, second])
+        for _ in 0..<30 {
+            if completed { break }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        XCTAssertTrue(completed)
+        XCTAssertEqual(sourceIDs.count, 2)
+        XCTAssertEqual(selection.count, 2)
+        let cards = try await environment.frameManager.frameCards()
+        XCTAssertTrue(cards.isEmpty)
+    }
+
+    func testConflictRetryAdoptsUntouchedConcurrentMetadataAndRetainsExplicitEdits() async throws {
+        for editsMetadata in [false, true] {
+            let environment = environment()
+            var ids: [String] = []
+            for _ in 0..<3 {
+                let source = try await environment.connectLocalFileReferences(root: flowImage())
+                let items = try await environment.assets.libraryItems(includeRemote: true, remoteSourceID: source)
+                ids.append(try XCTUnwrap(items.first?.id))
+            }
+            let frameID = try await environment.frameManager.createFrame(name: "Original")
+            _ = try await environment.frames.save(frameID: frameID, baseVersion: 0, addIncludes: [MediaReference(runtimeID: ids[0]).selection], coverAssetID: ids[0])
+            let editor = FrameEditViewController(environment: environment, frameID: frameID)
+            let window = flowWindow(editor)
+            defer { window.isHidden = true }
+            try await Task.sleep(nanoseconds: 300_000_000)
+            let field = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UITextField }.first)
+            let grid = try XCTUnwrap(editor.children.compactMap { $0 as? AssetGridViewController }.first)
+            grid.onSelectionChange?(Set(ids.prefix(2)))
+            if editsMetadata {
+                field.text = "Explicit draft"
+                field.sendActions(for: .editingChanged)
+                grid.onCoverStarTap?(ids[1])
+                try await Task.sleep(nanoseconds: 300_000_000)
+                let preview = try XCTUnwrap(editor.presentedViewController as? CoverPreviewViewController)
+                try flowButton(preview, L10n.string("frames.set_cover")).sendActions(for: .touchUpInside)
+                try await Task.sleep(nanoseconds: 600_000_000)
+            }
+            _ = try await environment.frames.save(frameID: frameID, baseVersion: 1, addIncludes: [MediaReference(runtimeID: ids[2]).selection], frameName: "Concurrent", coverAssetID: ids[2])
+            try flowButton(editor, L10n.string("common.save")).sendActions(for: .touchUpInside)
+            for _ in 0..<15 {
+                if editor.presentedViewController is UIAlertController { break }
+                try await Task.sleep(nanoseconds: 100_000_000)
+            }
+            XCTAssertTrue(editor.presentedViewController is UIAlertController, "Metadata edited: \(editsMetadata)")
+            editor.dismiss(animated: false)
+            editor.retryConflict()
+            try await Task.sleep(nanoseconds: 300_000_000)
+            XCTAssertEqual(field.text, editsMetadata ? "Explicit draft" : "Concurrent")
+            XCTAssertEqual(grid.coverAssetID, editsMetadata ? ids[1] : ids[2])
+            try flowButton(editor, L10n.string("common.save")).sendActions(for: .touchUpInside)
+            try await Task.sleep(nanoseconds: 400_000_000)
+            let saved = try await environment.frameManager.frameDetail(frameID: frameID)
+            XCTAssertEqual(saved.name, editsMetadata ? "Explicit draft" : "Concurrent")
+            XCTAssertEqual(saved.coverAssetId, editsMetadata ? ids[1] : ids[2])
+            XCTAssertEqual(Set(saved.includeSourceAssetRefs.map { "remote:" + $0 }), Set(ids))
+            window.isHidden = true
+        }
+    }
+}

@@ -387,11 +387,14 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
     @objc private func chooseConnectedSource(_ sender: ActionButton) {
         guard let identifier = sender.accessibilityIdentifier else { return }
         let sourceID = String(identifier.dropFirst("source.choose.".count))
-        if let onConnected { onConnected([sourceID], []) }
-        else { chooseContent(sourceIDs: [sourceID]) }
+        chooseContent(sourceIDs: [sourceID])
     }
 
-    private func chooseContent(sourceIDs: [String], initialSelection: Set<String> = []) {
+    func chooseContent(sourceIDs: [String], initialSelection: Set<String> = []) {
+        if let onConnected {
+            onConnected(sourceIDs, initialSelection)
+            return
+        }
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -707,9 +710,12 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
                 var sourceIDs: [String] = []
                 var selectedAssetIDs: Set<String> = []
                 for url in urls {
+                    let scoped = url.startAccessingSecurityScopedResource()
+                    defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                    let isDirectory = (try url.resourceValues(forKeys: [.isDirectoryKey])).isDirectory == true
                     let sourceID = try await environment.connectLocalFileReferences(root: url)
                     sourceIDs.append(sourceID)
-                    if (try url.resourceValues(forKeys: [.isDirectoryKey])).isDirectory != true {
+                    if !isDirectory {
                         let items = try await environment.assets.libraryItems(includeRemote: true, remoteSourceID: sourceID)
                         selectedAssetIDs.formUnion(items.map(\.id))
                     }
