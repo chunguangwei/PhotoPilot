@@ -590,7 +590,10 @@ extension LocalReferenceTests {
         XCTAssertEqual(cards.count, 1)
         let detail = try await environment.frameManager.frameDetail(frameID: XCTUnwrap(cards.first).id)
         XCTAssertEqual(Set(detail.includeSourceAssetRefs.map { "remote:" + $0 }), selected)
-        try await Task.sleep(nanoseconds: 500_000_000)
+        for _ in 0..<20 {
+            if main.presentedViewController is PlayerViewController { break }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
         XCTAssertTrue(main.presentedViewController is PlayerViewController)
         XCTAssertFalse(main.presentedViewController is PlaybackSettingsViewController)
     }
@@ -612,7 +615,7 @@ extension LocalReferenceTests {
         let field = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UITextField }.first)
         field.text = "Draft name"
         field.sendActions(for: .editingChanged)
-        let add = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UIButton }.first { $0.title(for: .normal) == AIText.value("Add photos from a source", "从来源添加照片") })
+        let add = try flowButton(editor, AIText.value("Add photos from a source", "从来源添加照片"))
         add.sendActions(for: .touchUpInside)
         try await Task.sleep(nanoseconds: 500_000_000)
         let navigation = try XCTUnwrap(editor.presentedViewController as? UINavigationController)
@@ -676,7 +679,7 @@ extension LocalReferenceTests {
         let field = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UITextField }.first)
         field.text = "Unsaved draft"
         field.sendActions(for: .editingChanged)
-        let ai = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UIButton }.first { $0.title(for: .normal) == AIText.value("AI classification settings", "AI 分类设置") })
+        let ai = try flowButton(editor, AIText.value("AI classification settings", "AI 分类设置"))
         ai.sendActions(for: .touchUpInside)
         try await Task.sleep(nanoseconds: 300_000_000)
         let alert = try XCTUnwrap(editor.presentedViewController as? UIAlertController)
@@ -713,7 +716,7 @@ extension LocalReferenceTests {
         name.sendActions(for: .editingChanged)
         let grid = try XCTUnwrap(editor.children.compactMap { $0 as? AssetGridViewController }.first)
         grid.onSelectionChange?(selected)
-        let add = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UIButton }.first { $0.title(for: .normal) == AIText.value("Add photos from a source", "从来源添加照片") })
+        let add = try flowButton(editor, AIText.value("Add photos from a source", "从来源添加照片"))
         add.sendActions(for: .touchUpInside)
         try await Task.sleep(nanoseconds: 400_000_000)
         let navigation = try XCTUnwrap(editor.presentedViewController as? UINavigationController)
@@ -827,6 +830,92 @@ extension LocalReferenceTests {
             XCTAssertEqual(saved.coverAssetId, editsMetadata ? ids[1] : ids[2])
             XCTAssertEqual(Set(saved.includeSourceAssetRefs.map { "remote:" + $0 }), Set(ids))
             window.isHidden = true
+        }
+    }
+}
+
+extension LocalReferenceTests {
+    func testIPadPhotoFlowLandscapeLargeTextAndNarrowLayouts() async throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "Dedicated iPad layout verification")
+        let previousLanguage = AppLanguage.overrideValue
+        UIView.setAnimationsEnabled(false)
+        defer {
+            AppLanguage.configure(value: previousLanguage)
+            UIView.setAnimationsEnabled(true)
+        }
+        let environment = environment()
+        let sourceID = try await environment.connectLocalFileReferences(root: flowImage())
+        let items = try await environment.assets.libraryItems(includeRemote: true, remoteSourceID: sourceID)
+        let ids = Set(items.map(\.id))
+        let frameID = try await environment.frameManager.createFrame(name: "Frame")
+        _ = try await environment.frames.save(frameID: frameID, baseVersion: 0, addIncludes: ids.map { MediaReference(runtimeID: $0).selection })
+        let configurations: [(String, CGSize, Bool)] = [
+            ("landscape", CGSize(width: 1180, height: 820), false),
+            ("landscape-AXXXL", CGSize(width: 1180, height: 820), true),
+            ("portrait-AXXXL", CGSize(width: 820, height: 1180), true),
+            ("narrow-AXXXL", CGSize(width: 320, height: 800), true),
+        ]
+        for language in [AppLanguage.enValue, AppLanguage.zhValue] {
+            AppLanguage.configure(value: language)
+            for (configuration, size, large) in configurations {
+                for existing in [false, true] {
+                    let editor = FrameEditViewController(environment: environment, frameID: existing ? frameID : nil,
+                        routeToMainAfterSave: !existing, sourceIDs: [sourceID], initialSelection: existing ? [] : ids)
+                    let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+                    window.rootViewController = editor
+                    if #available(iOS 17.0, *) {
+                        editor.traitOverrides.preferredContentSizeCategory = large ? .accessibilityExtraExtraExtraLarge : .large
+                        editor.traitOverrides.horizontalSizeClass = size.width < 600 ? .compact : .regular
+                    }
+                    window.makeKeyAndVisible()
+                    editor.loadViewIfNeeded()
+                    try await Task.sleep(nanoseconds: 200_000_000)
+                    window.layoutIfNeeded()
+                    editor.view.layoutIfNeeded()
+                    let tag = language + "-" + configuration + (existing ? "-existing" : "-first")
+                    let image = UIGraphicsImageRenderer(bounds: editor.view.bounds).image { context in
+                        editor.view.layer.render(in: context.cgContext)
+                    }
+                    let attachment = XCTAttachment(image: image)
+                    attachment.name = "photo-flow-ipad-" + tag
+                    attachment.lifetime = .keepAlways
+                    add(attachment)
+                    let save = try flowButton(editor, existing ? L10n.string("common.save") : AIText.value("Confirm and play", "确认并播放"))
+                    let add = try flowButton(editor, AIText.value("Add photos from a source", "从来源添加照片"))
+                    let grid = try XCTUnwrap(editor.children.compactMap { $0 as? AssetGridViewController }.first)
+                    let saveRect = save.convert(save.bounds, to: editor.view)
+                    let addRect = add.convert(add.bounds, to: editor.view)
+                    let gridRect = grid.view.convert(grid.view.bounds, to: editor.view)
+                    print("PHOTO_FLOW_LAYOUT", tag, "size", size, "safe", editor.view.safeAreaInsets, "header", editor.view.subviews.first(where: { $0.accessibilityIdentifier == "frame.editor.header" })?.frame as Any, "grid", gridRect, "save", saveRect, "add", addRect)
+                    XCTAssertTrue(editor.view.bounds.contains(saveRect), tag + " save clipped")
+                    let header = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UIScrollView }.first { $0.accessibilityIdentifier == "frame.editor.header" })
+                    let addContentRect = add.convert(add.bounds, to: header)
+                    header.scrollRectToVisible(addContentRect, animated: false)
+                    editor.view.layoutIfNeeded()
+                    XCTAssertTrue(header.bounds.contains(add.convert(add.bounds, to: header)), tag + " add-source cannot scroll fully into view")
+                    let addPoint = add.convert(CGPoint(x: add.bounds.midX, y: add.bounds.midY), to: window)
+                    let addHit = window.hitTest(addPoint, with: nil)
+                    XCTAssertTrue(addHit === add || addHit?.isDescendant(of: add) == true, tag + " add-source unreachable")
+                    if size.width < 600 {
+                        let scrolledImage = UIGraphicsImageRenderer(bounds: editor.view.bounds).image { context in
+                            editor.view.layer.render(in: context.cgContext)
+                        }
+                        let scrolledAttachment = XCTAttachment(image: scrolledImage)
+                        scrolledAttachment.name = "photo-flow-ipad-" + tag + "-add-source-scrolled"
+                        scrolledAttachment.lifetime = .keepAlways
+                        self.add(scrolledAttachment)
+                    }
+                    let back = try flowButton(editor, L10n.string("common.back"))
+                    header.scrollRectToVisible(back.convert(back.bounds, to: header), animated: false)
+                    XCTAssertTrue(header.bounds.contains(back.convert(back.bounds, to: header)), tag + " back cannot scroll fully into view")
+                    XCTAssertGreaterThanOrEqual(gridRect.height, 120, tag + " grid crowded")
+                    XCTAssertGreaterThanOrEqual(gridRect.width, 44, tag + " grid width")
+                    let point = save.convert(CGPoint(x: save.bounds.midX, y: save.bounds.midY), to: window)
+                    let hit = window.hitTest(point, with: nil)
+                    XCTAssertTrue(hit === save || hit?.isDescendant(of: save) == true, tag + " save unreachable")
+                    window.isHidden = true
+                }
+            }
         }
     }
 }

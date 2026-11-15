@@ -25,6 +25,8 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
     private var pendingCoverAssetID: String?
     private var dirty = false
 
+    private let headerBar = UIStackView()
+    private let headerScroll = UIScrollView()
     private let nameField = UITextField()
     private let tabControl: UISegmentedControl
     private let photosContainer = UIView()
@@ -92,26 +94,18 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         titleLabel.accessibilityTraits.insert(.header)
 
         backButton.setContentHuggingPriority(.required, for: .horizontal)
-        let topBar = UIStackView(arrangedSubviews: [backButton, titleLabel, UIView()])
+        let topBar = headerBar
+        [backButton, titleLabel, UIView()].forEach(topBar.addArrangedSubview)
         topBar.axis = .horizontal
         topBar.alignment = .center
         topBar.spacing = ThemeMetrics.space12
 
-        let addPhotos = UIButton(type: .system)
-        addPhotos.setTitle(AIText.value("Add photos from a source", "从来源添加照片"), for: .normal)
-        addPhotos.tintColor = ThemeColor.accentAction
-        addPhotos.titleLabel?.font = ThemeFont.body()
-        addPhotos.titleLabel?.adjustsFontForContentSizeCategory = true
-        addPhotos.titleLabel?.numberOfLines = 0
-        addPhotos.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
+        let addPhotos = ActionButton(titleKey: "frames.choose_content", style: .secondary)
+        addPhotos.setTitle(AIText.value("Add photos from a source", "从来源添加照片"))
         addPhotos.addTarget(self, action: #selector(openSources), for: .touchUpInside)
         let header = UIStackView(arrangedSubviews: [topBar, nameField, addPhotos])
-        let aiSettings = UIButton(type: .system)
-        aiSettings.setTitle(AIText.value("AI classification settings", "AI 分类设置"), for: .normal)
-        aiSettings.isHidden = frameID == nil
-        aiSettings.titleLabel?.font = ThemeFont.body()
-        aiSettings.titleLabel?.adjustsFontForContentSizeCategory = true
-        aiSettings.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
+        let aiSettings = ActionButton(titleKey: "common.settings", style: .secondary)
+        aiSettings.setTitle(AIText.value("AI classification settings", "AI 分类设置"))
         aiSettings.accessibilityIdentifier = "frame.ai.settings"
         aiSettings.addTarget(self, action: #selector(openAISettings), for: .touchUpInside)
         aiSettings.isHidden = frameID == nil
@@ -119,7 +113,25 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         header.axis = .vertical
         header.spacing = ThemeMetrics.space12
         header.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(header)
+        headerScroll.accessibilityIdentifier = "frame.editor.header"
+        headerScroll.translatesAutoresizingMaskIntoConstraints = false
+        headerScroll.addSubview(header)
+        view.addSubview(headerScroll)
+        let naturalHeaderHeight = headerScroll.heightAnchor.constraint(equalTo: header.heightAnchor)
+        naturalHeaderHeight.priority = UILayoutPriority(749)
+        let minimumGridHeight = photosContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 120)
+        minimumGridHeight.priority = .defaultHigh
+        NSLayoutConstraint.activate([
+            header.topAnchor.constraint(equalTo: headerScroll.contentLayoutGuide.topAnchor),
+            header.bottomAnchor.constraint(equalTo: headerScroll.contentLayoutGuide.bottomAnchor),
+            header.leadingAnchor.constraint(equalTo: headerScroll.contentLayoutGuide.leadingAnchor),
+            header.trailingAnchor.constraint(equalTo: headerScroll.contentLayoutGuide.trailingAnchor),
+            header.widthAnchor.constraint(equalTo: headerScroll.frameLayoutGuide.widthAnchor),
+            headerScroll.heightAnchor.constraint(lessThanOrEqualTo: view.heightAnchor, multiplier: 0.35),
+            headerScroll.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget),
+            naturalHeaderHeight,
+            minimumGridHeight,
+        ])
 
         tabControl.selectedSegmentIndex = 0
         tabControl.addTarget(self, action: #selector(handleTabChange), for: .valueChanged)
@@ -188,31 +200,31 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         view.addSubview(bottomBar)
         detailsScroll.heightAnchor.constraint(lessThanOrEqualTo: view.heightAnchor, multiplier: 0.28).isActive = true
 
-        let readable = header.widthAnchor.constraint(
+        let readable = headerScroll.widthAnchor.constraint(
             lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
         )
-        let fillWidth = header.widthAnchor.constraint(
+        let fillWidth = headerScroll.widthAnchor.constraint(
             equalTo: view.safeAreaLayoutGuide.widthAnchor,
             constant: -2 * ThemeMetrics.contentInsetCompact
         )
         fillWidth.priority = .defaultHigh
         NSLayoutConstraint.activate([
-            header.topAnchor.constraint(
+            headerScroll.topAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.topAnchor,
                 constant: ThemeMetrics.space8
             ),
-            header.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
-            header.leadingAnchor.constraint(
+            headerScroll.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+            headerScroll.leadingAnchor.constraint(
                 greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor,
                 constant: ThemeMetrics.contentInsetCompact
             ),
-            header.trailingAnchor.constraint(
+            headerScroll.trailingAnchor.constraint(
                 lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor,
                 constant: -ThemeMetrics.contentInsetCompact
             ),
             readable,
             fillWidth,
-            tabControl.topAnchor.constraint(equalTo: header.bottomAnchor, constant: ThemeMetrics.space12),
+            tabControl.topAnchor.constraint(equalTo: headerScroll.bottomAnchor, constant: ThemeMetrics.space12),
             tabControl.leadingAnchor.constraint(equalTo: header.leadingAnchor),
             tabControl.trailingAnchor.constraint(equalTo: header.trailingAnchor),
             photosContainer.topAnchor.constraint(
@@ -238,6 +250,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             photosContainer.trailingAnchor.constraint(equalTo: header.trailingAnchor),
         ]
         updateGridWidthConstraints()
+        updateHeaderLayout()
 
         embedGrid()
         enableKeyboardDismissal()
@@ -263,6 +276,14 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         if traitCollection.horizontalSizeClass != previousTraitCollection?.horizontalSizeClass {
             updateGridWidthConstraints()
         }
+        updateHeaderLayout()
+    }
+
+    private func updateHeaderLayout() {
+        let stacked = traitCollection.horizontalSizeClass == .compact && traitCollection.preferredContentSizeCategory.isAccessibilityCategory
+        headerBar.axis = stacked ? .vertical : .horizontal
+        headerBar.arrangedSubviews.first?.setContentHuggingPriority(stacked ? .defaultLow : .required, for: .horizontal)
+        headerBar.alignment = stacked ? .fill : .center
     }
 
     @objc private func openSources() {
