@@ -237,7 +237,7 @@
 "library.add_to_frame" = "Add to frame";
 "library.added_to_frame" = "Added to frame";
 "library.selection_summary" = "%1$d selected · %2$d ready";
-"library.selection_note_static" = "New photos are not included";
+"library.selection_note_static" = "Future photos won’t be added automatically.";
 "library.remove_from_frame" = "Remove from frame";
 "library.remove_from_frame_note" = "Remove from this frame only. Your photo will not be deleted.";
 "library.photo_detail" = "Photo details";

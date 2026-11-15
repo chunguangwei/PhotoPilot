@@ -268,7 +268,7 @@
     <string name="library.add_to_frame">Add to frame</string>
     <string name="library.added_to_frame">Added to frame</string>
     <string name="library.selection_summary">%1$d selected · %2$d ready</string>
-    <string name="library.selection_note_static">New photos are not included</string>
+    <string name="library.selection_note_static">Future photos won’t be added automatically.</string>
     <string name="library.remove_from_frame">Remove from frame</string>
     <string name="library.remove_from_frame_note">Remove from this frame only. Your photo will not be deleted.</string>
     <string name="library.photo_detail">Photo details</string>

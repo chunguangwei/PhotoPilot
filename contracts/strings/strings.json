@@ -1857,7 +1857,7 @@
       "section": "5. 照片库与选片（S09–S11）",
       "platform": "all",
       "zh": "新增照片不会自动展示",
-      "en": "New photos are not included"
+      "en": "Future photos won’t be added automatically."
     },
     {
       "key": "library.remove_from_frame",
