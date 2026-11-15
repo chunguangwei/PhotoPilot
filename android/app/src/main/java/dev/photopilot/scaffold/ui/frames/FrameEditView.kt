@@ -314,7 +314,8 @@ class FrameEditView(
             "selected" to org.json.JSONArray(state.selectedAssetIds.toList()).toString(),
             "removedExcludes" to org.json.JSONArray(state.removedExcludes.toList()).toString(),
             "cover" to state.pendingCoverId.orEmpty(),
-            "manualOrder" to (state.manualOrder?.let { org.json.JSONArray(it).toString() } ?: ""),
+            "manualOrder" to (manualOrderWorking?.let { org.json.JSONArray(it).toString() } ?: ""),
+            "manualOrderDirty" to manualOrderDirty.toString(),
             "rules" to org.json.JSONObject(state.ruleStates.mapValues { (_, rule) -> org.json.JSONObject().put("checked", rule.checked).put("recursive", rule.recursive).put("dynamic", rule.dynamic) }).toString(),
         )
     }
@@ -325,7 +326,12 @@ class FrameEditView(
         if ("selected" in draft) { selectedAssetIds.clear(); selectedAssetIds.addAll(values("selected")) }
         removedExcludes.addAll(values("removedExcludes"))
         draft["cover"]?.let { pendingCoverId = it.takeIf { it.isNotEmpty() }; displayCoverId = pendingCoverId }
-        draft["manualOrder"]?.takeIf { it.isNotEmpty() }?.let { setManualOrder(values("manualOrder")) }
+        draft["manualOrder"]?.takeIf { it.isNotEmpty() }?.let {
+            val restoredOrder = values("manualOrder")
+            manualOrderDirty = draft["manualOrderDirty"]?.toBooleanStrictOrNull()
+                ?: (restoredOrder != manualOrderWorking)
+            if (manualOrderDirty) manualOrderWorking = restoredOrder.toMutableList()
+        }
         draft["rules"]?.let { raw ->
             val rules = org.json.JSONObject(raw)
             ruleStates.clear()
@@ -354,7 +360,7 @@ class FrameEditView(
         selectedAssetIds = selectedAssetIds.toSet(),
         removedExcludes = removedExcludes.toSet(),
         ruleStates = ruleStates.toMap(),
-        manualOrder = manualOrderWorking?.toList(),
+        manualOrder = manualOrderWorking?.takeIf { manualOrderDirty }?.toList(),
         pendingCoverId = pendingCoverId,
     )
 

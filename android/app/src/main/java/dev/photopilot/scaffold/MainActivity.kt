@@ -998,7 +998,7 @@ class MainActivity : Activity() {
                 val editor = frameEditView
                 if (editor != null && root.topOverlay() === editor) {
                     scope.launch {
-                        val fresh = withContext(Dispatchers.IO) { frame?.id?.let { env.database.frameDao().getById(it) } }
+                        val fresh = withContext(Dispatchers.IO) { view.savedFrame?.id?.let { env.database.frameDao().getById(it) } }
                         closeFrameEditor()
                         openFrameEditor(fresh)
                     }

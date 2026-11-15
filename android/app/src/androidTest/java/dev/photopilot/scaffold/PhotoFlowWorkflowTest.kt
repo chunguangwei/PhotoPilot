@@ -13,7 +13,7 @@ import android.widget.EditText
 import android.widget.TextView
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.photopilot.scaffold.data.AppEnvironment
-import dev.photopilot.scaffold.data.db.FrameEntity
+import dev.photopilot.scaffold.data.db.*
 import dev.photopilot.scaffold.data.db.SourceEntity
 import dev.photopilot.scaffold.data.logic.JsonMini
 import dev.photopilot.scaffold.data.repo.SelectionRefEdit
@@ -81,6 +81,9 @@ class PhotoFlowWorkflowTest {
             assertTrue(photo.isChecked)
             touch(photo)
             touch(photo)
+            val texts = descendants(view).filterIsInstance<TextView>().map { it.text.toString() }
+            assertFalse(texts.any { it.contains("MiB") || it in setOf("Refresh metadata", "刷新照片索引", "Select this folder", "选择此目录照片", "Connect WebDAV / SMB", "连接 WebDAV / SMB", "Choose photo library", "选择本机相册", "Choose files or folder", "选择文件或目录") })
+            assertEquals(1, texts.count { it in setOf("Add photos", "添加照片") })
             capture("first-use-scoped-photos")
             instrumentation.runOnMainSync { activity.onBackPressed() }
             clickDialog(listOf("Cancel", "取消"))
@@ -186,6 +189,87 @@ class PhotoFlowWorkflowTest {
             await { activityField(activity, "remoteFrameView") != null }
             assertEquals("Unsaved draft", env.database.frameDao().getById(frame.id)?.name)
             assertEquals(1, env.database.frameDao().getAll().size)
+        }
+    }
+
+    @Test fun cleanNewEditorReferenceSaveReopensTheSavedTarget() = runBlocking {
+        fixture(false) { activity, source, ids, names ->
+            instrumentation.runOnMainSync {
+                MainActivity::class.java.getDeclaredMethod("openFrameEditor", FrameEntity::class.java, Map::class.java).apply { isAccessible = true }.invoke(activity, null, null)
+            }
+            await { activityField(activity, "editorModel") != null }
+            val editor = activityField(activity, "frameEditView") as FrameEditView
+            assertFalse(editor.hasChanges())
+            instrumentation.runOnMainSync { editor.onRemotePhotos?.invoke() }
+            val reference = awaitEditor(activity)
+            connect(activity, source, listOf(ids.first()))
+            await { descendants(reference).filterIsInstance<CheckBox>().any { it.text.toString() == names.first() } }
+            touch(descendants(reference).filterIsInstance<TextView>().single { it.text.toString() in setOf("Save frame", "保存相框") })
+            await { activityField(activity, "remoteFrameView") == null && activityField(activity, "frameEditView") !== editor && activityField(activity, "editorModel") != null }
+            val saved = env.database.frameDao().getAll().single()
+            val reopened = activityField(activity, "frameEditView") as FrameEditView
+            assertEquals(saved.name, reopened.currentState().name)
+            instrumentation.runOnMainSync { reopened.onSave?.invoke(reopened.currentState()) }
+            await { activityField(activity, "frameEditView") == null }
+            assertEquals(listOf(saved.id), env.database.frameDao().getAll().map { it.id })
+            assertEquals(listOf("remote:${ids.first()}"), env.frames.buildPlayQueue(saved.id))
+        }
+    }
+
+    @Test fun untouchedManualOrderRestorationAndNameSaveRetainConcurrentOrder() = runBlocking {
+        fixture(false) { activity, _, _, _ ->
+            val now = System.currentTimeMillis()
+            val assetIds = (1..2).map { "flow-order-$now-$it" }
+            for (id in assetIds) {
+                val file = File(context.filesDir, "originals/$id.png").apply { parentFile!!.mkdirs() }
+                file.outputStream().use { Bitmap.createBitmap(16, 16, Bitmap.Config.ARGB_8888).apply { eraseColor(0xff000000.toInt() or (id.hashCode() and 0xffffff)) }.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                env.database.assetDao().upsert(AssetEntity(id, dev.photopilot.scaffold.data.logic.ContentHash.sha256Hex(file.readBytes()), file.length(), AssetFormat.PNG, 16, 16, 1, OrientationClass.SQUARE, null, CapturedAtSource.UNKNOWN, now, "$id.png", "$id.png", AssetReadiness.READY, null, false, null, deletedAt = null, createdAt = now, updatedAt = now))
+            }
+            var manualFrameId: String? = null
+            try {
+                val frame = env.frameManager.createFrame("Manual baseline")
+                manualFrameId = frame.id
+                env.database.frameDao().update(frame.copy(orderMode = FrameOrderMode.MANUAL))
+                env.frames.save(frame.id, 0, addIncludes = assetIds.map { SelectionRefEdit(it, null) }, manualOrderRefs = assetIds)
+                val baseline = requireNotNull(env.database.frameDao().getById(frame.id))
+                instrumentation.runOnMainSync {
+                    MainActivity::class.java.getDeclaredMethod("openFrameEditor", FrameEntity::class.java, Map::class.java).apply { isAccessible = true }.invoke(activity, baseline, null)
+                }
+                await { activityField(activity, "editorModel") != null }
+                val editor = activityField(activity, "frameEditView") as FrameEditView
+                lateinit var untouchedDraft: Map<String, String>
+                instrumentation.runOnMainSync {
+                    assertFalse("Initial bind must be clean", editor.hasChanges())
+                    untouchedDraft = editor.draftState()
+                    editor.restoreDraft(untouchedDraft)
+                    assertFalse("Restoring an untouched manual draft must remain clean", editor.hasChanges())
+                    assertNull(editor.currentState().manualOrder)
+                }
+                env.frames.save(frame.id, baseline.selectionVersion, manualOrderRefs = assetIds.reversed())
+                instrumentation.runOnMainSync {
+                    descendants(editor).filterIsInstance<EditText>().single().setText("Renamed only")
+                    editor.onSave?.invoke(editor.currentState())
+                }
+                await { env.database.frameDao().getById(frame.id)?.name == "Renamed only" }
+                assertEquals(assetIds.reversed(), env.database.frameSelectionDao().getByFrame(frame.id).filter { it.mode == FrameSelectionMode.INCLUDE }.sortedBy { it.manualOrder }.map { it.refKey })
+                instrumentation.runOnMainSync {
+                    val model = FrameEditView.Model("Manual baseline", FrameOrderMode.MANUAL, assetIds.toSet(), emptySet(), emptyMap(), false, assetIds.reversed().mapIndexed { index, id -> id to (index + 1).toLong() })
+                    val restored = FrameEditView(activity, File(context.filesDir, "originals"))
+                    restored.bind(model)
+                    restored.restoreDraft(untouchedDraft)
+                    assertFalse(restored.hasChanges())
+                    assertEquals(assetIds.reversed(), restored.currentManualOrder())
+                    restored.setManualOrder(assetIds)
+                    val changedDraft = restored.draftState()
+                    restored.bind(model)
+                    restored.restoreDraft(changedDraft)
+                    assertTrue(restored.hasChanges())
+                    assertEquals(assetIds, restored.currentState().manualOrder)
+                }
+            } finally {
+                manualFrameId?.let { env.frameManager.deleteFrame(it) }
+                assetIds.forEach { id -> env.database.assetDao().getById(id)?.let { env.database.assetDao().delete(it) }; File(context.filesDir, "originals/$id.png").delete() }
+            }
         }
     }
 
