@@ -1,7 +1,7 @@
 {
   "version": "1.4.1",
   "build": 62,
-  "status": "verified-candidate-publication-pending",
+  "status": "published-and-anonymously-verified",
   "scope": [
     "Android NAS metadata browsing and frame selection",
     "Previous bilingual photo-to-play interaction changes"
@@ -25,9 +25,7 @@
     "onDemandImportJobs": 0,
     "onDemandAssetOrigins": 0
   },
-  "pending": [
-    "GitHub publication and anonymous download verification"
-  ],
+  "pending": [],
   "limitations": [
     "No new physical-device or minimum-OS acceptance",
     "No every-vendor NAS compatibility claim",
@@ -85,5 +83,47 @@
     "additionalVisibleFirstUseTests": 1,
     "visibleFirstUse": "Opaque two-color fixture: decoded foreground pixels asserted; root visually verified screenshot",
     "independentReview": "No open findings"
+  },
+  "sourceCommit": "e440964d01e1f31f0752d1517b41653e9773dbee",
+  "release": "https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.1",
+  "publicDownloadVerification": {
+    "release": "https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.1",
+    "tag": "v1.4.1",
+    "annotatedTagObject": "700b58f9c747cc2ec2aec06a8b64b44279f47f40",
+    "sourceCommit": "e440964d01e1f31f0752d1517b41653e9773dbee",
+    "latest": "v1.4.1",
+    "publishedAt": "2026-11-15T14:46:38Z",
+    "verifiedAt": "2026-11-15T14:48:14Z",
+    "anonymous": true,
+    "assets": [
+      {
+        "name": "AMSMB2-4.0.3-source.tar.gz",
+        "bytes": 329872,
+        "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077",
+        "apiDigest": "sha256:0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077",
+        "publicDownload": true
+      },
+      {
+        "name": "PhotoPilot-v1.4.1-62.apk",
+        "bytes": 154204042,
+        "sha256": "85d67432d1e7e1e0945d3b0a75efe2ee8cfe11c8160123907bb3ff519e28cf47",
+        "apiDigest": "sha256:85d67432d1e7e1e0945d3b0a75efe2ee8cfe11c8160123907bb3ff519e28cf47",
+        "publicDownload": true
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 273,
+        "sha256": "5da030675deb405199dfe2244754c04cc5b955b2ef1491d4580ff69be1f8bd8d",
+        "apiDigest": "sha256:5da030675deb405199dfe2244754c04cc5b955b2ef1491d4580ff69be1f8bd8d",
+        "publicDownload": true
+      },
+      {
+        "name": "SMBSourceManifest.json",
+        "bytes": 33554,
+        "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e",
+        "apiDigest": "sha256:2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e",
+        "publicDownload": true
+      }
+    ]
   }
 }
