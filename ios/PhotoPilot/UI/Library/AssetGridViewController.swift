@@ -35,9 +35,18 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
     var emptyTitleKey: String?
     var emptyBodyKey: String?
 
+    private var scopedSourceIDs: Set<String>?
+    private var scopedAssetIDs: Set<String>?
     private var externalItems: [LibraryItemDTO]?
     private let emptyTitleLabel = UILabel()
     private let emptyBodyLabel = UILabel()
+
+    func setScope(sourceIDs: Set<String>?, assetIDs: Set<String>? = nil) {
+        scopedSourceIDs = sourceIDs
+        scopedAssetIDs = assetIDs
+        includesRemoteMedia = includesRemoteMedia || sourceIDs != nil
+        reload()
+    }
 
     func setExternalItems(_ items: [LibraryItemDTO]?) {
         externalItems = items
@@ -242,7 +251,18 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         }
         Task { [weak self] in
             guard let self else { return }
-            let fetched = (try? await environment.assets.libraryItems(collectionID: collectionID, includeRemote: includesRemoteMedia, remoteSourceID: remoteSourceID)) ?? []
+            let sourceScope = scopedSourceIDs
+            let assetScope = scopedAssetIDs
+            var fetched: [LibraryItemDTO] = []
+            if let sourceScope {
+                for sourceID in sourceScope.sorted() {
+                    fetched += (try? await environment.assets.libraryItems(collectionID: collectionID, includeRemote: true, remoteSourceID: sourceID)) ?? []
+                }
+            } else {
+                fetched = (try? await environment.assets.libraryItems(collectionID: collectionID, includeRemote: includesRemoteMedia, remoteSourceID: remoteSourceID)) ?? []
+            }
+            guard scopedSourceIDs == sourceScope, scopedAssetIDs == assetScope else { return }
+            if let assetScope { fetched = fetched.filter { assetScope.contains($0.id) } }
             apply(items: fetched)
         }
     }

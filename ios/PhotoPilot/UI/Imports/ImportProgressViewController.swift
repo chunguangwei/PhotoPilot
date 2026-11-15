@@ -356,13 +356,24 @@ final class ImportProgressViewController: UIViewController {
     }
 
     private func presentEditor(frameID: String?) {
-        let editor = FrameEditViewController(
-            environment: environment,
-            frameID: frameID,
-            routeToMainAfterSave: true
-        )
-        editor.modalPresentationStyle = .fullScreen
-        present(editor, animated: true)
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let members = try await runner.batchMemberAssetIDs()
+                let editor = FrameEditViewController(
+                    environment: environment,
+                    frameID: frameID,
+                    routeToMainAfterSave: true,
+                    assetScope: Set(members)
+                )
+                editor.modalPresentationStyle = .fullScreen
+                present(editor, animated: true)
+            } catch {
+                let alert = UIAlertController(title: AIText.value("Unable to load photos", "无法载入照片"), message: AIText.value("Please try choosing content again.", "请重试选择展示内容。"), preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .default))
+                present(alert, animated: true)
+            }
+        }
     }
 
     @objc private func handleBack() {

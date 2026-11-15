@@ -1,6 +1,7 @@
 import UIKit
 
 final class NasLanNoticeViewController: UIViewController {
+    var onCatalogReady: ((String) -> Void)?
     private let environment: AppEnvironment
 
     init(environment: AppEnvironment) {
@@ -97,10 +98,9 @@ final class NasLanNoticeViewController: UIViewController {
             "true",
             forKey: AppSettingsRepository.nasLanNoticeSeenKey
         )
-        navigationController?.pushViewController(
-            NasAddViewController(environment: environment),
-            animated: true
-        )
+        let controller = NasAddViewController(environment: environment)
+        controller.onCatalogReady = onCatalogReady
+        navigationController?.pushViewController(controller, animated: true)
     }
 
     @objc private func handleBack() {

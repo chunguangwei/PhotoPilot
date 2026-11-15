@@ -131,14 +131,23 @@ actor FrameRepository {
         addExcludes: [SelectionRefEdit] = [],
         ruleChanges: [RuleChange] = [],
         removeRules: [String] = [],
-        manualOrderRefs: [String]? = nil
+        manualOrderRefs: [String]? = nil,
+        newFrameName: String? = nil,
+        frameName: String? = nil,
+        enableRemoteMedia: Bool = false,
+        coverAssetID: String? = nil
     ) async throws -> SelectionSaveResult {
         let context = makeContext()
         let now = nowMillis()
         let manualOrderRefs = manualOrderRefs?.map { MediaReference(runtimeID: $0).rawID }
         return try await LibraryStorageGate.shared(storeURL: controller.storeURL).perform {
         return try await context.perform {
-            let frame = try Self.fetchFrame(context: context, frameID: frameID)
+            let frame: NSManagedObject
+            if let newFrameName {
+                frame = try FrameManager.insertFrame(context: context, frameID: frameID, name: newFrameName, storageMode: enableRemoteMedia ? .remote : nil, now: Int(now))
+            } else {
+                frame = try Self.fetchFrame(context: context, frameID: frameID)
+            }
             let currentVersion = Int64(frame.value(forKey: "selection_version") as? Int ?? 0)
             let orderMode = frame.value(forKey: "order_mode") as? String ?? PlaybackQueue.orderCapturedAsc
 
@@ -300,6 +309,16 @@ actor FrameRepository {
                try RemoteMediaRepository.isExcluded(context: context, frameID: frameID, runtimeID: cover) {
                 settings.removeValue(forKey: "remoteCoverRef")
                 frame.setValue(String(decoding: try JSONSerialization.data(withJSONObject: settings), as: UTF8.self), forKey: "settings_json")
+            }
+            if let frameName { frame.setValue(frameName, forKey: "name") }
+            if enableRemoteMedia, newFrameName == nil {
+                let settings = frame.value(forKey: "settings_json") as? String ?? "{}"
+                if !FrameStorageMode.isExplicit(settings) {
+                    frame.setValue(try FrameStorageMode.local.applying(to: settings), forKey: "settings_json")
+                }
+            }
+            if let coverAssetID {
+                try FrameManager.applyCover(context: context, frame: frame, frameID: frameID, assetID: coverAssetID, originals: self.controller.storeURL.deletingLastPathComponent().appendingPathComponent("originals"))
             }
             frame.setValue(Int(newVersion), forKey: "selection_version")
             frame.setValue(now, forKey: "updated_at")

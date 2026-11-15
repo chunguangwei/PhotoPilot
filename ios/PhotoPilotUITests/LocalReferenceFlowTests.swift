@@ -25,7 +25,7 @@ final class LocalReferenceFlowTests: XCTestCase {
         XCTAssertTrue(choice.waitForExistence(timeout: 5))
         choice.tap()
         let next = app.buttons["Continue"].firstMatch
-        XCTAssertTrue(next.waitForExistence(timeout: 5))
+        XCTAssertTrue(next.waitForExistence(timeout: 5), app.debugDescription)
         next.tap()
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         if springboard.alerts.firstMatch.waitForExistence(timeout: 4) {
@@ -46,18 +46,11 @@ final class LocalReferenceFlowTests: XCTestCase {
         XCTAssertTrue(photo.waitForExistence(timeout: 30))
         capture("real-photokit-second-selection")
         photo.tap()
-        let name = app.textFields.firstMatch
-        name.tap()
-        name.typeText("Reference QA")
-        if app.keyboards.buttons["Done"].exists { app.keyboards.buttons["Done"].tap() }
-        let save = app.buttons["Save"].firstMatch
+        XCTAssertFalse(app.textFields.firstMatch.exists)
+        let save = app.buttons["Confirm and play"].firstMatch
         XCTAssertTrue(save.isHittable)
         save.tap()
-        let back = app.buttons["Back"].firstMatch
-        if back.waitForExistence(timeout: 10) { back.tap() }
         let play = app.buttons["Start slideshow"].firstMatch
-        XCTAssertTrue(play.waitForExistence(timeout: 20))
-        play.tap()
         let current = app.images["Current photo, 1 of 1"]
         XCTAssertTrue(current.waitForExistence(timeout: 15))
         capture("real-photokit-playback")
@@ -128,16 +121,10 @@ final class LocalReferenceFlowTests: XCTestCase {
         if open.waitForExistence(timeout: 3) { open.tap() }
         let photo = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'grid.photo.remote:'")).firstMatch
         XCTAssertTrue(photo.waitForExistence(timeout: 30), app.debugDescription)
-        capture("external-files-second-selection")
-        photo.tap()
-        app.textFields.firstMatch.tap()
-        app.textFields.firstMatch.typeText("External file QA")
-        if app.keyboards.buttons["Done"].exists { app.keyboards.buttons["Done"].tap() }
-        app.buttons["Save"].firstMatch.tap()
-        if app.buttons["Back"].firstMatch.waitForExistence(timeout: 10) { app.buttons["Back"].firstMatch.tap() }
+        capture("external-files-selection-draft")
+        XCTAssertFalse(app.textFields.firstMatch.exists)
+        app.buttons["Confirm and play"].firstMatch.tap()
         let play = app.buttons["Start slideshow"].firstMatch
-        XCTAssertTrue(play.waitForExistence(timeout: 20))
-        play.tap()
         let current = app.images["Current photo, 1 of 1"]
         XCTAssertTrue(current.waitForExistence(timeout: 15))
         capture("external-files-playback")

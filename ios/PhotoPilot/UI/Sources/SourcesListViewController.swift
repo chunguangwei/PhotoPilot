@@ -2,9 +2,12 @@ import UIKit
 import UniformTypeIdentifiers
 
 final class SourcesListViewController: UIViewController, UIDocumentPickerDelegate {
+    var onConnected: (([String], Set<String>) -> Void)?
     private let environment: AppEnvironment
     private let rowsStack = UIStackView()
     private var statusRow: UIControl?
+    private var managementConnection = false
+    private var connecting = false
 
     init(environment: AppEnvironment) {
         self.environment = environment
@@ -349,7 +352,11 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         buttonsRow.alignment = source.referenceOnly ? .fill : .center
         buttonsRow.spacing = ThemeMetrics.space8
 
-        let content = UIStackView(arrangedSubviews: [textStack, buttonsRow, mirrorRow])
+        let chooseButton = ActionButton(titleKey: "frames.choose_content", style: .primary)
+        chooseButton.accessibilityIdentifier = "source.choose." + source.id
+        chooseButton.addTarget(self, action: #selector(chooseConnectedSource(_:)), for: .touchUpInside)
+        chooseButton.isHidden = source.status != "active"
+        let content = UIStackView(arrangedSubviews: [textStack, chooseButton, buttonsRow, mirrorRow])
         content.axis = .vertical
         content.alignment = .fill
         content.spacing = ThemeMetrics.space8
@@ -377,13 +384,62 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         return row
     }
 
+    @objc private func chooseConnectedSource(_ sender: ActionButton) {
+        guard let identifier = sender.accessibilityIdentifier else { return }
+        let sourceID = String(identifier.dropFirst("source.choose.".count))
+        if let onConnected { onConnected([sourceID], []) }
+        else { chooseContent(sourceIDs: [sourceID]) }
+    }
+
+    private func chooseContent(sourceIDs: [String], initialSelection: Set<String> = []) {
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let cards = try await environment.frameManager.frameCards()
+                if cards.isEmpty {
+                    show(FrameEditViewController(environment: environment, frameID: nil, routeToMainAfterSave: true, sourceIDs: Set(sourceIDs), initialSelection: initialSelection))
+                    return
+                }
+                let sheet = UIAlertController(title: L10n.string("import.pick_frame_title"), message: nil, preferredStyle: .actionSheet)
+                for card in cards {
+                    sheet.addAction(UIAlertAction(title: card.name, style: .default) { [weak self] _ in
+                        guard let self else { return }
+                        show(FrameEditViewController(environment: environment, frameID: card.id, sourceIDs: Set(sourceIDs), initialSelection: initialSelection))
+                    })
+                }
+                sheet.addAction(UIAlertAction(title: L10n.string("import.pick_frame_new"), style: .default) { [weak self] _ in
+                    guard let self else { return }
+                    show(FrameEditViewController(environment: environment, frameID: nil, sourceIDs: Set(sourceIDs), initialSelection: initialSelection))
+                })
+                sheet.addAction(UIAlertAction(title: L10n.string("common.cancel"), style: .cancel))
+                sheet.popoverPresentationController?.sourceView = view
+                sheet.popoverPresentationController?.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+                present(sheet, animated: true)
+            } catch {
+                let alert = UIAlertController(title: AIText.value("Unable to load frames", "无法载入相框"), message: AIText.value("Please try again.", "请重试。"), preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .default))
+                present(alert, animated: true)
+            }
+        }
+    }
+
     @objc private func handleNas() {
         let noticeSeen = (try? environment.settings.value(
             forKey: AppSettingsRepository.nasLanNoticeSeenKey
         )) == "true"
-        let root: UIViewController = noticeSeen
-            ? NasAddViewController(environment: environment)
-            : NasLanNoticeViewController(environment: environment)
+        let root: UIViewController
+        let completion: (String) -> Void = { [weak self] sourceID in
+            self?.dismiss(animated: true) { self?.completeConnection(sourceIDs: [sourceID]) }
+        }
+        if noticeSeen {
+            let add = NasAddViewController(environment: environment)
+            add.onCatalogReady = completion
+            root = add
+        } else {
+            let notice = NasLanNoticeViewController(environment: environment)
+            notice.onCatalogReady = completion
+            root = notice
+        }
         let navigation = UINavigationController(rootViewController: root)
         navigation.modalPresentationStyle = .fullScreen
         present(navigation, animated: true)
@@ -403,6 +459,9 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
             prefillRecursive: source?.recursive ?? false,
             prefillCatalogOnly: source?.catalogOnly ?? true
         )
+        controller.onCatalogReady = { [weak self] sourceID in
+            self?.dismiss(animated: true) { self?.completeConnection(sourceIDs: [sourceID], managementOnly: true) }
+        }
         let navigation = UINavigationController(rootViewController: controller)
         navigation.modalPresentationStyle = .fullScreen
         present(navigation, animated: true)
@@ -567,10 +626,13 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
     }
 
     @objc private func handleBack() {
-        navigationController?.popViewController(animated: true)
+        if let navigationController, navigationController.viewControllers.first != self {
+            navigationController.popViewController(animated: true)
+        } else { dismiss(animated: true) }
     }
 
     @objc private func handleLocalSource(_ sender: UIControl) {
+        managementConnection = sender.accessibilityIdentifier?.hasSuffix(".reselect") == true
         let sheet = UIAlertController(
             title: L10n.string("sources.add"),
             message: nil,
@@ -602,11 +664,16 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
     }
 
     private func handleLocalPhotos() {
-        show(PhotoPermissionViewController(environment: environment))
+        let permission = PhotoPermissionViewController(environment: environment)
+        permission.onConnected = { [weak self] ids in self?.completeConnection(sourceIDs: ids) }
+        show(permission)
     }
 
     @objc private func handleICloudPhotos() {
-        show(PhotoPermissionViewController(environment: environment))
+        managementConnection = false
+        let permission = PhotoPermissionViewController(environment: environment)
+        permission.onConnected = { [weak self] ids in self?.completeConnection(sourceIDs: ids) }
+        show(permission)
     }
 
     private func handleLocalFiles() {
@@ -631,16 +698,65 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         _ controller: UIDocumentPickerViewController,
         didPickDocumentsAt urls: [URL]
     ) {
+        guard !connecting, !urls.isEmpty else { return }
+        connecting = true
+        Task { [weak self] in
+            guard let self else { return }
+            defer { connecting = false }
+            do {
+                var sourceIDs: [String] = []
+                var selectedAssetIDs: Set<String> = []
+                for url in urls {
+                    let sourceID = try await environment.connectLocalFileReferences(root: url)
+                    sourceIDs.append(sourceID)
+                    if (try url.resourceValues(forKeys: [.isDirectoryKey])).isDirectory != true {
+                        let items = try await environment.assets.libraryItems(includeRemote: true, remoteSourceID: sourceID)
+                        selectedAssetIDs.formUnion(items.map(\.id))
+                    }
+                }
+                completeConnection(sourceIDs: sourceIDs, initialSelection: selectedAssetIDs)
+            } catch {
+                let alert = UIAlertController(title: L10n.string("source.local_reference.reselect"), message: L10n.string("source.local_reference.unavailable"), preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .default))
+                present(alert, animated: true)
+            }
+        }
+    }
+
+    private func completeConnection(sourceIDs: [String], managementOnly: Bool = false, initialSelection: Set<String> = []) {
+        let managementOnly = managementOnly || managementConnection
+        managementConnection = false
+        guard !sourceIDs.isEmpty else { return }
+        if !managementOnly, let onConnected {
+            onConnected(sourceIDs, initialSelection)
+            return
+        }
         Task { [weak self] in
             guard let self else { return }
             do {
-                var sourceID: String?
-                for url in urls { sourceID = try await environment.connectLocalFileReferences(root: url) }
-                try environment.settings.setOnboardingCompleted(true)
-                let editor = FrameEditViewController(environment: environment, frameID: nil, routeToMainAfterSave: true, remoteSourceID: urls.count == 1 ? sourceID : nil)
-                show(editor)
+                let cards = try await environment.frameManager.frameCards()
+                if !managementOnly, cards.isEmpty {
+                    let editor = FrameEditViewController(environment: environment, frameID: nil, routeToMainAfterSave: true, sourceIDs: Set(sourceIDs), initialSelection: initialSelection)
+                    if presentedViewController != nil {
+                        dismiss(animated: true) { self.show(editor) }
+                    } else { show(editor) }
+                } else {
+                    let showResult = { [weak self] in
+                        guard let self else { return }
+                        let alert = UIAlertController(title: AIText.value("Source connected", "来源已连接"), message: AIText.value("Choose photos in a frame to display them.", "请在相框中确认要展示的照片。"), preferredStyle: .alert)
+                        alert.addAction(UIAlertAction(title: L10n.string("frames.choose_content"), style: .default) { [weak self] _ in self?.chooseContent(sourceIDs: sourceIDs, initialSelection: initialSelection) })
+                        alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .cancel))
+                        present(alert, animated: true)
+                    }
+                    if let navigationController {
+                        navigationController.popToViewController(self, animated: false)
+                        showResult()
+                    } else if presentedViewController != nil {
+                        dismiss(animated: true, completion: showResult)
+                    } else { showResult() }
+                }
             } catch {
-                let alert = UIAlertController(title: L10n.string("source.local_reference.reselect"), message: L10n.string("source.local_reference.unavailable"), preferredStyle: .alert)
+                let alert = UIAlertController(title: AIText.value("Unable to continue", "暂时无法继续"), message: AIText.value("Your source is connected. Please try again from Sources.", "来源已连接，请从来源页重试。"), preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .default))
                 present(alert, animated: true)
             }

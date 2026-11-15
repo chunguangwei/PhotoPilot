@@ -483,3 +483,213 @@ extension LocalReferenceTests {
         XCTAssertEqual(try Data(contentsOf: folder.appendingPathComponent("second.png")), RemoteIndexFixture.pixels)
     }
 }
+
+extension LocalReferenceTests {
+    private func flowImage() throws -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".png")
+        try RemoteIndexFixture.pixels.write(to: url)
+        return url
+    }
+
+    private func flowViews(_ view: UIView) -> [UIView] {
+        [view] + view.subviews.flatMap(flowViews)
+    }
+
+    private func flowButton(_ controller: UIViewController, _ title: String) throws -> ActionButton {
+        try XCTUnwrap(flowViews(controller.view).compactMap { $0 as? ActionButton }.first { $0.accessibilityLabel == title })
+    }
+
+    private func flowWindow(_ controller: UIViewController) -> UIWindow {
+        let window: UIWindow
+        if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+            window = UIWindow(windowScene: scene)
+            window.frame = scene.coordinateSpace.bounds
+        } else { window = UIWindow(frame: CGRect(x: 0, y: 0, width: 393, height: 852)) }
+        window.rootViewController = controller
+        window.makeKeyAndVisible()
+        controller.loadViewIfNeeded()
+        window.layoutIfNeeded()
+        return window
+    }
+
+    private func flowCapture(_ window: UIWindow, name: String) {
+        let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        let attachment = XCTAttachment(image: image)
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    func testConfirmedFrameCreationAndMetadataSaveAreAtomicOnFailure() async throws {
+        let environment = environment()
+        do {
+            _ = try await environment.frames.save(frameID: UUID().uuidString, baseVersion: 0,
+                addIncludes: [MediaReference(runtimeID: "remote:missing").selection], newFrameName: "Failed draft", enableRemoteMedia: true)
+            XCTFail("Missing reference must fail")
+        } catch { }
+        let afterFailure = try await environment.frameManager.frameCards()
+        XCTAssertTrue(afterFailure.isEmpty)
+        let frameID = try await environment.frameManager.createFrame(name: "Original")
+        do {
+            _ = try await environment.frames.save(frameID: frameID, baseVersion: 0, frameName: "Unsaved name", coverAssetID: "remote:missing")
+            XCTFail("Unavailable cover must fail")
+        } catch { }
+        let detail = try await environment.frameManager.frameDetail(frameID: frameID)
+        XCTAssertEqual(detail.name, "Original")
+        XCTAssertEqual(detail.selectionVersion, 0)
+        let sourceID = try await environment.connectLocalFileReferences(root: flowImage())
+        let items = try await environment.assets.libraryItems(includeRemote: true, remoteSourceID: sourceID)
+        let item = try XCTUnwrap(items.first)
+        let saved = try await environment.frames.save(frameID: UUID().uuidString, baseVersion: 0,
+            addIncludes: [MediaReference(runtimeID: item.id).selection], newFrameName: "Retry", enableRemoteMedia: true)
+        guard case .ok = saved else { return XCTFail("Retry must save") }
+        let cards = try await environment.frameManager.frameCards()
+        XCTAssertEqual(cards.count, 2)
+    }
+
+    func testFirstUseMultiFileScopeConfirmsOnceAndPlaysWithoutSettings() async throws {
+        let previous = AppLanguage.overrideValue
+        AppLanguage.configure(value: AppLanguage.enValue)
+        defer { AppLanguage.configure(value: previous) }
+        let environment = environment()
+        _ = try await environment.connectLocalFileReferences(root: flowImage())
+        let files = try [flowImage(), flowImage()]
+        let sources = SourcesListViewController(environment: environment)
+        let navigation = UINavigationController(rootViewController: sources)
+        let window = flowWindow(navigation)
+        defer { window.isHidden = true }
+        sources.documentPicker(UIDocumentPickerViewController(forOpeningContentTypes: [.image], asCopy: false), didPickDocumentsAt: files)
+        for _ in 0..<50 {
+            if navigation.topViewController is FrameEditViewController { break }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        let editor = try XCTUnwrap(navigation.topViewController as? FrameEditViewController)
+        try await Task.sleep(nanoseconds: 700_000_000)
+        let draftCards = try await environment.frameManager.frameCards()
+        XCTAssertTrue(draftCards.isEmpty)
+        XCTAssertTrue(flowViews(editor.view).compactMap { $0 as? UITextField }.allSatisfy(\.isHidden))
+        let grid = try XCTUnwrap(editor.children.compactMap { $0 as? AssetGridViewController }.first)
+        window.layoutIfNeeded()
+        grid.view.layoutIfNeeded()
+        let visible = flowViews(grid.view).compactMap { $0 as? AssetGridCell }.compactMap(\.assetID)
+        XCTAssertEqual(Set(visible).count, 2)
+        let selected = Set(visible)
+        XCTAssertEqual(grid.selectedAssetIDs, selected)
+        flowCapture(window, name: "photo-flow-exact-files-confirmation")
+        let save = try flowButton(editor, "Confirm and play")
+        save.sendActions(for: .touchUpInside)
+        save.sendActions(for: .touchUpInside)
+        for _ in 0..<50 {
+            if window.rootViewController is MainContainerViewController { break }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        let main = try XCTUnwrap(window.rootViewController as? MainContainerViewController)
+        let cards = try await environment.frameManager.frameCards()
+        XCTAssertEqual(cards.count, 1)
+        let detail = try await environment.frameManager.frameDetail(frameID: XCTUnwrap(cards.first).id)
+        XCTAssertEqual(Set(detail.includeSourceAssetRefs.map { "remote:" + $0 }), selected)
+        try await Task.sleep(nanoseconds: 500_000_000)
+        XCTAssertTrue(main.presentedViewController is PlayerViewController)
+        XCTAssertFalse(main.presentedViewController is PlaybackSettingsViewController)
+    }
+
+    func testExistingFrameAddSourceKeepsDraftAndAppendsConfirmedPhotos() async throws {
+        let environment = environment()
+        let first = try await environment.connectLocalFileReferences(root: flowImage())
+        let second = try await environment.connectLocalFileReferences(root: flowImage())
+        let firstItems = try await environment.assets.libraryItems(includeRemote: true, remoteSourceID: first)
+        let firstID = try XCTUnwrap(firstItems.first?.id)
+        let secondItems = try await environment.assets.libraryItems(includeRemote: true, remoteSourceID: second)
+        let secondID = try XCTUnwrap(secondItems.first?.id)
+        let frameID = try await environment.frameManager.createFrame(name: "Original")
+        _ = try await environment.frames.save(frameID: frameID, baseVersion: 0, addIncludes: [MediaReference(runtimeID: firstID).selection])
+        let editor = FrameEditViewController(environment: environment, frameID: frameID)
+        let window = flowWindow(editor)
+        defer { window.isHidden = true }
+        try await Task.sleep(nanoseconds: 500_000_000)
+        let field = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UITextField }.first)
+        field.text = "Draft name"
+        field.sendActions(for: .editingChanged)
+        let add = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UIButton }.first { $0.title(for: .normal) == AIText.value("Add photos from a source", "从来源添加照片") })
+        add.sendActions(for: .touchUpInside)
+        try await Task.sleep(nanoseconds: 500_000_000)
+        let navigation = try XCTUnwrap(editor.presentedViewController as? UINavigationController)
+        let sources = try XCTUnwrap(navigation.topViewController as? SourcesListViewController)
+        sources.onConnected?([second], [])
+        try await Task.sleep(nanoseconds: 700_000_000)
+        XCTAssertEqual(field.text, "Draft name")
+        flowCapture(window, name: "photo-flow-existing-frame-source-draft")
+        let grid = try XCTUnwrap(editor.children.compactMap { $0 as? AssetGridViewController }.first)
+        XCTAssertEqual(grid.selectedAssetIDs, [firstID])
+        grid.onSelectionChange?([firstID, secondID])
+        try flowButton(editor, L10n.string("common.save")).sendActions(for: .touchUpInside)
+        try await Task.sleep(nanoseconds: 700_000_000)
+        let detail = try await environment.frameManager.frameDetail(frameID: frameID)
+        XCTAssertEqual(detail.name, "Draft name")
+        XCTAssertEqual(Set(detail.includeSourceAssetRefs.map { "remote:" + $0 }), [firstID, secondID])
+        let savedCards = try await environment.frameManager.frameCards()
+        XCTAssertEqual(savedCards.count, 1)
+    }
+
+    func testManagementConnectionReturnsWithoutCreatingFrame() async throws {
+        let environment = environment()
+        _ = try await environment.frameManager.createFrame(name: "Existing")
+        let source = SourcesListViewController(environment: environment)
+        let navigation = UINavigationController(rootViewController: source)
+        let window = flowWindow(navigation)
+        defer { window.isHidden = true }
+        source.documentPicker(UIDocumentPickerViewController(forOpeningContentTypes: [.image], asCopy: false), didPickDocumentsAt: [try flowImage()])
+        try await Task.sleep(nanoseconds: 800_000_000)
+        XCTAssertTrue(navigation.topViewController === source)
+        XCTAssertEqual((source.presentedViewController as? UIAlertController)?.title, AIText.value("Source connected", "来源已连接"))
+        let savedCards = try await environment.frameManager.frameCards()
+        XCTAssertEqual(savedCards.count, 1)
+    }
+
+    func testPushedEditorBackPopsWithoutCreatingEmptyFrame() async throws {
+        let environment = environment()
+        let parent = UIViewController()
+        let navigation = UINavigationController(rootViewController: parent)
+        let window = flowWindow(navigation)
+        defer { window.isHidden = true }
+        let editor = FrameEditViewController(environment: environment, frameID: nil, routeToMainAfterSave: true)
+        navigation.pushViewController(editor, animated: false)
+        try await Task.sleep(nanoseconds: 300_000_000)
+        XCTAssertTrue(navigation.isNavigationBarHidden)
+        XCTAssertFalse(navigation.interactivePopGestureRecognizer?.isEnabled ?? true)
+        try flowButton(editor, L10n.string("common.back")).sendActions(for: .touchUpInside)
+        try await Task.sleep(nanoseconds: 400_000_000)
+        XCTAssertTrue(navigation.topViewController === parent)
+        let draftCards = try await environment.frameManager.frameCards()
+        XCTAssertTrue(draftCards.isEmpty)
+    }
+
+    func testEmptyConfirmationAndDirtyAIKeepDraft() async throws {
+        let environment = environment()
+        let frameID = try await environment.frameManager.createFrame(name: "Original")
+        let editor = FrameEditViewController(environment: environment, frameID: frameID)
+        let window = flowWindow(editor)
+        defer { window.isHidden = true }
+        try await Task.sleep(nanoseconds: 300_000_000)
+        let field = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UITextField }.first)
+        field.text = "Unsaved draft"
+        field.sendActions(for: .editingChanged)
+        let ai = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UIButton }.first { $0.title(for: .normal) == AIText.value("AI classification settings", "AI 分类设置") })
+        ai.sendActions(for: .touchUpInside)
+        try await Task.sleep(nanoseconds: 300_000_000)
+        let alert = try XCTUnwrap(editor.presentedViewController as? UIAlertController)
+        XCTAssertEqual(alert.title, L10n.string("playback.unsaved_title"))
+        XCTAssertEqual(field.text, "Unsaved draft")
+        let persisted = try await environment.frameManager.frameDetail(frameID: frameID)
+        XCTAssertEqual(persisted.name, "Original")
+        editor.dismiss(animated: false)
+        try await Task.sleep(nanoseconds: 100_000_000)
+        try flowButton(editor, L10n.string("common.save")).sendActions(for: .touchUpInside)
+        try await Task.sleep(nanoseconds: 200_000_000)
+        XCTAssertTrue(editor.presentedViewController is UIAlertController)
+        let savedCards = try await environment.frameManager.frameCards()
+        XCTAssertEqual(savedCards.count, 1)
+    }
+}

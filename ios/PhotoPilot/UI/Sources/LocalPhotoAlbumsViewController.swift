@@ -3,6 +3,7 @@ import UIKit
 
 final class LocalPhotoAlbumsViewController: UITableViewController {
     private let environment: AppEnvironment
+    var onConnected: (([String]) -> Void)?
     private var albums: [PHAssetCollection] = []
     private var selected: Set<String> = []
 
@@ -68,10 +69,7 @@ final class LocalPhotoAlbumsViewController: UITableViewController {
             guard let self else { return }
             do {
                 let id = try await environment.connectLocalPhotoReferences(albumIDs: selected.sorted())
-                try environment.settings.setOnboardingCompleted(true)
-                let editor = FrameEditViewController(environment: environment, frameID: nil, routeToMainAfterSave: true, remoteSourceID: id)
-                if let navigationController { navigationController.pushViewController(editor, animated: true) }
-                else { present(editor, animated: true) }
+                onConnected?([id])
             } catch {
                 let alert = UIAlertController(title: AIText.value("Photos are unavailable", "照片暂不可用"), message: AIText.value("Check Photos permission and choose the albums again.", "请检查照片授权并重新选择相册。"), preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .default))

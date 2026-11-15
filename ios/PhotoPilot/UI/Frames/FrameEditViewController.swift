@@ -6,11 +6,18 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
     private var remoteSourceID: String?
     private var includesRemoteMedia: Bool
     private let routeToMainAfterSave: Bool
+    private var sourceIDs: Set<String>?
+    private var assetScope: Set<String>?
+    private var saving = false
+    private var loading = true
+    private var navigationBarWasHidden = false
+    private var scopeTask: Task<Void, Never>?
 
     private var detail: FrameDetailDTO?
     private var collections: [CollectionDTO] = []
     private var memberCache: [String: [String]] = [:]
     private var selectedAssetIDs: Set<String> = []
+    private var initialSelection: Set<String>
     private var currentExcludes: Set<String> = []
     private var dynamicRules: [String: SaveRuleRow] = [:]
     private var recursiveFlags: [String: Bool] = [:]
@@ -31,11 +38,16 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
     private var gridEdgeConstraints: [NSLayoutConstraint] = []
     private var gridColumnConstraints: [NSLayoutConstraint] = []
 
-    init(environment: AppEnvironment, frameID: String?, routeToMainAfterSave: Bool = false, remoteSourceID: String? = nil) {
+    init(environment: AppEnvironment, frameID: String?, routeToMainAfterSave: Bool = false, remoteSourceID: String? = nil, sourceIDs: Set<String>? = nil, assetScope: Set<String>? = nil, initialSelection: Set<String> = []) {
+        self.initialSelection = initialSelection
+        self.selectedAssetIDs = initialSelection
+        self.dirty = !initialSelection.isEmpty
         self.environment = environment
         self.frameID = frameID
+        self.assetScope = assetScope
+        self.sourceIDs = sourceIDs ?? remoteSourceID.map { Set([$0]) }
         self.remoteSourceID = remoteSourceID
-        self.includesRemoteMedia = remoteSourceID != nil
+        self.includesRemoteMedia = remoteSourceID != nil || sourceIDs != nil
         self.routeToMainAfterSave = routeToMainAfterSave
         self.tabControl = UISegmentedControl(items: [
             L10n.string("library.tab_photos"),
@@ -57,6 +69,10 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         let backButton = ActionButton(titleKey: "common.back", style: .secondary)
         backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
 
+        nameField.isHidden = routeToMainAfterSave
+        if routeToMainAfterSave {
+            saveButton.setTitle(AIText.value("Confirm and play", "确认并播放"))
+        }
         nameField.placeholder = L10n.string("frames.name_placeholder")
         nameField.font = ThemeFont.body()
         nameField.adjustsFontForContentSizeCategory = true
@@ -81,9 +97,18 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         topBar.alignment = .center
         topBar.spacing = ThemeMetrics.space12
 
-        let header = UIStackView(arrangedSubviews: [topBar, nameField])
+        let addPhotos = UIButton(type: .system)
+        addPhotos.setTitle(AIText.value("Add photos from a source", "从来源添加照片"), for: .normal)
+        addPhotos.tintColor = ThemeColor.accentAction
+        addPhotos.titleLabel?.font = ThemeFont.body()
+        addPhotos.titleLabel?.adjustsFontForContentSizeCategory = true
+        addPhotos.titleLabel?.numberOfLines = 0
+        addPhotos.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
+        addPhotos.addTarget(self, action: #selector(openSources), for: .touchUpInside)
+        let header = UIStackView(arrangedSubviews: [topBar, nameField, addPhotos])
         let aiSettings = UIButton(type: .system)
         aiSettings.setTitle(AIText.value("AI classification settings", "AI 分类设置"), for: .normal)
+        aiSettings.isHidden = frameID == nil
         aiSettings.titleLabel?.font = ThemeFont.body()
         aiSettings.titleLabel?.adjustsFontForContentSizeCategory = true
         aiSettings.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
@@ -217,6 +242,20 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         embedGrid()
         enableKeyboardDismissal()
         reload()
+        refreshSourceScope()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationBarWasHidden = navigationController?.isNavigationBarHidden ?? false
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = false
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.setNavigationBarHidden(navigationBarWasHidden, animated: animated)
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = true
     }
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -226,8 +265,53 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         }
     }
 
+    @objc private func openSources() {
+        guard !saving else { return }
+        let sources = SourcesListViewController(environment: environment)
+        sources.onConnected = { [weak self] ids, selection in
+            guard let self else { return }
+            dismiss(animated: true) {
+                self.selectedAssetIDs.formUnion(selection)
+                self.dirty = self.dirty || !selection.isEmpty
+                self.gridChild?.applySelection(self.selectedAssetIDs)
+                self.assetScope = nil
+                self.sourceIDs = Set(ids)
+                self.remoteSourceID = nil
+                self.includesRemoteMedia = true
+                self.refreshSourceScope()
+            }
+        }
+        let navigation = UINavigationController(rootViewController: sources)
+        navigation.modalPresentationStyle = .fullScreen
+        present(navigation, animated: true)
+    }
+
+    private func refreshSourceScope() {
+        gridChild?.setScope(sourceIDs: sourceIDs, assetIDs: assetScope)
+        guard let sourceIDs else { return }
+        scopeTask?.cancel()
+        scopeTask = Task { [weak self] in
+            guard let self else { return }
+            guard !Task.isCancelled, self.sourceIDs == sourceIDs else { return }
+            collections = ((try? await environment.assets.collections()) ?? []).filter {
+                $0.sourceID.map(sourceIDs.contains) == true && CollectionListing.visibleInFolderList(type: $0.type, memberCount: $0.memberCount)
+            }
+            directoriesTable.reloadData()
+            updateSummary()
+        }
+    }
+
     @objc private func openAISettings() {
-        guard let frameID else { return }
+        guard !saving, let frameID else { return }
+        if dirty {
+            let alert = UIAlertController(title: L10n.string("playback.unsaved_title"), message: AIText.value("Save your photo selection before editing AI settings.", "请先保存选片草稿，再编辑 AI 设置。"), preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: L10n.string("common.save"), style: .default) { [weak self] _ in
+                self?.performSave { [weak self] in self?.openAISettings() }
+            })
+            alert.addAction(UIAlertAction(title: L10n.string("common.cancel"), style: .cancel))
+            present(alert, animated: true)
+            return
+        }
         let editor = AIFrameViewController(environment: environment, frameID: frameID)
         editor.onSaved = { [weak self] in self?.reload() }
         let navigation = UINavigationController(rootViewController: editor)
@@ -322,11 +406,15 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
     private func reload() {
         Task { [weak self] in
             guard let self else { return }
+            loading = true
+            defer { loading = false }
             collections = ((try? await environment.assets.collections()) ?? [])
                 .filter { CollectionListing.visibleInFolderList(type: $0.type, memberCount: $0.memberCount) }
             memberCache = [:]
             directoriesTable.reloadData()
             guard let frameID, let fetched = try? await environment.frameManager.frameDetail(frameID: frameID) else {
+                gridChild?.applySelection(selectedAssetIDs)
+                updateSummary()
                 return
             }
             detail = fetched
@@ -336,11 +424,12 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
                 includesRemoteMedia = true
                 gridChild?.enableRemoteMedia(sourceID: remoteSourceID)
             }
-            selectedAssetIDs = Set(fetched.includeAssetRefs + fetched.includeSourceAssetRefs.map { "remote:" + $0 })
+            selectedAssetIDs = Set(fetched.includeAssetRefs + fetched.includeSourceAssetRefs.map { "remote:" + $0 }).union(initialSelection)
             currentExcludes = Set(fetched.excludeRefs)
             dynamicRules = Dictionary(uniqueKeysWithValues: fetched.rules.map { ($0.collectionId, $0) })
             recursiveFlags = Dictionary(uniqueKeysWithValues: fetched.rules.map { ($0.collectionId, $0.recursive) })
-            dirty = false
+            dirty = !initialSelection.isEmpty
+            initialSelection.removeAll()
             pendingManualOrder = nil
             pendingCoverAssetID = fetched.coverAssetId
             if let explicit = fetched.coverAssetId {
@@ -356,6 +445,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             manualButton.isHidden = fetched.orderMode != PlaybackQueue.orderManual
             updateSummary()
             updatePendingBanner()
+            refreshSourceScope()
         }
     }
 
@@ -424,8 +514,9 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
     }
 
     @objc private func handleBack() {
+        guard !saving else { return }
         guard dirty else {
-            dismiss(animated: true)
+            close()
             return
         }
         let alert = UIAlertController(
@@ -436,7 +527,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         alert.addAction(UIAlertAction(
             title: L10n.string("common.discard"),
             style: .destructive,
-            handler: { [weak self] _ in self?.dismiss(animated: true) }
+            handler: { [weak self] _ in self?.close() }
         ))
         alert.addAction(UIAlertAction(
             title: L10n.string("common.cancel"),
@@ -445,86 +536,117 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         present(alert, animated: true)
     }
 
+    private func close() {
+        if let navigationController, navigationController.viewControllers.first != self {
+            navigationController.popViewController(animated: true)
+        } else { dismiss(animated: true) }
+    }
+
     @objc private func handleSave() {
+        performSave { [weak self] in self?.finishAfterSave() }
+    }
+
+    private func performSave(completion: @escaping () -> Void) {
+        guard !saving, !loading else { return }
+        guard !selectedAssetIDs.isEmpty || !dynamicRules.isEmpty else {
+            let alert = UIAlertController(title: AIText.value("Choose photos", "请选择照片"), message: L10n.string("library.selection_note_static"), preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .default))
+            present(alert, animated: true)
+            return
+        }
+        saving = true
+        view.isUserInteractionEnabled = false
+        saveButton.isEnabled = false
+        saveButton.setTitle(AIText.value("Saving…", "正在保存…"))
         Task { [weak self] in
             guard let self else { return }
-            let trimmed = nameField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            if frameID == nil {
-                let createdName = trimmed.isEmpty ? L10n.string("frames.name_default") : trimmed
-                guard let created = try? await environment.frameManager.createFrame(name: createdName, storageMode: includesRemoteMedia || selectedAssetIDs.contains(where: { $0.hasPrefix("remote:") }) ? .remote : nil) else { return }
-                frameID = created
-                detail = try? await environment.frameManager.frameDetail(frameID: created)
+            defer {
+                saving = false
+                view.isUserInteractionEnabled = true
+                saveButton.isEnabled = true
+                saveButton.setTitle(routeToMainAfterSave ? AIText.value("Confirm and play", "确认并播放") : L10n.string("common.save"))
             }
-            if let id = frameID, includesRemoteMedia,
-               let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: id), !FrameStorageMode.isExplicit(bundle.settingsJSON) {
-                try? await environment.frameManager.updateSettingsJSON(frameID: id, settingsJSON: FrameStorageMode.local.applying(to: bundle.settingsJSON))
-                detail = try? await environment.frameManager.frameDetail(frameID: id)
-            }
-            guard let detail, let frameID else { return }
-            if !trimmed.isEmpty, trimmed != detail.name {
-                try? await environment.frameManager.renameFrame(frameID: frameID, name: trimmed)
-            }
-            let loaded = Set(detail.includeAssetRefs + detail.includeSourceAssetRefs.map { "remote:" + $0 })
-            let addIncludes = selectedAssetIDs.subtracting(loaded).map {
-                MediaReference(runtimeID: $0).selection
-            }
-            var removeRefs = loaded.subtracting(selectedAssetIDs).map {
-                MediaReference(runtimeID: $0).selection
-            }
-            removeRefs += Set(detail.excludeRefs).subtracting(currentExcludes).map {
-                MediaReference(runtimeID: $0).selection
-            }
-
-            let now = Int(Date().timeIntervalSince1970 * 1000)
-            let loadedRules = Dictionary(uniqueKeysWithValues: detail.rules.map { ($0.collectionId, $0) })
-            var ruleChanges: [RuleChange] = []
-            for (collectionID, rule) in dynamicRules where loadedRules[collectionID] != rule {
-                ruleChanges.append(RuleChange(
-                    collectionId: collectionID,
-                    recursive: rule.recursive,
-                    includeFuture: true,
-                    confirmed: true,
-                    members: [],
-                    addedAt: Int64(now)
-                ))
-            }
-            let removeRules = detail.rules
-                .map(\.collectionId)
-                .filter { dynamicRules[$0] == nil }
-
-            let result = try? await environment.frames.save(
-                frameID: frameID,
-                baseVersion: detail.selectionVersion,
-                addIncludes: addIncludes,
-                removeRefs: removeRefs,
-                ruleChanges: ruleChanges,
-                removeRules: removeRules,
-                manualOrderRefs: pendingManualOrder
-            )
-            switch result {
-            case .ok:
-                if let pendingCoverAssetID, pendingCoverAssetID != detail.coverAssetId {
-                    try? await environment.frameManager.setCover(frameID: frameID, assetID: pendingCoverAssetID)
+            do {
+                if let frameID, detail == nil { detail = try await environment.frameManager.frameDetail(frameID: frameID) }
+                let trimmed = nameField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let newFrameName = frameID == nil ? (trimmed.isEmpty ? L10n.string("frames.name_default") : trimmed) : nil
+                let savingFrameID = frameID ?? UUID().uuidString
+                let loaded = Set((detail?.includeAssetRefs ?? []) + (detail?.includeSourceAssetRefs ?? []).map { "remote:" + $0 })
+                let addIncludes = selectedAssetIDs.subtracting(loaded).map {
+                    MediaReference(runtimeID: $0).selection
                 }
-                if let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: frameID),
-                   FrameStorageMode.isExplicit(bundle.settingsJSON), FrameStorageMode.read(bundle.settingsJSON) == .local {
-                    await environment.frameStorage.start(frameID: frameID)
+                var removeRefs = loaded.subtracting(selectedAssetIDs).map {
+                    MediaReference(runtimeID: $0).selection
                 }
-                finishAfterSave()
-            default:
-                showConflict()
+                removeRefs += Set(detail?.excludeRefs ?? []).subtracting(currentExcludes).map {
+                    MediaReference(runtimeID: $0).selection
+                }
+
+                let now = Int(Date().timeIntervalSince1970 * 1000)
+                let loadedRules = Dictionary(uniqueKeysWithValues: (detail?.rules ?? []).map { ($0.collectionId, $0) })
+                var ruleChanges: [RuleChange] = []
+                for (collectionID, rule) in dynamicRules where loadedRules[collectionID] != rule {
+                    ruleChanges.append(RuleChange(
+                        collectionId: collectionID,
+                        recursive: rule.recursive,
+                        includeFuture: true,
+                        confirmed: true,
+                        members: [],
+                        addedAt: Int64(now)
+                    ))
+                }
+                let removeRules = (detail?.rules ?? [])
+                    .map(\.collectionId)
+                    .filter { dynamicRules[$0] == nil }
+
+                let result = try await environment.frames.save(
+                    frameID: savingFrameID,
+                    baseVersion: detail?.selectionVersion ?? 0,
+                    addIncludes: addIncludes,
+                    removeRefs: removeRefs,
+                    ruleChanges: ruleChanges,
+                    removeRules: removeRules,
+                    manualOrderRefs: pendingManualOrder,
+                    newFrameName: newFrameName,
+                    frameName: trimmed.isEmpty ? nil : trimmed,
+                    enableRemoteMedia: includesRemoteMedia || selectedAssetIDs.contains(where: { $0.hasPrefix("remote:") }),
+                    coverAssetID: pendingCoverAssetID == detail?.coverAssetId ? nil : pendingCoverAssetID
+                )
+                switch result {
+                case .ok:
+                    frameID = savingFrameID
+                    if let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: savingFrameID),
+                       FrameStorageMode.isExplicit(bundle.settingsJSON), FrameStorageMode.read(bundle.settingsJSON) == .local {
+                        await environment.frameStorage.start(frameID: savingFrameID)
+                    }
+                    self.detail = try await environment.frameManager.frameDetail(frameID: savingFrameID)
+                    dirty = false
+                    saving = false
+                    completion()
+                default:
+                    showConflict()
+                }
+            } catch {
+                showSaveError()
             }
         }
+    }
+
+    private func showSaveError() {
+        let alert = UIAlertController(title: AIText.value("Unable to save", "保存失败"), message: AIText.value("Your draft is preserved. Please try saving again.", "草稿已保留，请重试保存。"), preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .default))
+        present(alert, animated: true)
     }
 
     private func finishAfterSave() {
         dirty = false
         if routeToMainAfterSave, let window = view.window, let frameID {
             let main = MainContainerViewController(environment: environment)
-            main.autoOpenSettingsFrameID = frameID
+            main.autoPlayFrameID = frameID
+            try? environment.settings.setOnboardingCompleted(true)
             RootTransition.setRoot(main, in: window)
         } else {
-            dismiss(animated: true)
+            close()
         }
     }
 
@@ -537,9 +659,38 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         alert.addAction(UIAlertAction(
             title: L10n.string("common.retry"),
             style: .default,
-            handler: { [weak self] _ in self?.reload() }
+            handler: { [weak self] _ in self?.retryConflict() }
         ))
         present(alert, animated: true)
+    }
+
+    private func retryConflict() {
+        guard let frameID, let previous = detail else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let latest = try await environment.frameManager.frameDetail(frameID: frameID)
+                let previousIDs = Set(previous.includeAssetRefs + previous.includeSourceAssetRefs.map { "remote:" + $0 })
+                let latestIDs = Set(latest.includeAssetRefs + latest.includeSourceAssetRefs.map { "remote:" + $0 })
+                let added = selectedAssetIDs.subtracting(previousIDs)
+                let removed = previousIDs.subtracting(selectedAssetIDs)
+                selectedAssetIDs = latestIDs.union(added).subtracting(removed)
+                selectedAssetIDs.subtract(Set(latest.excludeRefs).subtracting(previous.excludeRefs))
+                let restored = Set(previous.excludeRefs).subtracting(currentExcludes)
+                currentExcludes = Set(latest.excludeRefs).subtracting(restored)
+                let previousRules = Dictionary(uniqueKeysWithValues: previous.rules.map { ($0.collectionId, $0) })
+                let draftRules = dynamicRules
+                dynamicRules = Dictionary(uniqueKeysWithValues: latest.rules.map { ($0.collectionId, $0) })
+                for key in Set(previousRules.keys).union(draftRules.keys) where previousRules[key] != draftRules[key] {
+                    dynamicRules[key] = draftRules[key]
+                }
+                detail = latest
+                gridChild?.applySelection(selectedAssetIDs)
+                directoriesTable.reloadData()
+                updateSummary()
+                dirty = true
+            } catch { showSaveError() }
+        }
     }
 
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {

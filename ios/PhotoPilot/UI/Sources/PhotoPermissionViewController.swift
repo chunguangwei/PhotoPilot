@@ -10,6 +10,8 @@ final class PhotoPermissionViewController: UIViewController {
         case denied
     }
 
+    var onConnected: (([String]) -> Void)?
+
     private var didRequest = false
     private var contentStack: UIStackView?
     private let contentScroll = UIScrollView()
@@ -185,6 +187,7 @@ final class PhotoPermissionViewController: UIViewController {
 
     @objc private func handleContinue() {
         let albums = LocalPhotoAlbumsViewController(environment: environment)
+        albums.onConnected = onConnected
         if let navigationController { navigationController.pushViewController(albums, animated: true) }
         else {
             let navigation = UINavigationController(rootViewController: albums)
