@@ -46,6 +46,9 @@ final class RemoteFrameFlowTests: XCTestCase {
         let source = app.cells.containing(.staticText, identifier: "Family NAS").firstMatch
         XCTAssertTrue(source.waitForExistence(timeout: 10))
         source.tap()
+        let newFrame = app.buttons[chinese ? "新建相框" : "Create new frame"]
+        XCTAssertTrue(newFrame.waitForExistence(timeout: 15))
+        newFrame.tap()
         let name = app.textFields.firstMatch
         XCTAssertTrue(name.waitForExistence(timeout: 15))
         capture("online-selection", chinese: chinese, large: large, dark: dark)

@@ -556,10 +556,13 @@ extension LocalReferenceTests {
         let environment = environment()
         _ = try await environment.connectLocalFileReferences(root: flowImage())
         let files = try [flowImage(), flowImage()]
-        let sources = SourcesListViewController(environment: environment)
-        let navigation = UINavigationController(rootViewController: sources)
+        let welcome = WelcomeViewController(environment: environment)
+        let navigation = UINavigationController(rootViewController: welcome)
         let window = flowWindow(navigation)
         defer { window.isHidden = true }
+        try flowButton(welcome, L10n.string("welcome.primary_action")).sendActions(for: .touchUpInside)
+        try await Task.sleep(nanoseconds: 400_000_000)
+        let sources = try XCTUnwrap(navigation.topViewController as? SourcesListViewController)
         sources.documentPicker(UIDocumentPickerViewController(forOpeningContentTypes: [.image], asCopy: false), didPickDocumentsAt: files)
         for _ in 0..<50 {
             if navigation.topViewController is FrameEditViewController { break }
@@ -638,17 +641,89 @@ extension LocalReferenceTests {
 
     func testManagementConnectionReturnsWithoutCreatingFrame() async throws {
         let environment = environment()
-        _ = try await environment.frameManager.createFrame(name: "Existing")
-        let source = SourcesListViewController(environment: environment)
-        let navigation = UINavigationController(rootViewController: source)
-        let window = flowWindow(navigation)
+        let main = MainContainerViewController(environment: environment)
+        main.initialSectionTitleKey = "nav.sources"
+        let window = flowWindow(main)
         defer { window.isHidden = true }
+        let source = try XCTUnwrap(main.children.compactMap { $0 as? SourcesListViewController }.first)
         source.documentPicker(UIDocumentPickerViewController(forOpeningContentTypes: [.image], asCopy: false), didPickDocumentsAt: [try flowImage()])
         try await Task.sleep(nanoseconds: 800_000_000)
-        XCTAssertTrue(navigation.topViewController === source)
+        XCTAssertTrue(main.children.contains { $0 === source })
         XCTAssertEqual((source.presentedViewController as? UIAlertController)?.title, AIText.value("Source connected", "来源已连接"))
         let savedCards = try await environment.frameManager.frameCards()
-        XCTAssertEqual(savedCards.count, 1)
+        XCTAssertTrue(savedCards.isEmpty)
+    }
+
+    func testOnlineSourceRowAndConnectChooseExistingTargetOrExplicitNew() async throws {
+        UIView.setAnimationsEnabled(false)
+        defer { UIView.setAnimationsEnabled(true) }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let persistence = PersistenceController(storeURL: root.appendingPathComponent("library.db"))
+        let fixture = RemoteIndexFixture()
+        let media = RemoteMediaService(controller: persistence, adapterFactory: { _ in fixture })
+        let environment = AppEnvironment(persistence: persistence, remoteMedia: media)
+        let sourceID = try environment.sources.ensureWebdavSource(endpointKey: "webdav://nas.invalid:443/photos", displayName: "Flow NAS", recursive: true, directories: [""])
+        let frameID = try await environment.frameManager.createFrame(name: "Online target A")
+        let picker = RemoteSourcePickerViewController(environment: environment)
+        let navigation = UINavigationController(rootViewController: picker)
+        let window = flowWindow(navigation)
+        defer { window.isHidden = true }
+        try await Task.sleep(nanoseconds: 200_000_000)
+        XCTAssertEqual(picker.tableView(picker.tableView, numberOfRowsInSection: 0), 1)
+        picker.tableView(picker.tableView, didSelectRowAt: IndexPath(row: 0, section: 0))
+        for _ in 0..<40 {
+            if picker.presentedViewController is UIAlertController { break }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        try await selectFlowAction(picker, title: "Online target A")
+        let editor = try XCTUnwrap(navigation.topViewController as? FrameEditViewController)
+        try await Task.sleep(nanoseconds: 500_000_000)
+        let grid = try XCTUnwrap(editor.children.compactMap { $0 as? AssetGridViewController }.first)
+        let records = try await media.repository.records(sourceID: sourceID)
+        let selected = try XCTUnwrap(records.first).descriptor.runtimeID
+        grid.onSelectionChange?([selected])
+        try flowButton(editor, L10n.string("common.save")).sendActions(for: .touchUpInside)
+        try await Task.sleep(nanoseconds: 700_000_000)
+        let cards = try await environment.frameManager.frameCards()
+        XCTAssertEqual(cards.map(\.id), [frameID])
+        let detail = try await environment.frameManager.frameDetail(frameID: frameID)
+        XCTAssertEqual(detail.includeSourceAssetRefs.map { "remote:" + $0 }, [selected])
+        navigation.popToViewController(picker, animated: false)
+        let connect = try XCTUnwrap(picker.navigationItem.rightBarButtonItem)
+        _ = connect.target?.perform(try XCTUnwrap(connect.action), with: connect)
+        let add = try XCTUnwrap(navigation.topViewController as? NasAddViewController)
+        add.onCatalogReady?(sourceID)
+        try await Task.sleep(nanoseconds: 400_000_000)
+        try await selectFlowAction(picker, title: L10n.string("import.pick_frame_new"))
+        let newEditor = try XCTUnwrap(navigation.topViewController as? FrameEditViewController)
+        try await Task.sleep(nanoseconds: 400_000_000)
+        let newGrid = try XCTUnwrap(newEditor.children.compactMap { $0 as? AssetGridViewController }.first)
+        newGrid.onSelectionChange?([selected])
+        try flowButton(newEditor, L10n.string("common.save")).sendActions(for: .touchUpInside)
+        try await Task.sleep(nanoseconds: 700_000_000)
+        let newCards = try await environment.frameManager.frameCards()
+        XCTAssertEqual(newCards.count, 2)
+        XCTAssertTrue(newCards.contains { $0.id == frameID })
+        var callbackSourceID: String?
+        let callbackPicker = RemoteSourcePickerViewController(environment: environment, onSelect: { callbackSourceID = $0 })
+        navigation.pushViewController(callbackPicker, animated: false)
+        try await Task.sleep(nanoseconds: 200_000_000)
+        XCTAssertEqual(callbackPicker.tableView(callbackPicker.tableView, numberOfRowsInSection: 0), 1)
+        callbackPicker.tableView(callbackPicker.tableView, didSelectRowAt: IndexPath(row: 0, section: 0))
+        try await Task.sleep(nanoseconds: 500_000_000)
+        XCTAssertEqual(callbackSourceID, sourceID)
+        XCTAssertNil(callbackPicker.presentedViewController)
+        XCTAssertTrue(navigation.topViewController === callbackPicker)
+    }
+
+    private func selectFlowAction(_ presenter: UIViewController, title: String) async throws {
+        let sheet = try XCTUnwrap(presenter.presentedViewController as? UIAlertController)
+        let action = try XCTUnwrap(sheet.actions.first { $0.title == title })
+        let block = try XCTUnwrap(action.value(forKey: "handler")) as AnyObject
+        let callback = unsafeBitCast(block, to: (@convention(block) (UIAlertAction) -> Void).self)
+        sheet.dismiss(animated: false)
+        callback(action)
+        try await Task.sleep(nanoseconds: 300_000_000)
     }
 
     func testPushedEditorBackPopsWithoutCreatingEmptyFrame() async throws {

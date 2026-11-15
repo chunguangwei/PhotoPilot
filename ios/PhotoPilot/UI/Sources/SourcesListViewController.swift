@@ -4,13 +4,15 @@ import UniformTypeIdentifiers
 final class SourcesListViewController: UIViewController, UIDocumentPickerDelegate {
     var onConnected: (([String], Set<String>) -> Void)?
     private let environment: AppEnvironment
+    private let onboarding: Bool
     private let rowsStack = UIStackView()
     private var statusRow: UIControl?
     private var managementConnection = false
     private var connecting = false
 
-    init(environment: AppEnvironment) {
+    init(environment: AppEnvironment, onboarding: Bool = false) {
         self.environment = environment
+        self.onboarding = onboarding
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -395,33 +397,30 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
             onConnected(sourceIDs, initialSelection)
             return
         }
-        Task { [weak self] in
+        Self.chooseFrame(environment: environment, presenter: self) { [weak self] frameID in
             guard let self else { return }
+            show(FrameEditViewController(environment: environment, frameID: frameID, sourceIDs: Set(sourceIDs), initialSelection: initialSelection))
+        }
+    }
+
+    static func chooseFrame(environment: AppEnvironment, presenter: UIViewController, onSelect: @escaping (String?) -> Void) {
+        Task { [weak presenter] in
+            guard let presenter else { return }
             do {
                 let cards = try await environment.frameManager.frameCards()
-                if cards.isEmpty {
-                    show(FrameEditViewController(environment: environment, frameID: nil, routeToMainAfterSave: true, sourceIDs: Set(sourceIDs), initialSelection: initialSelection))
-                    return
-                }
                 let sheet = UIAlertController(title: L10n.string("import.pick_frame_title"), message: nil, preferredStyle: .actionSheet)
                 for card in cards {
-                    sheet.addAction(UIAlertAction(title: card.name, style: .default) { [weak self] _ in
-                        guard let self else { return }
-                        show(FrameEditViewController(environment: environment, frameID: card.id, sourceIDs: Set(sourceIDs), initialSelection: initialSelection))
-                    })
+                    sheet.addAction(UIAlertAction(title: card.name, style: .default) { _ in onSelect(card.id) })
                 }
-                sheet.addAction(UIAlertAction(title: L10n.string("import.pick_frame_new"), style: .default) { [weak self] _ in
-                    guard let self else { return }
-                    show(FrameEditViewController(environment: environment, frameID: nil, sourceIDs: Set(sourceIDs), initialSelection: initialSelection))
-                })
+                sheet.addAction(UIAlertAction(title: L10n.string("import.pick_frame_new"), style: .default) { _ in onSelect(nil) })
                 sheet.addAction(UIAlertAction(title: L10n.string("common.cancel"), style: .cancel))
-                sheet.popoverPresentationController?.sourceView = view
-                sheet.popoverPresentationController?.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
-                present(sheet, animated: true)
+                sheet.popoverPresentationController?.sourceView = presenter.view
+                sheet.popoverPresentationController?.sourceRect = CGRect(x: presenter.view.bounds.midX, y: presenter.view.bounds.midY, width: 1, height: 1)
+                presenter.present(sheet, animated: true)
             } catch {
                 let alert = UIAlertController(title: AIText.value("Unable to load frames", "无法载入相框"), message: AIText.value("Please try again.", "请重试。"), preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .default))
-                present(alert, animated: true)
+                presenter.present(alert, animated: true)
             }
         }
     }
@@ -741,7 +740,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
             guard let self else { return }
             do {
                 let cards = try await environment.frameManager.frameCards()
-                if !managementOnly, cards.isEmpty {
+                if !managementOnly, onboarding, cards.isEmpty {
                     let editor = FrameEditViewController(environment: environment, frameID: nil, routeToMainAfterSave: true, sourceIDs: Set(sourceIDs), initialSelection: initialSelection)
                     if presentedViewController != nil {
                         dismiss(animated: true) { self.show(editor) }

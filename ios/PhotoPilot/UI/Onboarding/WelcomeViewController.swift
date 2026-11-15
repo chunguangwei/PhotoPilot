@@ -99,7 +99,7 @@ final class WelcomeViewController: UIViewController {
 
     @objc private func handlePrimary() {
         navigationController?.pushViewController(
-            SourcesListViewController(environment: environment),
+            SourcesListViewController(environment: environment, onboarding: true),
             animated: true
         )
     }

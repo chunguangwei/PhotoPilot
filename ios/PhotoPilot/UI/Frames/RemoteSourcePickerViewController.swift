@@ -87,9 +87,13 @@ final class RemoteSourcePickerViewController: UITableViewController {
     private func finish(sourceID: String) {
         if let onSelect { onSelect(sourceID) }
         else {
-            let editor = FrameEditViewController(environment: environment, frameID: nil, remoteSourceID: sourceID)
-            navigationController?.setNavigationBarHidden(true, animated: false)
-            navigationController?.pushViewController(editor, animated: true)
+            navigationController?.popToViewController(self, animated: false)
+            SourcesListViewController.chooseFrame(environment: environment, presenter: self) { [weak self] frameID in
+                guard let self else { return }
+                let editor = FrameEditViewController(environment: environment, frameID: frameID, remoteSourceID: sourceID)
+                navigationController?.setNavigationBarHidden(true, animated: false)
+                navigationController?.pushViewController(editor, animated: true)
+            }
         }
     }
 

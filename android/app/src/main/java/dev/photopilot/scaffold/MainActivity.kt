@@ -479,8 +479,11 @@ class MainActivity : Activity() {
             onLocalReferenceClick = { sourceId ->
                 scope.launch {
                     val source = withContext(Dispatchers.IO) { environment?.database?.sourceDao()?.getById(sourceId) }
-                    if (source?.status == SourceStatus.ACTIVE) finishSourceConnection(source)
-                    else if (source?.type == SourceType.LOCAL_PHOTOS) showPhotoPermissionOverlay()
+                    if (source?.status == SourceStatus.ACTIVE) {
+                        val editor = remoteFrameView
+                        if (editor != null) editor.acceptSource(source.id, null)
+                        else chooseRemoteFrame(mapOf("sourceId" to source.id))
+                    } else if (source?.type == SourceType.LOCAL_PHOTOS) showPhotoPermissionOverlay()
                     else showLocalFilesChoices()
                 }
             }
@@ -972,6 +975,19 @@ class MainActivity : Activity() {
         } else {
             activeSourcesView?.let { refreshNasSources(it) }
             Toast.makeText(this, if (resources.configuration.locales[0].language == "zh") "来源已连接" else "Source connected", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun chooseRemoteFrame(draft: Map<String, String>? = null) {
+        val env = environment ?: return
+        scope.launch {
+            val frames = withContext(Dispatchers.IO) { env.frameManager.listFrames() }
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle(R.string.import_pick_frame_title)
+                .setItems(frames.map { it.name }.toTypedArray()) { _, which -> openRemoteFrame(frames[which], draft) }
+                .setPositiveButton(R.string.import_pick_frame_new) { _, _ -> openRemoteFrame(null, draft) }
+                .setNegativeButton(R.string.common_cancel, null)
+                .show()
         }
     }
 
@@ -2838,11 +2854,11 @@ class MainActivity : Activity() {
         }
         view.onOpenReferenceCollection = { collection ->
             if (collection.sourceId in referenceSources && collection.relPath != null) {
-                openRemoteFrame(null, mapOf("sourceId" to requireNotNull(collection.sourceId), "folder" to collection.relPath))
+                chooseRemoteFrame(mapOf("sourceId" to requireNotNull(collection.sourceId), "folder" to collection.relPath))
                 true
             } else false
         }
-        view.onBrowseSourcePhotos = { openRemoteFrame(null) }
+        view.onBrowseSourcePhotos = { chooseRemoteFrame() }
         view.onPhotoClick = { asset -> openPhotoDetail(asset) }
         view.onAddToFrame = { selected ->
             showFramePickerForAssets(selected) { view.exitSelectionMode() }
