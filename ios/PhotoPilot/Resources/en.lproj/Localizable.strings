@@ -48,7 +48,7 @@
 "launch.store_recovered_title" = "Library was rebuilt";
 "launch.store_recovered_body" = "The previous database could not be read. It was backed up and a new empty library was created. Your photo files are untouched; you can import again.";
 "welcome.title" = "Keep your memories in view.";
-"welcome.body" = "Turn this tablet into a picture frame. Three steps: choose photos, pick what to display, start the slideshow.";
+"welcome.body" = "Choose your favorite photos, then confirm to start the slideshow.";
 "welcome.primary_action" = "Choose photos";
 "welcome.secondary_action" = "Take a look first";
 "welcome.demo_notice" = "These are sample photos. They won’t be added to your library.";
@@ -62,7 +62,7 @@
 "frames.title" = "Your frames";
 "frames.create" = "Create frame";
 "frames.empty_title" = "No frames yet";
-"frames.empty_body" = "Create a frame and choose the photos to display.";
+"frames.empty_body" = "Choose photos to start your first frame.";
 "frames.play" = "Start slideshow";
 "frames.resume" = "Resume slideshow";
 "frames.choose_content" = "Choose what to display";
@@ -97,7 +97,7 @@
 "sources.disconnect_body" = "Syncing stops and saved connection details are removed.";
 "sources.reconfigure" = "Reconfigure";
 "source.local_photos.title" = "Photos on this device";
-"source.local_photos.body" = "Reference photos in your library or selected files to save copy storage.";
+"source.local_photos.body" = "Use photos directly from your photo library to save device storage.";
 "source.local_files.title" = "Files";
 "source.local_files.body" = "Reference photos in selected files or folders, including iCloud Drive.";
 "source.icloud.title" = "iCloud Photos";

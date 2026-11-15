@@ -48,7 +48,7 @@
 "launch.store_recovered_title" = "照片库已重建";
 "launch.store_recovered_body" = "原数据库无法读取，已自动备份并新建空库。照片文件未受影响，可重新导入。";
 "welcome.title" = "让回忆，留在眼前。";
-"welcome.body" = "把这台平板变成家里的相框。三步：选择照片、挑选展示内容、开始播放。";
+"welcome.body" = "选择喜欢的照片，确认后即可开始播放。";
 "welcome.primary_action" = "选择照片";
 "welcome.secondary_action" = "先看看";
 "welcome.demo_notice" = "这是示例照片，不会加入你的照片库。";
@@ -62,7 +62,7 @@
 "frames.title" = "相框";
 "frames.create" = "创建相框";
 "frames.empty_title" = "还没有相框";
-"frames.empty_body" = "创建一个相框，选择要展示的照片。";
+"frames.empty_body" = "选择要展示的照片，开始你的第一个相框。";
 "frames.play" = "开始播放";
 "frames.resume" = "继续播放";
 "frames.choose_content" = "选择展示内容";
@@ -97,7 +97,7 @@
 "sources.disconnect_body" = "将停止同步并删除保存的连接信息。";
 "sources.reconfigure" = "重新配置";
 "source.local_photos.title" = "本机照片";
-"source.local_photos.body" = "引用系统相册或所选文件中的照片，节省副本空间。";
+"source.local_photos.body" = "直接使用系统相册中的照片，节省本机空间。";
 "source.local_files.title" = "文件";
 "source.local_files.body" = "引用所选文件或目录中的照片，包括 iCloud 云盘。";
 "source.icloud.title" = "iCloud 照片";

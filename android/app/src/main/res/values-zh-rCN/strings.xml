@@ -50,7 +50,7 @@
     <string name="launch.store_recovered_title">照片库已重建</string>
     <string name="launch.store_recovered_body">原数据库无法读取，已自动备份并新建空库。照片文件未受影响，可重新导入。</string>
     <string name="welcome.title">让回忆，留在眼前。</string>
-    <string name="welcome.body">把这台平板变成家里的相框。三步：选择照片、挑选展示内容、开始播放。</string>
+    <string name="welcome.body">选择喜欢的照片，确认后即可开始播放。</string>
     <string name="welcome.primary_action">选择照片</string>
     <string name="welcome.secondary_action">先看看</string>
     <string name="welcome.demo_notice">这是示例照片，不会加入你的照片库。</string>
@@ -64,7 +64,7 @@
     <string name="frames.title">相框</string>
     <string name="frames.create">创建相框</string>
     <string name="frames.empty_title">还没有相框</string>
-    <string name="frames.empty_body">创建一个相框，选择要展示的照片。</string>
+    <string name="frames.empty_body">选择要展示的照片，开始你的第一个相框。</string>
     <string name="frames.play">开始播放</string>
     <string name="frames.resume">继续播放</string>
     <string name="frames.choose_content">选择展示内容</string>
@@ -114,7 +114,7 @@
     </plurals>
     <string name="sources.reconfigure">重新配置</string>
     <string name="source.local_photos.title">本机照片</string>
-    <string name="source.local_photos.body">引用系统相册或所选文件中的照片，节省副本空间。</string>
+    <string name="source.local_photos.body">直接使用系统相册中的照片，节省本机空间。</string>
     <string name="source.local_files.title">文件</string>
     <string name="source.local_files.body">引用所选文件或目录中的照片，包括 iCloud 云盘。</string>
     <string name="source.icloud.title">iCloud 照片</string>

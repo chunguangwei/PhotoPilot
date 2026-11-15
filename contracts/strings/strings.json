@@ -363,8 +363,8 @@
       "key": "welcome.body",
       "section": "2. 启动与欢迎（S00–S02）",
       "platform": "all",
-      "zh": "把这台平板变成家里的相框。三步：选择照片、挑选展示内容、开始播放。",
-      "en": "Turn this tablet into a picture frame. Three steps: choose photos, pick what to display, start the slideshow."
+      "zh": "选择喜欢的照片，确认后即可开始播放。",
+      "en": "Choose your favorite photos, then confirm to start the slideshow."
     },
     {
       "key": "welcome.primary_action",
@@ -461,8 +461,8 @@
       "key": "frames.empty_body",
       "section": "3. 导航与相框（S03）",
       "platform": "all",
-      "zh": "创建一个相框，选择要展示的照片。",
-      "en": "Create a frame and choose the photos to display."
+      "zh": "选择要展示的照片，开始你的第一个相框。",
+      "en": "Choose photos to start your first frame."
     },
     {
       "key": "frames.play",
@@ -793,8 +793,8 @@
       "key": "source.local_photos.body",
       "section": "4.2 本地与苹果端图库",
       "platform": "all",
-      "zh": "引用系统相册或所选文件中的照片，节省副本空间。",
-      "en": "Reference photos in your library or selected files to save copy storage."
+      "zh": "直接使用系统相册中的照片，节省本机空间。",
+      "en": "Use photos directly from your photo library to save device storage."
     },
     {
       "key": "source.local_files.title",

@@ -50,7 +50,7 @@
     <string name="launch.store_recovered_title">Library was rebuilt</string>
     <string name="launch.store_recovered_body">The previous database could not be read. It was backed up and a new empty library was created. Your photo files are untouched; you can import again.</string>
     <string name="welcome.title">Keep your memories in view.</string>
-    <string name="welcome.body">Turn this tablet into a picture frame. Three steps: choose photos, pick what to display, start the slideshow.</string>
+    <string name="welcome.body">Choose your favorite photos, then confirm to start the slideshow.</string>
     <string name="welcome.primary_action">Choose photos</string>
     <string name="welcome.secondary_action">Take a look first</string>
     <string name="welcome.demo_notice">These are sample photos. They won’t be added to your library.</string>
@@ -64,7 +64,7 @@
     <string name="frames.title">Your frames</string>
     <string name="frames.create">Create frame</string>
     <string name="frames.empty_title">No frames yet</string>
-    <string name="frames.empty_body">Create a frame and choose the photos to display.</string>
+    <string name="frames.empty_body">Choose photos to start your first frame.</string>
     <string name="frames.play">Start slideshow</string>
     <string name="frames.resume">Resume slideshow</string>
     <string name="frames.choose_content">Choose what to display</string>
@@ -119,7 +119,7 @@
     </plurals>
     <string name="sources.reconfigure">Reconfigure</string>
     <string name="source.local_photos.title">Photos on this device</string>
-    <string name="source.local_photos.body">Reference photos in your library or selected files to save copy storage.</string>
+    <string name="source.local_photos.body">Use photos directly from your photo library to save device storage.</string>
     <string name="source.local_files.title">Files</string>
     <string name="source.local_files.body">Reference photos in selected files or folders, including iCloud Drive.</string>
     <string name="source.icloud.title">iCloud Photos</string>
