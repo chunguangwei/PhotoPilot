@@ -1,6 +1,6 @@
 # Local references and source management update — 1.4.0 (61)
 
-Status — implementation, focused code review and local verification are complete. GitHub publication is being prepared. Store export, upload and submission are pending. Confirm the currently published Store version before entering cumulative release notes.
+Status — implementation, focused code review and local verification are complete. GitHub v1.4.0 is published, and all four complete anonymous downloads match the verified local hashes. Store export, upload and submission are pending. Confirm the currently published Store version before entering cumulative release notes. [GitHub release](https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.0)
 
 ## English update text
 

@@ -42,7 +42,7 @@
 - [x] 唯一fresh综合review，逐项核实/修复并验定点delta。
 - [x] root独立make check与平台验证、正常入口及payload签名/版本/资源核对。
 - [x] 更新16、隐私/README/Store材料与真实截图证据。
-- [ ] 合并现有main、push、tag/Release及匿名完整下载验证。
+- [x] 合并现有main、push、tag/Release及匿名完整下载验证。
 - [x] 报告实际未验证旧机/最低OS/实体NAS与Store签名依赖。
 
 ## 当前验证进度
@@ -74,5 +74,9 @@
 
 iOS最终278执行272pass6skip0fail，模型专项6、Photos真实iPhone/iPad各1。Root标准build/analyze及独立DD通过，unsigned archive最终binary SHA de3136f79b4d5f61365a3e98ea0eacd9ec1e53e2ab6c7030252c3eb4be4249fe。实际外部Files provider系统source=null，完整UI链路保留未测，native读取链路通过。Store签名只读复核仍缺匹配profile，生产签名刷新授权仍待用户。
 
-- [ ] 合并现有main、push、tag/Release及匿名完整下载验证，另记发布实证。
+- [x] 合并现有main、push、tag/Release及匿名完整下载验证，另记发布实证。
 - [ ] 外部Files真实provider UI、硬件/最低OS/实体NAS/长稳与正式Store签名上传，按上述具体依赖后续处理。
+
+## 发布实证
+
+源码9bc54d525dc0a08a6202dc00f5b3b08d72580f5b、annotated tag v1.4.0已原子推送，tag object cb0e43340a13489d7875e93e0db7c889dc131181。原项目main快进后共享及双端build/analyze/lint/test全部通过。Release公开设Latest，APK/SHA256SUMS/锁定SMB源码tar/manifest四附件匿名完整下载size/SHA/API digest一致，公开隐私政策内容SHA匹配。最终包为APK b2574f03a6280119e61a3bbe3a162fd2e8b37a71ba88ad1a3313bb92c761d1b6及iOS unsigned executable de3136f79b4d5f61365a3e98ea0eacd9ec1e53e2ab6c7030252c3eb4be4249fe。原项目和工作树保留私有release目录。未验证范围和Store签名依赖按最终16及LocalReferencesRelease140记录。

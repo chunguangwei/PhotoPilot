@@ -1,7 +1,7 @@
 {
   "version": "1.4.0",
   "build": 61,
-  "publication": "prepared",
+  "publication": "published",
   "sourceTag": "v1.4.0",
   "android": {
     "version": "1.4.0",
@@ -133,5 +133,57 @@
     "long-running playback",
     "Android supplemental landscape system-picker combination and sensor-driven rotation",
     "full Android model inference for new reference transport"
-  ]
+  ],
+  "sourceCommit": "9bc54d525dc0a08a6202dc00f5b3b08d72580f5b",
+  "annotatedTagObject": "cb0e43340a13489d7875e93e0db7c889dc131181",
+  "releaseURL": "https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.0",
+  "publishedAt": "2026-11-15T03:01:38Z",
+  "latestVerified": true,
+  "anonymousDownloadVerification": {
+    "release": "https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.0",
+    "tag": "v1.4.0",
+    "annotatedTagObject": "cb0e43340a13489d7875e93e0db7c889dc131181",
+    "sourceCommit": "9bc54d525dc0a08a6202dc00f5b3b08d72580f5b",
+    "latest": "v1.4.0",
+    "publishedAt": "2026-11-15T03:01:38Z",
+    "verifiedAt": "2026-11-15T03:04:54Z",
+    "anonymous": true,
+    "assets": [
+      {
+        "name": "AMSMB2-4.0.3-source.tar.gz",
+        "bytes": 329872,
+        "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077",
+        "apiDigest": "sha256:0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077",
+        "publicDownload": true
+      },
+      {
+        "name": "PhotoPilot-v1.4.0-61.apk",
+        "bytes": 154171126,
+        "sha256": "b2574f03a6280119e61a3bbe3a162fd2e8b37a71ba88ad1a3313bb92c761d1b6",
+        "apiDigest": "sha256:b2574f03a6280119e61a3bbe3a162fd2e8b37a71ba88ad1a3313bb92c761d1b6",
+        "publicDownload": true
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 273,
+        "sha256": "13fb22b78511c11f4e3bf2995f2ce06c812c260d2c165cb1e55a8ba839982081",
+        "apiDigest": "sha256:13fb22b78511c11f4e3bf2995f2ce06c812c260d2c165cb1e55a8ba839982081",
+        "publicDownload": true
+      },
+      {
+        "name": "SMBSourceManifest.json",
+        "bytes": 33554,
+        "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e",
+        "apiDigest": "sha256:2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e",
+        "publicDownload": true
+      }
+    ]
+  },
+  "publicPrivacyVerification": {
+    "url": "https://github.com/chunguangwei/PhotoPilot/blob/main/PRIVACY.md",
+    "anonymous": true,
+    "sha256": "da1b96d7b0913ac94f1524691993abdb4f2cc40490ab250e03f089ec11b56a43",
+    "matchedPublishedSource": true
+  },
+  "mergedMainChecks": "make check ios-build ios-analyze android-build android-lint android-test passed"
 }
