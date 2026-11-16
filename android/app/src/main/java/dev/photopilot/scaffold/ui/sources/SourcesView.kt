@@ -56,7 +56,7 @@ class SourcesView(context: Context) : ScrollView(context) {
             setTextColor(context.getColor(R.color.pp_text_secondary))
         }
         val photosRow = sourceRow(
-            titleRes = R.string.source_local_photos_title,
+            titleRes = R.string.source_local_add,
             bodyRes = R.string.source_local_photos_body,
         ) { row -> showLocalSourceMenu(row) }
         val nasRow = sourceRow(
@@ -180,7 +180,9 @@ class SourcesView(context: Context) : ScrollView(context) {
                 }.apply {
                     contentDescription = resources.getString(R.string.player_more) + ", " + model.displayName
                 }, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-            }, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+            }, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = resources.getDimensionPixelSize(R.dimen.pp_space_12)
+            })
         }
     }
 

@@ -30,7 +30,6 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         headerStack.alignment = .fill
         headerStack.spacing = ThemeMetrics.space8
         headerStack.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(headerStack)
 
         if navigationController != nil {
             let backButton = ActionButton(titleKey: "common.back", style: .secondary)
@@ -39,16 +38,18 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
             headerStack.addArrangedSubview(backRow)
         }
 
-        let titleLabel = UILabel()
+        let titleLabel = SourceTextLabel()
         titleLabel.text = L10n.string("sources.title")
         titleLabel.font = ThemeFont.title()
         titleLabel.adjustsFontForContentSizeCategory = true
         titleLabel.textColor = ThemeColor.textPrimary
         titleLabel.numberOfLines = 0
+        titleLabel.lineBreakMode = .byWordWrapping
+        titleLabel.setContentCompressionResistancePriority(.required, for: .vertical)
         titleLabel.accessibilityTraits.insert(.header)
         headerStack.addArrangedSubview(titleLabel)
 
-        let addLabel = UILabel()
+        let addLabel = SourceTextLabel()
         addLabel.text = L10n.string("sources.add")
         addLabel.font = ThemeFont.body()
         addLabel.adjustsFontForContentSizeCategory = true
@@ -63,7 +64,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         headerStack.addArrangedSubview(rowsStack)
 
         rowsStack.addArrangedSubview(makeRow(
-            titleKey: "source.local_photos.title",
+            titleKey: "source.local.add",
             bodyKey: "source.local_reference.body",
             action: #selector(handleLocalSource)
         ))
@@ -78,7 +79,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
             action: #selector(handleNas)
         ))
 
-        let footerLabel = UILabel()
+        let footerLabel = SourceTextLabel()
         footerLabel.text = L10n.string("sources.import_vs_display")
         footerLabel.font = ThemeFont.meta()
         footerLabel.adjustsFontForContentSizeCategory = true
@@ -116,25 +117,16 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
                 constant: ThemeMetrics.space24
             ),
             contentStack.bottomAnchor.constraint(
-                lessThanOrEqualTo: scrollView.contentLayoutGuide.bottomAnchor,
+                equalTo: scrollView.contentLayoutGuide.bottomAnchor,
                 constant: -ThemeMetrics.space24
             ),
             contentStack.centerXAnchor.constraint(equalTo: scrollView.frameLayoutGuide.centerXAnchor),
             contentStack.leadingAnchor.constraint(
                 greaterThanOrEqualTo: scrollView.frameLayoutGuide.leadingAnchor,
-                constant: ThemeMetrics.contentInset
+                constant: ThemeMetrics.contentInsetCompact
             ),
             contentStack.trailingAnchor.constraint(
                 lessThanOrEqualTo: scrollView.frameLayoutGuide.trailingAnchor,
-                constant: -ThemeMetrics.contentInset
-            ),
-            footerLabel.centerXAnchor.constraint(equalTo: contentStack.centerXAnchor),
-            footerLabel.leadingAnchor.constraint(
-                greaterThanOrEqualTo: contentStack.leadingAnchor,
-                constant: ThemeMetrics.contentInsetCompact
-            ),
-            footerLabel.trailingAnchor.constraint(
-                lessThanOrEqualTo: contentStack.trailingAnchor,
                 constant: -ThemeMetrics.contentInsetCompact
             ),
             readable,
@@ -271,20 +263,24 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         row.backgroundColor = ThemeColor.panel
         row.layer.cornerRadius = ThemeMetrics.radiusGroup
 
-        let titleLabel = UILabel()
+        let titleLabel = SourceTextLabel()
         titleLabel.text = source.displayName
         titleLabel.font = ThemeFont.body()
         titleLabel.adjustsFontForContentSizeCategory = true
         titleLabel.textColor = ThemeColor.textPrimary
         titleLabel.numberOfLines = 0
+        titleLabel.lineBreakMode = .byWordWrapping
+        titleLabel.setContentCompressionResistancePriority(.required, for: .vertical)
 
-        let statusLabel = UILabel()
+        let statusLabel = SourceTextLabel()
         statusLabel.text = source.referenceOnly
             ? (source.status == "unavailable" ? AIText.value("Choose the source again to restore access", "请重新选择来源以恢复访问") : L10n.string("source.local_reference.mode"))
             : L10n.string(statusKey)
         statusLabel.font = ThemeFont.meta()
         statusLabel.adjustsFontForContentSizeCategory = true
         statusLabel.textColor = ThemeColor.textSecondary
+        statusLabel.numberOfLines = 0
+        statusLabel.setContentCompressionResistancePriority(.required, for: .vertical)
 
         let textStack = UIStackView(arrangedSubviews: [titleLabel, statusLabel])
         textStack.axis = .vertical
@@ -293,7 +289,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
 
         let syncButton = ActionButton(titleKey: "sources.sync_now", style: .secondary)
         syncButton.addTarget(self, action: #selector(handleNasSync(_:)), for: .touchUpInside)
-        syncButton.setContentHuggingPriority(.required, for: .horizontal)
+        syncButton.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         let disconnectButton = ActionButton(titleKey: source.status == "disconnected" || source.referenceOnly ? "sources.remove_configuration" : "sources.disconnect", style: .destructive)
         disconnectButton.addTarget(
@@ -301,7 +297,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
             action: #selector(handleNasDisconnect(_:)),
             for: .touchUpInside
         )
-        disconnectButton.setContentHuggingPriority(.required, for: .horizontal)
+        disconnectButton.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         syncButton.accessibilityIdentifier = source.id
         disconnectButton.accessibilityIdentifier = source.id
@@ -320,7 +316,7 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
             for: .touchUpInside
         )
         reconfigureButton.accessibilityIdentifier = source.referenceOnly ? source.id + ".reselect" : nil
-        reconfigureButton.setContentHuggingPriority(.required, for: .horizontal)
+        reconfigureButton.setContentHuggingPriority(.defaultLow, for: .horizontal)
         reconfigureButton.isHidden = source.status == "disconnected"
         if let endpointKey = source.endpointKey {
             nasEndpointKeys[ObjectIdentifier(reconfigureButton)] = endpointKey
@@ -332,14 +328,15 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         mirrorSwitch.accessibilityLabel = L10n.string("source.nas.mirror_delete")
         mirrorSwitch.accessibilityIdentifier = source.id
         mirrorSwitch.addTarget(self, action: #selector(handleMirrorToggle(_:)), for: .valueChanged)
-        let mirrorLabel = UILabel()
+        let mirrorLabel = SourceTextLabel()
         mirrorLabel.text = L10n.string("source.nas.mirror_delete")
         mirrorLabel.font = ThemeFont.meta()
         mirrorLabel.adjustsFontForContentSizeCategory = true
         mirrorLabel.textColor = ThemeColor.textSecondary
         mirrorLabel.numberOfLines = 0
-        mirrorLabel.setContentHuggingPriority(.required, for: .horizontal)
-        mirrorLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        mirrorLabel.setContentCompressionResistancePriority(.required, for: .vertical)
+        mirrorLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        mirrorLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
         let mirrorRow = UIStackView(arrangedSubviews: [mirrorLabel, UIView(), mirrorSwitch])
         mirrorRow.axis = .horizontal
         mirrorRow.alignment = .center
@@ -350,8 +347,8 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         ).isActive = true
 
         let buttonsRow = UIStackView(arrangedSubviews: [syncButton, reconfigureButton, disconnectButton, UIView()])
-        buttonsRow.axis = source.referenceOnly ? .vertical : .horizontal
-        buttonsRow.alignment = source.referenceOnly ? .fill : .center
+        buttonsRow.axis = .vertical
+        buttonsRow.alignment = .fill
         buttonsRow.spacing = ThemeMetrics.space8
 
         let chooseButton = ActionButton(titleKey: "frames.choose_content", style: .primary)
@@ -547,19 +544,23 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         row.accessibilityTraits = [.button]
         row.addTarget(self, action: action, for: .touchUpInside)
 
-        let titleLabel = UILabel()
+        let titleLabel = SourceTextLabel()
         titleLabel.text = L10n.string(titleKey)
         titleLabel.font = ThemeFont.body()
         titleLabel.adjustsFontForContentSizeCategory = true
         titleLabel.textColor = ThemeColor.textPrimary
         titleLabel.numberOfLines = 0
+        titleLabel.lineBreakMode = .byWordWrapping
+        titleLabel.setContentCompressionResistancePriority(.required, for: .vertical)
 
-        let bodyLabel = UILabel()
+        let bodyLabel = SourceTextLabel()
         bodyLabel.text = L10n.string(bodyKey)
         bodyLabel.font = ThemeFont.meta()
         bodyLabel.adjustsFontForContentSizeCategory = true
         bodyLabel.textColor = ThemeColor.textSecondary
         bodyLabel.numberOfLines = 0
+        bodyLabel.lineBreakMode = .byWordWrapping
+        bodyLabel.setContentCompressionResistancePriority(.required, for: .vertical)
 
         let textStack = UIStackView(arrangedSubviews: [titleLabel, bodyLabel])
         textStack.axis = .vertical
@@ -774,6 +775,15 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         } else {
             controller.modalPresentationStyle = .fullScreen
             present(controller, animated: true)
+        }
+    }
+}
+
+private final class SourceTextLabel: UILabel {
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if bounds.width > 0 && abs(preferredMaxLayoutWidth - bounds.width) > 0.5 {
+            preferredMaxLayoutWidth = bounds.width
         }
     }
 }

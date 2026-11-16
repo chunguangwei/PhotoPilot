@@ -20,6 +20,38 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CompactPhoneScreensTest {
+    @Test fun deviceSourceEntryIsDistinctFromConnectedPhotoLibrary() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.runOnMainSync {
+            for (language in listOf("en", "zh")) {
+                for (font in listOf(1f, 1.5f)) {
+                    val context = themedContext(language, font)
+                    val sources = SourcesView(context)
+                    val library = context.getString(R.string.source_local_photos_title)
+                    sources.renderLocalReferences(listOf(SourcesView.LocalReferenceModel("device-library", library, "Ready")))
+                    var selected: String? = null
+                    sources.onLocalReferenceClick = { selected = it }
+                    layout(sources, 320)
+                    val labels = descendants(sources).filterIsInstance<TextView>()
+                    val add = labels.single { it.text.toString() == context.getString(R.string.source_local_add) }
+                    val connected = labels.single { it.text.toString() == library }
+                    val addCard = add.parent as View
+                    val connectedCard = connected.parent as View
+                    assertTrue(addCard !== connectedCard)
+                    val first = android.graphics.Rect()
+                    val second = android.graphics.Rect()
+                    addCard.getDrawingRect(first)
+                    connectedCard.getDrawingRect(second)
+                    sources.offsetDescendantRectToMyCoords(addCard, first)
+                    sources.offsetDescendantRectToMyCoords(connectedCard, second)
+                    assertTrue(second.top > first.bottom)
+                    assertTrue(connectedCard.performClick())
+                    assertEquals("device-library", selected)
+                }
+            }
+        }
+    }
+
     @Test fun nasManagementMenuRetainsDisconnectAndRemoveActions() = runBlocking {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext

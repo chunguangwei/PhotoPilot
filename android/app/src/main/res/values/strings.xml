@@ -657,4 +657,5 @@
     <string name="source.local_reference.unavailable">The original photo is unavailable. Check its source or grant access again.</string>
     <string name="sources.browse_photos">Browse photos</string>
     <string name="sources.refresh_index">Refresh photo list</string>
+    <string name="source.local.add">Add device source</string>
 </resources>

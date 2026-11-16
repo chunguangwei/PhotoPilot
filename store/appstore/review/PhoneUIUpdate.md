@@ -1,16 +1,16 @@
-# Phone interface update · 1.4.4 (65)
+# Phone interface update · 1.4.5 (66)
 
 ## What’s New · English
 
-Improved frame creation on phone screens. Choose device albums, files or NAS folders during AI setup, with clearer source groups and compact options. Photo Library navigation, large-text layouts and photo-selection controls work more smoothly on iPhone and iPad.
+Fixed source-card width and large-text wrapping on iPhone. Improved frame creation on phone screens. Choose device albums, files or NAS folders during AI setup, with clearer source groups and compact options. Photo Library navigation, large-text layouts and photo-selection controls work more smoothly on iPhone and iPad.
 
 ## 更新说明 · 简体中文
 
-优化手机屏幕上的相框创建和选片体验。AI 创建可直接选择本机相册、文件或 NAS 目录，来源分组更清晰。改进 iPhone 照片库导航、图库大字号布局和固定操作按钮。
+修复 iPhone 来源卡片过窄和大字号换行，区分添加入口与已连接照片库。优化手机屏幕上的相框创建和选片体验。AI 创建可直接选择本机相册、文件或 NAS 目录，来源分组更清晰。改进 iPhone 照片库导航、图库大字号布局和固定操作按钮。
 
 ## 更新說明 · 繁體中文
 
-最佳化手機螢幕上的相框建立與選片體驗。AI 建立可直接選擇本機相簿、檔案或 NAS 目錄，來源分組更清楚。改進 iPhone 照片圖庫導覽、圖庫大字體配置與固定操作按鈕。
+修正 iPhone 來源卡片過窄及大字體換行，區分新增入口與已連接照片圖庫。最佳化手機螢幕上的相框建立與選片體驗。AI 建立可直接選擇本機相簿、檔案或 NAS 目錄，來源分組更清楚。改進 iPhone 照片圖庫導覽、圖庫大字體配置與固定操作按鈕。
 
 ## App Review walkthrough
 

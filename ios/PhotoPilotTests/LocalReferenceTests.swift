@@ -12,6 +12,45 @@ final class LocalReferenceTests: XCTestCase {
         return AppEnvironment(persistence: PersistenceController(storeURL: root.appendingPathComponent("library.db")))
     }
 
+    func testSourceCardsUseReadableWidthAndScrollAtEveryTextSize() async throws {
+        let previousLanguage = AppLanguage.overrideValue
+        defer { AppLanguage.configure(value: previousLanguage) }
+        for language in [AppLanguage.enValue, AppLanguage.zhValue] {
+            AppLanguage.configure(value: language)
+            for size in [CGSize(width: 320, height: 568), CGSize(width: 390, height: 844), CGSize(width: 1024, height: 768)] {
+                for large in [false, true] {
+                    let source = SourcesListViewController(environment: environment())
+                    if #available(iOS 17.0, *) {
+                        source.traitOverrides.preferredContentSizeCategory = large ? .accessibilityExtraExtraExtraLarge : .large
+                    }
+                    let window = flowWindow(source)
+                    window.frame = CGRect(origin: .zero, size: size)
+                    defer { window.isHidden = true }
+                    try await Task.sleep(nanoseconds: 100_000_000)
+                    window.layoutIfNeeded()
+                    source.view.layoutIfNeeded()
+                    let scroll = try XCTUnwrap(flowViews(source.view).compactMap { $0 as? UIScrollView }.first)
+                    let cards = flowViews(source.view).compactMap { $0 as? UIControl }.filter {
+                        $0.accessibilityLabel == L10n.string("source.local.add") || $0.accessibilityLabel == L10n.string("source.nas.title")
+                    }
+                    XCTAssertEqual(cards.count, 2)
+                    for card in cards {
+                        XCTAssertEqual(card.bounds.width, min(ThemeMetrics.bodyMaxWidth, size.width - ThemeMetrics.contentInsetCompact * 2), accuracy: 1)
+                        XCTAssertGreaterThanOrEqual(card.bounds.height, ThemeMetrics.touchTarget)
+                        for label in flowViews(card).compactMap({ $0 as? UILabel }) {
+                            let needed = label.sizeThatFits(CGSize(width: label.bounds.width, height: .greatestFiniteMagnitude))
+                            if label.bounds.height + 1 < needed.height { print("SOURCE_LABEL", label.text ?? "", label.bounds, label.font.pointSize, label.preferredMaxLayoutWidth, label.intrinsicContentSize, needed) }
+                            XCTAssertGreaterThanOrEqual(label.bounds.height + 1, needed.height, "\(language) \(size) large=\(large) label=\(label.text ?? "")")
+                        }
+                        scroll.scrollRectToVisible(card.convert(card.bounds, to: scroll), animated: false)
+                        XCTAssertGreaterThan(scroll.contentSize.height, card.convert(card.bounds, to: scroll).maxY - 1)
+                    }
+                    flowCapture(window, name: "sources-width-\(language)-\(Int(size.width))-\(large)")
+                }
+            }
+        }
+    }
+
     func testAlbumPickerShowsNavigationActionsAndRestoresHiddenNavigation() async throws {
         let environment = environment()
         for size in [CGSize(width: 320, height: 568), CGSize(width: 390, height: 844), CGSize(width: 844, height: 390)] {

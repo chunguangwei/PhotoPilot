@@ -4597,6 +4597,13 @@
       "platform": "all",
       "zh": "刷新照片列表",
       "en": "Refresh photo list"
+    },
+    {
+      "key": "source.local.add",
+      "section": "4.2 本地与苹果端图库",
+      "platform": "all",
+      "zh": "添加本机来源",
+      "en": "Add device source"
     }
   ]
 }

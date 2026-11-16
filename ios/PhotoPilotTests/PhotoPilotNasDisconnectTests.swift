@@ -412,6 +412,44 @@ final class PhotoPilotNasDisconnectTests: XCTestCase {
     }
 
     @MainActor
+    func testConnectedSourceActionsFitPhoneWidthAtLargestText() async throws {
+        try seedNasSource()
+        let environment = AppEnvironment(persistence: controller)
+        let previousLanguage = AppLanguage.overrideValue
+        defer { AppLanguage.configure(value: previousLanguage) }
+        func descendants(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(descendants) }
+        for language in [AppLanguage.enValue, AppLanguage.zhValue] {
+            AppLanguage.configure(value: language)
+            for width in [CGFloat(320), CGFloat(390)] {
+                let screen = SourcesListViewController(environment: environment)
+                if #available(iOS 17.0, *) {
+                    screen.traitOverrides.preferredContentSizeCategory = .accessibilityExtraExtraExtraLarge
+                }
+                let window = UIWindow(frame: CGRect(x: 0, y: 0, width: width, height: 844))
+                window.rootViewController = screen
+                window.makeKeyAndVisible()
+                defer { window.isHidden = true }
+                try await Task.sleep(nanoseconds: 150_000_000)
+                window.layoutIfNeeded()
+                screen.view.layoutIfNeeded()
+                let buttons = descendants(screen.view).compactMap { $0 as? ActionButton }.filter {
+                    $0.accessibilityIdentifier == "sw1" && !$0.isHidden
+                }
+                XCTAssertEqual(buttons.count, 2)
+                for button in buttons {
+                    let row = try XCTUnwrap(button.superview?.superview?.superview)
+                    XCTAssertTrue(row.bounds.contains(button.convert(button.bounds, to: row)))
+                    XCTAssertGreaterThanOrEqual(button.bounds.height, 44)
+                    XCTAssertGreaterThanOrEqual(button.bounds.width, width - 65)
+                    for label in descendants(button).compactMap({ $0 as? UILabel }) {
+                        XCTAssertGreaterThanOrEqual(label.bounds.height + 1, label.sizeThatFits(CGSize(width: label.bounds.width, height: .greatestFiniteMagnitude)).height)
+                    }
+                }
+            }
+        }
+    }
+
+    @MainActor
     func testDisconnectedSourceDeleteAndStorageChoicesAreReachable() async throws {
         try seedNasSource()
         try await repository.disconnectSource(sourceID: "sw1", keepCopies: true)
