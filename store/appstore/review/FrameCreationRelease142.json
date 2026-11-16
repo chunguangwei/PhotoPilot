@@ -108,13 +108,14 @@
   },
   "deviceInstallation": {
     "ios": "Original bundle identity upgraded to 1.4.2 (63) and launched",
-    "android": "Functional tests used the final source candidate. Final 1.4.2 installation awaits Huawei account authentication; installed version remains 1.4.1 (62)."
+    "android": "Original signing identity upgraded to 1.4.2 (63). Installed APK SHA-256 matches the published asset; local and NAS sources and frame selections retained; actual NAS AI playback passed.",
+    "androidApkSha256": "a37edaff01b62239288131ad1a855a7a2f9eb8cbc358595df4699626bd5bcab2"
   },
   "cleanup": {
     "iosQaAppAndPrivateCredentialCopy": "Removed",
     "androidRotation": "Original lock 0 restored",
     "androidTestData": "Four test frames and the dedicated cat fixture retained; duplicate-name frame cleanup was rejected by automatic approval review to avoid selecting an original frame",
-    "androidKeyboardMode": "English test input mode remains pending restoration while the system authentication screen is active"
+    "androidKeyboardMode": "Original Sogou Chinese input mode restored"
   },
   "appStoreSubmission": "Unsigned Release archive prepared. No App Store submission in this task."
 }
