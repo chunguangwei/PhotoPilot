@@ -1,7 +1,7 @@
 {
   "version": "1.4.5",
   "build": 66,
-  "status": "verified_pending_github_publication",
+  "status": "published",
   "changes": [
     "iOS source cards retain readable width and a scrollable content height",
     "source labels use their actual width for multiline height",
@@ -33,7 +33,8 @@
       "Photo Library",
       "Choose photo files",
       "Choose a folder"
-    ]
+    ],
+    "runnerRemoved": true
   },
   "android": {
     "nativeTestsPassed": 18,
@@ -56,19 +57,31 @@
   },
   "assets": [
     {
-      "name": "PhotoPilot-v1.4.5-66.apk",
-      "bytes": 154236898,
-      "sha256": "df57e2d63121bb1ccf9f01823ab0cf93fada4d9550fb6e25a720e5e576cc7da3"
-    },
-    {
       "name": "AMSMB2-4.0.3-source.tar.gz",
       "bytes": 329872,
-      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077"
+      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "PhotoPilot-v1.4.5-66.apk",
+      "bytes": 154236898,
+      "sha256": "df57e2d63121bb1ccf9f01823ab0cf93fada4d9550fb6e25a720e5e576cc7da3",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 273,
+      "sha256": "4b4647728243d4c906f1383b9128abf9cac0310ef6c99c0c35990f7df7c5eeee",
+      "anonymousDownloadVerified": true
     },
     {
       "name": "SMBSourceManifest.json",
       "bytes": 33554,
-      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e"
+      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e",
+      "anonymousDownloadVerified": true
     }
-  ]
+  ],
+  "sourceCommit": "842425e",
+  "releaseURL": "https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.5",
+  "latestVerified": true
 }

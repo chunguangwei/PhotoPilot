@@ -1,12 +1,14 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
-## 2026-11-16 来源页真实布局与重复入口修复 · 1.4.5（66）验证中
+## 2026-11-16 来源页真实布局与重复入口修复 · 1.4.5（66）已发布
 
 - 用户指出iOS来源页内容缩在中间、Android出现两张“照片库”卡片。iPhone13生产包真机重现390pt屏幕上卡片仅约131.7pt宽。原布局同时使用contentStack fill宽度与更大强制边距，footer作为fill arrangedSubview又设置内缩约束，导致约束冲突。修正边距一致、移除footer重复约束、滚动内容底部闭合，来源卡片恢复可读宽度。
 - 补测暴露AX字号下UILabel preferredMaxLayoutWidth244pt但实际232pt，英文NAS标题高度少一行。局部SourceTextLabel跟随实际宽度更新测量，保护竖向文字高度。NAS管理按钮纵向fill并解除固定文字宽度，状态说明和镜像规则允许换行。
 - 双端添加入口明确为“添加本机来源 / Add device source”，原有已连接照片库继续使用原显示名，Android卡片间保留12dp间距；来源ID、回调及原图引用语义保持。
 - 原始实现新增宽度回归RED；最终iOS本机/NAS原生39通过、1平板专项跳过、0失败，含中英320/390/1024pt正常/最大字号12种来源布局及4种NAS按钮布局。iOS17以下测试分支未注入最大字号，本轮未做旧OS运行时验证。iOS build/analyze、Android441 JVM及lint0错误204警告、共享58项通过。Android66准确主包与test包SHA匹配后原生18/18通过125.228秒，含新入口区分、菜单、普通/AI确认及来源删除；本轮Android仍为模拟器。
 - iPhone已覆盖安装1.4.5/66，最终真实页面复验1/1通过14.731秒，390pt屏幕三入口卡片均358pt，添加菜单的照片库/照片文件/目录三项均可触达；取消菜单返回来源页，未连接或请求授权。初轮UI脚本未处理自动恢复播放页而找不到Sources按钮，保留为测试脚本失败，未作为生产来源页失败计数。修正测试先退出恢复播放后完成来源页验证。真机本轮为正常字号中文，最大字号与英文来自上述原生模拟器回归。用户要求App Store等待其真机测试后更新，当前没有上传/审核提交。
+
+- 独立静态审查无开放重要发现。iPhone修复后正常字号截图已目检，runner及临时UI测试项目/构建已清理，生产66停留来源页。源码提交`842425e`与annotated tag `v1.4.5`已推送main，[GitHub v1.4.5](https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.5)已公开为Latest。原签名四ABI APK154236898bytes，SHA`df57e2d63121bb1ccf9f01823ab0cf93fada4d9550fb6e25a720e5e576cc7da3`。4项公开附件匿名完整下载，大小/SHA与本地及GitHub摘要一致。当前补丁未单独运行签名Release黑盒，Android18项为对应源码Debug包原生回归；此前64/65正式包入口smoke保留原证据。公开验证记录`store/appstore/review/SourcePageRelease145.json`，真机截图`.build/sources-phone-final-evidence/`。
 
 ## 2026-11-16 AI预览手机确认修订 · 1.4.4（65）已发布
 
