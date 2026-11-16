@@ -1,0 +1,120 @@
+{
+  "version": "1.4.2",
+  "build": 63,
+  "sourceCommit": "dc1b366",
+  "tag": "v1.4.2",
+  "release": "https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.2",
+  "public": true,
+  "latest": true,
+  "assets": [
+    {
+      "name": "AMSMB2-4.0.3-source.tar.gz",
+      "bytes": 329872,
+      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "PhotoPilot-v1.4.2-63.apk",
+      "bytes": 154220390,
+      "sha256": "a37edaff01b62239288131ad1a855a7a2f9eb8cbc358595df4699626bd5bcab2",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 273,
+      "sha256": "5abb7cd4b39d8f874927811502e4054d29f8ad892f9e7a3c14d3cf8c2577cda7",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "SMBSourceManifest.json",
+      "bytes": 33554,
+      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e",
+      "anonymousDownloadVerified": true
+    }
+  ],
+  "validation": {
+    "sharedToolTests": 58,
+    "androidJvmTests": 441,
+    "androidJvmFailures": 0,
+    "androidNativeTests": 4,
+    "androidNativeFailures": 0,
+    "androidLintErrors": 0,
+    "androidLintWarnings": 205,
+    "iosBuild": true,
+    "iosAnalyze": true,
+    "iosPhysicalAiRuleAndStorageTests": 26,
+    "iosPhysicalCreationUiTests": 5,
+    "iosPhysicalCreationUiFailures": 0,
+    "androidPhysical": {
+      "device": "Huawei ICL-AL20, API31",
+      "nas": "User-configured SMB, metadata-only browsing and playback",
+      "normalFrame": "Local and NAS creation, save and actual playback",
+      "aiFrames": "Local cat fixture and actual NAS photos, confirmation and actual playback",
+      "rotation": "Preview name and unchecked photo retained across orientation changes",
+      "newAiConfirmation": "Returns to frame home"
+    },
+    "iosPhysical": {
+      "device": "iPhone13",
+      "sandbox": "Isolated QA app using production source",
+      "nas": "Read-only WebDAV fixture through the production client",
+      "flows": [
+        "Chinese local AI",
+        "English local AI",
+        "Chinese NAS AI",
+        "Ordinary local frame",
+        "Ordinary NAS frame"
+      ],
+      "coverage": [
+        "Preview naming and photo selection",
+        "Directory source groups",
+        "AI settings visibility",
+        "Edit and automatic classification setting",
+        "Orientation and actual playback"
+      ],
+      "nasFixtureThreshold": 0
+    },
+    "physicalIPad": "Unavailable in this run",
+    "androidNativeEnvironment": "Android emulator"
+  },
+  "androidApk": {
+    "version": "1.4.2",
+    "build": 63,
+    "bytes": 154220390,
+    "sha256": "a37edaff01b62239288131ad1a855a7a2f9eb8cbc358595df4699626bd5bcab2",
+    "signerSha256": "9cd985f16aec8a0e492ff834aa7a07de6b426f224b2fd6d788a5965cc1b4f37c",
+    "jvm": {
+      "tests": 441,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "lint": {
+      "Error": 0,
+      "Warning": 205
+    },
+    "bundledModelWeights": false
+  },
+  "iosArchive": {
+    "version": "1.4.2",
+    "build": "63",
+    "bundleId": "dev.photopilot.scaffold",
+    "minimumOS": "15.0",
+    "deviceFamilies": [
+      1,
+      2
+    ],
+    "unsigned": true,
+    "executableSha256": "b5aced2fe85863cd95eb3e6c61556e9f7e688bf70e4d029dc724fed33c422421"
+  },
+  "deviceInstallation": {
+    "ios": "Original bundle identity upgraded to 1.4.2 (63) and launched",
+    "android": "Functional tests used the final source candidate. Final 1.4.2 installation awaits Huawei account authentication; installed version remains 1.4.1 (62)."
+  },
+  "cleanup": {
+    "iosQaAppAndPrivateCredentialCopy": "Removed",
+    "androidRotation": "Original lock 0 restored",
+    "androidTestData": "Four test frames and the dedicated cat fixture retained; duplicate-name frame cleanup was rejected by automatic approval review to avoid selecting an original frame",
+    "androidKeyboardMode": "English test input mode remains pending restoration while the system authentication screen is active"
+  },
+  "appStoreSubmission": "Unsigned Release archive prepared. No App Store submission in this task."
+}
