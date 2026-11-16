@@ -532,7 +532,9 @@ final class PhotoPilotUIReviewTests: XCTestCase {
             (393, 852, false, false),
             (1194, 834, false, false),
             (834, 1194, true, false),
-            (393, 852, false, true)
+            (393, 852, false, true),
+            (320, 568, false, true),
+            (568, 320, false, true)
         ] {
             for section in ["nav.frames", "nav.library", "nav.sources", "nav.settings"] {
                 let controller = MainContainerViewController(environment: environment)

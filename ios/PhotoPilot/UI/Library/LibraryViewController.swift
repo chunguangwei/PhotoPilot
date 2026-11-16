@@ -5,6 +5,15 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
 
     private let environment: AppEnvironment
     private let tabControl: UISegmentedControl
+    private let compactTabs: UISegmentedControl
+    private let headerContainer = UIView()
+    private let normalHeader = UIStackView()
+    private let compactToolbar = UIToolbar()
+    private var normalHeaderBottom: NSLayoutConstraint?
+    private var compactToolbarBottom: NSLayoutConstraint?
+    private var compactChrome: Bool?
+    private var compactSelect: UIBarButtonItem?
+    private var moreItem: UIBarButtonItem?
     private let photosContainer = UIView()
     private let foldersTable = UITableView(frame: .zero, style: .plain)
     private let selectButton = ActionButton(titleKey: "common.select", style: .secondary)
@@ -14,8 +23,11 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
     private let filterActiveLabel = UILabel()
     private let clearFilterButton = ActionButton(titleKey: "common.clear_filter", style: .secondary)
     private let selectionBar = UIStackView()
+    private let selectionContainer = UIView()
+    private var selectionCollapsedHeight: NSLayoutConstraint?
+    private var selectionContentBottom: NSLayoutConstraint?
     private let selectionSummaryLabel = UILabel()
-    private let addToFrameButton = ActionButton(titleKey: "library.add_to_frame", style: .primary)
+    private let addToFrameButton = UIButton(type: .system)
 
     private var collections: [CollectionDTO] = []
     private var gridChild: AssetGridViewController?
@@ -30,6 +42,10 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
         self.tabControl = UISegmentedControl(items: [
             L10n.string("library.tab_photos"),
             L10n.string("library.tab_folders"),
+        ])
+        self.compactTabs = UISegmentedControl(items: [
+            L10n.string("library.tab_photos"),
+            L10n.string("library.tab_folders")
         ])
         super.init(nibName: nil, bundle: nil)
     }
@@ -90,20 +106,56 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
         filterRow.alignment = .center
         filterRow.spacing = ThemeMetrics.space8
 
-        tabControl.selectedSegmentIndex = 0
-        tabControl.addTarget(self, action: #selector(handleTabChange), for: .valueChanged)
-        tabControl.heightAnchor.constraint(
-            greaterThanOrEqualToConstant: ThemeMetrics.touchTarget
-        ).isActive = true
+        for tabs in [tabControl, compactTabs] {
+            tabs.selectedSegmentIndex = 0
+            tabs.addTarget(self, action: #selector(handleTabChange(_:)), for: .valueChanged)
+            tabs.heightAnchor.constraint(equalToConstant: ThemeMetrics.touchTarget).isActive = true
+        }
+        selectButton.accessibilityIdentifier = "library.select"
+        let select = UIBarButtonItem(title: L10n.string("common.select"), style: .plain, target: self, action: #selector(handleSelectToggle))
+        select.accessibilityIdentifier = "library.select"
+        compactSelect = select
+        let more = UIBarButtonItem(image: UIImage(systemName: "ellipsis"), style: .plain, target: self, action: #selector(handleMore))
+        more.accessibilityLabel = L10n.string("player.more")
+        more.accessibilityIdentifier = "library.more"
+        moreItem = more
+        compactToolbar.items = [UIBarButtonItem(customView: compactTabs), UIBarButtonItem(systemItem: .flexibleSpace), more, select]
+        compactToolbar.tintColor = ThemeColor.accentAction
+        compactToolbar.setBackgroundImage(UIImage(), forToolbarPosition: .any, barMetrics: .default)
+        compactToolbar.setShadowImage(UIImage(), forToolbarPosition: .any)
+        compactToolbar.accessibilityIdentifier = "library.compact.toolbar"
+        compactToolbar.translatesAutoresizingMaskIntoConstraints = false
 
-        let header = UIStackView(arrangedSubviews: [titleRow, searchField, filterRow, tabControl])
-        header.axis = .vertical
-        header.spacing = ThemeMetrics.space12
-        header.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(header)
+        normalHeader.axis = .vertical
+        normalHeader.spacing = ThemeMetrics.space12
+        normalHeader.translatesAutoresizingMaskIntoConstraints = false
+        for row in [titleRow, searchField, filterRow, tabControl] { normalHeader.addArrangedSubview(row) }
+        headerContainer.translatesAutoresizingMaskIntoConstraints = false
+        headerContainer.clipsToBounds = true
+        headerContainer.addSubview(normalHeader)
+        headerContainer.addSubview(compactToolbar)
+        view.addSubview(headerContainer)
+        let fullBottom = normalHeader.bottomAnchor.constraint(equalTo: headerContainer.bottomAnchor)
+        let compactBottom = compactToolbar.bottomAnchor.constraint(equalTo: headerContainer.bottomAnchor)
+        normalHeaderBottom = fullBottom
+        compactToolbarBottom = compactBottom
+        NSLayoutConstraint.activate([
+            normalHeader.topAnchor.constraint(equalTo: headerContainer.topAnchor),
+            normalHeader.leadingAnchor.constraint(equalTo: headerContainer.leadingAnchor),
+            normalHeader.trailingAnchor.constraint(equalTo: headerContainer.trailingAnchor),
+            compactToolbar.topAnchor.constraint(equalTo: headerContainer.topAnchor),
+            compactToolbar.leadingAnchor.constraint(equalTo: headerContainer.leadingAnchor),
+            compactToolbar.trailingAnchor.constraint(equalTo: headerContainer.trailingAnchor),
+            compactToolbar.heightAnchor.constraint(equalToConstant: ThemeMetrics.touchTarget),
+            compactTabs.widthAnchor.constraint(equalToConstant: 144)
+        ])
 
         photosContainer.translatesAutoresizingMaskIntoConstraints = false
+        photosContainer.accessibilityIdentifier = "library.photos"
         view.addSubview(photosContainer)
+        let minimumPhotosHeight = photosContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 120)
+        minimumPhotosHeight.priority = .defaultHigh
+        minimumPhotosHeight.isActive = true
 
         foldersTable.dataSource = self
         foldersTable.delegate = self
@@ -117,57 +169,113 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
         selectionSummaryLabel.font = ThemeFont.body()
         selectionSummaryLabel.adjustsFontForContentSizeCategory = true
         selectionSummaryLabel.textColor = ThemeColor.textPrimary
+        selectionSummaryLabel.numberOfLines = 1
+        var primary = UIButton.Configuration.filled()
+        primary.title = L10n.string("library.add_to_frame")
+        primary.baseBackgroundColor = ThemeColor.textPrimary
+        primary.baseForegroundColor = ThemeColor.canvas
+        primary.background.cornerRadius = ThemeMetrics.radiusGroup
+        primary.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+        primary.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { attributes in
+            var result = attributes
+            result.font = UIFont.systemFont(ofSize: 20, weight: .semibold)
+            return result
+        }
+        addToFrameButton.configuration = primary
+        addToFrameButton.accessibilityIdentifier = "library.addToFrame"
+        addToFrameButton.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
         addToFrameButton.addTarget(self, action: #selector(handleAddToFrame), for: .touchUpInside)
         selectionBar.axis = .vertical
         selectionBar.spacing = ThemeMetrics.space8
         selectionBar.addArrangedSubview(selectionSummaryLabel)
         selectionBar.addArrangedSubview(addToFrameButton)
-        selectionBar.isHidden = true
         selectionBar.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(selectionBar)
+        selectionContainer.clipsToBounds = true
+        selectionContainer.isHidden = true
+        selectionContainer.translatesAutoresizingMaskIntoConstraints = false
+        selectionContainer.addSubview(selectionBar)
+        view.addSubview(selectionContainer)
+        let collapsed = selectionContainer.heightAnchor.constraint(equalToConstant: 0)
+        selectionCollapsedHeight = collapsed
+        selectionContentBottom = selectionBar.bottomAnchor.constraint(equalTo: selectionContainer.bottomAnchor)
+        NSLayoutConstraint.activate([
+            selectionBar.topAnchor.constraint(equalTo: selectionContainer.topAnchor),
+            selectionBar.leadingAnchor.constraint(equalTo: selectionContainer.leadingAnchor),
+            selectionBar.trailingAnchor.constraint(equalTo: selectionContainer.trailingAnchor),
+            collapsed
+        ])
 
-        let readable = header.widthAnchor.constraint(
-            lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth
-        )
-        let fillWidth = header.widthAnchor.constraint(
-            equalTo: view.safeAreaLayoutGuide.widthAnchor,
-            constant: -2 * ThemeMetrics.contentInsetCompact
-        )
+        let readable = headerContainer.widthAnchor.constraint(lessThanOrEqualToConstant: ThemeMetrics.bodyMaxWidth)
+        let fillWidth = headerContainer.widthAnchor.constraint(equalTo: view.safeAreaLayoutGuide.widthAnchor, constant: -2 * ThemeMetrics.contentInsetCompact)
         fillWidth.priority = .defaultHigh
         NSLayoutConstraint.activate([
-            header.topAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.topAnchor,
-                constant: ThemeMetrics.space24
-            ),
-            header.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
-            header.leadingAnchor.constraint(
-                greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor,
-                constant: ThemeMetrics.contentInset
-            ),
-            header.trailingAnchor.constraint(
-                lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor,
-                constant: -ThemeMetrics.contentInset
-            ),
+            headerContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: ThemeMetrics.space8),
+            headerContainer.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+            headerContainer.leadingAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor, constant: ThemeMetrics.contentInsetCompact),
+            headerContainer.trailingAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -ThemeMetrics.contentInsetCompact),
             readable,
             fillWidth,
-            photosContainer.topAnchor.constraint(
-                equalTo: header.bottomAnchor,
-                constant: ThemeMetrics.space12
-            ),
+            photosContainer.topAnchor.constraint(equalTo: headerContainer.bottomAnchor, constant: ThemeMetrics.space8),
             photosContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             photosContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            photosContainer.bottomAnchor.constraint(equalTo: selectionBar.topAnchor),
+            photosContainer.bottomAnchor.constraint(equalTo: selectionContainer.topAnchor),
             foldersTable.topAnchor.constraint(equalTo: photosContainer.topAnchor),
             foldersTable.leadingAnchor.constraint(equalTo: photosContainer.leadingAnchor),
             foldersTable.trailingAnchor.constraint(equalTo: photosContainer.trailingAnchor),
             foldersTable.bottomAnchor.constraint(equalTo: photosContainer.bottomAnchor),
-            selectionBar.leadingAnchor.constraint(equalTo: header.leadingAnchor),
-            selectionBar.trailingAnchor.constraint(equalTo: header.trailingAnchor),
-            selectionBar.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
+            selectionContainer.leadingAnchor.constraint(equalTo: headerContainer.leadingAnchor),
+            selectionContainer.trailingAnchor.constraint(equalTo: headerContainer.trailingAnchor),
+            selectionContainer.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor)
         ])
+        updateChrome()
 
         embedGrid()
         enableKeyboardDismissal()
+    }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        updateChrome()
+    }
+
+    private func updateChrome() {
+        let compact = view.bounds.height < 500 || traitCollection.preferredContentSizeCategory.isAccessibilityCategory
+        guard compactChrome != compact else { return }
+        normalHeaderBottom?.isActive = false
+        compactToolbarBottom?.isActive = false
+        compactChrome = compact
+        normalHeader.isHidden = compact
+        compactToolbar.isHidden = !compact
+        normalHeaderBottom?.isActive = !compact
+        compactToolbarBottom?.isActive = compact
+        selectionSummaryLabel.isHidden = compact
+        updateSelectionBar(gridChild?.selectedAssetIDs ?? [])
+    }
+
+    @objc private func handleMore() {
+        let menu = UIAlertController(title: L10n.string("player.more"), message: query.isDefault ? nil : L10n.string("library.filter_active"), preferredStyle: .actionSheet)
+        menu.addAction(UIAlertAction(title: L10n.string("common.search"), style: .default) { [weak self] _ in self?.openSearch() })
+        menu.addAction(UIAlertAction(title: L10n.string("common.filter"), style: .default) { [weak self] _ in self?.handleFilter() })
+        menu.addAction(UIAlertAction(title: L10n.string("common.sort"), style: .default) { [weak self] _ in self?.handleSort() })
+        menu.addAction(UIAlertAction(title: L10n.string("common.clear_filter"), style: .default) { [weak self] _ in self?.handleClearFilter() })
+        menu.addAction(UIAlertAction(title: L10n.string("common.cancel"), style: .cancel))
+        menu.popoverPresentationController?.barButtonItem = moreItem
+        present(menu, animated: true)
+    }
+
+    private func openSearch() {
+        let search = UIAlertController(title: L10n.string("common.search"), message: nil, preferredStyle: .alert)
+        search.addTextField { [weak self] field in
+            field.text = self?.searchField.text
+            field.placeholder = L10n.string("library.search_placeholder")
+            field.returnKeyType = .search
+        }
+        search.addAction(UIAlertAction(title: L10n.string("common.search"), style: .default) { [weak self, weak search] _ in
+            self?.searchField.text = search?.textFields?.first?.text
+            self?.handleSearchChanged()
+        })
+        search.addAction(UIAlertAction(title: L10n.string("common.cancel"), style: .cancel))
+        present(search, animated: true)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -278,6 +386,10 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
         let readyCount = ids.filter { readyIDs.contains($0) }.count
         let text = FormatStrings.string("library.selection_summary", ids.count, readyCount)
         selectionSummaryLabel.text = text
+        addToFrameButton.configuration?.title = compactChrome == true ? L10n.string("library.add_to_frame") + " (\(readyCount))" : L10n.string("library.add_to_frame")
+        addToFrameButton.accessibilityLabel = L10n.string("library.add_to_frame")
+        addToFrameButton.accessibilityValue = text
+        compactSelect?.accessibilityValue = text
         addToFrameButton.isEnabled = !ids.isEmpty
         addToFrameButton.alpha = ids.isEmpty ? ThemeMetrics.controlOpacity : 1
         if selectionMode {
@@ -294,8 +406,10 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
         }
     }
 
-    @objc private func handleTabChange() {
-        let showPhotos = tabControl.selectedSegmentIndex == 0
+    @objc private func handleTabChange(_ sender: UISegmentedControl) {
+        tabControl.selectedSegmentIndex = sender.selectedSegmentIndex
+        compactTabs.selectedSegmentIndex = sender.selectedSegmentIndex
+        let showPhotos = sender.selectedSegmentIndex == 0
         photosContainer.isHidden = !showPhotos
         foldersTable.isHidden = showPhotos
         if !showPhotos {
@@ -306,11 +420,15 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
     @objc private func handleSelectToggle() {
         selectionMode.toggle()
         gridChild?.selectionEnabled = selectionMode
-        if !selectionMode {
-            gridChild?.applySelection([])
-        }
-        selectionBar.isHidden = !selectionMode
+        if !selectionMode { gridChild?.applySelection([]) }
+        selectionContentBottom?.isActive = false
+        selectionCollapsedHeight?.isActive = false
+        selectionContainer.isHidden = !selectionMode
+        selectionCollapsedHeight?.isActive = !selectionMode
+        selectionContentBottom?.isActive = selectionMode
         selectButton.setTitleKey(selectionMode ? "common.cancel" : "common.select")
+        compactSelect?.title = L10n.string(selectionMode ? "common.cancel" : "common.select")
+        updateSelectionBar(gridChild?.selectedAssetIDs ?? [])
     }
 
     @objc private func handleSearchChanged() {
@@ -358,7 +476,8 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
             title: L10n.string("common.cancel"),
             style: .cancel
         ))
-        sheet.popoverPresentationController?.sourceView = sortButton
+        if compactChrome == true { sheet.popoverPresentationController?.barButtonItem = moreItem }
+        else { sheet.popoverPresentationController?.sourceView = sortButton }
         present(sheet, animated: true)
     }
 

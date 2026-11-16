@@ -287,7 +287,7 @@ class PhotoFlowWorkflowTest {
             await("Source album photos loaded") { descendants(editor).filterIsInstance<CheckBox>().any { it.text.toString() == names.first() } }
             assertEquals(source.id, editor.draftState()["sourceId"])
             touch(descendants(editor).filterIsInstance<CheckBox>().single { it.text.toString() == names.first() })
-            touch(descendants(editor).filterIsInstance<TextView>().single { it.text.toString() in setOf("Save frame", "保存相框") })
+            touch(requireNotNull(descendants(editor).filterIsInstance<TextView>().singleOrNull { it.text.toString() in setOf("Save frame", "保存相框") }) { "Existing editor save missing: ${descendants(editor).filterIsInstance<TextView>().map { it.text }}" })
             await("Existing source target saved") { activityField(activity, "remoteFrameView") == null }
             assertEquals(listOf(frame.id), env.database.frameDao().getAll().map { it.id })
             assertEquals(listOf("remote:${ids.first()}"), env.frames.buildPlayQueue(frame.id))
@@ -298,7 +298,7 @@ class PhotoFlowWorkflowTest {
             await("New source target album loaded") { descendants(newEditor).filterIsInstance<CheckBox>().any { it.text.toString() == names.last() } }
             assertEquals(source.id, newEditor.draftState()["sourceId"])
             touch(descendants(newEditor).filterIsInstance<CheckBox>().single { it.text.toString() == names.last() })
-            touch(descendants(newEditor).filterIsInstance<TextView>().single { it.text.toString() in setOf("Save frame", "保存相框") })
+            touch(descendants(newEditor).filterIsInstance<TextView>().single { it.text.toString() in setOf("Confirm and play", "确认并播放") })
             await("Explicit new source frame saved") { env.database.frameDao().getAll().size == 2 }
             assertEquals(listOf("remote:${ids.first()}"), env.frames.buildPlayQueue(frame.id))
         }
@@ -316,6 +316,7 @@ class PhotoFlowWorkflowTest {
             val generic = awaitEditor(activity)
             await("Generic source choices loaded") { descendants(generic).filterIsInstance<TextView>().any { it.text.toString() == source.displayName } }
             touch(descendants(generic).filterIsInstance<TextView>().first { it.text.toString() == source.displayName })
+            clickDialog(listOf(source.displayName))
             openFlowAlbum(generic)
             await("Generic album photos loaded") { descendants(generic).filterIsInstance<CheckBox>().any { it.text.toString() == names.first() } }
             touch(descendants(generic).filterIsInstance<CheckBox>().single { it.text.toString() == names.first() })
@@ -385,6 +386,7 @@ class PhotoFlowWorkflowTest {
         catch (error: TimeoutCancellationException) { throw AssertionError(message, error) }
     }
     private fun touch(view: View, twice: Boolean = false) {
+        instrumentation.waitForIdleSync()
         instrumentation.runOnMainSync { view.requestRectangleOnScreen(Rect(0, 0, view.width, view.height), true) }
         android.os.SystemClock.sleep(400)
         val rect = Rect()

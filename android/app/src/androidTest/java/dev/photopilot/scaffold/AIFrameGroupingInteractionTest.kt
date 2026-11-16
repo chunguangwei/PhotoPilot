@@ -43,10 +43,11 @@ class AIFrameGroupingInteractionTest {
                 assertEquals(draft, restoring.draftState())
             }
             withTimeout(15000) {
-                while (descendants(view).filterIsInstance<TextView>().none { it.text.toString() == sources.last().displayName }) delay(100)
+                while (!(view.javaClass.getDeclaredField("initialized").apply { isAccessible = true }.get(view) as Boolean)) delay(100)
             }
             instrumentation.runOnMainSync {
-                val labels = descendants(view).filterIsInstance<TextView>()
+                val folders = view.javaClass.getDeclaredField("folders").apply { isAccessible = true }.get(view) as View
+                val labels = (descendants(view) + descendants(folders)).filterIsInstance<TextView>()
                 assertEquals(1, labels.count { it.text.toString() in listOf("本机目录", "On this device") })
                 assertTrue(labels.any { it.text.toString() == sources[2].displayName })
                 assertTrue(labels.any { it.text.toString() == sources[3].displayName })

@@ -977,6 +977,11 @@ class MainActivity : Activity() {
             draft["scopeIds"] = org.json.JSONArray(it).toString()
             draft["selected"] = org.json.JSONArray(it).toString()
         }
+        val aiEditor = root.topOverlay() as? dev.photopilot.scaffold.ui.aiframes.AIFrameView
+        if (aiEditor != null) {
+            aiEditor.reloadCollections()
+            return
+        }
         val editor = remoteFrameView
         if (editor != null) {
             editor.acceptSource(source.id, selectedIds)
@@ -1867,6 +1872,9 @@ class MainActivity : Activity() {
             onChanged = { framesDirty = true },
             restoredDraft = draft,
         )
+        view.onLocalPhotos = { showPhotoPermissionOverlay() }
+        view.onLocalFiles = { showLocalFilesChoices() }
+        view.onConnect = { openNasForm() }
         pushOverlayTracked(view, mapOf("type" to "aiFrame", "frameId" to (frame?.id ?: "")))
     }
 

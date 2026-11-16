@@ -49,9 +49,24 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     private val initialRules = mutableSetOf<String>()
     private val initialRuleRows = mutableMapOf<String, dev.photopilot.scaffold.data.logic.SaveRuleRow>()
     private var availableSources = emptyList<SourceEntity>()
-    private val sourceList = LinearLayout(context)
+    private val sourceSelector = secondaryButton(context, text("Choose photo source", "选择照片来源")).apply {
+        gravity = android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL
+        val shape = android.graphics.drawable.GradientDrawable().apply {
+            setColor(context.getColor(dev.photopilot.scaffold.R.color.pp_surface_panel))
+            cornerRadius = resources.getDimension(dev.photopilot.scaffold.R.dimen.pp_radius_group)
+        }
+        background = android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(context.getColor(dev.photopilot.scaffold.R.color.pp_separator)), shape, null)
+        val arrow = context.getDrawable(android.R.drawable.arrow_down_float)?.mutate()
+        arrow?.setTint(context.getColor(dev.photopilot.scaffold.R.color.pp_accent_action))
+        setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, arrow, null)
+        compoundDrawablePadding = dp(8)
+    }
+    private val storageSection = dev.photopilot.scaffold.ui.widget.DisclosureSection(context, text("Storage and offline", "存储与离线"))
     private val photos = LinearLayout(context)
     private val navigation = LinearLayout(context)
+    private val previousPage = secondaryButton(context, text("Previous", "上一页"))
+    private val nextPage = secondaryButton(context, text("Next", "下一页"))
+    private data class PhotoPage(val assets: List<SourceAssetEntity>, val children: List<CollectionEntity>, val index: Int, val total: Int)
     private var sourceId: String? = restoredDraft?.get("sourceId")?.takeIf { it.isNotEmpty() }
     private var folder = restoredDraft?.get("folder").orEmpty()
     private var page = restoredDraft?.get("page")?.toIntOrNull() ?: 0
@@ -71,49 +86,48 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     init {
         orientation = VERTICAL
         setBackgroundColor(context.getColor(dev.photopilot.scaffold.R.color.pp_surface_canvas))
-        setPadding(dp(16), dp(8), dp(16), dp(8))
-        addView(secondaryButton(context, text("Back", "返回")).apply { setOnClickListener { requestBack() } })
+        addView(dev.photopilot.scaffold.ui.widget.formHeader(context, text(if (firstUse) "Choose photos" else "Frame photos", if (firstUse) "选择照片" else "相框照片")) { requestBack() })
         val scroll = ScrollView(context)
-        val content = LinearLayout(context).apply { orientation = VERTICAL }
+        val content = LinearLayout(context).apply { orientation = VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(16)) }
         scroll.addView(content)
         addView(scroll, LayoutParams(-1, 0, 1f))
         fun add(view: View) { content.addView(view, LayoutParams(-1, -2).apply { bottomMargin = dp(8) }) }
-        add(TextView(context).apply { text = this@RemoteFrameView.text(if (firstUse) "Choose photos" else "Photo sources", if (firstUse) "选择照片" else "照片来源"); textSize = 22f })
         if (!firstUse) add(TextView(context).apply { text = this@RemoteFrameView.text("Frame name", "相框名称") })
+        name.setSingleLine(true)
         name.setText(restoredDraft?.get("name") ?: frame?.name ?: text("My frame", "我的相框")); if (!firstUse) add(name)
         sync.text = text("Sync selected NAS photos locally for offline playback", "同步所选 NAS 照片到本地，支持离线播放")
         sync.isChecked = restoredDraft?.get("mode")?.let { it == "local" } ?: initialMode
-        if (!firstUse) add(sync)
-        if (!firstUse) add(storageHint)
-        add(status)
+        storageSection.body.addView(sync)
+        storageSection.body.addView(storageHint)
         add(feedback)
-        if (!firstUse) {
-            add(secondaryButton(context, text("Connect WebDAV / SMB", "连接 WebDAV / SMB")).apply { setOnClickListener { onConnect?.invoke() } })
-            add(secondaryButton(context, text("Choose photo library", "选择照片库")).apply { setOnClickListener { onLocalPhotos?.invoke() } })
-            add(secondaryButton(context, text("Choose files or folder", "选择文件或目录")).apply { setOnClickListener { onLocalFiles?.invoke() } })
-            sourceList.orientation = VERTICAL; add(sourceList)
-            add(secondaryButton(context, text("Refresh metadata", "刷新照片索引")).apply { setOnClickListener { refreshIndex() } })
-        }
+        sourceSelector.setOnClickListener { chooseAdditionalSource() }
+        add(sourceSelector)
         photos.orientation = VERTICAL; add(photos)
-        if (firstUse) {
-            add(confirm.apply { isEnabled = false; setOnClickListener { save() } })
-            add(secondaryButton(context, text("Add photos", "添加照片")).apply { setOnClickListener { chooseAdditionalSource() } })
-        }
-        navigation.addView(secondaryButton(context, text("Previous", "上一页")).apply { setOnClickListener { page = (page - 1).coerceAtLeast(0); loadPhotos() } }, LayoutParams(0, -2, 1f))
-        navigation.addView(secondaryButton(context, text("Next", "下一页")).apply { setOnClickListener { page++; loadPhotos() } }, LayoutParams(0, -2, 1f))
+        previousPage.setOnClickListener { page = (page - 1).coerceAtLeast(0); loadPhotos() }
+        nextPage.setOnClickListener { page++; loadPhotos() }
+        navigation.addView(previousPage, LayoutParams(0, -2, 1f))
+        navigation.addView(nextPage, LayoutParams(0, -2, 1f))
         add(navigation)
         if (!firstUse) add(secondaryButton(context, text("Arrange selected photos", "调整所选照片顺序")).apply { setOnClickListener { arrangePhotos() } })
-        if (!firstUse) add(secondaryButton(context, text("Clear temporary cache", "清理临时缓存")).also { clearControl = it }.apply { setOnClickListener { scope.launch { withContext(Dispatchers.IO) { env.remoteMedia.cache.clear() }; updateStatus() } } })
-        if (!firstUse) add(secondaryButton(context, text("Pause local sync", "暂停本地同步")).also { pauseControl = it }.apply { setOnClickListener { frame?.let { env.remoteCopies.pause(it.id) }; updateStatus() } })
-        if (!firstUse) add(secondaryButton(context, text("Resume local sync", "继续本地同步")).also { resumeControl = it }.apply { setOnClickListener { frame?.let { env.remoteCopies.start(it.id) }; updateStatus() } })
-        if (!firstUse) add(secondaryButton(context, text("Release downloadable local copies", "释放可重新下载的本地副本")).also { releaseControl = it }.apply { setOnClickListener {
+        if (!firstUse) storageSection.body.addView(secondaryButton(context, text("Clear temporary cache", "清理临时缓存")).also { clearControl = it }.apply { setOnClickListener { scope.launch { withContext(Dispatchers.IO) { env.remoteMedia.cache.clear() }; updateStatus() } } })
+        if (!firstUse) storageSection.body.addView(secondaryButton(context, text("Pause local sync", "暂停本地同步")).also { pauseControl = it }.apply { setOnClickListener { frame?.let { env.remoteCopies.pause(it.id) }; updateStatus() } })
+        if (!firstUse) storageSection.body.addView(secondaryButton(context, text("Resume local sync", "继续本地同步")).also { resumeControl = it }.apply { setOnClickListener { frame?.let { env.remoteCopies.start(it.id) }; updateStatus() } })
+        if (!firstUse) storageSection.body.addView(secondaryButton(context, text("Release downloadable local copies", "释放可重新下载的本地副本")).also { releaseControl = it }.apply { setOnClickListener {
             val current = frame ?: return@setOnClickListener
             AlertDialog.Builder(context).setMessage(text("Verify remote versions and release exclusive NAS copies? Copies required by other local frames or imports will be retained.", "是否校验远端版本并释放本相框独占的 NAS 副本？其他本地相框或导入仍需使用的副本将保留。"))
                 .setNegativeButton(text("Cancel", "取消"), null).setPositiveButton(text("Verify and release", "校验并释放")) { _, _ ->
                     scope.launch { runCatching { env.remoteCopies.release(current.id, verifyLegacy = true) }.onSuccess { feedback.text = text("Released $it bytes. Copies required by local selections, source imports or unverified versions were retained.", "已释放 $it 字节。本地选片、来源级导入仍需使用，或版本未验证的副本已保留。") }.onFailure { showError(it) } }
                 }.show()
         } })
-        if (!firstUse) add(confirm.apply { isEnabled = false; setOnClickListener { save() } })
+        if (!firstUse) add(storageSection)
+        addView(LinearLayout(context).apply {
+            orientation = VERTICAL
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+            status.textSize = 14f
+            status.setPadding(0, 0, 0, dp(8))
+            addView(status, LayoutParams(-1, -2))
+            addView(confirm.apply { isEnabled = false; setOnClickListener { save() } }, LayoutParams(-1, -2))
+        }, LayoutParams(-1, -2))
         scope.launch {
             frame?.let { current ->
                 val rows = withContext(Dispatchers.IO) { env.database.frameSelectionDao().getByFrame(current.id) }
@@ -172,6 +186,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         photoLoad?.cancel()
         photos.removeAllViews()
         sourceId = id
+        sourceSelector.text = if (firstUse) text("Add photos", "添加照片") else availableSources.firstOrNull { it.id == id }?.displayName ?: text("Choose photo source", "选择照片来源")
         folder = ""
         page = 0
         scopeIds = pickedIds?.toSet()
@@ -180,14 +195,15 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     }
 
     private fun chooseAdditionalSource() {
-        val labels = listOf(text("Photo library", "照片库"), text("Files or folder", "文件或目录"), text("WebDAV / SMB", "WebDAV / SMB")) + availableSources.map { it.displayName }
+        val labels = listOf(text("Choose device albums", "选择本机相册"), text("Choose files or folders", "选择文件或目录"), text("Connect NAS", "连接 NAS")) + availableSources.map { it.displayName } + listOfNotNull(sourceId?.let { text("Refresh current source", "刷新当前来源") })
         AlertDialog.Builder(context).setTitle(text("Add photos", "添加照片"))
             .setItems(labels.toTypedArray()) { _, index ->
                 when (index) {
                     0 -> onLocalPhotos?.invoke()
                     1 -> onLocalFiles?.invoke()
                     2 -> onConnect?.invoke()
-                    else -> acceptSource(availableSources[index - 3].id, null)
+                    in 3 until 3 + availableSources.size -> acceptSource(availableSources[index - 3].id, null)
+                    else -> refreshIndex()
                 }
             }.setNegativeButton(dev.photopilot.scaffold.R.string.common_cancel, null).show()
     }
@@ -212,9 +228,8 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
             val sources = withContext(Dispatchers.IO) { env.database.sourceDao().getAll().filter { env.remoteMedia.isMetadataSource(it) && it.status == SourceStatus.ACTIVE } }
             if (request != sourceRequest) return@launch
             availableSources = sources
-            sourceList.removeAllViews()
-            sources.forEach { source -> sourceList.addView(secondaryButton(context, source.displayName).apply { setOnClickListener { sourceId = source.id; scopeIds = null; folder = ""; page = 0; loadPhotos() } }) }
             if (sourceId == null) sourceId = sources.firstOrNull()?.id
+            sourceSelector.text = if (firstUse) text("Add photos", "添加照片") else sources.firstOrNull { it.id == sourceId }?.displayName ?: text("Choose photo source", "选择照片来源")
             if (sources.isEmpty()) feedback.text = text("Connect a photo source to choose photos.", "请连接照片来源后选片。")
             loadPhotos()
         }
@@ -235,7 +250,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     }
     private fun loadPhotos() {
         val id = sourceId ?: return
-        navigation.visibility = if (!firstUse || scopeIds == null || requireNotNull(scopeIds).size > pageSize) View.VISIBLE else View.GONE
+        navigation.visibility = View.GONE
         val requestedFolder = folder
         val requestedPage = page
         val request = ++photoRequest
@@ -246,18 +261,32 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                 val actualPage = requestedPage.coerceIn(0, ((members.size - 1).coerceAtLeast(0) / pageSize))
                 val files = members.drop(actualPage * pageSize).take(pageSize)
                 val children = env.database.collectionDao().getBySource(id).filter { it.relPath != requestedFolder && dev.photopilot.scaffold.data.remote.RemotePaths.contains(requestedFolder, it.relPath.orEmpty() + "/_", true) && it.relPath?.substringBeforeLast('/', "") == requestedFolder }
-                Triple(files, children, actualPage)
+                PhotoPage(files, children, actualPage, members.size)
             }
             if (request != photoRequest || sourceId != id || folder != requestedFolder || page != requestedPage) return@launch
-            page = loaded.third
-            fun current() = request == photoRequest && sourceId == id && folder == requestedFolder && page == loaded.third
+            page = loaded.index
+            navigation.visibility = if (loaded.total > pageSize) View.VISIBLE else View.GONE
+            previousPage.isEnabled = loaded.index > 0
+            nextPage.isEnabled = (loaded.index + 1) * pageSize < loaded.total
+            previousPage.alpha = if (previousPage.isEnabled) 1f else .4f
+            nextPage.alpha = if (nextPage.isEnabled) 1f else .4f
+            fun current() = request == photoRequest && sourceId == id && folder == requestedFolder && page == loaded.index
             val currentCollection = withContext(Dispatchers.IO) { env.database.collectionDao().getBySourceAndPath(id, requestedFolder) }
             if (!current()) return@launch
             val localSource = availableSources.firstOrNull { it.id == id }?.type in setOf(SourceType.LOCAL_PHOTOS, SourceType.LOCAL_FILES)
             photos.removeAllViews()
-            if (!firstUse || scopeIds == null) photos.addView(TextView(context).apply { text = (if (localSource) currentCollection?.name else requestedFolder)?.takeIf { it.isNotBlank() } ?: this@RemoteFrameView.text("Root folder", "根目录") })
+            if (!firstUse || scopeIds == null) photos.addView(TextView(context).apply {
+                text = (if (localSource) currentCollection?.name else requestedFolder)?.takeIf { it.isNotBlank() } ?: this@RemoteFrameView.text("Root folder", "根目录")
+                contentDescription = text
+                maxLines = 2
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setTextColor(context.getColor(dev.photopilot.scaffold.R.color.pp_text_secondary))
+            })
             if (folder.isNotEmpty()) photos.addView(secondaryButton(context, text("Parent folder", "上级目录")).apply { setOnClickListener { folder = folder.substringBeforeLast('/', ""); page = 0; loadPhotos() } })
-            if (scopeIds == null) photos.addView(secondaryButton(context, text("Select this folder", "选择此目录照片")).apply { setOnClickListener { selectCurrentFolder() } })
+            val folderOptions = if (scopeIds == null) dev.photopilot.scaffold.ui.widget.DisclosureSection(context, text("Folder selection options", "目录选片设置")).also { options ->
+                options.body.addView(secondaryButton(context, text("Select this folder", "选择此目录照片")).apply { setOnClickListener { selectCurrentFolder() } })
+                photos.addView(options)
+            } else null
             currentCollection?.takeIf { scopeIds == null }?.let { collection ->
                 val recursionKey = "$id:$requestedFolder"
                 folderRecursion.putIfAbsent(recursionKey, directoryRules[collection.id]?.recursive == true)
@@ -268,18 +297,22 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                     setOnCheckedChangeListener { _, checked ->
                         if (checked) directoryRules[collection.id] = dev.photopilot.scaffold.data.logic.SaveRuleRow(collection.id, recursive.isChecked, true)
                         else directoryRules.remove(collection.id)
+                        folderOptions?.setSummary(if (checked) this@RemoteFrameView.text("Auto-add photos", "自动加入照片") else "")
+                        updateStatus()
                     }
                 }
+                folderOptions?.setSummary(if (future.isChecked) text("Auto-add photos", "自动加入照片") else "")
                 recursive.setOnCheckedChangeListener { _, checked ->
                     folderRecursion[recursionKey] = checked
                     directoryRules[collection.id]?.let { directoryRules[collection.id] = it.copy(recursive = checked) }
                 }
-                photos.addView(future); photos.addView(recursive)
+                folderOptions?.body?.addView(future)
+                folderOptions?.body?.addView(recursive)
             }
-            loaded.second.filter { scopeIds == null }.forEach { child ->
+            loaded.children.filter { scopeIds == null }.forEach { child ->
                 photos.addView(secondaryButton(context, child.name).apply { setOnClickListener { folder = child.relPath.orEmpty(); page = 0; loadPhotos() } })
             }
-            for (asset in loaded.first) {
+            for (asset in loaded.assets) {
                 val displayName = withContext(Dispatchers.IO) { env.remoteMedia.displayName(asset) }
                 if (!current()) return@launch
                 val row = LinearLayout(context).apply {
@@ -358,34 +391,37 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     }
 
     private fun updateStatus() {
-        if (firstUse) {
-            status.text = text("${selected.size} selected", "已选 ${selected.size} 张")
-            return
-        }
+        val count = selected.size
+        val label = if (directoryRules.isEmpty()) text("$count photos selected", "已选 $count 张照片")
+            else text("$count photos · ${directoryRules.size} folders", "$count 张照片 · ${directoryRules.size} 个目录")
+        if (status.text.toString() != label) status.text = label
+        confirm.isEnabled = loaded && !busy && (frame != null || selected.isNotEmpty() || directoryRules.isNotEmpty())
+        if (firstUse) return
+        val selection = selected.toSet()
+        val rules = directoryRules.keys.toSet()
+        val currentSource = sourceId
         scope.launch {
             val nasSources = withContext(Dispatchers.IO) {
-                val referenced = selected.mapNotNull { env.database.sourceAssetDao().getById(it)?.sourceId }.toSet() +
-                    directoryRules.keys.mapNotNull { env.database.collectionDao().getById(it)?.sourceId } + listOfNotNull(sourceId.takeIf { selected.isEmpty() })
+                val referenced = selection.mapNotNull { env.database.sourceAssetDao().getById(it)?.sourceId }.toSet() +
+                    rules.mapNotNull { env.database.collectionDao().getById(it)?.sourceId } + listOfNotNull(currentSource.takeIf { selection.isEmpty() })
                 referenced.any { id -> env.database.sourceDao().getById(id)?.type in setOf(SourceType.SMB, SourceType.WEBDAV) }
             }
-            sync.visibility = if (nasSources && !firstUse) View.VISIBLE else View.GONE
-            pauseControl?.visibility = sync.visibility
-            resumeControl?.visibility = sync.visibility
-            releaseControl?.visibility = sync.visibility
-            clearControl?.visibility = sync.visibility
-            storageHint.text = if (nasSources) text("Online playback uses a shared 128 MiB temporary cache. Source-level imports may also occupy storage.", "在线播放共用 128 MiB 临时缓存。来源级导入也可能占用存储。")
-                else text("Uses your original photos directly. Keep access to the selected photos or folders enabled.", "直接使用本机原照片，请保留对已选照片或目录的访问权限。")
+            if (selection != selected || rules != directoryRules.keys || currentSource != sourceId) return@launch
+            storageSection.visibility = if (nasSources) View.VISIBLE else View.GONE
+            storageSection.setSummary(if (sync.isChecked) text("Offline copies", "同步到本地") else text("Online playback", "在线播放"))
+            val cache = env.remoteMedia.cache.bytesUsed() / 1048576
+            val hint = text("128 MiB shared cache · $cache MiB used", "共用128 MiB临时缓存 · 已用 $cache MiB")
+            if (storageHint.text.toString() != hint) storageHint.text = hint
+            val localMode = FramePlaybackSettings.requiresLocalCopies(frame?.settingsJson)
+            val running = frame?.let { env.remoteCopies.isRunning(it.id) } == true
+            pauseControl?.visibility = if (localMode && running) View.VISIBLE else View.GONE
+            resumeControl?.visibility = if (localMode && !running && frame != null) View.VISIBLE else View.GONE
+            releaseControl?.visibility = if (!localMode && !running && frame != null) View.VISIBLE else View.GONE
+            clearControl?.isEnabled = cache > 0 && !busy
+            pauseControl?.isEnabled = !busy
+            resumeControl?.isEnabled = !busy
+            releaseControl?.isEnabled = !busy
         }
-        val localMode = FramePlaybackSettings.requiresLocalCopies(frame?.settingsJson)
-        val running = frame?.let { env.remoteCopies.isRunning(it.id) } == true
-        pauseControl?.isEnabled = localMode && running && !busy
-        resumeControl?.isEnabled = localMode && !running && !busy
-        releaseControl?.isEnabled = frame != null && !localMode && !running && !busy
-        clearControl?.isEnabled = env.remoteMedia.cache.bytesUsed() > 0 && !busy
-        if (firstUse) listOfNotNull(pauseControl, resumeControl, releaseControl, clearControl).forEach { it.visibility = View.GONE }
-        listOfNotNull(pauseControl, resumeControl, releaseControl, clearControl).forEach { it.alpha = if (it.isEnabled) 1f else 0.4f }
-        status.text = text("${selected.size} selected · Temporary cache ${env.remoteMedia.cache.bytesUsed() / 1048576} MiB", "已选 ${selected.size} 张 · 临时缓存 ${env.remoteMedia.cache.bytesUsed() / 1048576} MiB")
-        scope.launch { frame?.let { env.remoteCopies.status(it.id)?.let { value -> status.append("\n$value") } } }
     }
     private fun arrangePhotos() {
         manualOrder.retainAll(selected)

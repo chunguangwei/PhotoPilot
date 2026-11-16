@@ -23,6 +23,7 @@ final class AIFrameFlowTests: XCTestCase {
         let app = XCUIApplication(bundleIdentifier: "dev.photopilot.aiqa")
         app.launchArguments = ["-qa.remote", "-uitest.reset", "-uitest.onboarded", "-AppleLanguages", "(zh-Hans)"]
         app.launch()
+        allowQAWirelessAccessIfPrompted()
         if app.buttons["launch.skip"].waitForExistence(timeout: 10) { app.buttons["launch.skip"].tap() }
         let create = app.buttons["创建相框"].firstMatch
         XCTAssertTrue(create.waitForExistence(timeout: 90))
@@ -61,6 +62,7 @@ final class AIFrameFlowTests: XCTestCase {
         app.launchArguments = ["-uitest.reset", "-uitest.onboarded", "-dev.photopilot.appLanguage", "system", "-AppleLanguages", "(zh-Hans)",
                                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launch()
+        allowQAWirelessAccessIfPrompted()
         let create = app.buttons["frames.createAI"]
         XCTAssertTrue(create.waitForExistence(timeout: 90))
         create.tap()
@@ -84,6 +86,7 @@ final class AIFrameFlowTests: XCTestCase {
             let app = XCUIApplication(bundleIdentifier: "dev.photopilot.aiqa")
             app.launchArguments = ["-uitest.reset", "-uitest.onboarded", "-dev.photopilot.appLanguage", "system", "-AppleLanguages", chinese ? "(zh-Hans)" : "(en)"]
             app.launch()
+            allowQAWirelessAccessIfPrompted()
             let create = app.buttons["frames.createAI"]
             XCTAssertTrue(create.waitForExistence(timeout: 90))
             create.tap()
@@ -113,6 +116,7 @@ final class AIFrameFlowTests: XCTestCase {
         app.launchArguments = ["-uitest.reset", "-uitest.onboarded", "-dev.photopilot.appLanguage", "system", "-AppleLanguages", chinese ? "(zh-Hans)" : "(en)"]
         if remote { app.launchArguments.append("-qa.remote") }
         app.launch()
+        allowQAWirelessAccessIfPrompted()
         let create = app.buttons["frames.createAI"]
         XCTAssertTrue(create.waitForExistence(timeout: 90))
         capture("01-frames", chinese: chinese)
@@ -193,6 +197,12 @@ final class AIFrameFlowTests: XCTestCase {
         let photo = app.images.matching(NSPredicate(format: "label BEGINSWITH %@", chinese ? "当前照片，" : "Current photo,")).firstMatch
         XCTAssertTrue(photo.waitForExistence(timeout: 30))
         capture("08-playback", chinese: chinese)
+    }
+
+    private func allowQAWirelessAccessIfPrompted() {
+        let system = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let wirelessOnly = system.alerts.buttons.matching(NSPredicate(format: "label == '仅限无线局域网' OR label CONTAINS[c] 'Wi-Fi Only' OR label CONTAINS[c] 'WLAN Only'")).firstMatch
+        if wirelessOnly.waitForExistence(timeout: 3) { wirelessOnly.tap() }
     }
 
     private func scrollTo(_ element: XCUIElement, app: XCUIApplication) {

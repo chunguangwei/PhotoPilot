@@ -7,21 +7,22 @@ final class LocalReferenceFlowTests: XCTestCase {
         try XCTSkipUnless(["PhotoPilot Local References QA", "PhotoPilot Local References QA iPad"].contains(simulator), "Requires a dedicated simulator and the repository-only PhotoPilot Synthetic References album fixture")
         continueAfterFailure = false
         let monitor = addUIInterruptionMonitor(withDescription: "Synthetic Photos permission") { alert in
-            let full = alert.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Full' OR label CONTAINS[c] 'All Photos' OR label CONTAINS '完整访问'")).firstMatch
+            let full = alert.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Full' OR label CONTAINS[c] 'All Photos' OR label CONTAINS '完整访问' OR label CONTAINS '完全访问' OR label CONTAINS '所有照片'")).firstMatch
             guard full.exists else { return false }
             full.tap()
             return true
         }
         defer { removeUIInterruptionMonitor(monitor) }
         let app = XCUIApplication()
-        app.launchArguments = ["-uitest.reset", "-uitest.onboarded", "-AppleLanguages", "(en)", "-dev.photopilot.appLanguage", "en"]
+        app.launchArguments = ["-uitest.reset", "-AppleLanguages", "(en)", "-dev.photopilot.appLanguage", "en"]
         app.launch()
         if app.buttons["launch.skip"].waitForExistence(timeout: 15) { app.buttons["launch.skip"].tap() }
-        let sources = app.buttons["Sources"].firstMatch
-        XCTAssertTrue(sources.waitForExistence(timeout: 30))
-        sources.tap()
-        app.buttons["Photos on this device"].firstMatch.tap()
-        let choice = app.sheets.buttons["Photos on this device"]
+        let choosePhotos = app.buttons["Choose photos"].firstMatch
+        XCTAssertTrue(choosePhotos.waitForExistence(timeout: 30))
+        choosePhotos.tap()
+        XCTAssertTrue(app.buttons["Photo Library"].firstMatch.waitForExistence(timeout: 10))
+        app.buttons["Photo Library"].firstMatch.tap()
+        let choice = app.sheets.buttons["Photo Library"]
         XCTAssertTrue(choice.waitForExistence(timeout: 5))
         choice.tap()
         let next = app.buttons["Continue"].firstMatch
@@ -29,7 +30,7 @@ final class LocalReferenceFlowTests: XCTestCase {
         next.tap()
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         if springboard.alerts.firstMatch.waitForExistence(timeout: 4) {
-            let full = springboard.alerts.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Full' OR label CONTAINS[c] 'All Photos' OR label CONTAINS '完整访问'")).firstMatch
+            let full = springboard.alerts.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Full' OR label CONTAINS[c] 'All Photos' OR label CONTAINS '完整访问' OR label CONTAINS '完全访问' OR label CONTAINS '所有照片'")).firstMatch
             XCTAssertTrue(full.exists, springboard.alerts.firstMatch.debugDescription)
             full.tap()
             XCTAssertTrue(next.waitForExistence(timeout: 5))
@@ -37,6 +38,12 @@ final class LocalReferenceFlowTests: XCTestCase {
         }
         let albums = app.navigationBars["Choose albums"]
         XCTAssertTrue(albums.waitForExistence(timeout: 15))
+        XCTAssertTrue(albums.buttons["Back"].isHittable)
+        XCTAssertTrue(albums.buttons["Continue"].isHittable)
+        albums.buttons["Back"].tap()
+        XCTAssertTrue(next.waitForExistence(timeout: 5))
+        next.tap()
+        XCTAssertTrue(albums.waitForExistence(timeout: 5))
         let synthetic = app.tables.cells.containing(.staticText, identifier: "PhotoPilot Synthetic References").firstMatch
         try XCTSkipUnless(synthetic.waitForExistence(timeout: 5), "Prepare the repository-only PhotoPilot Synthetic References album before this UI test")
         synthetic.tap()
@@ -61,6 +68,45 @@ final class LocalReferenceFlowTests: XCTestCase {
         if play.waitForExistence(timeout: 8) { play.tap() }
         XCTAssertTrue(current.waitForExistence(timeout: 15))
         capture("real-photokit-restart-playback")
+    }
+
+    func testFirstUsePhotoAlbumBackNavigationAtLargestText() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] == "PhotoPilot Local References QA", "Requires the dedicated synthetic-photo simulator")
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest.reset", "-AppleLanguages", "(zh-Hans)", "-dev.photopilot.appLanguage", "zh-Hans",
+                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        if app.buttons["launch.skip"].waitForExistence(timeout: 15) { app.buttons["launch.skip"].tap() }
+        let choose = app.buttons["选择照片"].firstMatch
+        XCTAssertTrue(choose.waitForExistence(timeout: 30))
+        choose.tap()
+        XCTAssertTrue(app.buttons["照片库"].firstMatch.waitForExistence(timeout: 10))
+        app.buttons["照片库"].firstMatch.tap()
+        app.sheets.buttons["照片库"].tap()
+        let next = app.buttons["继续"].firstMatch
+        XCTAssertTrue(next.waitForExistence(timeout: 10))
+        if !next.isHittable { app.swipeUp() }
+        next.tap()
+        let albums = app.navigationBars["选择相册"]
+        XCTAssertTrue(albums.waitForExistence(timeout: 10))
+        XCTAssertTrue(albums.buttons["返回"].isHittable)
+        XCTAssertTrue(albums.buttons["继续"].isHittable)
+        capture("first-use-albums-largest-text")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(albums.buttons["返回"].waitForExistence(timeout: 5))
+        XCTAssertTrue(albums.buttons["继续"].isHittable)
+        capture("first-use-albums-largest-text-landscape")
+        XCUIDevice.shared.orientation = .portrait
+        albums.buttons["返回"].tap()
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: albums)
+        waitForExpectations(timeout: 5)
+        let back = app.buttons["返回"].firstMatch
+        XCTAssertTrue(back.waitForExistence(timeout: 5))
+        back.tap()
+        XCTAssertTrue(app.buttons["照片库"].firstMatch.waitForExistence(timeout: 5))
+        app.buttons["返回"].firstMatch.tap()
+        XCTAssertTrue(choose.waitForExistence(timeout: 5), app.debugDescription)
     }
 
     func testRealExternalFilesPickerReference() throws {
@@ -95,7 +141,7 @@ final class LocalReferenceFlowTests: XCTestCase {
         let sources = app.buttons["Sources"].firstMatch
         XCTAssertTrue(sources.waitForExistence(timeout: 30))
         sources.tap()
-        app.buttons["Photos on this device"].firstMatch.tap()
+        app.buttons["Photo Library"].firstMatch.tap()
         let files = app.sheets.buttons["Choose photo files"]
         XCTAssertTrue(files.waitForExistence(timeout: 5), app.debugDescription)
         files.tap()

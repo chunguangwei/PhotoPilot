@@ -94,7 +94,7 @@ class LocalReferencePickerWorkflowTest {
             val frameName = "Native SAF $name"
             instrumentation.runOnMainSync {
                 formName.setText(frameName)
-                assertTrue(descendants(activity.window.decorView).filterIsInstance<Switch>().all { it.visibility == View.GONE })
+                assertTrue(descendants(activity.window.decorView).filterIsInstance<Switch>().none { it.isShown })
             }
             touch(checkbox)
             assertTrue(checkbox.isChecked)
@@ -185,6 +185,14 @@ class LocalReferencePickerWorkflowTest {
             assertFalse(descendants(activity.window.decorView).any { it is RemoteFrameView })
             instrumentation.runOnMainSync {
                 MainActivity::class.java.getDeclaredMethod("openRemoteFrame", dev.photopilot.scaffold.data.db.FrameEntity::class.java, Map::class.java).apply { isAccessible = true }.invoke(activity, null, mapOf("sourceId" to source.id))
+            }
+            val members = env.remoteMedia.members(source.id, "", false)
+            assertTrue("Selected tree root must expose the generated file", members.any { it.id == selected.id })
+            for (page in members.chunked(20)) {
+                val firstName = env.localReferences.displayName(page.first())
+                await("Tree page must finish loading") { descendants(activity.window.decorView).filterIsInstance<CheckBox>().any { it.text.toString() == firstName } }
+                if (page.any { it.id == selected.id }) break
+                touch(descendants(activity.window.decorView).filterIsInstance<TextView>().single { it.text.toString() in setOf("Next", "下一页") })
             }
             await("Tree selection grid must expose the generated image") { descendants(activity.window.decorView).filterIsInstance<CheckBox>().any { it.text.toString() == name } }
             val editor = descendants(activity.window.decorView).filterIsInstance<RemoteFrameView>().last()
@@ -321,11 +329,12 @@ class LocalReferencePickerWorkflowTest {
         capture("system-after-click-${++systemClicks}")
     }
     private fun touch(view: View) {
+        instrumentation.waitForIdleSync()
         instrumentation.runOnMainSync { view.requestRectangleOnScreen(Rect(0, 0, view.width, view.height), true) }
         SystemClock.sleep(350)
-        val location = IntArray(2)
-        instrumentation.runOnMainSync { view.getLocationOnScreen(location) }
-        touchAt(location[0] + view.width / 2f, location[1] + view.height / 2f)
+        val visible = Rect()
+        instrumentation.runOnMainSync { assertTrue("Control must be visible", view.getGlobalVisibleRect(visible)) }
+        touchAt(visible.exactCenterX(), visible.exactCenterY())
     }
     private fun touchAt(x: Float, y: Float) {
         val time = SystemClock.uptimeMillis()

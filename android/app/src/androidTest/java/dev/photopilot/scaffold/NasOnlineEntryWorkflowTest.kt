@@ -243,11 +243,29 @@ class NasOnlineEntryWorkflowTest {
             instrumentation.runOnMainSync { descendants(localEditor).filterIsInstance<android.widget.CheckBox>().first { it.text.toString() == folderLabel }.performClick() }
         } else {
             instrumentation.runOnMainSync {
+                val previous = MainActivity::class.java.getDeclaredField("remoteFrameView").apply { isAccessible = true }.get(activity) as? RemoteFrameView
+                previous?.onBack?.invoke()
                 val view = MainActivity::class.java.getDeclaredMethod("buildSourcesView").apply { isAccessible = true }.invoke(activity) as SourcesView
                 view.onNasBrowse!!.invoke(source.id)
             }
             val targetLabel = existingTarget?.name ?: activity.getString(R.string.import_pick_frame_new)
-            await("frame target dialog") { instrumentation.uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText(targetLabel)?.isNotEmpty() == true }
+            if (existingTarget != null) assertTrue("Existing target remains available", env.frameManager.listFrames().any { it.id == existingTarget.id && it.name == targetLabel })
+            try {
+                withTimeout(10000) {
+                    while (true) {
+                        if (android.os.Build.VERSION.SDK_INT >= 33) instrumentation.uiAutomation.clearCache()
+                        dismissFullscreenEducation()
+                        if (instrumentation.uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText(targetLabel)?.isNotEmpty() == true) break
+                        delay(100)
+                    }
+                }
+            } catch (failure: TimeoutCancellationException) {
+                val root = instrumentation.uiAutomation.rootInActiveWindow
+                fun labels(node: android.view.accessibility.AccessibilityNodeInfo): List<String> =
+                    listOfNotNull(node.text?.toString()?.takeIf { node.className?.toString() != "android.widget.EditText" }) +
+                        (0 until node.childCount).flatMap { node.getChild(it)?.let(::labels).orEmpty() }
+                throw AssertionError("Frame target dialog missing, remoteEditor=${MainActivity::class.java.getDeclaredField("remoteFrameView").apply { isAccessible = true }.get(activity) != null}, visible=${root?.let(::labels)}", failure)
+            }
             val node = instrumentation.uiAutomation.rootInActiveWindow.findAccessibilityNodeInfosByText(targetLabel).last()
             assertTrue(node.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK))
         }
@@ -259,7 +277,7 @@ class NasOnlineEntryWorkflowTest {
         }
         await("photo checkbox") { descendants(editor).filterIsInstance<android.widget.CheckBox>().any { it.text.toString() == filename } }
         instrumentation.runOnMainSync {
-            assertFalse(descendants(editor).filterIsInstance<android.widget.Switch>().single().isChecked)
+            assertEquals("remote", editor.draftState()["mode"])
             descendants(editor).filterIsInstance<android.widget.CheckBox>().first { it.text.toString() == filename }.performClick()
         }
         val selectedAsset = env.database.sourceAssetDao().getBySource(source.id).first { it.remoteKey.substringAfterLast('/') == filename }
@@ -273,11 +291,14 @@ class NasOnlineEntryWorkflowTest {
         java.io.File(context.cacheDir, "nas-online-visible-${source.type}.png").outputStream().use {
             instrumentation.uiAutomation.takeScreenshot().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
         }
-        instrumentation.runOnMainSync { descendants(editor).filterIsInstance<TextView>().first { it.text.toString() == "Save frame" }.performClick() }
+        instrumentation.runOnMainSync { descendants(editor).filterIsInstance<TextView>().single { it.text.toString() in setOf("Save frame", "Confirm and play") }.performClick() }
         val expectedCount = if (existingTarget == null) 1 else 2
         await("frame saved") {
             if (existingTarget == null) env.frameManager.listFrames().any { it.id !in framesBefore }
             else env.frames.playbackItems(existingTarget.id).size == expectedCount
+        }
+        await("Saved remote editor closed") {
+            MainActivity::class.java.getDeclaredField("remoteFrameView").apply { isAccessible = true }.get(activity) !== editor
         }
         val frame = if (existingTarget == null) env.frameManager.listFrames().single { it.id !in framesBefore }
             else requireNotNull(env.database.frameDao().getById(existingTarget.id))
@@ -365,12 +386,15 @@ class NasOnlineEntryWorkflowTest {
                 await("NAS indexed six photos") { env.database.sourceAssetDao().getBySource(source.id).size >= 6 }
                 val rows = env.database.sourceAssetDao().getBySource(source.id)
                 val rootPhoto = rows.first { !it.remoteKey.contains('/') }
+                instrumentation.sendStatus(1, android.os.Bundle().apply { putString("stream", "$protocol source entry → new frame\n") })
                 val firstFrame = chooseAndPlay(activity, env, source, framesBefore, null, rootPhoto.remoteKey)
                 val existingTarget = firstFrame.copy(name = "NAS existing target " + UUID.randomUUID())
                 env.database.frameDao().update(existingTarget)
                 val nestedPhoto = rows.first { it.remoteKey.contains('/') }
+                instrumentation.sendStatus(1, android.os.Bundle().apply { putString("stream", "$protocol nested folder → new frame\n") })
                 chooseAndPlay(activity, env, source, env.frameManager.listFrames().map { it.id }.toSet(),
                     nestedPhoto.remoteKey.substringBeforeLast('/'), nestedPhoto.remoteKey.substringAfterLast('/'), fromFrames = true)
+                instrumentation.sendStatus(1, android.os.Bundle().apply { putString("stream", "$protocol source entry → existing frame\n") })
                 chooseAndPlay(activity, env, source, env.frameManager.listFrames().map { it.id }.toSet(),
                     nestedPhoto.remoteKey.substringBeforeLast('/'), nestedPhoto.remoteKey.substringAfterLast('/'), existingTarget = existingTarget)
                 assertTrue(env.database.importJobDao().getBySource(source.id).isEmpty())
@@ -383,8 +407,21 @@ class NasOnlineEntryWorkflowTest {
         }
     }
 
+    private fun dismissFullscreenEducation() {
+        val root = InstrumentationRegistry.getInstrumentation().uiAutomation.rootInActiveWindow ?: return
+        if (root.findAccessibilityNodeInfosByText("Viewing full screen").isEmpty()) return
+        var action = root.findAccessibilityNodeInfosByText("Got it").firstOrNull() ?: return
+        while (!action.isClickable && action.parent != null) action = action.parent
+        action.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK)
+    }
+
     private suspend fun await(label: String = "NAS workflow condition", predicate: suspend () -> Boolean) {
-        try { withTimeout(120000) { while (!predicate()) delay(100) } }
+        try { withTimeout(120000) { while (true) {
+            if (android.os.Build.VERSION.SDK_INT >= 33) InstrumentationRegistry.getInstrumentation().uiAutomation.clearCache()
+            dismissFullscreenEducation()
+            if (predicate()) break
+            delay(100)
+        } } }
         catch (failure: TimeoutCancellationException) { throw AssertionError(label, failure) }
     }
 

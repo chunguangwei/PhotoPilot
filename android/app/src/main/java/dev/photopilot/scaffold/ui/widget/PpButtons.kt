@@ -49,4 +49,8 @@ internal fun secondaryButton(context: Context, textRes: Int): TextView =
         setPadding(horizontal, 0, horizontal, 0)
         isClickable = true
         isFocusable = true
+        val feedback = TypedValue()
+        if (context.theme.resolveAttribute(android.R.attr.selectableItemBackground, feedback, true)) {
+            setBackgroundResource(feedback.resourceId)
+        }
     }

@@ -31,6 +31,7 @@ final class PhotoPermissionViewController: UIViewController {
         super.viewDidLoad()
         enableEdgeSwipeBack()
         view.backgroundColor = ThemeColor.canvas
+        NotificationCenter.default.addObserver(self, selector: #selector(refreshAuthorization), name: UIApplication.didBecomeActiveNotification, object: nil)
 
         let backButton = ActionButton(titleKey: "common.back", style: .secondary)
         backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
@@ -61,6 +62,7 @@ final class PhotoPermissionViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
         render()
     }
 
@@ -139,6 +141,10 @@ final class PhotoPermissionViewController: UIViewController {
             verticalCenter
         ])
         contentStack = stack
+    }
+
+    @objc private func refreshAuthorization() {
+        render()
     }
 
     private func currentState() -> ContentState {

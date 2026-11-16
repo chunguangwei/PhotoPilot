@@ -206,7 +206,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
         case 0: return models.count + 3
-        case 1: return folderRows.count + 1
+        case 1: return folderRows.count + 2
         case 2: return filtersExpanded ? 7 : 2
         case 3: return 3
         default: return 1 + previews[section - 4].matches.filter { $0.decision != .rejected }.count
@@ -226,7 +226,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
     override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
         switch section {
         case 0: return AIText.value("Models download on demand. Both support Chinese and English. Domestic mirrors may redirect to overseas servers.", "模型按需下载，两种模型均支持中英文。国内镜像可能重定向至境外服务器。")
-        case 1: return collections.isEmpty ? AIText.value("Import photos from Sources first, then select their folders here.", "请先在“来源”中导入照片，再返回选择目录。") : nil
+        case 1: return collections.isEmpty ? AIText.value("Add photos from Photo Library, files, folders, or NAS, then choose folders to classify.", "从照片库、照片文件、目录或 NAS 添加照片，再选择要分类的目录。") : nil
         case 2: return AIText.value("For example: family, pets or the beach. Enter one category per line. Each category creates a frame, with a name you can edit in the preview.", "例如：家人、宠物、海边。每行填写一个类别，每个类别会生成一个相框；预览结果后可修改名称。")
         case 3: return AIText.value("Only selected folders are scanned. Continuous classification processes new photos after import while the app is open. It can be changed later.", "仅扫描选定目录。持续分类会在导入完成且 App 打开时处理新照片，之后可修改。")
         default:
@@ -245,9 +245,15 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         switch indexPath.section {
         case 0: configureModelCell(cell, row: indexPath.row)
         case 1:
-            if indexPath.row == folderRows.count { configureToggle(cell, title: AIText.value("Include subfolders", "包含子目录"), toggle: recursiveSwitch) }
-            else {
-                let row = folderRows[indexPath.row]
+            if indexPath.row == 0 {
+                cell.textLabel?.text = AIText.value("Add photos from a source", "从来源添加照片")
+                cell.detailTextLabel?.text = AIText.value("Photo Library, files, folders, or NAS", "照片库、照片文件、目录或 NAS")
+                cell.accessoryType = .disclosureIndicator
+                cell.accessibilityIdentifier = "ai.sources.add"
+            } else if indexPath.row == folderRows.count + 1 {
+                configureToggle(cell, title: AIText.value("Include subfolders", "包含子目录"), toggle: recursiveSwitch)
+            } else {
+                let row = folderRows[indexPath.row - 1]
                 guard let collection = row.collection else {
                     cell.textLabel?.text = row.title
                     cell.textLabel?.font = ThemeFont.heading()
@@ -382,7 +388,11 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
             } else if indexPath.row == models.count + 1 { confirmDownload() }
             else if indexPath.row == models.count + 2 { deleteModel() }
         case 1:
-            guard indexPath.row < folderRows.count, let collection = folderRows[indexPath.row].collection else { return }
+            if indexPath.row == 0 {
+                openSources()
+                return
+            }
+            guard indexPath.row <= folderRows.count, let collection = folderRows[indexPath.row - 1].collection else { return }
             let id = collection.id
             if selectedCollections.contains(id) { selectedCollections.remove(id) } else { selectedCollections.insert(id) }
             settingsChanged()
@@ -394,6 +404,32 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         default: break
         }
         tableView.reloadData()
+    }
+
+    private func openSources() {
+        view.endEditing(true)
+        let sources = SourcesListViewController(environment: environment)
+        let navigation = UINavigationController(rootViewController: sources)
+        navigation.setNavigationBarHidden(true, animated: false)
+        navigation.modalPresentationStyle = .fullScreen
+        sources.onConnected = { [weak self, weak navigation] sourceIDs, _ in
+            guard let self, let navigation, presentedViewController === navigation else { return }
+            navigation.dismiss(animated: true) { [weak self] in
+                guard let self, viewIfLoaded?.window != nil else { return }
+                Task { [weak self] in
+                    guard let self else { return }
+                    do {
+                        collections = try await environment.assets.collections()
+                        sourceNames = Dictionary(((try? environment.sources.webdavSources()) ?? []).map { ($0.id, $0.displayName) }, uniquingKeysWith: { first, _ in first })
+                        let connected = Set(sourceIDs)
+                        selectedCollections.formUnion(collections.filter { $0.sourceID.map(connected.contains) == true }.map(\.id))
+                        settingsChanged()
+                        tableView.reloadData()
+                    } catch { show(error) }
+                }
+            }
+        }
+        present(navigation, animated: true)
     }
 
     func textViewDidChange(_ textView: UITextView) { invalidatePreview() }

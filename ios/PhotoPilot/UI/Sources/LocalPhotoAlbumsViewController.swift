@@ -29,6 +29,11 @@ final class LocalPhotoAlbumsViewController: UITableViewController {
         }
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
+    }
+
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { albums.count + 1 }
 
     override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
@@ -80,7 +85,9 @@ final class LocalPhotoAlbumsViewController: UITableViewController {
     }
 
     @objc private func back() {
-        if let navigationController { navigationController.popViewController(animated: true) }
+        if let navigationController, navigationController.viewControllers.first != self {
+            navigationController.popViewController(animated: true)
+        }
         else { dismiss(animated: true) }
     }
 }

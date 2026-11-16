@@ -21,10 +21,16 @@ class AIFrameView(
     private val onClose: () -> Unit,
     private val onChanged: () -> Unit,
     private val restoredDraft: Map<String, String>? = null,
-) : ScrollView(context) {
+) : LinearLayout(context) {
+    var onLocalPhotos: (() -> Unit)? = null
+    var onLocalFiles: (() -> Unit)? = null
+    var onConnect: (() -> Unit)? = null
     private val chinese = resources.configuration.locales[0].language == "zh"
     private fun words(zh: String, en: String) = if (chinese) zh else en
-    private val column = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(resources.getDimensionPixelSize(dev.photopilot.scaffold.R.dimen.pp_space_24), resources.getDimensionPixelSize(dev.photopilot.scaffold.R.dimen.pp_space_16), resources.getDimensionPixelSize(dev.photopilot.scaffold.R.dimen.pp_space_24), resources.getDimensionPixelSize(dev.photopilot.scaffold.R.dimen.pp_space_24)) }
+    private val column = LinearLayout(context).apply { orientation = VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(16)) }
+    private val modelSection = dev.photopilot.scaffold.ui.widget.DisclosureSection(context, words("AI 模型", "AI model"))
+    private val folderSummary = TextView(context)
+    private var sourceReload: Job? = null
     private val modelPicker = Spinner(context)
     private val sourcePicker = Spinner(context)
     private val status = TextView(context)
@@ -66,27 +72,45 @@ class AIFrameView(
 
     init {
         setBackgroundColor(context.getColor(dev.photopilot.scaffold.R.color.pp_surface_canvas))
-        addView(column, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-        button(words("返回", "Back")) { onClose() }
-        label(words("AI 分类相框", "AI frames"), true)
-        label(words("照片和提示词仅在设备本地处理。先下载模型。相似度用于筛选，边界结果需确认。", "Photos and prompts are processed on this device. Download a model first. Borderline similarity results need review."))
-        column.addView(modelPicker)
+        orientation = VERTICAL
+        addView(dev.photopilot.scaffold.ui.widget.formHeader(context, words("AI 创建相框", "Create AI frame"), onClose))
+        addView(ScrollView(context).apply { addView(column) }, LayoutParams(-1, 0, 1f))
+        label(words("选择照片", "Choose photos"), true)
+        label(words("直接使用本机原照片或 NAS，照片仅在此设备上分类。", "Choose device photos or NAS folders. Classification stays on this device."))
+        val sourceActions = LinearLayout(context)
+        sourceActions.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, dev.photopilot.scaffold.R.string.source_local_photos_title).apply {
+            text = words("照片库", "Photo Library")
+            setOnClickListener { onLocalPhotos?.invoke() }
+        }, LayoutParams(0, -2, 1f))
+        sourceActions.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, dev.photopilot.scaffold.R.string.source_local_files_choose_folder).apply {
+            text = words("文件或目录", "Files or folders")
+            setOnClickListener { onLocalFiles?.invoke() }
+        }, LayoutParams(0, -2, 1f))
+        column.addView(sourceActions)
+        folderSummary.textSize = 15f
+        folderSummary.setTextColor(context.getColor(dev.photopilot.scaffold.R.color.pp_text_secondary))
+        column.addView(folderSummary)
+        button(words("选择已连接相册 / NAS", "Choose connected albums / NAS")) { chooseFolders() }
+        column.addView(recursive)
+        label(words("想展示什么照片？", "What photos would you like to show?"), true)
+        label(words("例如家人、宠物、海边，每行一个类别。预览后可修改名称和选片。", "For example, family, pets or the beach, one category per line. Edit names and photo selections in the preview."))
+        column.addView(descriptions)
         modelPicker.adapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, environment.aiFrames.models.models.map { if (chinese) it.chinese else it.english })
-        column.addView(sourcePicker)
         sourcePicker.adapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, listOf(words("自动下载源", "Automatic download source"), words("国内下载源", "Domestic source"), words("国际下载源", "International source")))
-        column.addView(modelStatus)
-        downloadButton = button(words("下载 / 重试模型", "Download / retry model")) { confirmDownload() }
+        modelSection.body.addView(modelPicker)
+        modelSection.body.addView(sourcePicker)
+        modelSection.body.addView(modelStatus)
+        column.addView(modelSection, LayoutParams(-1, -2).apply { topMargin = dp(16) })
+        downloadButton = button(words("下载模型", "Download model")) { confirmDownload() }
         cancelDownloadButton = button(words("取消下载", "Cancel download")) { download?.cancel() }
         deleteModelButton = button(words("删除此模型", "Delete selected model")) {
             val model = selectedModel()
             scope.launch { withContext(Dispatchers.IO) { environment.aiFrames.deleteModel(model) }; updateModelStatus() }
         }
-        label(words("来源相册 / 目录", "Source albums / folders"), true)
-        column.addView(folders)
-        column.addView(recursive)
-        label(words("想展示什么照片？", "What photos would you like to show?"))
-        label(words("例如：家人、宠物、海边。每行填写一个类别，每个类别会生成一个相框；预览结果后可修改名称。", "For example: family, pets or the beach. Enter one category per line. Each category creates a frame, with a name you can edit in the preview."))
-        column.addView(descriptions)
+        listOfNotNull(downloadButton, cancelDownloadButton, deleteModelButton).forEach {
+            column.removeView(it)
+            modelSection.body.addView(it)
+        }
         val advancedStart = column.childCount
         label(words("包含描述（每行一条，可选）", "Include descriptions (one per line, optional)"))
         column.addView(includes)
@@ -124,6 +148,11 @@ class AIFrameView(
         }
         if (existingFrame != null) button(words("保存设置（不扫描）", "Save settings without scanning"), primary = true) { saveSettings() }
         startButton = button(words("扫描并预览", "Scan and preview"), primary = true) { previewAndShow() }
+        column.removeView(startButton)
+        addView(LinearLayout(context).apply {
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+            addView(startButton, LayoutParams(-1, -2))
+        }, LayoutParams(-1, -2))
         cancelButton = button(words("取消分类", "Cancel classification")) {
             previewJob?.cancel()
             activePreviewIdentity = null
@@ -148,26 +177,7 @@ class AIFrameView(
         }
         scope.launch {
             val configuration = withContext(Dispatchers.IO) { existingFrame?.let { environment.aiFrames.state.get(it.id) } }
-            val collections = withContext(Dispatchers.IO) { environment.database.collectionDao().getAll() }
-            val sources = withContext(Dispatchers.IO) { environment.database.sourceDao().getAll().associateBy { it.id } }
-            for ((sourceId, sourceCollections) in collections.groupBy { collection -> collection.sourceId?.takeIf { sources[it]?.type in setOf(dev.photopilot.scaffold.data.db.SourceType.SMB, dev.photopilot.scaffold.data.db.SourceType.WEBDAV) } }) {
-                folders.addView(TextView(context).apply {
-                    text = sources[sourceId]?.displayName ?: words("本机目录", "On this device")
-                    setTypeface(typeface, android.graphics.Typeface.BOLD)
-                    setPadding(0, 24, 0, 8)
-                    textSize = 18f
-                })
-                for (collection in sourceCollections) {
-                    val folderName = if (sourceId == null) collection.name else collection.relPath?.takeIf { it.isNotBlank() } ?: collection.name
-                    val check = CheckBox(context).apply {
-                        text = folderName
-                        isChecked = collection.id in configuration?.collections.orEmpty()
-                    }
-                    collectionChecks[collection.id] = check
-                    folders.addView(check)
-                }
-            }
-            if (collections.isEmpty()) label(words("请先在照片库导入相册或目录。", "Import an album or folder in Library first."))
+            populateCollections(configuration?.collections.orEmpty().toSet())
             if (configuration != null) {
                 restoreModelSelection(configuration.modelId, configuration.rule.threshold.toString())
                 descriptions.setText(configuration.rule.description)
@@ -195,6 +205,7 @@ class AIFrameView(
                 sourcePicker.setSelection(draft["source"]?.toIntOrNull()?.coerceIn(0, 2) ?: 0)
             }
             initialized = true
+            updateFolderSummary()
             updateModelStatus()
             refreshProgress()
             if (restoredDraft?.get("previewReady") == "true") {
@@ -206,6 +217,73 @@ class AIFrameView(
             }
         }
     }
+    private fun dp(value: Int) = (resources.displayMetrics.density * value).toInt()
+
+    fun reloadCollections() {
+        sourceReload?.cancel()
+        sourceReload = scope.launch {
+            populateCollections(collectionChecks.filterValues { it.isChecked }.keys.toSet())
+            updateFolderSummary()
+            chooseFolders()
+        }
+    }
+
+    private suspend fun populateCollections(selected: Set<String>) {
+        val collections = withContext(Dispatchers.IO) { environment.database.collectionDao().getAll() }
+        val sources = withContext(Dispatchers.IO) { environment.database.sourceDao().getAll().associateBy { it.id } }
+        collectionChecks.clear()
+        folders.removeAllViews()
+        for ((sourceId, rows) in collections.groupBy { it.sourceId?.takeIf { id -> sources[id]?.type in setOf(dev.photopilot.scaffold.data.db.SourceType.SMB, dev.photopilot.scaffold.data.db.SourceType.WEBDAV) } }) {
+            folders.addView(TextView(context).apply {
+                text = sources[sourceId]?.displayName ?: words("本机目录", "On this device")
+                textSize = 17f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setPadding(dp(8), dp(12), dp(8), dp(4))
+                setAccessibilityHeading(true)
+            })
+            for (row in rows) {
+                val fullName = if (sourceId == null) row.name else row.relPath?.takeIf { it.isNotBlank() } ?: row.name
+                val shortName = if (sourceId == null) fullName else fullName.substringAfterLast('/')
+                val check = CheckBox(context).apply {
+                    text = if (shortName == fullName) shortName else shortName + "\n" + fullName.substringBeforeLast('/').takeLast(48)
+                    contentDescription = fullName
+                    maxLines = 2
+                    ellipsize = android.text.TextUtils.TruncateAt.END
+                    minHeight = dp(48)
+                    isChecked = row.id in selected
+                    setOnCheckedChangeListener { _, _ -> updateFolderSummary() }
+                }
+                collectionChecks[row.id] = check
+                folders.addView(check)
+            }
+        }
+    }
+
+    private fun updateFolderSummary() {
+        val count = collectionChecks.values.count { it.isChecked }
+        folderSummary.text = if (count == 0) words("请选择本机相册或 NAS 目录", "Choose a device album or NAS folder")
+            else words("已选 $count 个相册 / 目录", "$count albums / folders selected")
+    }
+
+    private fun chooseFolders() {
+        if (!initialized || !isAttachedToWindow || !isShown) return
+        (folders.parent as? android.view.ViewGroup)?.removeView(folders)
+        val content = LinearLayout(context).apply { orientation = VERTICAL }
+        if (collectionChecks.isEmpty()) content.addView(TextView(context).apply {
+            text = words("暂无已连接相册。返回后选择照片库、文件目录或连接 NAS。", "No connected albums. Choose Photo Library, files or connect a NAS to continue.")
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+        })
+        content.addView(folders)
+        val scroll = ScrollView(context).apply { addView(content) }
+        val dialog = AlertDialog.Builder(context).setTitle(words("选择相册 / 目录", "Choose albums / folders"))
+            .setView(scroll).setPositiveButton(words("完成", "Done")) { _, _ -> updateFolderSummary() }
+            .setNeutralButton(words("连接 NAS", "Connect NAS")) { _, _ -> onConnect?.invoke() }
+            .create()
+        dialog.setOnDismissListener { (folders.parent as? android.view.ViewGroup)?.removeView(folders) }
+        dialog.show()
+        dialog.window?.setLayout(-1, (resources.displayMetrics.heightPixels * .72f).toInt())
+    }
+
     fun draftState(): Map<String, String> {
         if (!initialized && restoredDraft != null) return restoredDraft.toMap()
         val identity = formIdentity()
@@ -236,9 +314,9 @@ class AIFrameView(
         threshold.setText(if (savedIndex >= 0) savedThreshold ?: model.defaultThreshold.toString() else model.defaultThreshold.toString())
     }
     private fun selectedModel() = environment.aiFrames.models.models[modelPicker.selectedItemPosition.coerceAtLeast(0)]
-    private fun updateModelStatus() { modelStatus.text = if (!environment.aiFrames.models.supported(selectedModel())) words("此设备不支持标准模型，请选择紧凑版。", "Choose the compact model on this device.") else if (environment.aiFrames.models.ready(selectedModel())) words("模型已就绪，可离线分类", "Model ready for offline classification") else words("需要下载模型", "Model download required"); modelStatus.append(" · %.1f MB".format(selectedModel().bytes / 1e6)); if (retiredModelNotice) modelStatus.append("\n" + words("旧模型已替换，请复核新模型与匹配严格度后保存。", "The previous model was replaced. Review the new model and matching strictness before saving.")); updateActions() }
+    private fun updateModelStatus() { modelSection.setSummary(if (chinese) selectedModel().chinese else selectedModel().english); modelStatus.text = if (!environment.aiFrames.models.supported(selectedModel())) words("此设备不支持标准模型，请选择紧凑版。", "Choose the compact model on this device.") else if (environment.aiFrames.models.ready(selectedModel())) words("模型已就绪，可离线分类", "Model ready for offline classification") else words("需要下载模型", "Model download required"); modelStatus.append(" · %.1f MB".format(selectedModel().bytes / 1e6)); if (retiredModelNotice) modelStatus.append("\n" + words("旧模型已替换，请复核新模型与匹配严格度后保存。", "The previous model was replaced. Review the new model and matching strictness before saving.")); updateActions() }
     private fun input(hint: String, single: Boolean) = EditText(context).apply { this.hint = hint; setSingleLine(single); setTextColor(context.getColor(dev.photopilot.scaffold.R.color.pp_text_primary)) }
-    private fun label(text: String, heading: Boolean = false) { column.addView(TextView(context).apply { this.text = text; textSize = if (heading) 21f else 15f; setPadding(0, resources.getDimensionPixelSize(dev.photopilot.scaffold.R.dimen.pp_space_16), 0, resources.getDimensionPixelSize(dev.photopilot.scaffold.R.dimen.pp_space_12)); setAccessibilityHeading(heading); setTextColor(context.getColor(if (heading) dev.photopilot.scaffold.R.color.pp_text_primary else dev.photopilot.scaffold.R.color.pp_text_secondary)) }) }
+    private fun label(text: String, heading: Boolean = false) { column.addView(TextView(context).apply { this.text = text; textSize = if (heading) 21f else 15f; setPadding(0, dp(if (heading) 12 else 4), 0, dp(8)); setAccessibilityHeading(heading); setTextColor(context.getColor(if (heading) dev.photopilot.scaffold.R.color.pp_text_primary else dev.photopilot.scaffold.R.color.pp_text_secondary)) }) }
     private fun button(text: String, primary: Boolean = false, action: () -> Unit): TextView {
         val button = if (primary) dev.photopilot.scaffold.ui.widget.primaryButton(context, dev.photopilot.scaffold.R.string.common_done) else dev.photopilot.scaffold.ui.widget.secondaryButton(context, dev.photopilot.scaffold.R.string.common_done)
         button.text = text
@@ -253,10 +331,26 @@ class AIFrameView(
         modelPicker.isEnabled = !downloading && !scanning
         sourcePicker.isEnabled = !downloading
         val ready = environment.aiFrames.models.ready(selectedModel())
+        val supported = environment.aiFrames.models.supported(selectedModel())
+        modelSection.setSummary((if (chinese) selectedModel().chinese else selectedModel().english) + " · " + if (downloading) modelStatus.text.toString() else if (ready) words("就绪", "Ready") else words("需要下载", "Download required"))
+        downloadButton?.visibility = if (ready || downloading) View.GONE else View.VISIBLE
+        deleteModelButton?.visibility = if (ready && !downloading && !scanning) View.VISIBLE else View.GONE
         downloadButton?.isEnabled = !downloading && !scanning && !ready && environment.aiFrames.models.supported(selectedModel())
         cancelDownloadButton?.visibility = if (downloading) View.VISIBLE else View.GONE
         deleteModelButton?.isEnabled = ready && !downloading && !scanning
-        startButton?.isEnabled = ready && !downloading && !scanning && environment.aiFrames.models.supported(selectedModel())
+        startButton?.isEnabled = !downloading && !scanning && initialized
+        startButton?.text = when {
+            !supported -> words("选择兼容模型", "Choose compatible model")
+            ready -> words("扫描并预览", "Scan and preview")
+            else -> words("下载模型", "Download model")
+        }
+        startButton?.setOnClickListener {
+            when {
+                !supported -> modelSection.setExpanded(true)
+                ready -> previewAndShow()
+                else -> { modelSection.setExpanded(true); confirmDownload() }
+            }
+        }
         cancelButton?.visibility = if (scanning || savedScanning || pendingPreview != null) View.VISIBLE else View.GONE
         listOfNotNull(downloadButton, deleteModelButton, startButton).forEach { it.alpha = if (it.isEnabled) 1f else .4f }
         resumeButton?.visibility = if (trackedFrames.isNotEmpty() && !scanning && !savedScanning) View.VISIBLE else View.GONE
@@ -444,7 +538,7 @@ class AIFrameView(
         super.onAttachedToWindow()
         polling = scope.launch { while (isActive) { refreshProgress(); delay(1500) } }
     }
-    override fun onDetachedFromWindow() { polling?.cancel(); download?.cancel(); previewJob?.cancel(); super.onDetachedFromWindow() }
+    override fun onDetachedFromWindow() { polling?.cancel(); sourceReload?.cancel(); download?.cancel(); previewJob?.cancel(); super.onDetachedFromWindow() }
     private suspend fun refreshProgress() {
         updateActions()
         if (previewJob?.isActive == true || pendingPreview != null) return

@@ -1,0 +1,96 @@
+{
+  "version": "1.4.3",
+  "build": 64,
+  "status": "validated build",
+  "assets": [
+    {
+      "name": "AMSMB2-4.0.3-source.tar.gz",
+      "bytes": 329872,
+      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077"
+    },
+    {
+      "name": "PhotoPilot-v1.4.3-64.apk",
+      "bytes": 154236774,
+      "sha256": "bd70cdadb72b5f00572e5d839d99d248d129b2f0e2ae35fa327ec801540f370f"
+    },
+    {
+      "name": "SMBSourceManifest.json",
+      "bytes": 33554,
+      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 273,
+      "sha256": "89f26039fab10fae1329b67ca05d096d4b29288a69c255f4676b89b28963d78f"
+    }
+  ],
+  "android": {
+    "jvmTests": 441,
+    "jvmFailures": 0,
+    "nativeMainRegressionTests": 24,
+    "nativeMainRegressionFailures": 0,
+    "finalLayoutAndLocalSelectionTests": 12,
+    "fileGrantRestartTests": 2,
+    "lintErrors": 0,
+    "lintWarnings": 206,
+    "device": "Android emulator",
+    "screenReference": "Huawei Mate X6 outer display, 1080x2440",
+    "physicalDeviceAvailable": false,
+    "originalSignerPreserved": true,
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86",
+      "x86_64"
+    ],
+    "systemFileAndTreePreparationTests": 2,
+    "systemFileAndTreeRestartRevokeTests": 2,
+    "finalBilingualOrientationLayoutTests": 4,
+    "finalBilingualOrientationLayoutFailures": 0
+  },
+  "ios": {
+    "phoneNativePassed": 52,
+    "phoneNativeSkipped": 1,
+    "ipadSimulatorPassed": 33,
+    "physicalTestsPassed": 8,
+    "physicalTestFailures": 0,
+    "device": "iPhone13",
+    "version": "1.4.3",
+    "build": "64",
+    "managementOrientation": "portrait",
+    "nasWorkflowThreshold": 0.02,
+    "physicalIPadAvailable": false,
+    "productionUpgradeInstalled": true,
+    "productionPhotosNavigationReadOnlyPassed": true,
+    "productionDataRetentionVerified": false,
+    "productionDatabaseExported": false,
+    "productionDatabaseExportBlockedByAutomaticReview": true,
+    "productionReadOnlyNavigationSeconds": 18.89,
+    "archiveVerification": {
+      "version": "1.4.3",
+      "build": "64",
+      "bundleId": "dev.photopilot.scaffold",
+      "minimumOS": "15.0",
+      "deviceFamilies": [
+        1,
+        2
+      ],
+      "developmentSigned": true,
+      "signatureVerified": true,
+      "executableSha256": "1f64dae78d3b1b84775e71e5315e89fc6c5854ba89d39f6bc61a4ff7a07bb68e",
+      "appStoreExported": false,
+      "exportBlocker": "No Accounts and existing distribution profile certificate mismatch"
+    }
+  },
+  "appStore": {
+    "archivePrepared": true,
+    "ipaExported": false,
+    "exportBlockers": [
+      "Xcode No Accounts",
+      "Existing store profile does not include the local distribution certificate"
+    ],
+    "uploaded": false
+  },
+  "sharedToolTests": 58,
+  "evidenceDirectory": ".build/phone-ui-20261116"
+}

@@ -66,6 +66,9 @@ class RemoteFrameLayoutTest {
                 }
                 val photoChecks = descendants(view).filterIsInstance<android.widget.CheckBox>().filter { it.text.startsWith("Photo ") }
                 assertEquals(4, photoChecks.size)
+                assertTrue(descendants(view).filterIsInstance<android.widget.TextView>().filter {
+                    it.text.toString() in setOf("Previous", "Next", "上一页", "下一页")
+                }.none { it.isShown })
                 photoChecks.forEach { check ->
                     assertEquals("Photo rows keep a single readable line at large font", 1, check.maxLines)
                     assertEquals(android.text.TextUtils.TruncateAt.END, check.ellipsize)
@@ -103,6 +106,16 @@ class RemoteFrameLayoutTest {
             assertEquals("remote", dev.photopilot.scaffold.data.logic.FramePlaybackSettings.parse(persisted.settingsJson).mediaStorageMode)
             assertEquals(2, env.database.frameSelectionDao().getByFrame(frame.id).count { it.sourceAssetId != null && it.mode == FrameSelectionMode.INCLUDE })
             assertEquals(ownership, env.aiFrames.state.get(frame.id)?.members)
+            val cleared = java.util.concurrent.CountDownLatch(1)
+            instrumentation.runOnMainSync {
+                view.onSaved = { cleared.countDown() }
+                descendants(view).filterIsInstance<android.widget.CheckBox>().filter { it.text.startsWith("Photo ") }.forEach { it.isChecked = false }
+                val save = descendants(view).filterIsInstance<android.widget.TextView>().single { it.text.toString() == if (language == "zh") "保存相框" else "Save frame" }
+                assertTrue("Existing frames must allow saving an empty selection", save.isEnabled)
+                save.performClick()
+            }
+            assertTrue(cleared.await(5, java.util.concurrent.TimeUnit.SECONDS))
+            assertTrue(env.database.frameSelectionDao().getByFrame(frame.id).none { it.mode == FrameSelectionMode.INCLUDE })
         } finally {
             instrumentation.runOnMainSync { activity.finish() }
             env.frameManager.deleteFrame(frame.id)

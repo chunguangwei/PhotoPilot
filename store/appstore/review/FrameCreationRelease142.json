@@ -71,10 +71,12 @@
         "Edit and automatic classification setting",
         "Orientation and actual playback"
       ],
-      "nasFixtureThreshold": 0
+      "nasFixtureThreshold": 0,
+      "orientationQualification": "The production iPhone policy locks management pages to portrait. Earlier orientation requests in creation UI tests did not verify physical landscape layouts. Landscape management layouts are validated with native layout fixtures, and playback orientation is a separate path."
     },
     "physicalIPad": "Unavailable in this run",
-    "androidNativeEnvironment": "Android emulator"
+    "androidNativeEnvironment": "Android emulator",
+    "androidNativeEvidenceCorrection": "The Android instrumentation APK install path used during part of the 1.4.2 checks was incorrect, so some runs used the previously installed test APK. Current phone-UI validation reinstalls outputs/apk/androidTest/debug/app-debug-androidTest.apk before running. Historical 1.4.2 native counts are execution records with this qualification."
   },
   "androidApk": {
     "version": "1.4.2",

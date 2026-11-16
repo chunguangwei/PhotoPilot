@@ -37,7 +37,9 @@ class SourcesView(context: Context) : ScrollView(context) {
     init {
         setBackgroundColor(context.getColor(R.color.pp_surface_canvas))
         val res = resources
-        val inset = res.getDimensionPixelSize(R.dimen.pp_content_inset)
+        val inset = res.getDimensionPixelSize(
+            if (res.configuration.screenWidthDp < 600) R.dimen.pp_content_inset_compact else R.dimen.pp_content_inset,
+        )
         val column = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(inset, inset, inset, inset)
@@ -169,15 +171,15 @@ class SourcesView(context: Context) : ScrollView(context) {
                     setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.pp_text_meta))
                     setTextColor(context.getColor(R.color.pp_text_secondary))
                 })
-                addView(TextView(context).apply {
-                    text = resources.getString(R.string.sources_remove_configuration)
-                    setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.pp_text_body))
-                    setTextColor(context.getColor(R.color.pp_status_error))
-                    minimumHeight = resources.getDimensionPixelSize(R.dimen.pp_touch_target)
-                    gravity = Gravity.CENTER_VERTICAL
-                    isFocusable = true
-                    setOnClickListener { onLocalReferenceRemove?.invoke(model.sourceId) }
-                })
+                setOnLongClickListener {
+                    showLocalReferenceMenu(this, model)
+                    true
+                }
+                addView(sourceAction(R.string.player_more) { anchor ->
+                    showLocalReferenceMenu(anchor, model)
+                }.apply {
+                    contentDescription = resources.getString(R.string.player_more) + ", " + model.displayName
+                }, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
             }, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         }
     }
@@ -213,96 +215,31 @@ class SourcesView(context: Context) : ScrollView(context) {
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_meta))
                 setTextColor(context.getColor(R.color.pp_text_secondary))
             }
-            val actions = object : LinearLayout(context) {
-                override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-                    val available = MeasureSpec.getSize(widthMeasureSpec) - paddingLeft - paddingRight
-                    val slot = if (childCount > 0) available / childCount else available
-                    val fits = MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.UNSPECIFIED ||
-                        (0 until childCount).all { index ->
-                            val label = getChildAt(index) as TextView
-                            kotlin.math.ceil(label.paint.measureText(label.text.toString()).toDouble()).toInt() +
-                                label.compoundPaddingLeft + label.compoundPaddingRight <= slot
-                        }
-                    orientation = if (fits) HORIZONTAL else VERTICAL
-                    for (index in 0 until childCount) {
-                        (getChildAt(index).layoutParams as LayoutParams).apply {
-                            width = if (fits) 0 else LayoutParams.MATCH_PARENT
-                            height = LayoutParams.WRAP_CONTENT
-                            weight = if (fits) 1f else 0f
-                        }
-                    }
-                    super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+            val actions = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            val primaryLabel = when {
+                model.isDisconnected || model.needsReauth -> R.string.sources_reconfigure
+                else -> R.string.sources_browse_photos
+            }
+            actions.addView(sourceAction(primaryLabel) {
+                when {
+                    model.isDisconnected -> onNasEdit?.invoke(model.sourceId)
+                    model.needsReauth -> onNasReauth?.invoke(model.sourceId)
+                    else -> onNasBrowse?.invoke(model.sourceId)
                 }
+            }, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
+            actions.addView(sourceAction(R.string.player_more) { anchor ->
+                showNasMenu(anchor, model)
             }.apply {
-                isBaselineAligned = false
-            }
-            val sync = TextView(context).apply {
-                text = res.getString(if (model.isDisconnected) R.string.sources_reconfigure else if (model.catalogOnly) R.string.sources_refresh_index else R.string.sources_sync_now)
-                contentDescription = text
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
-                setTextColor(context.getColor(R.color.pp_accent_action))
-                minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-                gravity = Gravity.CENTER
-                isClickable = true
-                isFocusable = true
-                setOnClickListener { if (model.isDisconnected) onNasEdit?.invoke(model.sourceId) else onNasSync?.invoke(model.sourceId) }
-            }
-            val disconnect = TextView(context).apply {
-                text = res.getString(if (model.isDisconnected) R.string.sources_remove_configuration else R.string.sources_disconnect)
-                contentDescription = text
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
-                setTextColor(context.getColor(R.color.pp_status_error))
-                minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-                gravity = Gravity.CENTER
-                isClickable = true
-                isFocusable = true
-                setOnClickListener { onNasDisconnect?.invoke(model.sourceId) }
-            }
-            if (!model.isDisconnected && !model.needsReauth) {
-                actions.addView(TextView(context).apply {
-                    text = res.getString(R.string.sources_browse_photos)
-                    contentDescription = text
-                    setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
-                    setTextColor(context.getColor(R.color.pp_accent_action))
-                    minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-                    gravity = Gravity.CENTER
-                    isClickable = true
-                    isFocusable = true
-                    setOnClickListener { onNasBrowse?.invoke(model.sourceId) }
-                }, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
-            }
-            actions.addView(sync, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
-            if (!model.isDisconnected) {
-                val edit = TextView(context).apply {
-                    text = res.getString(
-                        if (model.needsReauth) R.string.sources_reconfigure else R.string.common_edit,
-                    )
-                    contentDescription = text
-                    setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
-                    setTextColor(context.getColor(R.color.pp_accent_action))
-                    minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-                    gravity = Gravity.CENTER
-                    isClickable = true
-                    isFocusable = true
-                    setOnClickListener { onNasEdit?.invoke(model.sourceId) }
-                }
-                actions.addView(edit, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
-            }
-            actions.addView(disconnect, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
-            val mirror = android.widget.Switch(context).apply {
-                text = res.getString(R.string.source_nas_mirror_delete)
-                isChecked = model.mirrorDelete
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
-                setTextColor(context.getColor(R.color.pp_text_primary))
-                minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
-                setOnCheckedChangeListener { _, checked ->
-                    onNasMirrorToggle?.invoke(model.sourceId, checked)
-                }
-            }
+                contentDescription = res.getString(R.string.player_more) + ", " + model.displayName
+            }, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
+                marginStart = res.getDimensionPixelSize(R.dimen.pp_space_8)
+            })
             card.addView(name, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
             card.addView(status, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
             card.addView(actions, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-            card.addView(mirror, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
             nasSourcesColumn.addView(
                 card,
                 LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
@@ -310,6 +247,58 @@ class SourcesView(context: Context) : ScrollView(context) {
                 },
             )
         }
+    }
+
+    private fun sourceAction(labelRes: Int, action: (View) -> Unit): TextView = TextView(context).apply {
+        text = resources.getString(labelRes)
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.pp_text_body))
+        setTextColor(context.getColor(R.color.pp_accent_action))
+        val target = resources.getDimensionPixelSize(R.dimen.pp_touch_target)
+        minimumHeight = target
+        minimumWidth = target
+        gravity = Gravity.CENTER_VERTICAL
+        val padding = resources.getDimensionPixelSize(R.dimen.pp_space_8)
+        setPadding(padding, 0, padding, 0)
+        isFocusable = true
+        setOnClickListener(action)
+    }
+
+    private fun showLocalReferenceMenu(anchor: View, model: LocalReferenceModel) {
+        val menu = android.widget.PopupMenu(context, anchor)
+        menu.menu.add(R.string.sources_remove_configuration).setOnMenuItemClickListener {
+            onLocalReferenceRemove?.invoke(model.sourceId)
+            true
+        }
+        menu.show()
+    }
+
+    private fun showNasMenu(anchor: View, model: NasSourceModel) {
+        val menu = android.widget.PopupMenu(context, anchor)
+        if (!model.isDisconnected) {
+            menu.menu.add(if (model.catalogOnly) R.string.sources_refresh_index else R.string.sources_sync_now)
+                .setOnMenuItemClickListener {
+                    onNasSync?.invoke(model.sourceId)
+                    true
+                }
+            menu.menu.add(R.string.common_edit).setOnMenuItemClickListener {
+                onNasEdit?.invoke(model.sourceId)
+                true
+            }
+        }
+        menu.menu.add(R.string.source_nas_mirror_delete).apply {
+            isCheckable = true
+            isChecked = model.mirrorDelete
+            setOnMenuItemClickListener {
+                onNasMirrorToggle?.invoke(model.sourceId, !model.mirrorDelete)
+                true
+            }
+        }
+        menu.menu.add(if (model.isDisconnected) R.string.sources_remove_configuration else R.string.sources_disconnect)
+            .setOnMenuItemClickListener {
+                onNasDisconnect?.invoke(model.sourceId)
+                true
+            }
+        menu.show()
     }
 
     private fun showLocalSourceMenu(anchor: View) {

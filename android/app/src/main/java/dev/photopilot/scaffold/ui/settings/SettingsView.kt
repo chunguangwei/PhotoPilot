@@ -78,7 +78,9 @@ class SettingsView(context: Context) : ScrollView(context) {
 
     init {
         setBackgroundColor(context.getColor(R.color.pp_surface_canvas))
-        val inset = resources.getDimensionPixelSize(R.dimen.pp_content_inset)
+        val inset = resources.getDimensionPixelSize(
+            if (resources.configuration.screenWidthDp < 600) R.dimen.pp_content_inset_compact else R.dimen.pp_content_inset,
+        )
         column = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(inset, inset, inset, inset)
@@ -283,7 +285,8 @@ class SettingsView(context: Context) : ScrollView(context) {
         parent.addView(view, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
     }
 
-    private fun addValueRow(parent: LinearLayout, labelRes: Int, value: String) {        val res = resources
+    private fun addValueRow(parent: LinearLayout, labelRes: Int, value: String) {
+        val res = resources
         val row = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -401,7 +404,7 @@ class SettingsView(context: Context) : ScrollView(context) {
         }
         val title = TextView(context).apply {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
-            setTextColor(context.getColor(R.color.pp_text_secondary))
+            setTextColor(context.getColor(R.color.pp_text_primary))
             gravity = Gravity.CENTER_VERTICAL or Gravity.START
             text = res.getString(titleRes)
         }
@@ -421,7 +424,7 @@ class SettingsView(context: Context) : ScrollView(context) {
         column.addView(
             header,
             LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = res.getDimensionPixelSize(R.dimen.pp_space_24)
+                topMargin = res.getDimensionPixelSize(R.dimen.pp_space_8)
             },
         )
         val body = LinearLayout(context).apply {

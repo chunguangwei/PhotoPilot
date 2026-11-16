@@ -29,8 +29,8 @@ class AIRealInferenceTest {
                     assertEquals(if (name == "embeddinggemma2-vision") 768 else 512, image.size)
                     val scores = prompts.map { AIEmbedding.cosine(image, model.text(it)) }
                     assertTrue(scores.all { it.isFinite() })
-                    assertEquals(0, scores.take(3).indices.maxBy { scores[it] })
-                    assertEquals(3, (3..5).maxBy { scores[it] })
+                    assertEquals(scores.toString(), 0, scores.take(3).indices.maxBy { scores[it] })
+                    assertEquals(scores.toString(), 3, (3..5).maxBy { scores[it] })
                     output.put(name, JSONObject().put("cosine", JSONArray(scores)).put("elapsedMs", System.currentTimeMillis() - start))
                     File(context.filesDir, "ai-real-inference.json").writeText(output.toString(2))
                     android.util.Log.i("PhotoPilotAIValidation", output.toString())

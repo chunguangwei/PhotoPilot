@@ -33,12 +33,24 @@ class AIFrameLayoutTest {
         val uiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
         lateinit var view: AIFrameView
         instrumentation.runOnMainSync {
-            val configuration = Configuration(activity.resources.configuration).apply { setLocales(LocaleList(Locale.forLanguageTag(language))); fontScale = if (variant.contains("large")) 1.5f else 1f }
+            val configuration = Configuration(activity.resources.configuration).apply {
+                setLocales(LocaleList(Locale.forLanguageTag(language)))
+                fontScale = if (variant.contains("large")) 1.5f else 1f
+                if (variant.contains("dark")) uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or Configuration.UI_MODE_NIGHT_YES
+            }
             val themedContext = android.view.ContextThemeWrapper(activity, R.style.Theme_PhotoPilot).apply { applyOverrideConfiguration(configuration) }
             view = AIFrameView(themedContext, environment, uiScope, null, {}, {})
             activity.setContentView(android.widget.FrameLayout(activity).apply { fitsSystemWindows = true; addView(view) })
         }
-        SystemClock.sleep(700)
+        withTimeout(15000) {
+            var ready = false
+            while (!ready) {
+                instrumentation.runOnMainSync {
+                    ready = view.javaClass.getDeclaredField("initialized").apply { isAccessible = true }.getBoolean(view)
+                }
+                if (!ready) delay(50)
+            }
+        }
         instrumentation.runOnMainSync {
             args.getString("model")?.let { modelId ->
                 val index = environment.aiFrames.models.models.indexOfFirst { it.id == modelId }
@@ -47,7 +59,6 @@ class AIFrameLayoutTest {
             }
             val fields = descendants(view).filterIsInstance<EditText>()
             fields[0].setText(if (language == "zh") "猫和狗\n海边的日落" else "Cats and dogs\nSunset at the beach")
-            fields[4].setText(if (language == "zh") "家里的伙伴\n海边时光" else "Our companions\nSeaside moments")
             val automatic = descendants(view).filterIsInstance<CheckBox>().first { it.text.contains(if (language == "zh") "持续" else "Automatically") }
             assertFalse(automatic.isChecked)
             descendants(view).filterIsInstance<CheckBox>().firstOrNull { it.text == "Validation samples" }?.isChecked = true
@@ -59,13 +70,14 @@ class AIFrameLayoutTest {
             screenshot.recycle()
         }
         instrumentation.waitForIdleSync()
-        instrumentation.runOnMainSync { view.scrollTo(0, 0) }
+        val scroll = descendants(view).filterIsInstance<android.widget.ScrollView>().first()
+        instrumentation.runOnMainSync { scroll.scrollTo(0, 0) }
         SystemClock.sleep(250)
         capture("models")
-        instrumentation.runOnMainSync { view.scrollTo(0, (view.getChildAt(0).height - view.height).coerceAtLeast(0) / 2) }
+        instrumentation.runOnMainSync { scroll.scrollTo(0, (scroll.getChildAt(0).height - scroll.height).coerceAtLeast(0) / 2) }
         SystemClock.sleep(250)
         capture("categories")
-        instrumentation.runOnMainSync { view.fullScroll(View.FOCUS_DOWN) }
+        instrumentation.runOnMainSync { scroll.fullScroll(View.FOCUS_DOWN) }
         SystemClock.sleep(300)
         capture("rules")
         instrumentation.runOnMainSync { activity.finish() }

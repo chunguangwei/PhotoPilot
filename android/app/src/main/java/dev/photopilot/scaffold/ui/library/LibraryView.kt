@@ -102,10 +102,30 @@ class LibraryView(
         orientation = VERTICAL
         setBackgroundColor(context.getColor(R.color.pp_surface_canvas))
         val res = resources
-        val inset = res.getDimensionPixelSize(R.dimen.pp_content_inset)
+        val inset = res.getDimensionPixelSize(
+            if (res.configuration.screenWidthDp < 600) R.dimen.pp_content_inset_compact else R.dimen.pp_content_inset,
+        )
 
-        val headerRow = LinearLayout(context).apply {
-            orientation = HORIZONTAL
+        val headerRow = object : LinearLayout(context) {
+            override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+                val available = MeasureSpec.getSize(widthMeasureSpec)
+                val required = (0 until childCount).sumOf { index ->
+                    val child = getChildAt(index) as TextView
+                    kotlin.math.ceil(child.paint.measureText(child.text.toString()).toDouble()).toInt() +
+                        child.compoundPaddingLeft + child.compoundPaddingRight +
+                        (child.layoutParams as LayoutParams).marginEnd
+                }
+                val horizontal = required <= available
+                orientation = if (horizontal) HORIZONTAL else VERTICAL
+                for (index in 0 until childCount) {
+                    (getChildAt(index).layoutParams as LayoutParams).apply {
+                        width = if (!horizontal) LayoutParams.MATCH_PARENT else if (index == 0) 0 else LayoutParams.WRAP_CONTENT
+                        weight = if (horizontal && index == 0) 1f else 0f
+                    }
+                }
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+            }
+        }.apply {
             gravity = Gravity.CENTER_VERTICAL
         }
         val header = TextView(context).apply {
@@ -118,6 +138,11 @@ class LibraryView(
             setSelecting(!selecting)
         }
         headerRow.addView(header, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
+        headerRow.addView(actionLabel(R.string.sources_title) {
+            onBrowseSourcePhotos?.invoke()
+        }, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
+            marginEnd = res.getDimensionPixelSize(R.dimen.pp_space_8)
+        })
         headerRow.addView(selectToggle, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
         addView(
             headerRow,
@@ -127,13 +152,6 @@ class LibraryView(
                 topMargin = inset
             },
         )
-
-        addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, R.string.sources_title).apply {
-            setOnClickListener { onBrowseSourcePhotos?.invoke() }
-        }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-            marginStart = inset
-            marginEnd = inset
-        })
 
         val searchRow = LinearLayout(context).apply {
             orientation = HORIZONTAL
@@ -640,6 +658,7 @@ class LibraryView(
             setTextColor(context.getColor(R.color.pp_accent_action))
             gravity = Gravity.CENTER
             minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+            minimumWidth = res.getDimensionPixelSize(R.dimen.pp_touch_target)
             val padH = res.getDimensionPixelSize(R.dimen.pp_space_8)
             setPadding(padH, 0, padH, 0)
             isClickable = true
@@ -755,6 +774,7 @@ class LibraryView(
             setTextColor(context.getColor(R.color.pp_accent_action))
             gravity = Gravity.CENTER
             minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)
+            minimumWidth = res.getDimensionPixelSize(R.dimen.pp_touch_target)
             val padH = res.getDimensionPixelSize(R.dimen.pp_space_8)
             setPadding(padH, 0, padH, 0)
             isClickable = true

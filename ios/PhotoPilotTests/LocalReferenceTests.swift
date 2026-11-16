@@ -12,6 +12,139 @@ final class LocalReferenceTests: XCTestCase {
         return AppEnvironment(persistence: PersistenceController(storeURL: root.appendingPathComponent("library.db")))
     }
 
+    func testAlbumPickerShowsNavigationActionsAndRestoresHiddenNavigation() async throws {
+        let environment = environment()
+        for size in [CGSize(width: 320, height: 568), CGSize(width: 390, height: 844), CGSize(width: 844, height: 390)] {
+            let parent = PhotoPermissionViewController(environment: environment)
+            let navigation = UINavigationController(rootViewController: parent)
+            navigation.setNavigationBarHidden(true, animated: false)
+            let window = flowWindow(navigation)
+            window.frame = CGRect(origin: .zero, size: size)
+            defer { window.isHidden = true }
+            try await Task.sleep(nanoseconds: 150_000_000)
+            let albums = LocalPhotoAlbumsViewController(environment: environment)
+            navigation.pushViewController(albums, animated: false)
+            try await Task.sleep(nanoseconds: 150_000_000)
+            window.layoutIfNeeded()
+            XCTAssertFalse(navigation.isNavigationBarHidden)
+            XCTAssertNotNil(albums.navigationItem.leftBarButtonItem)
+            XCTAssertTrue(try XCTUnwrap(albums.navigationItem.rightBarButtonItem).isEnabled)
+            navigation.popViewController(animated: false)
+            try await Task.sleep(nanoseconds: 150_000_000)
+            XCTAssertTrue(navigation.isNavigationBarHidden)
+        }
+    }
+
+    func testAIFrameCanOpenPhotoSourcesWithoutExistingLocalFolders() async throws {
+        let editor = AIFrameViewController(environment: environment())
+        let navigation = UINavigationController(rootViewController: editor)
+        let window = flowWindow(navigation)
+        defer { window.isHidden = true }
+        try await Task.sleep(nanoseconds: 300_000_000)
+        let source = editor.tableView(editor.tableView, cellForRowAt: IndexPath(row: 0, section: 1))
+        XCTAssertEqual(source.accessibilityIdentifier, "ai.sources.add")
+        editor.tableView(editor.tableView, didSelectRowAt: IndexPath(row: 0, section: 1))
+        try await Task.sleep(nanoseconds: 300_000_000)
+        let sourceNavigation = try XCTUnwrap(editor.presentedViewController as? UINavigationController)
+        XCTAssertTrue(sourceNavigation.topViewController is SourcesListViewController)
+        XCTAssertTrue(sourceNavigation.isNavigationBarHidden)
+    }
+
+    func testAIAddingFileSourceKeepsCategoryDraftAndSelectsNewFolder() async throws {
+        let environment = environment()
+        let editor = AIFrameViewController(environment: environment)
+        let navigation = UINavigationController(rootViewController: editor)
+        let window = flowWindow(navigation)
+        defer { window.isHidden = true }
+        try await Task.sleep(nanoseconds: 300_000_000)
+        editor.tableView.scrollToRow(at: IndexPath(row: 0, section: 2), at: .top, animated: false)
+        editor.tableView.layoutIfNeeded()
+        let categories = try XCTUnwrap(flowViews(editor.view).compactMap { $0 as? UITextView }.first { $0.accessibilityIdentifier == "ai.categories" })
+        categories.text = "A preserved category"
+        editor.textViewDidChange(categories)
+        editor.tableView(editor.tableView, didSelectRowAt: IndexPath(row: 0, section: 1))
+        try await Task.sleep(nanoseconds: 300_000_000)
+        let sourceNavigation = try XCTUnwrap(editor.presentedViewController as? UINavigationController)
+        let sources = try XCTUnwrap(sourceNavigation.topViewController as? SourcesListViewController)
+        sources.documentPicker(UIDocumentPickerViewController(forOpeningContentTypes: [.image], asCopy: false), didPickDocumentsAt: [try flowImage()])
+        for _ in 0..<50 {
+            if editor.presentedViewController == nil, editor.tableView(editor.tableView, numberOfRowsInSection: 1) > 2 { break }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        XCTAssertNil(editor.presentedViewController)
+        XCTAssertEqual(categories.text, "A preserved category")
+        let rows = editor.tableView(editor.tableView, numberOfRowsInSection: 1)
+        let selectedFolders = (0..<rows).map { editor.tableView(editor.tableView, cellForRowAt: IndexPath(row: $0, section: 1)) }.filter {
+            $0.accessibilityIdentifier?.hasPrefix("ai.folder.") == true && $0.accessoryType == .checkmark
+        }
+        XCTAssertFalse(selectedFolders.isEmpty)
+        let frames = try await environment.frameManager.frameCards()
+        XCTAssertTrue(frames.isEmpty)
+    }
+
+    func testNASFormUsesItsOwnBackControlAndRestoresOnlinePickerNavigation() async throws {
+        let environment = environment()
+        let picker = RemoteSourcePickerViewController(environment: environment)
+        let navigation = UINavigationController(rootViewController: picker)
+        let window = flowWindow(navigation)
+        defer { window.isHidden = true }
+        try await Task.sleep(nanoseconds: 150_000_000)
+        XCTAssertFalse(navigation.isNavigationBarHidden)
+        let form = NasAddViewController(environment: environment)
+        navigation.pushViewController(form, animated: false)
+        try await Task.sleep(nanoseconds: 150_000_000)
+        XCTAssertTrue(navigation.isNavigationBarHidden)
+        XCTAssertNotNil(try flowButton(form, L10n.string("common.back")))
+        navigation.popViewController(animated: false)
+        try await Task.sleep(nanoseconds: 150_000_000)
+        XCTAssertFalse(navigation.isNavigationBarHidden)
+    }
+
+    func testLibraryCompactLargestTextKeepsPhotoViewportReachable() async throws {
+        let environment = environment()
+        for size in [CGSize(width: 320, height: 568), CGSize(width: 568, height: 320), CGSize(width: 390, height: 844)] {
+            let library = LibraryViewController(environment: environment)
+            let host = UIViewController()
+            host.addChild(library)
+            host.view.addSubview(library.view)
+            library.view.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                library.view.leadingAnchor.constraint(equalTo: host.view.leadingAnchor),
+                library.view.trailingAnchor.constraint(equalTo: host.view.trailingAnchor),
+                library.view.topAnchor.constraint(equalTo: host.view.topAnchor),
+                library.view.bottomAnchor.constraint(equalTo: host.view.bottomAnchor)
+            ])
+            library.didMove(toParent: host)
+            host.setOverrideTraitCollection(UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge), forChild: library)
+            let window = flowWindow(host)
+            window.frame = CGRect(origin: .zero, size: size)
+            defer { window.isHidden = true }
+            try await Task.sleep(nanoseconds: 250_000_000)
+            window.layoutIfNeeded()
+            library.view.layoutIfNeeded()
+            let grid = try XCTUnwrap(library.children.compactMap { $0 as? AssetGridViewController }.first)
+            let frame = grid.view.convert(grid.view.bounds, to: library.view)
+            XCTAssertGreaterThanOrEqual(frame.height, 44, "Photo viewport collapsed at \(size)")
+            XCTAssertTrue(library.view.bounds.contains(frame), "Photo viewport escaped at \(size)")
+            flowCapture(window, name: "library-compact-largest-\(Int(size.width))-\(Int(size.height))")
+            let toolbar = try XCTUnwrap(flowViews(library.view).compactMap { $0 as? UIToolbar }.first)
+            XCTAssertFalse(toolbar.isHidden)
+            let select = try XCTUnwrap(toolbar.items?.last)
+            UIApplication.shared.sendAction(try XCTUnwrap(select.action), to: select.target, from: select, for: nil)
+            window.layoutIfNeeded()
+            library.view.layoutIfNeeded()
+            let selectionFrame = grid.view.convert(grid.view.bounds, to: library.view)
+            XCTAssertGreaterThanOrEqual(selectionFrame.height, 120, "Selection collapsed photos at \(size)")
+            XCTAssertTrue(library.view.bounds.contains(selectionFrame))
+            let add = try XCTUnwrap(flowViews(library.view).compactMap { $0 as? UIButton }.first { $0.accessibilityIdentifier == "library.addToFrame" })
+            let addFrame = add.convert(add.bounds, to: library.view)
+            XCTAssertTrue(library.view.bounds.contains(addFrame), "Primary action requires scrolling at \(size)")
+            XCTAssertGreaterThanOrEqual(addFrame.height, 44)
+            print("LIBRARY_FIXED_CHROME", size, "safe", library.view.safeAreaInsets, "photos", selectionFrame, "action", addFrame)
+            flowCapture(window, name: "library-selection-largest-\(Int(size.width))-\(Int(size.height))")
+        }
+    }
+
     func testFilesPickerDefaultIndexesWithoutImportingOriginal() async throws {
         let environment = environment()
         let input = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".png")
@@ -762,8 +895,9 @@ extension LocalReferenceTests {
         XCTAssertEqual(field.text, "Unsaved draft")
         let persisted = try await environment.frameManager.frameDetail(frameID: frameID)
         XCTAssertEqual(persisted.name, "Original")
-        editor.dismiss(animated: false)
-        try await Task.sleep(nanoseconds: 100_000_000)
+        await withCheckedContinuation { continuation in
+            editor.dismiss(animated: false) { continuation.resume() }
+        }
         try flowButton(editor, L10n.string("common.save")).sendActions(for: .touchUpInside)
         try await Task.sleep(nanoseconds: 200_000_000)
         XCTAssertTrue(editor.presentedViewController is UIAlertController)

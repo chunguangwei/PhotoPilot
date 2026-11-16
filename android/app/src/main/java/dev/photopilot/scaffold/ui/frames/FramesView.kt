@@ -83,7 +83,7 @@ class FramesView(
         headerRow.addView(header)
         if (cards.isNotEmpty()) {
             headerRow.addView(actionButton(R.string.frames_create, false).apply {
-                setOnClickListener { onCreate?.invoke() }
+                setOnClickListener { showCreateMenu(it) }
             })
         }
         contentColumn.addView(headerRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
@@ -97,16 +97,12 @@ class FramesView(
         }
         if (cards.isEmpty()) {
             contentColumn.addView(
-                actionButton(R.string.frames_create, true).apply { setOnClickListener { onCreate?.invoke() } },
+                actionButton(R.string.frames_create, true).apply { setOnClickListener { showCreateMenu(it) } },
                 LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
                     topMargin = res.getDimensionPixelSize(R.dimen.pp_space_24)
                 },
             )
         }
-        contentColumn.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, R.string.common_done).apply {
-            text = if (resources.configuration.locales[0].language == "zh") "AI 创建相框" else "Create AI frame"
-            setOnClickListener { onCreateAI?.invoke() }
-        })
         cardsColumn.removeAllViews()
         cardViews = cards.map { cardView(it) }
         contentColumn.addView(cardsColumn, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
@@ -138,7 +134,12 @@ class FramesView(
         }
         val availableDp = (widthPx - inset * 2) / res.displayMetrics.density
         val largeText = res.configuration.fontScale >= LARGE_TEXT_SCALE
-        val horizontal = availableDp >= 480f && !largeText
+        val headerRequired = (0 until headerRow.childCount).sumOf { index ->
+            val label = headerRow.getChildAt(index) as TextView
+            kotlin.math.ceil(label.paint.measureText(label.text.toString()).toDouble()).toInt() +
+                label.compoundPaddingLeft + label.compoundPaddingRight
+        } + res.getDimensionPixelSize(R.dimen.pp_space_16)
+        val horizontal = headerRequired <= widthPx - inset * 2 && !largeText
         if (headerHorizontal != horizontal || columnCount == 0) {
             headerHorizontal = horizontal
             headerRow.orientation = if (horizontal) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
@@ -294,6 +295,20 @@ class FramesView(
             cornerRadius = resources.getDimension(R.dimen.pp_radius_group)
         }
         return RippleDrawable(ColorStateList.valueOf(context.getColor(R.color.pp_separator)), shape, null)
+    }
+
+    private fun showCreateMenu(anchor: View) {
+        val menu = android.widget.PopupMenu(context, anchor)
+        menu.menu.add(R.string.frames_create).setOnMenuItemClickListener {
+            onCreate?.invoke()
+            true
+        }
+        val aiLabel = if (resources.configuration.locales[0].language == "zh") "AI 创建相框" else "Create AI frame"
+        menu.menu.add(aiLabel).setOnMenuItemClickListener {
+            onCreateAI?.invoke()
+            true
+        }
+        menu.show()
     }
 
     private fun showCardMenu(anchor: View, frame: FrameEntity) {
