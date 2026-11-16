@@ -1,27 +1,31 @@
 {
   "version": "1.4.3",
   "build": 64,
-  "status": "validated build",
+  "status": "published",
   "assets": [
     {
       "name": "AMSMB2-4.0.3-source.tar.gz",
       "bytes": 329872,
-      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077"
+      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077",
+      "anonymousDownloadVerified": true
     },
     {
       "name": "PhotoPilot-v1.4.3-64.apk",
       "bytes": 154236774,
-      "sha256": "bd70cdadb72b5f00572e5d839d99d248d129b2f0e2ae35fa327ec801540f370f"
+      "sha256": "bd70cdadb72b5f00572e5d839d99d248d129b2f0e2ae35fa327ec801540f370f",
+      "anonymousDownloadVerified": true
     },
     {
       "name": "SMBSourceManifest.json",
       "bytes": 33554,
-      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e"
+      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e",
+      "anonymousDownloadVerified": true
     },
     {
       "name": "SHA256SUMS.txt",
       "bytes": 273,
-      "sha256": "89f26039fab10fae1329b67ca05d096d4b29288a69c255f4676b89b28963d78f"
+      "sha256": "89f26039fab10fae1329b67ca05d096d4b29288a69c255f4676b89b28963d78f",
+      "anonymousDownloadVerified": true
     }
   ],
   "android": {
@@ -46,7 +50,32 @@
     "systemFileAndTreePreparationTests": 2,
     "systemFileAndTreeRestartRevokeTests": 2,
     "finalBilingualOrientationLayoutTests": 4,
-    "finalBilingualOrientationLayoutFailures": 0
+    "finalBilingualOrientationLayoutFailures": 0,
+    "releaseBlackBoxSmoke": {
+      "passed": true,
+      "apkSha256": "bd70cdadb72b5f00572e5d839d99d248d129b2f0e2ae35fa327ec801540f370f",
+      "api": 35,
+      "display": {
+        "size": "1080x2440",
+        "density": 480,
+        "approximateDpWidth": 360,
+        "language": "en"
+      },
+      "checks": [
+        "cold process launch and welcome",
+        "welcome Choose photos → Sources → Photo Library → permission → source photo selection",
+        "public repository fixture ReleaseSmoke.png explicitly checked, count1",
+        "Confirm and play → decoded four-color fixture, full composition and same-image blurred fill",
+        "home frame count1 and creation menu regular/AI choices",
+        "Create AI frame → Photo Library → Continue → device album chooser",
+        "AI Files or folders → Choose photo files → actual com.google.android.documentsui",
+        "AI connected-album chooser → Connect NAS → blank form → scroll reachable Test connection/Next → Back returns AI",
+        "AndroidRuntime error log after smoke"
+      ],
+      "originalEmulatorRestored": true,
+      "aiInferenceExercisedInSmoke": false,
+      "nasNetworkExercisedInSmoke": false
+    }
   },
   "ios": {
     "phoneNativePassed": 52,
@@ -92,5 +121,10 @@
     "uploaded": false
   },
   "sharedToolTests": 58,
-  "evidenceDirectory": ".build/phone-ui-20261116"
+  "evidenceDirectory": ".build/phone-ui-20261116",
+  "sourceCommit": "0e607e2792272b532a2c68e9b927a962fa539537",
+  "tag": "v1.4.3",
+  "release": "https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.3",
+  "public": true,
+  "latest": true
 }
