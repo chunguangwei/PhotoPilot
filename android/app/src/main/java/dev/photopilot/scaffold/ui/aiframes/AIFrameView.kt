@@ -4,6 +4,8 @@ import android.app.AlertDialog
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.text.InputType
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.*
 import dev.photopilot.scaffold.data.AppEnvironment
@@ -28,12 +30,25 @@ class AIFrameView(
     private val chinese = resources.configuration.locales[0].language == "zh"
     private fun words(zh: String, en: String) = if (chinese) zh else en
     private val column = LinearLayout(context).apply { orientation = VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(16)) }
+    private val contentScroll = ScrollView(context)
+    private val footer = LinearLayout(context).apply { orientation = VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(8)) }
     private val modelSection = dev.photopilot.scaffold.ui.widget.DisclosureSection(context, words("AI 模型", "AI model"))
     private val folderSummary = TextView(context)
     private var sourceReload: Job? = null
     private val modelPicker = Spinner(context)
     private val sourcePicker = Spinner(context)
-    private val status = TextView(context)
+    private val status = TextView(context).apply {
+        textSize = 14f
+        setTextColor(context.getColor(dev.photopilot.scaffold.R.color.pp_text_secondary))
+        maxLines = 2
+        ellipsize = android.text.TextUtils.TruncateAt.END
+        visibility = View.GONE
+        addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) { visibility = if (s.isNullOrEmpty()) View.GONE else View.VISIBLE }
+        })
+    }
     private val modelStatus = TextView(context)
     private val folders = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
     private val collectionChecks = linkedMapOf<String, CheckBox>()
@@ -62,6 +77,8 @@ class AIFrameView(
     private var cancelDownloadButton: TextView? = null
     private var deleteModelButton: TextView? = null
     private var startButton: TextView? = null
+    private var confirmPreviewButton: TextView? = null
+    private var savingPreview = false
     private var cancelButton: TextView? = null
     private var resumeButton: TextView? = null
 
@@ -74,7 +91,8 @@ class AIFrameView(
         setBackgroundColor(context.getColor(dev.photopilot.scaffold.R.color.pp_surface_canvas))
         orientation = VERTICAL
         addView(dev.photopilot.scaffold.ui.widget.formHeader(context, words("AI 创建相框", "Create AI frame"), onClose))
-        addView(ScrollView(context).apply { addView(column) }, LayoutParams(-1, 0, 1f))
+        contentScroll.addView(column)
+        addView(contentScroll, LayoutParams(-1, 0, 1f))
         label(words("选择照片", "Choose photos"), true)
         label(words("直接使用本机原照片或 NAS，照片仅在此设备上分类。", "Choose device photos or NAS folders. Classification stays on this device."))
         val sourceActions = LinearLayout(context)
@@ -149,10 +167,9 @@ class AIFrameView(
         if (existingFrame != null) button(words("保存设置（不扫描）", "Save settings without scanning"), primary = true) { saveSettings() }
         startButton = button(words("扫描并预览", "Scan and preview"), primary = true) { previewAndShow() }
         column.removeView(startButton)
-        addView(LinearLayout(context).apply {
-            setPadding(dp(16), dp(8), dp(16), dp(8))
-            addView(startButton, LayoutParams(-1, -2))
-        }, LayoutParams(-1, -2))
+        footer.addView(status, LayoutParams(-1, -2))
+        footer.addView(startButton, LayoutParams(-1, -2))
+        addView(footer, LayoutParams(-1, -2))
         cancelButton = button(words("取消分类", "Cancel classification")) {
             previewJob?.cancel()
             activePreviewIdentity = null
@@ -165,7 +182,6 @@ class AIFrameView(
             updateActions()
         }
         resumeButton = button(words("继续 / 重新扫描", "Resume / scan again")) { trackedFrames.forEach(environment.aiFrames::scan) }
-        column.addView(status)
         column.addView(results)
         modelPicker.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: AdapterView<*>?) = Unit
@@ -328,17 +344,26 @@ class AIFrameView(
         val downloading = download?.isActive == true
         val scanning = previewJob?.isActive == true
         val savedScanning = trackedFrames.any(environment.aiFrames::isRunning)
-        modelPicker.isEnabled = !downloading && !scanning
-        sourcePicker.isEnabled = !downloading
+        modelPicker.isEnabled = !downloading && !scanning && !savingPreview
+        sourcePicker.isEnabled = !downloading && !savingPreview
+        listOf(descriptions, includes, excludes, threshold, allIncludes, recursive, automatic).forEach { it.isEnabled = !savingPreview }
         val ready = environment.aiFrames.models.ready(selectedModel())
         val supported = environment.aiFrames.models.supported(selectedModel())
         modelSection.setSummary((if (chinese) selectedModel().chinese else selectedModel().english) + " · " + if (downloading) modelStatus.text.toString() else if (ready) words("就绪", "Ready") else words("需要下载", "Download required"))
         downloadButton?.visibility = if (ready || downloading) View.GONE else View.VISIBLE
-        deleteModelButton?.visibility = if (ready && !downloading && !scanning) View.VISIBLE else View.GONE
-        downloadButton?.isEnabled = !downloading && !scanning && !ready && environment.aiFrames.models.supported(selectedModel())
+        deleteModelButton?.visibility = if (ready && !downloading && !scanning && !savingPreview) View.VISIBLE else View.GONE
+        downloadButton?.isEnabled = !downloading && !scanning && !savingPreview && !ready && environment.aiFrames.models.supported(selectedModel())
         cancelDownloadButton?.visibility = if (downloading) View.VISIBLE else View.GONE
-        deleteModelButton?.isEnabled = ready && !downloading && !scanning
-        startButton?.isEnabled = !downloading && !scanning && initialized
+        deleteModelButton?.isEnabled = ready && !downloading && !scanning && !savingPreview
+        startButton?.isEnabled = !downloading && !scanning && !savingPreview && initialized
+        val currentPreview = pendingPreview != null && previewIdentity == formIdentity()
+        startButton?.visibility = if (currentPreview) View.GONE else View.VISIBLE
+        confirmPreviewButton?.visibility = if (currentPreview) View.VISIBLE else View.GONE
+        confirmPreviewButton?.isEnabled = currentPreview && !savingPreview && (existingFrame != null || previewChosen.any { it.isNotEmpty() })
+        if (pendingPreview != null && !currentPreview && !savingPreview) {
+            val message = words("规则已修改，请重新预览", "Rules changed. Run preview again")
+            if (status.text.toString() != message) status.text = message
+        }
         startButton?.text = when {
             !supported -> words("选择兼容模型", "Choose compatible model")
             ready -> words("扫描并预览", "Scan and preview")
@@ -352,8 +377,10 @@ class AIFrameView(
             }
         }
         cancelButton?.visibility = if (scanning || savedScanning || pendingPreview != null) View.VISIBLE else View.GONE
+        cancelButton?.isEnabled = !savingPreview
         listOfNotNull(downloadButton, deleteModelButton, startButton).forEach { it.alpha = if (it.isEnabled) 1f else .4f }
         resumeButton?.visibility = if (trackedFrames.isNotEmpty() && !scanning && !savedScanning) View.VISIBLE else View.GONE
+        resumeButton?.isEnabled = !savingPreview
     }
     private fun confirmDownload() {
         val manager = context.getSystemService(android.net.ConnectivityManager::class.java)
@@ -470,12 +497,18 @@ class AIFrameView(
         restoredPreviewNames = null
         restoredPreviewChoices = null
         restoredPreviewIdentity = null
-        results.addView(dev.photopilot.scaffold.ui.widget.primaryButton(context, dev.photopilot.scaffold.R.string.common_done).apply {
+        confirmPreviewButton?.let(footer::removeView)
+        confirmPreviewButton = dev.photopilot.scaffold.ui.widget.primaryButton(context, dev.photopilot.scaffold.R.string.common_done).apply {
             text = if (existingFrame == null) words("确认创建相框", "Confirm frame creation") else words("确认保存结果", "Confirm results")
             isEnabled = existingFrame != null || previews.any { it.matches.isNotEmpty() || it.reviews.isNotEmpty() }
             setOnClickListener {
+                if (savingPreview) return@setOnClickListener
                 if (formIdentity() != previewIdentity) { status.text = words("规则已修改，请重新预览", "Rules changed. Run preview again"); return@setOnClickListener }
+                if (existingFrame == null && previewChosen.all { it.isEmpty() }) { status.text = words("请至少选择一张照片后确认", "Select at least one photo before confirming"); return@setOnClickListener }
+                savingPreview = true
                 isEnabled = false
+                status.text = words("正在保存相框…", "Saving frames…")
+                updateActions()
                 val confirmedNames = previewNames.map { it.text.toString() }
                 val confirmedChoices = previewChosen.map { it.toSet() }
                 val automaticSelection = automatic.isChecked
@@ -486,14 +519,21 @@ class AIFrameView(
                         trackedFrames.addAll(saved.filter { it !in trackedFrames })
                         pendingPreview = null
                         retiredModelNotice = false
+                        status.text = words("结果已保存", "Results saved")
                         updateModelStatus()
                         results.removeAllViews()
                         onChanged()
                         if (existingFrame == null) onClose() else refreshProgress()
-                    } catch (failure: Exception) { isEnabled = true; status.text = errorText(failure) }
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (failure: Exception) { status.text = errorText(failure) }
+                    finally { savingPreview = false; updateActions() }
                 }
             }
-        })
+        }
+        footer.addView(confirmPreviewButton, LayoutParams(-1, -2))
+        results.post {
+            if (isAttachedToWindow && isShown) results.requestRectangleOnScreen(android.graphics.Rect(0, 0, results.width, minOf(results.height, dp(160))), true)
+        }
     }
     private fun selectPreviewPhotos(preview: AIPreview, index: Int) {
         val ids = (preview.matches.keys + preview.reviews.keys).toList()
@@ -509,7 +549,10 @@ class AIFrameView(
             }
             val labels = ids.mapIndexed { index, id -> (if (id in preview.matches) words("匹配", "Match") else words("待确认", "Review")) + " · %.3f".format(preview.matches[id] ?: preview.reviews[id]) + " · " + displayNames[index] }.toTypedArray()
             AlertDialog.Builder(context).setTitle(words("选择照片（显示相似度）", "Select photos (similarity scores)"))
-                .setMultiChoiceItems(labels, ids.map { it in previewChosen[index] }.toBooleanArray()) { _, which, checked -> if (checked) previewChosen[index].add(ids[which]) else previewChosen[index].remove(ids[which]) }
+                .setMultiChoiceItems(labels, ids.map { it in previewChosen[index] }.toBooleanArray()) { _, which, checked ->
+                    if (checked) previewChosen[index].add(ids[which]) else previewChosen[index].remove(ids[which])
+                    updateActions()
+                }
                 .setNeutralButton(words("查看图片", "View images")) { _, _ -> previewImages(preview, ids, index) }
                 .setPositiveButton(words("完成", "Done"), null).show()
         }
@@ -527,7 +570,10 @@ class AIFrameView(
                 val bitmap = withContext(Dispatchers.IO) { runCatching { environment.remoteMedia.bitmap(asset, 256, 256) }.getOrNull() }
                 bitmap?.let { images.add(it); image.setImageBitmap(it) }
                 list.addView(image)
-                list.addView(CheckBox(context).apply { text = "%.3f".format(preview.matches[asset.id] ?: preview.reviews[asset.id]); isChecked = asset.id in previewChosen[category]; setOnCheckedChangeListener { _, checked -> if (checked) previewChosen[category].add(asset.id) else previewChosen[category].remove(asset.id) } })
+                list.addView(CheckBox(context).apply { text = "%.3f".format(preview.matches[asset.id] ?: preview.reviews[asset.id]); isChecked = asset.id in previewChosen[category]; setOnCheckedChangeListener { _, checked ->
+                    if (checked) previewChosen[category].add(asset.id) else previewChosen[category].remove(asset.id)
+                    updateActions()
+                } })
             }
             val builder = AlertDialog.Builder(context).setTitle(words("预览图片", "Preview photos")).setView(ScrollView(context).apply { addView(list) }).setPositiveButton(words("完成", "Done"), null)
             if ((page + 1) * 12 < ids.size) builder.setNeutralButton(words("下一页", "Next page")) { _, _ -> previewImages(preview, ids, category, page + 1) }

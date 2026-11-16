@@ -1,0 +1,80 @@
+{
+  "version": "1.4.4",
+  "build": 65,
+  "status": "verified_pending_github_publication",
+  "changes": [
+    "Android AI preview automatically reveals results",
+    "fixed footer confirmation and status",
+    "prevents duplicate saves and stale-rule confirmation"
+  ],
+  "android": {
+    "physicalDeviceAvailable": false,
+    "screenReference": "Huawei Mate X6 outer display 1080x2440",
+    "jvmTests": 441,
+    "jvmFailures": 0,
+    "lintErrors": 0,
+    "lintWarnings": 204,
+    "footerRegressionTests": 3,
+    "footerRegressionFailures": 0,
+    "largeFontBilingualTests": 3,
+    "largeFontBilingualFailures": 0,
+    "largeFontConfiguration": {
+      "pixels": "1080x2440",
+      "densityDpi": 480,
+      "fontScale": 1.5
+    },
+    "originalSignerPreserved": true,
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86",
+      "x86_64"
+    ],
+    "nativeMainRegressionTests": 26,
+    "nativeMainRegressionFailures": 0,
+    "nativeMainRegressionSkipped": 0,
+    "nativeMainRegressionSeconds": 187.603,
+    "realNasProtocols": [
+      "SMB3 encrypted",
+      "HTTPS WebDAV"
+    ]
+  },
+  "ios": {
+    "version": "1.4.4",
+    "build": 65,
+    "uiSourcesUnchangedFromVerified143": true,
+    "buildPassed": true,
+    "analyzePassed": true,
+    "developmentArchiveCreated": true,
+    "physicalDevice": "iPhone13",
+    "productionInstallVerified": true,
+    "businessWorkflowEvidence": "PhoneUIRelease143.json",
+    "productionDataRetentionVerified": false,
+    "productionReadOnlyNavigationPassed": true,
+    "productionReadOnlyNavigationSeconds": 18.983,
+    "finalAlbumContinuePressed": false
+  },
+  "appStore": {
+    "status": "waiting_for_user_physical_testing",
+    "uploadPerformed": false,
+    "reviewSubmissionPerformed": false,
+    "userInstruction": "2026-11-16 App Store update after user physical-device testing"
+  },
+  "assets": [
+    {
+      "name": "PhotoPilot-v1.4.4-65.apk",
+      "bytes": 154236774,
+      "sha256": "3485c053799d05b13d3784b32fb58b482308a9d5fc1fa9bd31db86253c5307cc"
+    },
+    {
+      "name": "AMSMB2-4.0.3-source.tar.gz",
+      "bytes": 329872,
+      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077"
+    },
+    {
+      "name": "SMBSourceManifest.json",
+      "bytes": 33554,
+      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e"
+    }
+  ]
+}

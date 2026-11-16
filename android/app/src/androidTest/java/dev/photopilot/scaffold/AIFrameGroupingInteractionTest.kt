@@ -5,6 +5,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.CheckBox
+import android.widget.ScrollView
+import dev.photopilot.scaffold.data.aiframes.AIPreview
+import dev.photopilot.scaffold.data.aiframes.AIRule
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.photopilot.scaffold.data.AppEnvironment
 import dev.photopilot.scaffold.data.db.*
@@ -84,6 +88,24 @@ class AIFrameGroupingInteractionTest {
                 labels.first { it.text.toString() in listOf("取消分类", "Cancel classification") }.performClick()
                 assertEquals("false", view.draftState()["previewReady"])
                 job.cancel()
+                val checks = view.javaClass.getDeclaredField("collectionChecks").apply { isAccessible = true }.get(view) as Map<*, *>
+                (checks[sources[0].id] as CheckBox).isChecked = true
+                val currentIdentity = identityMethod.invoke(view)
+                val preview = AIPreview(env.aiFrames.models.models.first(), listOf(sources[0].id), true, AIRule("Family"), mapOf("retained-photo" to .8f), emptyMap(), emptyMap(), emptyMap(), 0)
+                view.javaClass.getDeclaredField("pendingPreview").apply { isAccessible = true }.set(view, listOf(preview))
+                view.javaClass.getDeclaredField("previewIdentity").apply { isAccessible = true }.set(view, currentIdentity)
+                view.javaClass.getDeclaredMethod("showPreview", List::class.java).apply { isAccessible = true }.invoke(view, listOf(preview))
+                view.javaClass.getDeclaredMethod("updateActions").apply { isAccessible = true }.invoke(view)
+                val confirm = descendants(view).filterIsInstance<TextView>().single { it.text.toString() in listOf("确认创建相框", "Confirm frame creation") }
+                assertFalse("AI preview confirmation must be fixed outside the form scroll", insideScroll(confirm))
+                val status = view.javaClass.getDeclaredField("status").apply { isAccessible = true }.get(view) as View
+                assertFalse("AI progress and validation feedback must stay visible", insideScroll(status))
+                val scan = view.javaClass.getDeclaredField("startButton").apply { isAccessible = true }.get(view) as View
+                assertFalse("Completed previews must offer confirmation as the primary action", scan.isShown)
+                category.setText("Changed after preview")
+                view.javaClass.getDeclaredMethod("updateActions").apply { isAccessible = true }.invoke(view)
+                assertFalse(confirm.isShown)
+                assertTrue(scan.isShown)
             }
         } finally {
             instrumentation.runOnMainSync { activity.finish() }
@@ -96,4 +118,12 @@ class AIFrameGroupingInteractionTest {
     }
 
     private fun descendants(view: View): List<View> = listOf(view) + if (view is ViewGroup) (0 until view.childCount).flatMap { descendants(view.getChildAt(it)) } else emptyList()
+    private fun insideScroll(view: View): Boolean {
+        var parent = view.parent
+        while (parent != null) {
+            if (parent is ScrollView) return true
+            parent = parent.parent
+        }
+        return false
+    }
 }

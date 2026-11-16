@@ -1,4 +1,4 @@
-# Phone interface update · 1.4.3 (64)
+# Phone interface update · 1.4.4 (65)
 
 ## What’s New · English
 
@@ -27,4 +27,4 @@ The iPhone management interface uses the existing portrait policy. Playback has 
 
 ## Submission artifacts
 
-The development-signed 1.4.3 (64) archive is available on the release workstation. Local App Store IPA export currently reports No Accounts and a store profile that lacks the local distribution certificate. Sign in to the original developer account in Xcode Settings, then refresh the matching profile and retry export. The versioned artifacts and validation evidence are recorded in the development handoff. App Store Connect upload and review submission follow successful distribution export.
+App Store updates are on hold until the user completes physical-device testing and confirms readiness. Keep the local archive and review materials for that later step. The previous local export attempt reported No Accounts and a store profile that lacked the local distribution certificate. No App Store upload or review submission has been performed.
