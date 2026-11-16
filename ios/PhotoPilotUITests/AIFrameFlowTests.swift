@@ -5,7 +5,53 @@ import UIKit
 final class AIFrameFlowTests: XCTestCase {
     func testEnglishAIFlow() throws { try runFlow(chinese: false) }
     func testChineseAIFlow() throws { try runFlow(chinese: true) }
+    func testRemoteChineseAIFlow() throws {
+        guard ProcessInfo.processInfo.environment["PHOTOPILOT_REMOTE_AI_QA_TESTING"] == "1" else {
+            throw XCTSkip("Requires the isolated AI QA app with a read-only NAS album fixture.")
+        }
+        try runFlow(chinese: true, remote: true)
+    }
     func testStandardModelEnglishAIFlow() throws { try runFlow(chinese: false, modelID: "embeddinggemma2-vision") }
+
+    func testOrdinaryFrameGrouping() throws { try runOrdinaryFlow(remote: true) }
+    func testOrdinaryLocalFrameCreation() throws { try runOrdinaryFlow(remote: false) }
+
+    private func runOrdinaryFlow(remote remotePhotos: Bool) throws {
+        guard ProcessInfo.processInfo.environment["PHOTOPILOT_REMOTE_AI_QA_TESTING"] == "1" else {
+            throw XCTSkip("Requires the isolated AI QA app with local and NAS folder fixtures.")
+        }
+        let app = XCUIApplication(bundleIdentifier: "dev.photopilot.aiqa")
+        app.launchArguments = ["-qa.remote", "-uitest.reset", "-uitest.onboarded", "-AppleLanguages", "(zh-Hans)"]
+        app.launch()
+        if app.buttons["launch.skip"].waitForExistence(timeout: 10) { app.buttons["launch.skip"].tap() }
+        let create = app.buttons["创建相框"].firstMatch
+        XCTAssertTrue(create.waitForExistence(timeout: 90))
+        create.tap()
+        XCTAssertFalse(app.buttons["frame.ai.settings"].exists)
+        app.buttons["目录"].tap()
+        XCTAssertTrue(app.staticTexts["本机目录"].firstMatch.waitForExistence(timeout: 15))
+        let remote = app.staticTexts["Review NAS"].firstMatch
+        scrollTo(remote, app: app)
+        XCTAssertTrue(remote.exists)
+        capture("ordinary-source-groups", chinese: true)
+        if remotePhotos { app.cells.containing(.staticText, identifier: "album").firstMatch.tap() }
+        else { app.tables.cells.element(boundBy: 1).tap() }
+        XCTAssertTrue(app.staticTexts[remotePhotos ? "已选 3 张 · 3 张可播" : "已选 1 张 · 1 张可播"].waitForExistence(timeout: 15))
+        let name = app.textFields.firstMatch
+        name.tap()
+        name.typeText("Manual QA")
+        let done = app.toolbars.buttons["完成"]
+        if done.exists { done.tap() }
+        app.buttons["保存"].firstMatch.tap()
+        capture("ordinary-after-save", chinese: true)
+        XCTAssertTrue(app.staticTexts["Manual QA"].firstMatch.waitForExistence(timeout: 30))
+        let play = app.buttons["开始播放"].firstMatch
+        XCTAssertTrue(play.waitForExistence(timeout: 15))
+        play.tap()
+        let photo = app.images.matching(NSPredicate(format: "label BEGINSWITH %@", "当前照片，")).firstMatch
+        XCTAssertTrue(photo.waitForExistence(timeout: 30))
+        capture("ordinary-source-playback", chinese: true)
+    }
 
     func testLargeTypeAIConfiguration() throws {
         guard ProcessInfo.processInfo.environment["PHOTOPILOT_AI_QA_TESTING"] == "1" else {
@@ -59,12 +105,13 @@ final class AIFrameFlowTests: XCTestCase {
         }
     }
 
-    private func runFlow(chinese: Bool, modelID: String = "multilingual-clip-vitb32-lite") throws {
+    private func runFlow(chinese: Bool, modelID: String = "multilingual-clip-vitb32-lite", remote: Bool = false) throws {
         guard ProcessInfo.processInfo.environment["PHOTOPILOT_AI_QA_TESTING"] == "1" else {
             throw XCTSkip("Requires the isolated dev.photopilot.aiqa app with authorized model and image fixtures.")
         }
         let app = XCUIApplication(bundleIdentifier: "dev.photopilot.aiqa")
         app.launchArguments = ["-uitest.reset", "-uitest.onboarded", "-dev.photopilot.appLanguage", "system", "-AppleLanguages", chinese ? "(zh-Hans)" : "(en)"]
+        if remote { app.launchArguments.append("-qa.remote") }
         app.launch()
         let create = app.buttons["frames.createAI"]
         XCTAssertTrue(create.waitForExistence(timeout: 90))
@@ -74,7 +121,7 @@ final class AIFrameFlowTests: XCTestCase {
         XCTAssertTrue(model.waitForExistence(timeout: 20))
         model.tap()
         capture("02-models", chinese: chinese)
-        let folder = app.cells.matching(NSPredicate(format: "identifier BEGINSWITH %@", "ai.folder.")).firstMatch
+        let folder = remote ? app.cells.containing(.staticText, identifier: "album").firstMatch : app.cells.matching(NSPredicate(format: "identifier BEGINSWITH %@", "ai.folder.")).firstMatch
         scrollTo(folder, app: app)
         XCTAssertTrue(folder.exists)
         folder.tap()
@@ -89,6 +136,14 @@ final class AIFrameFlowTests: XCTestCase {
         scrollTo(scan, app: app)
         let automatic = app.switches["ai.automatic"]
         XCTAssertEqual(automatic.value as? String, "0")
+        if remote {
+            let filters = app.cells["ai.filters"]
+            scrollTo(filters, app: app)
+            filters.tap()
+            scrollTo(app.sliders.firstMatch, app: app)
+            app.sliders.firstMatch.adjust(toNormalizedSliderPosition: 0)
+            scrollTo(scan, app: app)
+        }
         scan.tap()
         let name = app.textFields["ai.name.0"]
         let deadline = Date().addingTimeInterval(240)
@@ -130,6 +185,14 @@ final class AIFrameFlowTests: XCTestCase {
         automatic.tap()
         capture("07-edit-continuous", chinese: chinese)
         app.navigationBars.buttons[chinese ? "保存" : "Save"].tap()
+        XCTAssertTrue(settings.waitForExistence(timeout: 15))
+        app.buttons[chinese ? "返回" : "Back"].firstMatch.tap()
+        let play = app.buttons[chinese ? "开始播放" : "Start slideshow"].firstMatch
+        XCTAssertTrue(play.waitForExistence(timeout: 30))
+        play.tap()
+        let photo = app.images.matching(NSPredicate(format: "label BEGINSWITH %@", chinese ? "当前照片，" : "Current photo,")).firstMatch
+        XCTAssertTrue(photo.waitForExistence(timeout: 30))
+        capture("08-playback", chinese: chinese)
     }
 
     private func scrollTo(_ element: XCUIElement, app: XCUIApplication) {

@@ -49,7 +49,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         self.assetScope = assetScope
         self.sourceIDs = sourceIDs ?? remoteSourceID.map { Set([$0]) }
         self.remoteSourceID = remoteSourceID
-        self.includesRemoteMedia = remoteSourceID != nil || sourceIDs != nil
+        self.includesRemoteMedia = true
         self.routeToMainAfterSave = routeToMainAfterSave
         self.tabControl = UISegmentedControl(items: [
             L10n.string("library.tab_photos"),
@@ -108,7 +108,14 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         aiSettings.setTitle(AIText.value("AI classification settings", "AI 分类设置"))
         aiSettings.accessibilityIdentifier = "frame.ai.settings"
         aiSettings.addTarget(self, action: #selector(openAISettings), for: .touchUpInside)
-        aiSettings.isHidden = frameID == nil
+        aiSettings.isHidden = true
+        if let frameID {
+            Task { [weak self, weak aiSettings] in
+                guard let self else { return }
+                let configuration = try? await self.environment.aiFrames.configuration(frameID: frameID)
+                aiSettings?.isHidden = configuration == nil
+            }
+        }
         header.addArrangedSubview(aiSettings)
         header.axis = .vertical
         header.spacing = ThemeMetrics.space12
@@ -427,6 +434,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
     private func reload() {
         Task { [weak self] in
             guard let self else { return }
+            directorySourceNames = Dictionary(((try? environment.sources.webdavSources()) ?? []).map { ($0.id, $0.displayName) }, uniquingKeysWith: { first, _ in first })
             loading = true
             defer { loading = false }
             collections = ((try? await environment.assets.collections()) ?? [])
@@ -630,7 +638,8 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
                     manualOrderRefs: pendingManualOrder,
                     newFrameName: newFrameName,
                     frameName: trimmed.isEmpty ? nil : trimmed,
-                    enableRemoteMedia: includesRemoteMedia || selectedAssetIDs.contains(where: { $0.hasPrefix("remote:") }),
+                    enableRemoteMedia: selectedAssetIDs.contains(where: { $0.hasPrefix("remote:") })
+                        || collections.contains { dynamicRules[$0.id] != nil && $0.sourceID.map { directorySourceNames[$0] != nil } == true },
                     coverAssetID: pendingCoverAssetID == detail?.coverAssetId ? nil : pendingCoverAssetID
                 )
                 switch result {
@@ -724,7 +733,10 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         return true
     }
 
+    private var directorySourceNames: [String: String] = [:]
+
     private enum DirectoryRow {
+        case sourceHeader(String)
         case collection(CollectionDTO)
         case recursiveToggle(CollectionDTO)
         case dynamicToggle(CollectionDTO)
@@ -734,10 +746,13 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
 
     private var directoryRows: [DirectoryRow] {
         var rows: [DirectoryRow] = []
-        for collection in collections {
+        for sourceID in Set(collections.map { directorySourceNames[$0.sourceID ?? ""] == nil ? "" : ($0.sourceID ?? "") }).sorted() {
+            rows.append(.sourceHeader(directorySourceNames[sourceID] ?? AIText.value("On this device", "本机目录")))
+            for collection in collections where (directorySourceNames[collection.sourceID ?? ""] == nil ? "" : (collection.sourceID ?? "")) == sourceID {
             rows.append(.collection(collection))
             rows.append(.recursiveToggle(collection))
             rows.append(.dynamicToggle(collection))
+        }
         }
         if !currentExcludes.isEmpty {
             rows.append(.excludedHeader)
@@ -754,6 +769,14 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch directoryRows[indexPath.row] {
+        case .sourceHeader(let title):
+            let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
+            cell.textLabel?.text = title
+            cell.textLabel?.font = ThemeFont.heading()
+            cell.textLabel?.numberOfLines = 0
+            cell.backgroundColor = .clear
+            cell.selectionStyle = .none
+            return cell
         case .collection(let collection):
             let cell = tableView.dequeueReusableCell(withIdentifier: "DirectoryCell", for: indexPath)
             var content = cell.defaultContentConfiguration()

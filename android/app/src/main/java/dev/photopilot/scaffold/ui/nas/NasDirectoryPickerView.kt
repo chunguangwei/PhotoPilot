@@ -21,7 +21,7 @@ class NasDirectoryPickerView(context: Context) : LinearLayout(context) {
     var rootPath: String = ""
 
     private val selected = mutableSetOf<String>()
-    private var recursive = false
+    private var recursive = true
     private var currentDir = ""
     private val pathLine: TextView
     private val parentRow: TextView
@@ -100,7 +100,7 @@ class NasDirectoryPickerView(context: Context) : LinearLayout(context) {
         recursiveToggle = CheckBox(context).apply {
             text = res.getString(R.string.rule_recursive_toggle)
             contentDescription = text
-            isChecked = false
+            isChecked = true
             setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.pp_text_body))
             setTextColor(context.getColor(R.color.pp_text_primary))
             minimumHeight = res.getDimensionPixelSize(R.dimen.pp_touch_target)

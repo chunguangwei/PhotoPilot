@@ -118,7 +118,7 @@
         <item quantity="other">%1$d folders</item>
     </plurals>
     <string name="sources.reconfigure">Reconfigure</string>
-    <string name="source.local_photos.title">Photos on this device</string>
+    <string name="source.local_photos.title">Photo Library</string>
     <string name="source.local_photos.body">Use photos directly from your photo library to save device storage.</string>
     <string name="source.local_files.title">Files</string>
     <string name="source.local_files.body">Reference photos in selected files or folders, including iCloud Drive.</string>
@@ -163,7 +163,7 @@
     <string name="source.nas.security_signed">Signing enabled</string>
     <string name="source.nas.security_encrypted">Encrypted connection</string>
     <string name="source.nas.security_plain">Not encrypted</string>
-    <string name="source.nas.choose_folders">Choose folders to sync</string>
+    <string name="source.nas.choose_folders">Choose photo folders</string>
     <string name="source.nas.sync_selected_only">Sync selected folders only</string>
     <string name="source.nas.include_subfolders">Include subfolders</string>
     <string name="source.nas.mirror_delete">Mirror deletions from the source</string>
@@ -502,7 +502,7 @@
     <string name="licenses.music_note">Built-in tracks are original compositions synthesized for this app and licensed together with it.</string>
     <string name="settings.privacy_policy">Privacy Policy</string>
     <string name="settings.terms">Terms of Service</string>
-    <string name="permission.photos.usage">Used to import the photos you choose into your frames.</string>
+    <string name="permission.photos.usage">Choose photos from your system library and use them directly.</string>
     <string name="permission.photos.add_usage">Used to save photos to your library when you export them.</string>
     <string name="permission.photos.limited_notice">Only the photos you allowed are available.</string>
     <string name="permission.notifications.usage">Used to let you know when an import finishes or needs your attention.</string>

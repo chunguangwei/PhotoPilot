@@ -27,8 +27,8 @@ settings:
     SWIFT_VERSION: "6.0"
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     TARGETED_DEVICE_FAMILY: "2"
-    MARKETING_VERSION: "1.4.1"
-    CURRENT_PROJECT_VERSION: "62"
+    MARKETING_VERSION: "1.4.2"
+    CURRENT_PROJECT_VERSION: "63"
 targets:
   PhotoPilot:
     type: application
@@ -145,6 +145,7 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: "YES"
         TEST_TARGET_NAME: PhotoPilot
+        PRODUCT_BUNDLE_IDENTIFIER: dev.photopilot.scaffold.uitests
 schemes:
   PhotoPilot:
     build:

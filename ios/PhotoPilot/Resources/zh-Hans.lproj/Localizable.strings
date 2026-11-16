@@ -96,7 +96,7 @@
 "sources.disconnect_keep_copies" = "保留已导入的本地照片";
 "sources.disconnect_body" = "将停止同步并删除保存的连接信息。";
 "sources.reconfigure" = "重新配置";
-"source.local_photos.title" = "本机照片";
+"source.local_photos.title" = "照片库";
 "source.local_photos.body" = "直接使用系统相册中的照片，节省本机空间。";
 "source.local_files.title" = "文件";
 "source.local_files.body" = "引用所选文件或目录中的照片，包括 iCloud 云盘。";
@@ -142,7 +142,7 @@
 "source.nas.security_signed" = "已启用签名";
 "source.nas.security_encrypted" = "已加密传输";
 "source.nas.security_plain" = "未加密传输";
-"source.nas.choose_folders" = "选择要同步的目录";
+"source.nas.choose_folders" = "选择照片目录";
 "source.nas.sync_selected_only" = "仅同步所选目录";
 "source.nas.include_subfolders" = "包含子目录";
 "source.nas.mirror_delete" = "同步源端删除";
@@ -441,7 +441,7 @@
 "licenses.music_note" = "内置音乐为本应用原创合成的曲目，随应用一同授权。";
 "settings.privacy_policy" = "隐私政策";
 "settings.terms" = "服务条款";
-"permission.photos.usage" = "用于把你选择的照片导入到相框中。";
+"permission.photos.usage" = "用于选择系统照片库中的照片，直接引用原照片。";
 "permission.photos.add_usage" = "用于在你导出照片时写入系统相册。";
 "permission.photos.limited_notice" = "当前仅可访问你已授权的照片。";
 "permission.notifications.usage" = "用于在导入完成或需要你处理时提醒你。";

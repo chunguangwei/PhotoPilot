@@ -786,8 +786,8 @@
       "key": "source.local_photos.title",
       "section": "4.2 本地与苹果端图库",
       "platform": "all",
-      "zh": "本机照片",
-      "en": "Photos on this device"
+      "zh": "照片库",
+      "en": "Photo Library"
     },
     {
       "key": "source.local_photos.body",
@@ -1121,8 +1121,8 @@
       "key": "source.nas.choose_folders",
       "section": "4.4 NAS",
       "platform": "all",
-      "zh": "选择要同步的目录",
-      "en": "Choose folders to sync"
+      "zh": "选择照片目录",
+      "en": "Choose photo folders"
     },
     {
       "key": "source.nas.sync_selected_only",
@@ -3491,8 +3491,8 @@
       "key": "permission.photos.usage",
       "section": "9. 设置（S15、S17）",
       "platform": "all",
-      "zh": "用于把你选择的照片导入到相框中。",
-      "en": "Used to import the photos you choose into your frames."
+      "zh": "用于选择系统照片库中的照片，直接引用原照片。",
+      "en": "Choose photos from your system library and use them directly."
     },
     {
       "key": "permission.photos.add_usage",

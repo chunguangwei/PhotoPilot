@@ -96,7 +96,7 @@
 "sources.disconnect_keep_copies" = "Keep imported photos on this device";
 "sources.disconnect_body" = "Syncing stops and saved connection details are removed.";
 "sources.reconfigure" = "Reconfigure";
-"source.local_photos.title" = "Photos on this device";
+"source.local_photos.title" = "Photo Library";
 "source.local_photos.body" = "Use photos directly from your photo library to save device storage.";
 "source.local_files.title" = "Files";
 "source.local_files.body" = "Reference photos in selected files or folders, including iCloud Drive.";
@@ -142,7 +142,7 @@
 "source.nas.security_signed" = "Signing enabled";
 "source.nas.security_encrypted" = "Encrypted connection";
 "source.nas.security_plain" = "Not encrypted";
-"source.nas.choose_folders" = "Choose folders to sync";
+"source.nas.choose_folders" = "Choose photo folders";
 "source.nas.sync_selected_only" = "Sync selected folders only";
 "source.nas.include_subfolders" = "Include subfolders";
 "source.nas.mirror_delete" = "Mirror deletions from the source";
@@ -441,7 +441,7 @@
 "licenses.music_note" = "Built-in tracks are original compositions synthesized for this app and licensed together with it.";
 "settings.privacy_policy" = "Privacy Policy";
 "settings.terms" = "Terms of Service";
-"permission.photos.usage" = "Used to import the photos you choose into your frames.";
+"permission.photos.usage" = "Choose photos from your system library and use them directly.";
 "permission.photos.add_usage" = "Used to save photos to your library when you export them.";
 "permission.photos.limited_notice" = "Only the photos you allowed are available.";
 "permission.notifications.usage" = "Used to let you know when an import finishes or needs your attention.";

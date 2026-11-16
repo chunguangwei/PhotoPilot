@@ -45,6 +45,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     private val status = TextView(context)
     private val feedback = TextView(context)
     private val directoryRules = mutableMapOf<String, dev.photopilot.scaffold.data.logic.SaveRuleRow>()
+    private val folderRecursion = JsonMini.parseObject(restoredDraft?.get("folderRecursion")).mapNotNull { (key, value) -> (value as? Boolean)?.let { key to it } }.toMap().toMutableMap()
     private val initialRules = mutableSetOf<String>()
     private val initialRuleRows = mutableMapOf<String, dev.photopilot.scaffold.data.logic.SaveRuleRow>()
     private var availableSources = emptyList<SourceEntity>()
@@ -88,7 +89,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         add(feedback)
         if (!firstUse) {
             add(secondaryButton(context, text("Connect WebDAV / SMB", "连接 WebDAV / SMB")).apply { setOnClickListener { onConnect?.invoke() } })
-            add(secondaryButton(context, text("Choose photo library", "选择本机相册")).apply { setOnClickListener { onLocalPhotos?.invoke() } })
+            add(secondaryButton(context, text("Choose photo library", "选择照片库")).apply { setOnClickListener { onLocalPhotos?.invoke() } })
             add(secondaryButton(context, text("Choose files or folder", "选择文件或目录")).apply { setOnClickListener { onLocalFiles?.invoke() } })
             sourceList.orientation = VERTICAL; add(sourceList)
             add(secondaryButton(context, text("Refresh metadata", "刷新照片索引")).apply { setOnClickListener { refreshIndex() } })
@@ -149,6 +150,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         "selected" to org.json.JSONArray(selected.toList()).toString(),
         "manualOrder" to org.json.JSONArray(manualOrder).toString(), "manualOrderEdited" to manualOrderEdited.toString(),
         "rules" to org.json.JSONArray(directoryRules.values.map { org.json.JSONObject().put("id", it.collectionId).put("recursive", it.recursive) }).toString(),
+        "folderRecursion" to JsonMini.toJson(folderRecursion),
         "sourceId" to sourceId.orEmpty(), "folder" to folder, "page" to page.toString(),
         "firstUse" to firstUse.toString(), "scopeIds" to (scopeIds?.let { org.json.JSONArray(it.toList()).toString() } ?: ""),
     )
@@ -178,7 +180,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     }
 
     private fun chooseAdditionalSource() {
-        val labels = listOf(text("Photo library", "本机相册"), text("Files or folder", "文件或目录"), text("WebDAV / SMB", "WebDAV / SMB")) + availableSources.map { it.displayName }
+        val labels = listOf(text("Photo library", "照片库"), text("Files or folder", "文件或目录"), text("WebDAV / SMB", "WebDAV / SMB")) + availableSources.map { it.displayName }
         AlertDialog.Builder(context).setTitle(text("Add photos", "添加照片"))
             .setItems(labels.toTypedArray()) { _, index ->
                 when (index) {
@@ -191,12 +193,14 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     }
 
     private fun selectCurrentFolder() {
+        val id = sourceId ?: return
+        val requestedFolder = folder
+        val recursive = folderRecursion["$id:$requestedFolder"] == true
         scope.launch {
-            sourceId?.let { id ->
-                val rows = withContext(Dispatchers.IO) { env.remoteMedia.members(id, folder, false).filter { env.remoteMedia.item(it.id, allowRetainedCopy = false) != null } }
-                selected.addAll(rows.map { it.id })
-                loadPhotos()
-            }
+            val rows = withContext(Dispatchers.IO) { env.remoteMedia.members(id, requestedFolder, recursive).filter { env.remoteMedia.item(it.id, allowRetainedCopy = false) != null } }
+            if (sourceId != id || folder != requestedFolder) return@launch
+            selected.addAll(rows.map { it.id })
+            loadPhotos()
         }
     }
 
@@ -247,14 +251,17 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
             if (request != photoRequest || sourceId != id || folder != requestedFolder || page != requestedPage) return@launch
             page = loaded.third
             fun current() = request == photoRequest && sourceId == id && folder == requestedFolder && page == loaded.third
-            photos.removeAllViews()
-            if (!firstUse || scopeIds == null) photos.addView(TextView(context).apply { text = folder.ifEmpty { this@RemoteFrameView.text("Root folder", "根目录") } })
-            if (folder.isNotEmpty()) photos.addView(secondaryButton(context, text("Parent folder", "上级目录")).apply { setOnClickListener { folder = folder.substringBeforeLast('/', ""); page = 0; loadPhotos() } })
-            val currentCollection = withContext(Dispatchers.IO) { env.database.collectionDao().getBySourceAndPath(id, folder) }
+            val currentCollection = withContext(Dispatchers.IO) { env.database.collectionDao().getBySourceAndPath(id, requestedFolder) }
             if (!current()) return@launch
+            val localSource = availableSources.firstOrNull { it.id == id }?.type in setOf(SourceType.LOCAL_PHOTOS, SourceType.LOCAL_FILES)
+            photos.removeAllViews()
+            if (!firstUse || scopeIds == null) photos.addView(TextView(context).apply { text = (if (localSource) currentCollection?.name else requestedFolder)?.takeIf { it.isNotBlank() } ?: this@RemoteFrameView.text("Root folder", "根目录") })
+            if (folder.isNotEmpty()) photos.addView(secondaryButton(context, text("Parent folder", "上级目录")).apply { setOnClickListener { folder = folder.substringBeforeLast('/', ""); page = 0; loadPhotos() } })
             if (scopeIds == null) photos.addView(secondaryButton(context, text("Select this folder", "选择此目录照片")).apply { setOnClickListener { selectCurrentFolder() } })
             currentCollection?.takeIf { scopeIds == null }?.let { collection ->
-                val recursive = CheckBox(context).apply { text = this@RemoteFrameView.text("Include subfolders", "包含子目录"); isChecked = directoryRules[collection.id]?.recursive == true }
+                val recursionKey = "$id:$requestedFolder"
+                folderRecursion.putIfAbsent(recursionKey, directoryRules[collection.id]?.recursive == true)
+                val recursive = CheckBox(context).apply { text = this@RemoteFrameView.text("Include subfolders", "包含子目录"); isChecked = folderRecursion[recursionKey] == true }
                 val future = CheckBox(context).apply {
                     text = this@RemoteFrameView.text("Include future photos in this folder", "包含此目录将来的照片")
                     isChecked = directoryRules[collection.id]?.includeFuture == true
@@ -263,7 +270,10 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                         else directoryRules.remove(collection.id)
                     }
                 }
-                recursive.setOnCheckedChangeListener { _, checked -> directoryRules[collection.id]?.let { directoryRules[collection.id] = it.copy(recursive = checked) } }
+                recursive.setOnCheckedChangeListener { _, checked ->
+                    folderRecursion[recursionKey] = checked
+                    directoryRules[collection.id]?.let { directoryRules[collection.id] = it.copy(recursive = checked) }
+                }
                 photos.addView(future); photos.addView(recursive)
             }
             loaded.second.filter { scopeIds == null }.forEach { child ->

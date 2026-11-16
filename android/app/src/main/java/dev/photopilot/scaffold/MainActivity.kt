@@ -153,6 +153,7 @@ class MainActivity : Activity() {
     private lateinit var keyboardDismiss: KeyboardDismiss
     private var database: PhotoPilotDatabase? = null
     private var environment: AppEnvironment? = null
+    private var activityResumed = false
     private var pendingSectionRestore = -1
     private var pendingOverlayRestore: String? = null
     private var coldStart = false
@@ -359,6 +360,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        activityResumed = true
         pollHandler.removeCallbacks(pollRunnable)
         pollHandler.post(pollRunnable)
         environment?.let { env ->
@@ -392,6 +394,7 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        activityResumed = false
         pollHandler.removeCallbacks(pollRunnable)
         playerView?.onAppBackground()
         playerEngine?.onBackground()
@@ -408,6 +411,8 @@ class MainActivity : Activity() {
                 val env = AppEnvironment.shared(applicationContext)
                 database = env.database
                 environment = env
+                env.aiFrames.foreground = activityResumed
+                if (activityResumed) env.aiFrames.resumeAutomatic()
                 val (completed, preferences) = withContext(Dispatchers.IO) {
                     env.settings.isOnboardingCompleted() to
                         (env.settings.appearance() to env.settings.language())
@@ -799,6 +804,7 @@ class MainActivity : Activity() {
                     .show()
                 return@launch
             }
+            environment?.aiFrames?.foreground = activityResumed
             database = environment?.database
             lastLibraryVersionJson = null
             framesDirty = true
@@ -995,7 +1001,7 @@ class MainActivity : Activity() {
             AlertDialog.Builder(this@MainActivity)
                 .setTitle(R.string.import_pick_frame_title)
                 .setItems(frames.map { it.name }.toTypedArray()) { _, which -> openRemoteFrame(frames[which], draft) }
-                .setPositiveButton(R.string.import_pick_frame_new) { _, _ -> openRemoteFrame(null, draft) }
+                .setPositiveButton(R.string.import_pick_frame_new) { _, _ -> openRemoteFrame(null, draft.orEmpty() + ("firstUse" to "true")) }
                 .setNegativeButton(R.string.common_cancel, null)
                 .show()
         }
@@ -1734,7 +1740,13 @@ class MainActivity : Activity() {
     private fun buildFramesView(): FramesView {
         val view = FramesView(this, File(filesDir, "originals")).apply { remoteMedia = environment?.remoteMedia }
         view.onOpen = { frame -> openFrameEditor(frame) }
-        view.onCreate = { openFrameEditor(null) }
+        view.onCreate = {
+            scope.launch {
+                val hasPrivatePhotos = withContext(Dispatchers.IO) { environment?.database?.assetDao()?.browseReadyPage(1, 0).orEmpty().isNotEmpty() }
+                if (hasPrivatePhotos) openFrameEditor(null)
+                else openRemoteFrame(null, mapOf("firstUse" to "true"))
+            }
+        }
         view.onCreateAI = { openAIFrameEditor(null) }
         view.onPlay = { frame -> openPlayer(frame, fromSnapshot = false) }
         view.onPlaybackSettings = { frame -> openPlaybackSettings(frame) }
@@ -1845,8 +1857,13 @@ class MainActivity : Activity() {
 
     private fun openAIFrameEditor(frame: FrameEntity?, draft: Map<String, String>? = null) {
         val env = environment ?: return
-        val view = dev.photopilot.scaffold.ui.aiframes.AIFrameView(this, env, scope, frame,
-            onClose = { popOverlayTracked(); framesDirty = true; refreshJobUi() },
+        lateinit var view: dev.photopilot.scaffold.ui.aiframes.AIFrameView
+        view = dev.photopilot.scaffold.ui.aiframes.AIFrameView(this, env, scope, frame,
+            onClose = {
+                if (root.topOverlay() === view) popOverlayTracked()
+                framesDirty = true
+                refreshJobUi()
+            },
             onChanged = { framesDirty = true },
             restoredDraft = draft,
         )
@@ -1879,6 +1896,7 @@ class MainActivity : Activity() {
                         }.filter { dev.photopilot.scaffold.data.logic.CollectionListing.visibleInFolderList(it.first.type, it.second) } to metadataSources
                     }
                     referenceSources = collections.second
+                    view.sourceNames = withContext(Dispatchers.IO) { env.database.sourceDao().getAll().filter { it.type in setOf(SourceType.SMB, SourceType.WEBDAV) }.associate { it.id to it.displayName } }
                     callback(collections.first)
                 }
             }
@@ -1911,6 +1929,7 @@ class MainActivity : Activity() {
             editorModel = model
             if (frameEditView === view) {
                 view.bind(model)
+                view.setAISettingsVisible(withContext(Dispatchers.IO) { frame?.let { env.aiFrames.state.get(it.id) } != null })
                 draft?.let { view.restoreDraft(it) }
             }
         }

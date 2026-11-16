@@ -78,6 +78,9 @@ class FrameEditView(
     var onRemotePhotos: (() -> Unit)? = null
     var onOpenReferenceCollection: ((CollectionEntity) -> Boolean)? = null
     var onAISettings: (() -> Unit)? = null
+    var sourceNames: Map<String, String> = emptyMap()
+    private var aiSettingsControl: View? = null
+    fun setAISettingsVisible(visible: Boolean) { aiSettingsControl?.visibility = if (visible) View.VISIBLE else View.GONE }
     var onManualOrder: (() -> Unit)? = null
     var onConfirmDynamic: ((confirmed: (Boolean) -> Unit) -> Unit)? = null
 
@@ -129,6 +132,8 @@ class FrameEditView(
         addView(headerRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
         addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, R.string.common_done).apply {
+            aiSettingsControl = this
+            visibility = View.GONE
             text = if (resources.configuration.locales[0].language == "zh") "AI 分类规则" else "AI classification rules"
             setOnClickListener { onAISettings?.invoke() }
         })
@@ -458,13 +463,21 @@ class FrameEditView(
     private fun buildFoldersList(collections: List<Pair<CollectionEntity, Long>>) {
         val res = resources
         foldersColumn.removeAllViews()
-        collections.forEach { (collection, count) ->
+        collections.groupBy { it.first.sourceId?.takeIf(sourceNames::containsKey) }.forEach { (sourceId, rows) ->
+            foldersColumn.addView(TextView(context).apply {
+                text = sourceNames[sourceId] ?: if (resources.configuration.locales[0].language == "zh") "本机目录" else "On this device"
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                textSize = 18f
+                setPadding(0, res.getDimensionPixelSize(R.dimen.pp_space_16), 0, 0)
+            })
+            rows.forEach { (collection, count) ->
             foldersColumn.addView(
                 folderRow(collection, count),
                 LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
                     topMargin = res.getDimensionPixelSize(R.dimen.pp_space_12)
                 },
             )
+        }
         }
         val current = model ?: return
         if (current.excludedRefs.isNotEmpty()) {

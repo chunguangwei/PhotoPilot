@@ -13,7 +13,17 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
     private let environment: AppEnvironment
     private let frameID: String?
     private var models: [AIModelDescriptor] = []
+    private var filtersExpanded = false
     private var collections: [CollectionDTO] = []
+    private var sourceNames: [String: String] = [:]
+    private var folderRows: [(title: String?, collection: CollectionDTO?)] {
+        var rows: [(title: String?, collection: CollectionDTO?)] = []
+        for sourceID in Set(collections.map { sourceNames[$0.sourceID ?? ""] == nil ? "" : ($0.sourceID ?? "") }).sorted() {
+            rows.append((sourceNames[sourceID] ?? AIText.value("On this device", "本机目录"), nil))
+            rows.append(contentsOf: collections.filter { (sourceNames[$0.sourceID ?? ""] == nil ? "" : ($0.sourceID ?? "")) == sourceID }.map { (nil, $0) })
+        }
+        return rows
+    }
     private var installed: Set<String> = []
     private var selectedModelID = "embeddinggemma2-vision"
     private var selectedCollections: Set<String> = []
@@ -139,6 +149,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         do {
             models = try await environment.aiFrames.catalog()
             collections = try await environment.assets.collections()
+            sourceNames = Dictionary(((try? environment.sources.webdavSources()) ?? []).map { ($0.id, $0.displayName) }, uniquingKeysWith: { first, _ in first })
             if let frameID {
                 let detail = try await environment.frameManager.frameDetail(frameID: frameID)
                 existingName = detail.name
@@ -195,8 +206,8 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
         case 0: return models.count + 3
-        case 1: return collections.count + 1
-        case 2: return 6
+        case 1: return folderRows.count + 1
+        case 2: return filtersExpanded ? 7 : 2
         case 3: return 3
         default: return 1 + previews[section - 4].matches.filter { $0.decision != .rejected }.count
         }
@@ -216,7 +227,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         switch section {
         case 0: return AIText.value("Models download on demand. Both support Chinese and English. Domestic mirrors may redirect to overseas servers.", "模型按需下载，两种模型均支持中英文。国内镜像可能重定向至境外服务器。")
         case 1: return collections.isEmpty ? AIText.value("Import photos from Sources first, then select their folders here.", "请先在“来源”中导入照片，再返回选择目录。") : nil
-        case 2: return AIText.value("Use short visual descriptions in Chinese or English. Similarity scores express visual-semantic matching. Rules support categories and include/exclude descriptions.", "支持中英文视觉短句，按类别、包含和排除描述匹配。相似度表示图文语义匹配程度。")
+        case 2: return AIText.value("For example: family, pets or the beach. Enter one category per line. Each category creates a frame, with a name you can edit in the preview.", "例如：家人、宠物、海边。每行填写一个类别，每个类别会生成一个相框；预览结果后可修改名称。")
         case 3: return AIText.value("Only selected folders are scanned. Continuous classification processes new photos after import while the app is open. It can be changed later.", "仅扫描选定目录。持续分类会在导入完成且 App 打开时处理新照片，之后可修改。")
         default:
             let preview = previews[section - 4]
@@ -234,9 +245,15 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         switch indexPath.section {
         case 0: configureModelCell(cell, row: indexPath.row)
         case 1:
-            if indexPath.row == collections.count { configureToggle(cell, title: AIText.value("Include subfolders", "包含子目录"), toggle: recursiveSwitch) }
+            if indexPath.row == folderRows.count { configureToggle(cell, title: AIText.value("Include subfolders", "包含子目录"), toggle: recursiveSwitch) }
             else {
-                let collection = collections[indexPath.row]
+                let row = folderRows[indexPath.row]
+                guard let collection = row.collection else {
+                    cell.textLabel?.text = row.title
+                    cell.textLabel?.font = ThemeFont.heading()
+                    cell.selectionStyle = .none
+                    return cell
+                }
                 cell.accessibilityIdentifier = "ai.folder." + collection.id
                 cell.textLabel?.text = collection.name
                 cell.detailTextLabel?.text = AIText.value(
@@ -276,8 +293,14 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
     }
 
     private func configureRuleCell(_ cell: UITableViewCell, row: Int) {
-        switch row {
-        case 0: embed([label(AIText.value("Categories · one per line", "分类 · 每行一个")), categoryInput], in: cell)
+        if row == 1 {
+            cell.textLabel?.text = filtersExpanded ? AIText.value("Hide filters", "收起筛选条件") : AIText.value("More filters (optional)", "更多筛选条件（可选）")
+            cell.accessibilityIdentifier = "ai.filters"
+            cell.accessibilityTraits = .button
+            return
+        }
+        switch row == 0 ? 0 : row - 1 {
+        case 0: embed([label(AIText.value("What photos would you like to show?", "想展示什么照片？")), categoryInput], in: cell)
         case 1: embed([label(AIText.value("Include descriptions · optional, one per line", "包含描述 · 可选，每行一个")), includesInput], in: cell)
         case 2: embed([label(AIText.value("Exclude descriptions · optional, one per line", "排除描述 · 可选，每行一个")), excludesInput], in: cell)
         case 3: embed([label(AIText.value("Include match", "包含匹配方式")), matchControl], in: cell)
@@ -333,6 +356,11 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+        if indexPath.section == 2 && indexPath.row == 1 {
+            filtersExpanded.toggle()
+            tableView.reloadSections(IndexSet(integer: 2), with: .automatic)
+            return
+        }
         if indexPath.section == 3 && indexPath.row == 1 {
             if savedJobRunning, let frameID {
                 Task {
@@ -354,8 +382,8 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
             } else if indexPath.row == models.count + 1 { confirmDownload() }
             else if indexPath.row == models.count + 2 { deleteModel() }
         case 1:
-            guard indexPath.row < collections.count else { return }
-            let id = collections[indexPath.row].id
+            guard indexPath.row < folderRows.count, let collection = folderRows[indexPath.row].collection else { return }
+            let id = collection.id
             if selectedCollections.contains(id) { selectedCollections.remove(id) } else { selectedCollections.insert(id) }
             settingsChanged()
         case 4...:
@@ -484,7 +512,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
                     do {
                         let matches = preview.matches.map { match in
                             AIFrameMatch(assetID: match.assetID, score: match.score,
-                                         decision: preview.selected.contains(match.assetID) ? .matched : .rejected, themes: match.themes)
+                                         decision: preview.selected.contains(match.assetID) ? .matched : .rejected, themes: match.themes, contentVersion: match.contentVersion)
                         }
                         let removed = preview.initiallySelected.subtracting(preview.selected)
                         let manual = Set(preview.matches.filter { ($0.decision == .review || preservedExclusions.contains($0.assetID)) && preview.selected.contains($0.assetID) }.map(\.assetID))

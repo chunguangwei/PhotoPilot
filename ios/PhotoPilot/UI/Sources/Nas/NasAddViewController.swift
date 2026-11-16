@@ -43,7 +43,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
         prefillEndpoint: NasEndpoint? = nil,
         prefillCredential: NasCredential? = nil,
         prefillDirectories: [String] = [],
-        prefillRecursive: Bool = false,
+        prefillRecursive: Bool = true,
         prefillCatalogOnly: Bool = true
     ) {
         self.catalogOnly = prefillCatalogOnly
