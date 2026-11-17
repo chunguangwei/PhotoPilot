@@ -1,6 +1,6 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
-## 2026-11-17 AI 暂停保存、模型设置与持久恢复 · 1.4.7（68）发布准备
+## 2026-11-17 AI 暂停保存、模型设置与持久恢复 · 1.4.7（68）已发布
 
 - 双端支持暂停分类并保存部分结果，下次继续未完成、变化或失败的照片。设置集中管理模型，缺模型的创建入口定位对应下载项，返回保留来源、规则、名称和选择。类别到相框映射事务性持久化，0匹配类别也可保存，重复确认不会重复建框。独立userPaused优先于automatic，保存、导入和重启均不解除手动暂停。
 - Android任务归进程协调器，使用dataSync前台服务和通用进度通知。重复启动合并初始化及通知循环，保持单一服务WakeLock，按startId结束。初始化期间通知暂停同时覆盖尚未launch的持久queued任务。逐照片增量checkpoint兼容旧header并fence旧owner，模型文件租约与推理槽分离。真实HTTP Range/If-Range暂停、重建不自动重跑、继续校验SHA、删除迟到响应及后台超时退出均有确定回归。
@@ -11,7 +11,7 @@
 - 主Agent最终make check通过，含AI6项及共享58项、17表parity和616词条新鲜度。iOS最终build/analyze通过。Android正式wrapper9.1完整Debug、AndroidTest、lint、446 JVM及原签名Release通过，lint0错误203警告。常规9.1旧缓存缺transform，采用隔离GRADLE_USER_HOME/project-cache并复用现有依赖及临时官方仓缓存完成，未改wrapper或依赖版本。此前9.3.1验证记录单独保留。
 - iOS开发签名归档及iPhone保留数据覆盖升级已完成，公开metadata和设置页均核147/68。归档executable SHA256为dc7569c5f108428dbbfae4679cdc57a6b4cf458d4b658b78aef8e76292964400，最低OS15、无模型权重。Android最终APK154400910bytes，SHA256为c4321375da3ec47d98c0ec246eaa0d0895317aabfedca1d17c4285d868b0d504，原证书及4ABI保持，catalog一致、未夹带权重或私密测试配置。
 - 限制如实保留。Android华为真机本轮不可连接，使用API35模拟器。旧外部审核NAS的SMB及HTTPS WebDAV在Mac和AVD均独立5秒超时，未完成本轮外部服务UI段，未改其配置。WebDAV协议夹具及本地SMB链路有实证，旧146真实SMB3/HTTPS证据仍见下节。英文12小时制AM在360dp换行观察未纳入本次修复。Emulator37.2.13.0启动目录缺失且无现成缓存，准确签名Release隔离运行附加复验未执行，不能由签名检查推定运行已通过。5554 Debug68及原数据保留，1080×2400/420dpi/font1/自由旋转已恢复，AI唤醒及服务为0，临时SMB和私密配置已清理。临时启动的Colima已恢复原停止状态，无新大型SDK安装。
-- 独立静态审查的预览跨await身份、模型删除租约、Range重放、后台permit、FGS重入和隐私增量均已闭环。GitHub提交、tag及公开附件校验尚待本节发布回填。AppStore等待用户真机确认，未上传或提交审核。
+- 独立静态审查的预览跨await身份、模型删除租约、Range重放、后台permit、FGS重入和隐私增量均已闭环。代码496e404及annotated tag v1.4.7已推送main。[GitHub v1.4.7](https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.7)已发布为Latest，4份公开附件匿名完整下载后大小及SHA256与本地和GitHub摘要一致，记录见store/appstore/review/AITaskRelease147.json。AppStore等待用户真机确认，未上传或提交审核。
 
 ## 2026-11-17 首页载入与全屏菜单反馈修复 · 1.4.6（67）已发布
 

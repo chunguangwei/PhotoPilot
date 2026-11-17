@@ -1,7 +1,7 @@
 {
   "version": "1.4.7",
   "build": 68,
-  "status": "release_prepared",
+  "status": "published",
   "changes": [
     "Persistent user pause and partial frame creation",
     "Resume unfinished or changed classification inputs",
@@ -61,19 +61,31 @@
   ],
   "assets": [
     {
-      "name": "PhotoPilot-v1.4.7-68.apk",
-      "bytes": 154400910,
-      "sha256": "c4321375da3ec47d98c0ec246eaa0d0895317aabfedca1d17c4285d868b0d504"
-    },
-    {
       "name": "AMSMB2-4.0.3-source.tar.gz",
       "bytes": 329872,
-      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077"
+      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "PhotoPilot-v1.4.7-68.apk",
+      "bytes": 154400910,
+      "sha256": "c4321375da3ec47d98c0ec246eaa0d0895317aabfedca1d17c4285d868b0d504",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 273,
+      "sha256": "a495ce70785b792d9cca094fa5cd44da08b703612cb9980c3855e43bd1ecaab1",
+      "anonymousDownloadVerified": true
     },
     {
       "name": "SMBSourceManifest.json",
       "bytes": 33554,
-      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e"
+      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e",
+      "anonymousDownloadVerified": true
     }
-  ]
+  ],
+  "releaseURL": "https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.7",
+  "latestVerified": true,
+  "sourceCommit": "496e404991a8f9c33fb4c7b6ba6e648af7f51f95"
 }

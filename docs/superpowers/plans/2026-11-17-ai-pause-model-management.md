@@ -48,7 +48,7 @@ Android Agent 负责 android 下的实现与测试，iOS Agent 负责 ios 下的
 - [x] 根目录 make check，iOS generate/build/analyze，Android build/lint/test。
 - [x] 平台原生回归与中英手机小屏布局验证，下载网络中断、任务暂停和进程恢复必须有真实夹具证据。
 - [x] 按实际设备覆盖验证暂停保存与继续。iPhone本轮使用自有NAS协议夹具，本机隐私及恢复由原生测试覆盖，先前本机Photos真机证据保留。Android以模拟器及用户截图验证，不能宣称华为真机通过。
-- [ ] 独立代码审查，按实际证据回填16，打包和签名核对，更新既有GitHub仓库，AppStore保持用户确认门控。
+- [x] 独立代码审查，按实际证据回填16，打包和签名核对，更新既有GitHub仓库，AppStore保持用户确认门控。
 
 ## 平台依据
 
