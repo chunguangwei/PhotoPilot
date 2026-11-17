@@ -415,6 +415,7 @@
 "settings.storage_threshold" = "保留可用空间";
 "settings.network" = "网络与同步";
 "settings.wifi_only" = "仅在非计费网络下载";
+"settings.ai_models" = "AI 模型";
 "settings.auto_play" = "打开应用时自动播放";
 "settings.background_note" = "系统可能延迟后台同步；锁屏后可能需要手动唤醒设备。";
 "settings.rest_window" = "休息时段";

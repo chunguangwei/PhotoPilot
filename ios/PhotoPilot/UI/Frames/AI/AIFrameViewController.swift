@@ -586,7 +586,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         Task { [weak self] in
             guard let self else { return }
             try? await environment.aiFrames.drafts.saveForm(formSnapshot())
-            let models = AIModelsViewController(environment: environment, focusModelID: selectedModelID)
+            let models = SettingsViewController(environment: environment, focusAIModelID: selectedModelID)
             present(UINavigationController(rootViewController: models), animated: true)
         }
     }

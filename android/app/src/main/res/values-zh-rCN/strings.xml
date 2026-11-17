@@ -450,6 +450,7 @@
     <string name="settings.storage_threshold">保留可用空间</string>
     <string name="settings.network">网络与同步</string>
     <string name="settings.wifi_only">仅在非计费网络下载</string>
+    <string name="settings.ai_models">AI 模型</string>
     <string name="settings.auto_play">打开应用时自动播放</string>
     <string name="settings.background_note">系统可能延迟后台同步；锁屏后可能需要手动唤醒设备。</string>
     <string name="settings.rest_window">休息时段</string>

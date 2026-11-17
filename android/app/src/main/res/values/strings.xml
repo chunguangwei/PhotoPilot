@@ -462,6 +462,7 @@
     <string name="settings.storage_threshold">Reserved free space</string>
     <string name="settings.network">Network and syncing</string>
     <string name="settings.wifi_only">Download only on unmetered networks</string>
+    <string name="settings.ai_models">AI models</string>
     <string name="settings.auto_play">Start playing when the app opens</string>
     <string name="settings.background_note">The system may delay background syncing. You may need to wake the device after it locks.</string>
     <string name="settings.rest_window">Rest hours</string>

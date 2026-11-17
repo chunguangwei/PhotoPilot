@@ -553,9 +553,9 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun buildSettingsView(): SettingsView {
-        val view = SettingsView(this)
-        view.onAIModels = { openAIModels(null) }
+    private fun buildSettingsView(showTitle: Boolean = true): SettingsView {
+        val view = SettingsView(this, showTitle)
+        view.createAIModels = { dev.photopilot.scaffold.ui.aiframes.AIModelsView(this, requireNotNull(environment)) }
         view.onAppearance = { index ->
             val value = APPEARANCE_VALUES[index]
             scope.launch {
@@ -1932,12 +1932,28 @@ class MainActivity : Activity() {
     }
 
     private fun openAIModels(modelId: String?) {
-        val env = environment ?: return
-        lateinit var view: dev.photopilot.scaffold.ui.aiframes.AIModelsView
-        view = dev.photopilot.scaffold.ui.aiframes.AIModelsView(this, env, modelId) {
-            if (root.topOverlay() === view) popOverlayTracked()
+        if (environment == null) return
+        val previousSettings = activeSettingsView
+        val settings = buildSettingsView(showTitle = false)
+        settings.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(view: View) = Unit
+            override fun onViewDetachedFromWindow(view: View) {
+                if (activeSettingsView === settings) {
+                    activeSettingsView = previousSettings?.takeIf { it.isAttachedToWindow }
+                    activeSettingsView?.let(::reloadSettingsModel)
+                }
+            }
+        })
+        settings.focusAIModels(modelId)
+        val host = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(getColor(R.color.pp_surface_canvas))
+            addView(dev.photopilot.scaffold.ui.widget.formHeader(this@MainActivity, getString(R.string.settings_title)) {
+                popOverlayTracked()
+            })
+            addView(settings, LinearLayout.LayoutParams(-1, 0, 1f))
         }
-        pushOverlayTracked(view, mapOf("type" to "aiModels", "modelId" to modelId.orEmpty()))
+        pushOverlayTracked(host, mapOf("type" to "aiModels", "modelId" to modelId.orEmpty()))
     }
 
     private fun openAIFrameEditor(frame: FrameEntity?, draft: Map<String, String>? = null) {

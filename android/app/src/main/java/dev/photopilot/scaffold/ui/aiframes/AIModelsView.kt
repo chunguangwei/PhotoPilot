@@ -10,23 +10,18 @@ import dev.photopilot.scaffold.data.aiframes.*
 import dev.photopilot.scaffold.ui.widget.*
 import kotlinx.coroutines.*
 
-class AIModelsView(context: Context, private val environment: AppEnvironment, private val focusModel: String? = null, onBack: () -> Unit) : LinearLayout(context) {
+class AIModelsView(context: Context, private val environment: AppEnvironment) : LinearLayout(context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val scroll = ScrollView(context)
-    private val column = LinearLayout(context).apply { orientation = VERTICAL }
+    private val modelTitles = mutableMapOf<String, TextView>()
     private val zh get() = resources.configuration.locales[0].language == "zh"
     private fun words(en: String, cn: String) = if (zh) cn else en
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
     private val updateRows = mutableListOf<suspend () -> Unit>()
     private var poll: Job? = null
+    private var pendingFocus: (() -> Unit)? = null
     init {
         orientation = VERTICAL
-        setBackgroundColor(context.getColor(R.color.pp_surface_canvas))
-        addView(formHeader(context, words("AI model management", "AI 模型管理"), onBack))
-        scroll.addView(column)
-        addView(scroll, LayoutParams(-1, 0, 1f))
-        column.setPadding(dp(16), dp(8), dp(16), dp(24))
-        column.addView(TextView(context).apply { text = words("Downloads continue when leaving this page. Pause them explicitly to stop. Photos are processed on this device.", "离开页面后下载仍会继续，可手动暂停。照片仅在此设备处理。") })
+        addView(TextView(context).apply { text = words("Downloads continue when leaving this page. Pause them explicitly to stop. Photos are processed on this device.", "离开页面后下载仍会继续，可手动暂停。照片仅在此设备处理。") })
         for (model in environment.aiFrames.models.models) addModel(model)
     }
     private fun addModel(model: AIModel) {
@@ -103,12 +98,45 @@ class AIModelsView(context: Context, private val environment: AppEnvironment, pr
             source.isEnabled = !running && !deleting
             metered.isEnabled = !running && !deleting
         }
-        column.addView(card, LayoutParams(-1, -2))
-        if (model.id == focusModel) scroll.post { scroll.smoothScrollTo(0, card.top); title.requestFocus(); title.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED) }
+        addView(card, LayoutParams(-1, -2))
+        modelTitles[model.id] = title
     }
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        poll = scope.launch { while (isActive) { updateRows.forEach { it() }; delay(700) } }
+    fun focusModel(modelId: String?, scrollHost: ScrollView) {
+        val title = modelTitles[modelId] ?: modelTitles.values.firstOrNull() ?: return
+        pendingFocus = {
+            postOnAnimation {
+                post {
+                    if (!title.isAttachedToWindow || !scrollHost.isAttachedToWindow) return@post
+                    var ancestor = title.parent
+                    while (ancestor != null && ancestor !== scrollHost) ancestor = ancestor.parent
+                    if (ancestor !== scrollHost) return@post
+                    val bounds = android.graphics.Rect(0, 0, title.width, title.height)
+                    scrollHost.offsetDescendantRectToMyCoords(title, bounds)
+                    scrollHost.scrollTo(0, bounds.top)
+                    title.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED)
+                }
+            }
+        }
     }
-    override fun onDetachedFromWindow() { poll?.cancel(); scope.cancel(); super.onDetachedFromWindow() }
+
+    override fun onVisibilityAggregated(isVisible: Boolean) {
+        super.onVisibilityAggregated(isVisible)
+        poll?.cancel()
+        poll = if (isVisible) scope.launch {
+            while (isActive) {
+                updateRows.forEach { it() }
+                pendingFocus?.let { focus ->
+                    pendingFocus = null
+                    focus()
+                }
+                delay(700)
+            }
+        } else null
+    }
+
+    override fun onDetachedFromWindow() {
+        poll?.cancel()
+        scope.cancel()
+        super.onDetachedFromWindow()
+    }
 }

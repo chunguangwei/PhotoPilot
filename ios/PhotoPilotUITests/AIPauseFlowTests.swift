@@ -19,11 +19,11 @@ final class AIPauseFlowTests: XCTestCase {
         keyboardDone.tap()
         scroll(app.cells["ai.manageModels"], app)
         app.cells["ai.manageModels"].tap()
-        let focused = app.cells["models.item.embeddinggemma2-vision"]
+        let focused = app.staticTexts["models.item.embeddinggemma2-vision"]
         XCTAssertTrue(focused.waitForExistence(timeout: 15))
         XCTAssertTrue(focused.isHittable)
         capture("en-focused-model")
-        app.buttons["Done"].firstMatch.tap()
+        app.navigationBars.buttons["settings.aiModels.back"].tap()
         scroll(category, app)
         XCTAssertEqual(category.value as? String, "draft before downloading")
         let folder = app.cells.matching(NSPredicate(format: "identifier BEGINSWITH %@", "ai.folder.")).firstMatch
@@ -35,7 +35,7 @@ final class AIPauseFlowTests: XCTestCase {
         XCTAssertTrue(focused.waitForExistence(timeout: 20))
         XCTAssertTrue(focused.isHittable)
         capture("en-missing-model-scan-route")
-        app.buttons["Done"].firstMatch.tap()
+        app.navigationBars.buttons["settings.aiModels.back"].tap()
         app.terminate()
         app.launchArguments.removeAll { $0 == "-uitest.reset" }
         app.launch()
@@ -52,20 +52,33 @@ final class AIPauseFlowTests: XCTestCase {
         app.buttons["Settings"].firstMatch.tap()
         let entry = app.buttons["settings.aiModels"]
         scroll(entry, app)
+        if entry.value as? String == "Expanded" { entry.tap() }
         entry.tap()
-        XCTAssertTrue(app.cells["models.item.embeddinggemma2-vision"].waitForExistence(timeout: 20))
-        let global = app.segmentedControls.buttons["Global"]
+        let source = app.segmentedControls["models.source"]
+        XCTAssertTrue(source.waitForExistence(timeout: 20))
+        XCTAssertFalse(app.navigationBars.buttons["Done"].exists)
+        let global = source.buttons["Global"]
         scroll(global, app)
         global.tap()
-        let cellular = app.switches.firstMatch
-        cellular.tap()
+        let cellular = app.switches["models.cellular"]
+        scroll(cellular, app)
+        if cellular.value as? String != "1" { cellular.tap() }
         XCTAssertEqual(cellular.value as? String, "1")
-        capture("en-central-model-management")
-        app.buttons["Done"].firstMatch.tap()
+        capture("en-inline-model-preferences")
+        scroll(entry, app)
         entry.tap()
-        XCTAssertTrue(app.cells["models.item.embeddinggemma2-vision"].waitForExistence(timeout: 20))
-        XCTAssertTrue(app.segmentedControls.buttons["Global"].isSelected)
-        XCTAssertEqual(app.switches.firstMatch.value as? String, "1")
+        XCTAssertFalse(source.isHittable)
+        capture("en-models-collapsed")
+        entry.tap()
+        scroll(source, app)
+        XCTAssertTrue(source.buttons["Global"].isSelected)
+        scroll(cellular, app)
+        XCTAssertEqual(cellular.value as? String, "1")
+        let status = app.staticTexts["models.item.multilingual-clip-vitb32-lite"]
+        scroll(status, app)
+        XCTAssertTrue(status.isHittable)
+        XCTAssertFalse(app.buttons["models.action.multilingual-clip-vitb32-lite"].exists)
+        capture("en-inline-ready-model")
     }
 
     func testModelAndDraftLayoutsAtLargestTextAndLandscape() throws {
@@ -74,8 +87,10 @@ final class AIPauseFlowTests: XCTestCase {
             app.buttons[chinese ? "设置" : "Settings"].firstMatch.tap()
             let entry = app.buttons["settings.aiModels"]
             scroll(entry, app)
-            entry.tap()
-            XCTAssertTrue(app.cells["models.item.embeddinggemma2-vision"].waitForExistence(timeout: 20))
+            if entry.value as? String == (chinese ? "已收起" : "Collapsed") { entry.tap() }
+            let source = app.segmentedControls["models.source"]
+            XCTAssertTrue(source.waitForExistence(timeout: 20))
+            scroll(source, app)
             XCUIDevice.shared.orientation = .landscapeLeft
             let landscape = UIDevice.current.userInterfaceIdiom == .pad
             let deadline = Date().addingTimeInterval(8)
@@ -87,7 +102,10 @@ final class AIPauseFlowTests: XCTestCase {
             let size = XCUIScreen.main.screenshot().image.size
             XCTAssertEqual(size.width > size.height, landscape)
             capture(chinese ? "zh-models-AX-dark" : "en-models-AX-light")
-            app.buttons[chinese ? "完成" : "Done"].firstMatch.tap()
+            let status = app.staticTexts["models.item.multilingual-clip-vitb32-lite"]
+            scroll(status, app)
+            XCTAssertTrue(status.isHittable)
+            capture(chinese ? "zh-inline-model-AX-dark" : "en-inline-model-AX-light")
             app.buttons[chinese ? "相框" : "Frames"].firstMatch.tap()
             openAI(app)
             XCTAssertTrue(app.cells["ai.model.embeddinggemma2-vision"].waitForExistence(timeout: 20))

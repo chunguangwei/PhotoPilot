@@ -5,6 +5,12 @@ final class SettingsViewController: UIViewController {
 
     private let environment: AppEnvironment
     private let formStack = UIStackView()
+    private let scrollView = UIScrollView()
+    private let focusAIModelID: String?
+    private lazy var modelsPanel = AIModelsViewController(environment: environment)
+    private var modelsSection: CollapsibleSectionView?
+    private var pageVisible = false
+    private weak var pendingModelFocus: UIView?
     private var formWidthConstraint: NSLayoutConstraint?
     private var adaptiveControlRows: [(stack: UIStackView, switchLabelWidth: NSLayoutConstraint?)] = []
 
@@ -29,8 +35,9 @@ final class SettingsViewController: UIViewController {
     private var weatherPlace: WeatherPlace?
     private var weatherRefreshGeneration = 0
 
-    init(environment: AppEnvironment) {
+    init(environment: AppEnvironment, focusAIModelID: String? = nil) {
         self.environment = environment
+        self.focusAIModelID = focusAIModelID
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -54,7 +61,6 @@ final class SettingsViewController: UIViewController {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(titleLabel)
 
-        let scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         formStack.axis = .vertical
         formStack.spacing = ThemeMetrics.space16
@@ -94,12 +100,48 @@ final class SettingsViewController: UIViewController {
         ])
 
         buildForm()
+        if focusAIModelID != nil {
+            navigationItem.leftBarButtonItem = UIBarButtonItem(title: AIText.value("Back", "返回"), style: .plain, target: self, action: #selector(closeModelSettings))
+            navigationItem.leftBarButtonItem?.tintColor = ThemeColor.accentAction
+            navigationItem.leftBarButtonItem?.accessibilityIdentifier = "settings.aiModels.back"
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         reloadValues()
     }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        pageVisible = true
+        if let id = focusAIModelID {
+            modelsSection?.setExpanded(true)
+            modelsPanel.focus(modelID: id)
+        }
+        modelsPanel.setActive(modelsSection?.isExpanded == true)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        pageVisible = false
+        modelsPanel.setActive(false)
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        guard pageVisible, let target = pendingModelFocus else { return }
+        let rect = target.convert(target.bounds, to: scrollView)
+        guard rect.height > 0, scrollView.bounds.height > 0,
+              scrollView.contentSize.height >= rect.maxY - 1 else { return }
+        let maximum = max(-scrollView.adjustedContentInset.top, scrollView.contentSize.height - scrollView.bounds.height + scrollView.adjustedContentInset.bottom)
+        let offset = min(maximum, max(-scrollView.adjustedContentInset.top, rect.minY - ThemeMetrics.space8))
+        scrollView.setContentOffset(CGPoint(x: 0, y: offset), animated: false)
+        pendingModelFocus = nil
+        UIAccessibility.post(notification: .layoutChanged, argument: target.subviews.first)
+    }
+
+    @objc private func closeModelSettings() { dismiss(animated: true) }
 
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
@@ -187,15 +229,20 @@ final class SettingsViewController: UIViewController {
             ]
         ))
 
-        let modelsButton = UIButton(type: .system)
-        modelsButton.setTitle(AIText.value("AI model management", "AI 模型管理"), for: .normal)
-        modelsButton.titleLabel?.font = ThemeFont.body()
-        modelsButton.titleLabel?.adjustsFontForContentSizeCategory = true
-        modelsButton.titleLabel?.numberOfLines = 0
-        modelsButton.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
-        modelsButton.accessibilityIdentifier = "settings.aiModels"
-        modelsButton.addTarget(self, action: #selector(openAIModels), for: .touchUpInside)
-        formStack.addArrangedSubview(modelsButton)
+        addChild(modelsPanel)
+        let section = CollapsibleSectionView(titleKey: "settings.ai_models", defaultCollapsed: true, rows: [modelsPanel.view])
+        section.headerIdentifier = "settings.aiModels"
+        section.onExpansionChanged = { [weak self] expanded in
+            guard let self else { return }
+            modelsPanel.setActive(pageVisible && expanded)
+        }
+        modelsPanel.onFocus = { [weak self] target in
+            self?.pendingModelFocus = target
+            self?.view.setNeedsLayout()
+        }
+        modelsSection = section
+        formStack.addArrangedSubview(section)
+        modelsPanel.didMove(toParent: self)
 
         let holidayButton = ActionButton(titleKey: "common.settings", style: .secondary)
         holidayButton.accessibilityIdentifier = "settings.holiday.open"
@@ -629,9 +676,6 @@ final class SettingsViewController: UIViewController {
         present(alert, animated: true)
     }
 
-    @objc private func openAIModels() {
-        present(UINavigationController(rootViewController: AIModelsViewController(environment: environment)), animated: true)
-    }
 
     private func eraseAllData() {
         Task { [weak self] in
@@ -821,6 +865,12 @@ private final class CollapsibleSectionView: UIView {
     private let bodyStack = UIStackView()
     private let defaultsKey: String
     private var collapsed: Bool
+    var onExpansionChanged: ((Bool) -> Void)?
+    var isExpanded: Bool { !collapsed }
+    var headerIdentifier: String? {
+        get { headerControl.accessibilityIdentifier }
+        set { headerControl.accessibilityIdentifier = newValue }
+    }
 
     init(titleKey: String, defaultCollapsed: Bool, collapsible: Bool = true, rows: [UIView]) {
         defaultsKey = "settings.section.collapsed.\(titleKey)"
@@ -913,7 +963,13 @@ private final class CollapsibleSectionView: UIView {
     }
 
     @objc private func handleToggle() {
-        collapsed.toggle()
+        setExpanded(collapsed)
+    }
+
+    func setExpanded(_ expanded: Bool) {
+        guard collapsed == expanded else { return }
+        collapsed = !expanded
+        onExpansionChanged?(expanded)
         headerControl.accessibilityValue = L10n.string(collapsed ? "a11y.collapsed" : "a11y.expanded")
         UserDefaults.standard.set(collapsed, forKey: defaultsKey)
         let target = collapsed ? CGAffineTransform.identity : CGAffineTransform(rotationAngle: .pi / 2)

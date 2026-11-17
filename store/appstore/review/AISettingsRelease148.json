@@ -1,0 +1,78 @@
+{
+  "version": "1.4.8",
+  "build": 69,
+  "status": "release_prepared",
+  "changes": [
+    "Inline collapsible AI models settings section",
+    "Focused model navigation with retained creation draft",
+    "Visibility-safe observers and refreshed preferences"
+  ],
+  "android": {
+    "jvmExecuted": 446,
+    "jvmFailures": 0,
+    "lintErrors": 0,
+    "lintWarnings": 204,
+    "nativeExecuted": 101,
+    "nativePassed": 97,
+    "nativeSkipped": 4,
+    "nativeFailures": 0,
+    "nativeSeconds": 402.442,
+    "targetedPassed": 2,
+    "largeTextMatrixPassed": 6,
+    "physicalDeviceAvailable": false,
+    "originalSignerPreserved": true,
+    "releaseRuntimeSmoke": "unavailable_missing_emulator_binary",
+    "testDeviceStateRestored": true
+  },
+  "ios": {
+    "nativeExecuted": 326,
+    "nativePassed": 320,
+    "nativeSkipped": 6,
+    "nativeFailures": 0,
+    "targetedPassed": 10,
+    "phoneUIPassed": 3,
+    "ipadSimulatorUIPassed": 3,
+    "buildPassed": true,
+    "analyzePassed": true,
+    "installedPhoneVersion": "1.4.8",
+    "installedPhoneBuild": 69,
+    "phone": "iPhone 13",
+    "signedArchive": "development",
+    "executableSHA256": "7a80c1eb890680df2ddb2e8ef57a62d13c9ffb4293ee4b2e49baa478ecbe6418"
+  },
+  "appStore": {
+    "status": "waiting_for_user_physical_testing",
+    "uploadPerformed": false,
+    "reviewSubmissionPerformed": false
+  },
+  "assets": [
+    {
+      "name": "AMSMB2-4.0.3-source.tar.gz",
+      "bytes": 329872,
+      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077",
+      "anonymousDownloadVerified": false
+    },
+    {
+      "name": "PhotoPilot-v1.4.8-69.apk",
+      "bytes": 154401014,
+      "sha256": "92b7f775b38935244fa171c2fa726e5989b7788c8f75b590e93e4dc06116a0c9",
+      "anonymousDownloadVerified": false
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 273,
+      "sha256": "db36bc9cfdffce7428bf80bf8161b548983f98b6862e31c3a8fe9d13dc489b1b",
+      "anonymousDownloadVerified": false
+    },
+    {
+      "name": "SMBSourceManifest.json",
+      "bytes": 33554,
+      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e",
+      "anonymousDownloadVerified": false
+    }
+  ],
+  "knownObservations": [
+    "English bottom navigation labels crowded at 2x Android text size",
+    "Exact signed Release independent runtime not rechecked because emulator launch binary is missing"
+  ]
+}

@@ -3196,6 +3196,13 @@
       "en": "Download only on unmetered networks"
     },
     {
+      "key": "settings.ai_models",
+      "section": "9. 设置（S15、S17）",
+      "platform": "all",
+      "zh": "AI 模型",
+      "en": "AI models"
+    },
+    {
       "key": "settings.auto_play",
       "section": "9. 设置（S15、S17）",
       "platform": "all",

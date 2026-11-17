@@ -415,6 +415,7 @@
 "settings.storage_threshold" = "Reserved free space";
 "settings.network" = "Network and syncing";
 "settings.wifi_only" = "Download only on unmetered networks";
+"settings.ai_models" = "AI models";
 "settings.auto_play" = "Start playing when the app opens";
 "settings.background_note" = "The system may delay background syncing. You may need to wake the device after it locks.";
 "settings.rest_window" = "Rest hours";

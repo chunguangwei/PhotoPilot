@@ -12,7 +12,7 @@ import android.widget.Switch
 import android.widget.TextView
 import dev.photopilot.scaffold.R
 
-class SettingsView(context: Context) : ScrollView(context) {
+class SettingsView(context: Context, private val showTitle: Boolean = true) : ScrollView(context) {
 
     data class StorageModel(
         val photosBytes: Long,
@@ -54,7 +54,20 @@ class SettingsView(context: Context) : ScrollView(context) {
     var onWeatherUnits: ((Int) -> Unit)? = null
     var onWeatherChooseCity: (() -> Unit)? = null
     var onWeatherManualRefresh: (() -> Unit)? = null
-    var onAIModels: (() -> Unit)? = null
+    var createAIModels: (() -> dev.photopilot.scaffold.ui.aiframes.AIModelsView)? = null
+    private var aiSection: Pair<LinearLayout, LinearLayout>? = null
+    private var aiModels: dev.photopilot.scaffold.ui.aiframes.AIModelsView? = null
+    private var pendingAIFocus = false
+    private var focusModelId: String? = null
+
+    fun focusAIModels(modelId: String?) {
+        pendingAIFocus = true
+        focusModelId = modelId
+        val section = aiSection ?: return
+        if (section.second.visibility == View.GONE) section.first.performClick()
+        aiModels?.focusModel(modelId, this)
+        pendingAIFocus = false
+    }
     var onHoliday: (() -> Unit)? = null
 
     private lateinit var weatherError: TextView
@@ -98,12 +111,8 @@ class SettingsView(context: Context) : ScrollView(context) {
     fun render(model: Model) {
         val res = resources
         column.removeAllViews()
-        addText(column, R.string.settings_title, R.dimen.pp_text_heading, R.color.pp_text_primary, 0, heading = true)
+        if (showTitle) addText(column, R.string.settings_title, R.dimen.pp_text_heading, R.color.pp_text_primary, 0, heading = true)
 
-        column.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, R.string.common_settings).apply {
-            text = if (resources.configuration.locales[0].language == "zh") "AI 模型管理" else "AI model management"
-            setOnClickListener { onAIModels?.invoke() }
-        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = res.getDimensionPixelSize(R.dimen.pp_space_16) })
         val appearanceGroup = section(R.string.settings_appearance)
         addOptionRow(
             appearanceGroup,
@@ -154,6 +163,12 @@ class SettingsView(context: Context) : ScrollView(context) {
         val networkGroup = section(R.string.settings_network)
         addSwitchRow(networkGroup, R.string.settings_wifi_only, model.wifiOnly) { onToggleWifiOnly?.invoke(it) }
         addHelp(networkGroup, R.string.settings_background_note)
+
+        aiSection = buildSection(R.string.settings_ai_models, expandedByDefault = false)
+        aiModels = createAIModels?.invoke()?.also { content ->
+            requireNotNull(aiSection).second.addView(content, LinearLayout.LayoutParams(-1, -2))
+        }
+        if (pendingAIFocus) focusAIModels(focusModelId)
 
         val playGroup = section(R.string.playback_title)
         addSwitchRow(playGroup, R.string.settings_auto_play, model.autoPlay) { onToggleAutoPlay?.invoke(it) }
