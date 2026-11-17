@@ -498,7 +498,7 @@ class MainActivity : Activity() {
                     if (source?.status == SourceStatus.ACTIVE) {
                         val editor = remoteFrameView
                         if (editor != null) editor.acceptSource(source.id, null)
-                        else chooseRemoteFrame(mapOf("sourceId" to source.id))
+                        else openRemoteFrame(null, mapOf("sourceId" to source.id, "browseOnly" to "true"))
                     } else if (source?.type == SourceType.LOCAL_PHOTOS) showPhotoPermissionOverlay()
                     else showLocalFilesChoices()
                 }
@@ -510,7 +510,7 @@ class MainActivity : Activity() {
                     if (source?.status == SourceStatus.ACTIVE) {
                         val editor = remoteFrameView
                         if (editor != null) editor.acceptSource(source.id, null)
-                        else chooseRemoteFrame(mapOf("sourceId" to source.id))
+                        else openRemoteFrame(null, mapOf("sourceId" to source.id, "browseOnly" to "true"))
                     } else openNasEdit(sourceId)
                 }
             }
@@ -1027,10 +1027,12 @@ class MainActivity : Activity() {
 
     private fun openRemoteFrame(frame: FrameEntity?, draft: Map<String, String>? = null) {
         val env = environment ?: return
+        val previousEditor = remoteFrameView
         val view = dev.photopilot.scaffold.ui.remote.RemoteFrameView(this, env, frame, draft)
         remoteFrameView = view
-        view.onBack = { remoteFrameView = null; popOverlayTracked() }
+        view.onBack = { remoteFrameView = previousEditor?.takeIf { it.isAttachedToWindow }; popOverlayTracked() }
         view.onConnect = { openNasForm() }
+        view.onAddToFrame = { selection -> chooseRemoteFrame(selection) }
         view.onLocalPhotos = { showPhotoPermissionOverlay() }
         view.onLocalFiles = { showLocalFilesChoices() }
         view.onAISettings = {
@@ -1046,7 +1048,7 @@ class MainActivity : Activity() {
             }
         }
         view.onSaved = {
-            remoteFrameView = null
+            remoteFrameView = previousEditor?.takeIf { it.isAttachedToWindow }
             framesDirty = true
             if (draft?.get("firstUse") == "true") {
                 scope.launch {
@@ -1067,7 +1069,7 @@ class MainActivity : Activity() {
                 }
             }
         }
-        pushOverlayTracked(view, mapOf("type" to "remoteFrame", "frameId" to (frame?.id ?: "")))
+        pushOverlayTracked(view, mapOf("type" to "remoteFrame", "frameId" to (frame?.id ?: ""), "browseOnly" to draft?.get("browseOnly").orEmpty()))
     }
 
     private fun openNasForm(
@@ -3023,11 +3025,11 @@ class MainActivity : Activity() {
         }
         view.onOpenReferenceCollection = { collection ->
             if (collection.sourceId in referenceSources && collection.relPath != null) {
-                chooseRemoteFrame(mapOf("sourceId" to requireNotNull(collection.sourceId), "folder" to collection.relPath))
+                openRemoteFrame(null, mapOf("sourceId" to requireNotNull(collection.sourceId), "folder" to collection.relPath, "browseOnly" to "true"))
                 true
             } else false
         }
-        view.onBrowseSourcePhotos = { chooseRemoteFrame() }
+        view.onBrowseSourcePhotos = { openRemoteFrame(null, mapOf("browseOnly" to "true")) }
         view.onPhotoClick = { asset -> openPhotoDetail(asset) }
         view.onAddToFrame = { selected ->
             showFramePickerForAssets(selected) { view.exitSelectionMode() }

@@ -21,9 +21,11 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     var onConnect: (() -> Unit)? = null
     var onLocalPhotos: (() -> Unit)? = null
     var onLocalFiles: (() -> Unit)? = null
+    var onAddToFrame: ((Map<String, String>) -> Unit)? = null
     var onAISettings: (() -> Unit)? = null
     private var afterSave: (() -> Unit)? = null
     val savedFrame: FrameEntity? get() = frame
+    private val browseOnly = restoredDraft?.get("browseOnly") == "true"
     private val firstUse = restoredDraft?.get("firstUse") == "true"
     private var loaded = false
     private var scopeIds = restoredDraft?.get("scopeIds")?.takeIf { it.isNotEmpty() }?.let { raw -> org.json.JSONArray(raw).let { values -> (0 until values.length()).map { values.getString(it) }.toSet() } }
@@ -31,7 +33,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     private val initialMode = FramePlaybackSettings.requiresLocalCopies(frame?.settingsJson)
     private val initialCover = (JsonMini.parseObject(frame?.settingsJson)["remoteCoverRef"] as? String)
     private val zh = resources.configuration.locales[0].language == "zh"
-    private val confirm = primaryButton(context, if (firstUse) text("Confirm and play", "确认并播放") else text("Save frame", "保存相框"))
+    private val confirm = primaryButton(context, if (browseOnly) context.getString(dev.photopilot.scaffold.R.string.library_add_to_frame) else if (firstUse) text("Confirm and play", "确认并播放") else text("Save frame", "保存相框"))
     var onSaved: (() -> Unit)? = null
     private fun secondaryButton(context: Context, label: String) = styledSecondary(context, dev.photopilot.scaffold.R.string.common_close).apply { text = label }
     private fun primaryButton(context: Context, label: String) = styledPrimary(context, dev.photopilot.scaffold.R.string.common_done).apply { text = label }
@@ -90,15 +92,15 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     init {
         orientation = VERTICAL
         setBackgroundColor(context.getColor(dev.photopilot.scaffold.R.color.pp_surface_canvas))
-        addView(dev.photopilot.scaffold.ui.widget.formHeader(context, text(if (firstUse) "Choose photos" else "Frame photos", if (firstUse) "选择照片" else "相框照片")) { requestBack() })
+        addView(dev.photopilot.scaffold.ui.widget.formHeader(context, if (browseOnly) context.getString(dev.photopilot.scaffold.R.string.sources_browse_photos) else text(if (firstUse) "Choose photos" else "Frame photos", if (firstUse) "选择照片" else "相框照片")) { requestBack() })
         val scroll = ScrollView(context)
         val content = LinearLayout(context).apply { orientation = VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(16)) }
         scroll.addView(content)
         addView(scroll, LayoutParams(-1, 0, 1f))
         fun add(view: View) { content.addView(view, LayoutParams(-1, -2).apply { bottomMargin = dp(8) }) }
-        if (!firstUse) add(TextView(context).apply { text = this@RemoteFrameView.text("Frame name", "相框名称") })
+        if (!firstUse && !browseOnly) add(TextView(context).apply { text = this@RemoteFrameView.text("Frame name", "相框名称") })
         name.setSingleLine(true)
-        name.setText(restoredDraft?.get("name") ?: frame?.name ?: text("My frame", "我的相框")); if (!firstUse) add(name)
+        name.setText(restoredDraft?.get("name") ?: frame?.name ?: text("My frame", "我的相框")); if (!firstUse && !browseOnly) add(name)
         sync.text = text("Sync selected NAS photos locally for offline playback", "同步所选 NAS 照片到本地，支持离线播放")
         sync.isChecked = restoredDraft?.get("mode")?.let { it == "local" } ?: initialMode
         storageSection.body.addView(sync)
@@ -125,8 +127,8 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                 } else proceed()
             }
         }
-        if (!firstUse) add(aiSettings)
-        if (!firstUse) add(secondaryButton(context, text("Arrange selected photos", "调整所选照片顺序")).apply { setOnClickListener { arrangePhotos() } })
+        if (!firstUse && !browseOnly) add(aiSettings)
+        if (!firstUse && !browseOnly) add(secondaryButton(context, text("Arrange selected photos", "调整所选照片顺序")).apply { setOnClickListener { arrangePhotos() } })
         if (!firstUse) storageSection.body.addView(secondaryButton(context, text("Clear temporary cache", "清理临时缓存")).also { clearControl = it }.apply { setOnClickListener { scope.launch { withContext(Dispatchers.IO) { env.remoteMedia.cache.clear() }; updateStatus() } } })
         if (!firstUse) storageSection.body.addView(secondaryButton(context, text("Pause local sync", "暂停本地同步")).also { pauseControl = it }.apply { setOnClickListener { frame?.let { env.remoteCopies.pause(it.id) }; updateStatus() } })
         if (!firstUse) storageSection.body.addView(secondaryButton(context, text("Resume local sync", "继续本地同步")).also { resumeControl = it }.apply { setOnClickListener { frame?.let { env.remoteCopies.start(it.id) }; updateStatus() } })
@@ -137,14 +139,17 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                     scope.launch { runCatching { env.remoteCopies.release(current.id, verifyLegacy = true) }.onSuccess { feedback.text = text("Released $it bytes. Copies required by local selections, source imports or unverified versions were retained.", "已释放 $it 字节。本地选片、来源级导入仍需使用，或版本未验证的副本已保留。") }.onFailure { showError(it) } }
                 }.show()
         } })
-        if (!firstUse) add(storageSection)
+        if (!firstUse && !browseOnly) add(storageSection)
         addView(LinearLayout(context).apply {
             orientation = VERTICAL
             setPadding(dp(16), dp(8), dp(16), dp(8))
             status.textSize = 14f
             status.setPadding(0, 0, 0, dp(8))
             addView(status, LayoutParams(-1, -2))
-            addView(confirm.apply { isEnabled = false; setOnClickListener { save() } }, LayoutParams(-1, -2))
+            addView(confirm.apply { isEnabled = false; setOnClickListener {
+                if (browseOnly) onAddToFrame?.invoke(mapOf("sourceId" to sourceId.orEmpty(), "folder" to folder, "selected" to org.json.JSONArray(selected.toList()).toString(), "addSelected" to "true"))
+                else save()
+            } }, LayoutParams(-1, -2))
         }, LayoutParams(-1, -2))
         scope.launch {
             frame?.let { current ->
@@ -177,7 +182,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
             restoredDraft?.let { draft ->
                 draft["manualOrder"]?.let { raw -> runCatching { org.json.JSONArray(raw) }.getOrNull() }?.let { values -> manualOrder.clear(); (0 until values.length()).forEach { manualOrder.add(values.getString(it)) } }
                 manualOrderEdited = draft["manualOrderEdited"] == "true"
-                draft["selected"]?.let { runCatching { org.json.JSONArray(it) }.getOrNull() }?.let { values -> selected.clear(); (0 until values.length()).forEach { selected.add(values.getString(it)) } }
+                draft["selected"]?.let { runCatching { org.json.JSONArray(it) }.getOrNull() }?.let { values -> if (draft["addSelected"] != "true") selected.clear(); (0 until values.length()).forEach { selected.add(values.getString(it)) } }
                 draft["rules"]?.let { runCatching { org.json.JSONArray(it) }.getOrNull() }?.let { values ->
                     directoryRules.clear()
                     for (index in 0 until values.length()) {
@@ -200,12 +205,13 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
             }
             aiSettings.visibility = if (frame?.let { withContext(Dispatchers.IO) { env.aiFrames.state.get(it.id) } } != null) View.VISIBLE else View.GONE
             loaded = true
-            confirm.isEnabled = true
+            updateStatus()
             reloadSources()
         }
         scope.launch { while (isActive) { delay(500); if (isAttachedToWindow && !busy) updateStatus() } }
     }
     fun draftState(): Map<String, String> = mapOf(
+        "browseOnly" to browseOnly.toString(),
         "name" to name.text.toString(), "coverRef" to coverSourceAssetId.orEmpty(), "mode" to if (sync.isChecked) "local" else "remote",
         "selected" to org.json.JSONArray(selected.toList()).toString(),
         "manualOrder" to org.json.JSONArray(manualOrder).toString(), "manualOrderEdited" to manualOrderEdited.toString(),
@@ -221,7 +227,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     fun requestBack() {
         if (busy) return
         if (!loaded) return
-        if (hasChanges()) {
+        if (!browseOnly && hasChanges()) {
             AlertDialog.Builder(context).setTitle(dev.photopilot.scaffold.R.string.playback_unsaved_title)
                 .setPositiveButton(dev.photopilot.scaffold.R.string.common_discard) { _, _ -> onBack?.invoke() }
                 .setNegativeButton(dev.photopilot.scaffold.R.string.common_cancel, null).show()
@@ -334,7 +340,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                 options.body.addView(secondaryButton(context, text("Select this folder", "选择此目录照片")).apply { setOnClickListener { selectCurrentFolder() } })
                 photos.addView(options)
             } else null
-            currentCollection?.takeIf { scopeIds == null }?.let { collection ->
+            currentCollection?.takeIf { scopeIds == null && !browseOnly }?.let { collection ->
                 val recursionKey = "$id:$requestedFolder"
                 folderRecursion.putIfAbsent(recursionKey, directoryRules[collection.id]?.recursive == true)
                 val recursive = CheckBox(context).apply { text = this@RemoteFrameView.text("Include subfolders", "包含子目录"); isChecked = folderRecursion[recursionKey] == true }
@@ -396,7 +402,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                                 onUnavailable = { previewDialog?.setMessage(context.getString(dev.photopilot.scaffold.R.string.source_local_reference_unavailable)) }
                             }
                             val reference = env.remoteMedia.isLocalReference(item)
-                            previewDialog = AlertDialog.Builder(context).setTitle(displayName).setView(image).setNeutralButton(context.getString(dev.photopilot.scaffold.R.string.frames_set_cover)) { _, _ ->
+                            previewDialog = AlertDialog.Builder(context).setTitle(displayName).setView(image).setNeutralButton(if (browseOnly) null else context.getString(dev.photopilot.scaffold.R.string.frames_set_cover)) { _, _ ->
                                 coverSourceAssetId = asset.id
                                 feedback.text = context.getString(dev.photopilot.scaffold.R.string.frames_cover_set)
                             }.setPositiveButton(text("Close", "关闭"), null).apply {
@@ -443,7 +449,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
             else text("$count photos · ${directoryRules.size} folders", "$count 张照片 · ${directoryRules.size} 个目录")
         if (status.text.toString() != label) status.text = label
         confirm.isEnabled = loaded && !busy && (frame != null || selected.isNotEmpty() || directoryRules.isNotEmpty())
-        if (firstUse) return
+        if (firstUse || browseOnly) return
         val selection = selected.toSet()
         val rules = directoryRules.keys.toSet()
         val currentSource = sourceId
@@ -487,7 +493,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         }
     }
     private fun save() {
-        if (busy) return
+        if (browseOnly || busy) return
         if (frame == null && selected.isEmpty() && directoryRules.isEmpty()) { feedback.text = text("Select photos or a folder first.", "请先选择照片或目录。"); return }
         busy = true
         setEditingEnabled(this, false)

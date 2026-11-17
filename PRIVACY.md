@@ -2,7 +2,7 @@
 
 Effective date / 生效日期：2026-11-17
 Contact / 联系方式：chunguangwee@gmail.com
-Scope / 适用：PhotoPilot 1.1.58–1.4.9（iOS/iPadOS 与 Android）；AI 相框段适用于 1.2.0 起，远端按需段适用于 1.3.0 起。Versions 1.1.55–1.1.58 use Open-Meteo only; earlier 1.1.53/1.1.54 builds used wttr.in weather fallback. / 1.1.55–1.1.58 仅使用 Open-Meteo；旧版 1.1.53/1.1.54 包含 wttr.in 天气备用请求。
+Scope / 适用：PhotoPilot 1.1.58–1.4.10（iOS/iPadOS 与 Android）；AI 相框段适用于 1.2.0 起，远端按需段适用于 1.3.0 起。Versions 1.1.55–1.1.58 use Open-Meteo only; earlier 1.1.53/1.1.54 builds used wttr.in weather fallback. / 1.1.55–1.1.58 仅使用 Open-Meteo；旧版 1.1.53/1.1.54 包含 wttr.in 天气备用请求。
 
 ---
 

@@ -357,17 +357,9 @@ actor RemoteMediaService {
         }
     }
 
-    func image(runtimeID: String, mode: FrameStorageMode = .remote, width: Int, height: Int, priority: RemoteMediaPriority = .visible) async throws -> UIImage {
+    func cachedImage(runtimeID: String, mode: FrameStorageMode = .remote, width: Int, height: Int) async throws -> UIImage? {
         try Task.checkCancellation()
         guard !erasing else { throw CancellationError() }
-        if case .sourceAsset(let id) = MediaReference(runtimeID: runtimeID), let record = try await repository.record(id: id), record.referenceOnly {
-            guard record.remoteAllowed else { throw RemoteMediaError.revoked }
-            let source = try await references.source(id: record.descriptor.sourceID)
-            guard source.epoch == record.descriptor.sourceEpoch else { throw RemoteMediaError.revoked }
-            let image = try await references.provider.image(source: source, key: record.descriptor.remoteKey, revision: record.descriptor.revision, width: width, height: height)
-            guard await repository.authorized(record.descriptor), await authorized(runtimeID: runtimeID, mode: mode) else { throw RemoteMediaError.revoked }
-            return image
-        }
         if case .sourceAsset(let id) = MediaReference(runtimeID: runtimeID), let record = try await repository.record(id: id) {
             let key = SHA256Hex.digest(data: Data(record.descriptor.identity.utf8)) + ":\(width)x\(height)"
             let generation = RemoteDecodedImages.shared.generation()
@@ -401,6 +393,21 @@ actor RemoteMediaService {
                 throw error
             }
         }
+        return nil
+    }
+
+    func image(runtimeID: String, mode: FrameStorageMode = .remote, width: Int, height: Int, priority: RemoteMediaPriority = .visible) async throws -> UIImage {
+        try Task.checkCancellation()
+        guard !erasing else { throw CancellationError() }
+        if case .sourceAsset(let id) = MediaReference(runtimeID: runtimeID), let record = try await repository.record(id: id), record.referenceOnly {
+            guard record.remoteAllowed else { throw RemoteMediaError.revoked }
+            let source = try await references.source(id: record.descriptor.sourceID)
+            guard source.epoch == record.descriptor.sourceEpoch else { throw RemoteMediaError.revoked }
+            let image = try await references.provider.image(source: source, key: record.descriptor.remoteKey, revision: record.descriptor.revision, width: width, height: height)
+            guard await repository.authorized(record.descriptor), await authorized(runtimeID: runtimeID, mode: mode) else { throw RemoteMediaError.revoked }
+            return image
+        }
+        if let image = try await cachedImage(runtimeID: runtimeID, mode: mode, width: width, height: height) { return image }
         let lease = try await acquire(runtimeID: runtimeID, mode: mode, priority: priority)
         let descriptor = lease.descriptor
         let cacheKey = SHA256Hex.digest(data: Data(descriptor.identity.utf8)) + ":\(width)x\(height)"

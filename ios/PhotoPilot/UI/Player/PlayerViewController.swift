@@ -256,6 +256,7 @@ final class PlayerViewController: UIViewController {
     private let backgroundView = UIImageView()
     private let dimView = UIView()
     private let solidView = UIView()
+    private let photoLoadingIndicator = UIActivityIndicatorView(style: .large)
     private let frontImageView = UIImageView()
     private let backImageView = UIImageView()
     private let controlsCapsule = UIView()
@@ -387,6 +388,21 @@ final class PlayerViewController: UIViewController {
 
         buildControls()
         buildOverlays()
+        photoLoadingIndicator.color = ThemeColor.textPrimary
+        photoLoadingIndicator.backgroundColor = ThemeColor.canvas.withAlphaComponent(0.85)
+        photoLoadingIndicator.layer.cornerRadius = ThemeMetrics.space8
+        photoLoadingIndicator.hidesWhenStopped = true
+        photoLoadingIndicator.accessibilityIdentifier = "player.photo_loading"
+        photoLoadingIndicator.accessibilityLabel = L10n.string("common.loading")
+        photoLoadingIndicator.isAccessibilityElement = true
+        photoLoadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(photoLoadingIndicator)
+        NSLayoutConstraint.activate([
+            photoLoadingIndicator.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+            photoLoadingIndicator.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor),
+            photoLoadingIndicator.widthAnchor.constraint(equalToConstant: 64),
+            photoLoadingIndicator.heightAnchor.constraint(equalToConstant: 64),
+        ])
 
         NSLayoutConstraint.activate([
             backgroundView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -660,11 +676,31 @@ final class PlayerViewController: UIViewController {
         }
         invalidateImageLoad()
         let generation = imageGeneration
+        if assetID.hasPrefix("remote:") {
+            frontImageView.image = nil
+            backImageView.image = nil
+            backgroundView.image = nil
+            photoLoadingIndicator.startAnimating()
+        }
         imageTask = Task { [weak self] in
             guard let self else { return }
+            if assetID.hasPrefix("remote:") {
+                let preview = try? await environment.remoteMedia.cachedImage(runtimeID: assetID, mode: settings.mediaStorageMode, width: 512, height: 512)
+                guard !Task.isCancelled, generation == imageGeneration else { return }
+                if let preview {
+                    frontImageView.image = preview
+                    frontImageView.alpha = 1
+                    frontImageView.transform = .identity
+                    updateBackdrop(for: preview, assetID: assetID + "#preview")
+                }
+            }
             let loaded = await loadImage(assetID: assetID)
             guard !Task.isCancelled, generation == imageGeneration else { return }
+            photoLoadingIndicator.stopAnimating()
+            imageGeneration &+= 1
             guard let image = loaded else {
+                frontImageView.image = nil
+                backgroundView.image = nil
                 handleDecodeFail()
                 return
             }
@@ -682,11 +718,12 @@ final class PlayerViewController: UIViewController {
                 let target = RenderGeometry.decodeTarget(viewW: Int64(max(view.bounds.width, 1)), viewH: Int64(max(view.bounds.height, 1)),
                     scale: Int64(max(view.traitCollection.displayScale, 1)), cap: PlayerImageLoader.maxDecodePixels)
                 let image = try await environment.remoteMedia.image(runtimeID: assetID, mode: settings.mediaStorageMode, width: Int(target.0), height: Int(target.1), priority: .playback)
-                guard await environment.remoteMedia.authorized(runtimeID: assetID, mode: settings.mediaStorageMode) else { return nil }
+                guard await environment.remoteMedia.authorized(runtimeID: assetID, mode: settings.mediaStorageMode), !Task.isCancelled else { return nil }
                 relPaths[assetID] = assetID
                 noticeLabel.isHidden = true
                 return image
             } catch {
+                guard !Task.isCancelled else { return nil }
                 noticeLabel.text = error.localizedDescription
                 noticeLabel.isHidden = false
                 return nil
@@ -1129,6 +1166,7 @@ final class PlayerViewController: UIViewController {
     }
 
     private func invalidateImageLoad() {
+        photoLoadingIndicator.stopAnimating()
         imageGeneration &+= 1
         imageTask?.cancel()
         imageTask = nil

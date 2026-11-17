@@ -195,24 +195,18 @@ actor FrameManager {
     }
 
     func queueAssetRelPaths(frameID: String, limit: Int) async throws -> [String] {
+        guard limit > 0 else { return [] }
+        let queue = Array(try await FrameRepository(controller: controller).buildPlayQueue(frameID: frameID).prefix(limit))
         let context = makeContext()
         return try await context.perform {
-            let selections = NSFetchRequest<NSManagedObject>(entityName: "FrameSelection")
-            selections.predicate = NSPredicate(
-                format: "frame.id == %@ AND mode == %@",
-                frameID,
-                SelectionResolver.modeInclude
-            )
-            selections.sortDescriptors = [NSSortDescriptor(key: "added_at", ascending: true)]
-            let rows = try context.fetch(selections)
-            var paths: [String] = []
-            for row in rows {
-                if let path = row.value(forKeyPath: "asset.original_rel_path") as? String {
-                    paths.append(path)
-                    if paths.count >= limit { break }
-                }
-            }
-            return paths
+            let request = NSFetchRequest<NSManagedObject>(entityName: "Asset")
+            request.predicate = NSPredicate(format: "id IN %@ AND privacy_excluded == NO AND deleted_at == nil", queue.filter { !$0.hasPrefix("remote:") })
+            let assets = try context.fetch(request)
+            let paths = Dictionary(assets.compactMap { row -> (String, String)? in
+                guard let id = row.value(forKey: "id") as? String, let path = row.value(forKey: "original_rel_path") as? String else { return nil }
+                return (id, path)
+            }, uniquingKeysWith: { first, _ in first })
+            return queue.compactMap { $0.hasPrefix("remote:") ? $0 : paths[$0] }
         }
     }
 

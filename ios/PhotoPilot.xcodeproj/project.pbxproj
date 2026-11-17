@@ -81,6 +81,7 @@
 		4EC83D053CFF41C7BBBCBF3D /* RemoteStorageReservations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 540A8F18FE91986C8B137BEF /* RemoteStorageReservations.swift */; };
 		4F7284395249377261F77A8D /* nas-sync-diff.json in Resources */ = {isa = PBXBuildFile; fileRef = DC53B8CECC5A05C6F491ADFA /* nas-sync-diff.json */; };
 		4FBCB474F19A5137EA3541D0 /* LocalPhotoAlbumsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9B5C80692F15404CDD3FB34 /* LocalPhotoAlbumsViewController.swift */; };
+		51395D22E18B26210D02DE6E /* PlayerFirstPhotoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331E392A514D9DF3DA80F944 /* PlayerFirstPhotoTests.swift */; };
 		5243468F16EA6B399FAA585A /* ThumbnailLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C624C6AFF9211722EAB6DBF9 /* ThumbnailLoader.swift */; };
 		528C893ACFF19BC14AA35FBA /* demo_coffee.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 303E01AA5DFF9038E65FB2DA /* demo_coffee.jpg */; };
 		53A78D018E45F994DF4867A1 /* DemoPlaceholderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A31CB2C9B9D7E8F635E0D229 /* DemoPlaceholderViewController.swift */; };
@@ -316,6 +317,7 @@
 		3175407F4677C15A3B6124F4 /* HolidayTimingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayTimingTests.swift; sourceTree = "<group>"; };
 		31A7B456758C21433C56D134 /* WeatherAutoLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAutoLocator.swift; sourceTree = "<group>"; };
 		32DE169359487F4194F183EA /* AIFrameStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIFrameStore.swift; sourceTree = "<group>"; };
+		331E392A514D9DF3DA80F944 /* PlayerFirstPhotoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerFirstPhotoTests.swift; sourceTree = "<group>"; };
 		33AE2698D9CF77D1AB627A96 /* frame-remote-paths.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "frame-remote-paths.json"; sourceTree = "<group>"; };
 		34CEA2230C48145F1E319274 /* nas-enum-cursor.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "nas-enum-cursor.json"; sourceTree = "<group>"; };
 		35AEC3ECB98FA737AD2D6156 /* AIFrameViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIFrameViewController.swift; sourceTree = "<group>"; };
@@ -1209,6 +1211,7 @@
 				C12E59AE709E01E1F8FAAFCE /* PhotoPilotRenderTests.swift */,
 				7F98344FAA7FA3465FD7A765 /* PhotoPilotSelectionTests.swift */,
 				AF381646DD3A8056F76730B7 /* PhotoPilotUIReviewTests.swift */,
+				331E392A514D9DF3DA80F944 /* PlayerFirstPhotoTests.swift */,
 				FFB915F7B1E332874455B119 /* RemoteCacheTests.swift */,
 				2B88EF1E169ED6174D6238CB /* RemoteMediaTests.swift */,
 				EBE999D84BE7ADCB49D0CA9F /* RemoteProtocolTests.swift */,
@@ -1450,6 +1453,7 @@
 				8B8C2BF2ADEEF9D3193209CF /* PhotoPilotRenderTests.swift in Sources */,
 				F247FE84C35EB4ABB180C94F /* PhotoPilotSelectionTests.swift in Sources */,
 				D4525519795E69B7F1486124 /* PhotoPilotUIReviewTests.swift in Sources */,
+				51395D22E18B26210D02DE6E /* PlayerFirstPhotoTests.swift in Sources */,
 				CBD47F4E82ACE411D314B26E /* RemoteCacheTests.swift in Sources */,
 				8AE94C82962A4AA1DAE71C9D /* RemoteMediaTests.swift in Sources */,
 				A1EB983C495083CE66472C01 /* RemoteProtocolTests.swift in Sources */,
@@ -1684,7 +1688,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1698,7 +1702,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.4.9;
+				MARKETING_VERSION = 1.4.10;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1824,7 +1828,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1844,7 +1848,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.4.9;
+				MARKETING_VERSION = 1.4.10;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

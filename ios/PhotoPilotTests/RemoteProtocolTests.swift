@@ -290,6 +290,86 @@ final class RemoteProtocolTests: XCTestCase {
         XCTAssertEqual(grid.numberOfItems(inSection: 0), items.count)
     }
 
+    func testPlaybackSettingsPreviewResolvesReferencedPhotosInPlaybackOrder() async throws {
+        let (controller, sourceID) = try library()
+        let fixture = RemoteIndexFixture()
+        let media = RemoteMediaService(controller: controller, adapterFactory: { _ in fixture })
+        _ = try await media.index(sourceID: sourceID)
+        let rows = try await media.repository.records(sourceID: sourceID)
+        let environment = AppEnvironment(persistence: controller, remoteMedia: media)
+        let frame = try await environment.frameManager.createFrame(name: "Preview fixture", storageMode: .remote)
+        _ = try await environment.frames.save(frameID: frame, baseVersion: 0, addIncludes: rows.map { MediaReference(runtimeID: $0.descriptor.runtimeID).selection })
+        let queue = try await environment.frames.buildPlayQueue(frameID: frame)
+        let paths = try await environment.frameManager.queueAssetRelPaths(frameID: frame, limit: 2)
+        XCTAssertEqual(paths, Array(queue.prefix(2)))
+        let settings = PlaybackSettingsViewController(environment: environment, frameID: frame)
+        settings.loadViewIfNeeded()
+        func children(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(children) }
+        var hasPreview = false
+        for _ in 0..<100 {
+            hasPreview = children(settings.view).compactMap { $0 as? UIImageView }.contains { $0.image?.cgImage?.width == 8 }
+            if hasPreview { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTAssertTrue(hasPreview)
+    }
+
+    func testSettingsPreviewRevocationClearsBlurredBackground() async throws {
+        let (controller, sourceID) = try library()
+        let fixture = RemoteIndexFixture(paths: ["own.png"])
+        let media = RemoteMediaService(controller: controller, adapterFactory: { _ in fixture })
+        _ = try await media.index(sourceID: sourceID)
+        let records = try await media.repository.records(sourceID: sourceID)
+        let record = try XCTUnwrap(records.first)
+        let environment = AppEnvironment(persistence: controller, remoteMedia: media)
+        let frame = try await environment.frameManager.createFrame(name: "Fixture", storageMode: .remote)
+        _ = try await environment.frames.save(frameID: frame, baseVersion: 0, addIncludes: [MediaReference(runtimeID: record.descriptor.runtimeID).selection])
+        let settings = PlaybackSettingsViewController(environment: environment, frameID: frame)
+        settings.loadViewIfNeeded()
+        let background = try XCTUnwrap(Mirror(reflecting: settings).children.first { $0.label == "previewBackground" }?.value as? UIImageView)
+        for _ in 0..<100 where background.image == nil { try await Task.sleep(nanoseconds: 20_000_000) }
+        XCTAssertNotNil(background.image)
+        let context = controller.container.viewContext
+        let source = try XCTUnwrap(context.fetch(NSFetchRequest<NSManagedObject>(entityName: "Source")).first)
+        source.setValue("disconnected", forKey: "status")
+        source.setValue(2, forKey: "epoch")
+        try context.save()
+        NotificationCenter.default.post(name: .remoteMediaChanged, object: nil, userInfo: ["revoked": true])
+        try await Task.sleep(nanoseconds: 100_000_000)
+        XCTAssertNil(background.image)
+    }
+
+    func testSettingsPreviewRefreshesStorageModeWithoutResettingUnsavedControls() async throws {
+        let (controller, sourceID) = try library()
+        let fixture = RemoteIndexFixture(paths: ["own.png"])
+        let media = RemoteMediaService(controller: controller, adapterFactory: { _ in fixture })
+        _ = try await media.index(sourceID: sourceID)
+        let records = try await media.repository.records(sourceID: sourceID)
+        let record = try XCTUnwrap(records.first)
+        let environment = AppEnvironment(persistence: controller, remoteMedia: media)
+        let frame = try await environment.frameManager.createFrame(name: "Fixture", storageMode: .local)
+        _ = try await environment.frames.save(frameID: frame, baseVersion: 0, addIncludes: [MediaReference(runtimeID: record.descriptor.runtimeID).selection])
+        try await environment.frameManager.updateSettingsJSON(frameID: frame, settingsJSON: FrameStorageMode.local.applying(to: "{}"))
+        let settings = PlaybackSettingsViewController(environment: environment, frameID: frame)
+        settings.loadViewIfNeeded()
+        try await Task.sleep(nanoseconds: 200_000_000)
+        let clock = try XCTUnwrap(Mirror(reflecting: settings).children.first { $0.label == "clockSwitch" }?.value as? UISwitch)
+        clock.isOn.toggle()
+        clock.sendActions(for: .valueChanged)
+        let editedClock = clock.isOn
+        try await environment.frameManager.updateSettingsJSON(frameID: frame, settingsJSON: FrameStorageMode.remote.applying(to: "{}"))
+        settings.viewWillAppear(false)
+        let image = try XCTUnwrap(Mirror(reflecting: settings).children.first { $0.label == "previewImageView" }?.value as? UIImageView)
+        for _ in 0..<100 where image.image == nil { try await Task.sleep(nanoseconds: 20_000_000) }
+        for _ in 0..<100 {
+            if (Mirror(reflecting: settings).children.first { $0.label == "previewStorageMode" }?.value as? FrameStorageMode) == .remote { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTAssertNotNil(image.image)
+        XCTAssertEqual(Mirror(reflecting: settings).children.first { $0.label == "previewStorageMode" }?.value as? FrameStorageMode, .remote)
+        XCTAssertEqual(clock.isOn, editedClock)
+    }
+
     func testMetadataIndexKeepsUnicodeByteDistinctFoldersSeparate() async throws {
         let (controller, sourceID) = try library()
         let fixture = RemoteIndexFixture(paths: ["caf\u{E9}/a.jpg", "cafe\u{301}/b.jpg"])

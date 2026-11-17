@@ -29,17 +29,17 @@ final class ThumbnailLoader: @unchecked Sendable {
         )
     }
 
-    func thumbnail(relPath: String, pointSize: CGFloat, scale: CGFloat) async -> UIImage? {
-        try? await image(relPath: relPath, pointSize: pointSize, scale: scale)
+    func thumbnail(relPath: String, pointSize: CGFloat, scale: CGFloat, mode: FrameStorageMode = .remote) async -> UIImage? {
+        try? await image(relPath: relPath, pointSize: pointSize, scale: scale, mode: mode)
     }
 
-    func image(relPath: String, pointSize: CGFloat, scale: CGFloat) async throws -> UIImage {
+    func image(relPath: String, pointSize: CGFloat, scale: CGFloat, mode: FrameStorageMode = .remote) async throws -> UIImage {
         try Task.checkCancellation()
         let pixels = max(1, Int((pointSize * scale).rounded(.up)))
         if relPath.hasPrefix("remote:"), let media {
             var retries = 0
             while true {
-                do { return try await media.image(runtimeID: relPath, width: pixels, height: pixels) }
+                do { return try await media.image(runtimeID: relPath, mode: mode, width: pixels, height: pixels) }
                 catch RemoteMediaError.busy {
                     guard retries < 3 else { throw RemoteMediaError.busy }
                     retries += 1

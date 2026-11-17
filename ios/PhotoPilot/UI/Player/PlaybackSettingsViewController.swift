@@ -57,6 +57,12 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
     private var originalOrderMode = PlaybackQueue.orderCapturedAsc
     private var previewImage: UIImage?
     private var previewImageNext: UIImage?
+    private var previewTask: Task<Void, Never>?
+    private var settingsLoaded = false
+    private var previewStorageMode = FrameStorageMode.local
+    private var previewRenderTask: Task<Void, Never>?
+    private var previewRenderGeneration = 0
+    private let previewCacheID = UUID().uuidString
     private var dirty = false
 
     private let previewBackground = UIImageView()
@@ -131,7 +137,43 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         view.backgroundColor = ThemeColor.canvas
         buildLayout()
         enableKeyboardDismissal()
+        NotificationCenter.default.addObserver(self, selector: #selector(previewMediaChanged), name: .remoteMediaChanged, object: nil)
         load()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if settingsLoaded { loadPreview() }
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        previewTask?.cancel()
+        previewTask = nil
+        clearPreview()
+    }
+
+    private func clearPreview() {
+        previewRenderTask?.cancel()
+        previewRenderTask = nil
+        previewRenderGeneration &+= 1
+        previewImage = nil
+        previewImageNext = nil
+        for image in [previewImageView, demoImageView, previewBackground] {
+            image.layer.removeAllAnimations()
+            image.image = nil
+        }
+        demoImageView.alpha = 0
+        isDemoRunning = false
+        previewBackground.backgroundColor = ThemeColor.canvas
+    }
+
+    @objc private func previewMediaChanged(_ notification: Notification) {
+        if notification.userInfo?["revoked"] as? Bool == true {
+            previewTask?.cancel()
+            clearPreview()
+        }
+        if viewIfLoaded?.window != nil { loadPreview() }
     }
 
     @objc private func openPhotoStorage() {
@@ -501,37 +543,47 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
             applyMusicSelection()
 
             dirty = false
+            previewStorageMode = parsed.mediaStorageMode
+            settingsLoaded = true
             refreshDependentUI()
             loadPreview()
         }
     }
 
     private func loadPreview() {
-        Task { [weak self] in
-            guard let self else { return }
+        previewTask?.cancel()
+        clearPreview()
+        previewTask = Task { [weak self] in
+            guard let self, let bundle = try? await environment.frameManager.framePlaybackBundle(frameID: frameID), !Task.isCancelled else { return }
+            previewStorageMode = FrameStorageMode.read(bundle.settingsJSON)
             let relPaths = (try? await environment.frameManager
                 .queueAssetRelPaths(frameID: frameID, limit: 2)) ?? []
+            guard !Task.isCancelled else { return }
+            previewImage = nil
+            previewImageNext = nil
+            previewImageView.image = nil
+            demoImageView.image = nil
             guard let first = relPaths.first else { return }
-            let scale = view.traitCollection.displayScale
-            previewImage = await loader.thumbnail(
-                relPath: first,
-                pointSize: ThemeMetrics.gridCellMax * 2,
-                scale: scale
-            )
-            if relPaths.count > 1 {
-                previewImageNext = await loader.thumbnail(
-                    relPath: relPaths[1],
-                    pointSize: ThemeMetrics.gridCellMax * 2,
-                    scale: scale
-                )
-            } else {
-                previewImageNext = nil
-            }
+            let scale = max(view.traitCollection.displayScale, 1)
+            let pointSize = min(ThemeMetrics.gridCellMax * 2, 512 / scale)
+            let image = await loader.thumbnail(relPath: first, pointSize: pointSize, scale: scale, mode: previewStorageMode)
+            guard !Task.isCancelled else { return }
+            previewImage = image
             updatePreview()
+            if relPaths.count > 1 {
+                let next = await loader.thumbnail(relPath: relPaths[1], pointSize: pointSize, scale: scale, mode: previewStorageMode)
+                guard !Task.isCancelled else { return }
+                previewImageNext = next
+                updatePreview()
+            }
         }
     }
 
     private func updatePreview() {
+        previewRenderTask?.cancel()
+        previewRenderGeneration &+= 1
+        let generation = previewRenderGeneration
+        isDemoRunning = false
         guard let image = previewImage else { return }
         previewImageView.transform = .identity
         previewImageView.alpha = 1
@@ -557,9 +609,9 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
                     : ThemeColor.panel
                 return
             }
-            Task { [weak self, playerLoader] in
+            previewRenderTask = Task { [weak self, playerLoader] in
                 guard let hex = await playerLoader.edgeColorHex(of: image) else { return }
-                guard let self else { return }
+                guard !Task.isCancelled, let self, generation == previewRenderGeneration else { return }
                 previewBackground.image = nil
                 previewBackground.backgroundColor = Self.color(fromHex: hex) ?? ThemeColor.canvas
             }
@@ -567,11 +619,11 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
             previewImageView.contentMode = .scaleAspectFit
             previewImageView.image = image
             previewDim.isHidden = false
-            Task { [weak self, playerLoader] in
-                guard let blurred = await playerLoader.blurred(assetID: "preview", image: image) else {
-                    return
-                }
-                self?.previewBackground.image = blurred
+            let cacheKey = "settings-preview:\(previewCacheID):\(generation)"
+            previewRenderTask = Task { [weak self, playerLoader] in
+                guard let blurred = await playerLoader.blurred(assetID: cacheKey, image: image),
+                      !Task.isCancelled, let self, generation == previewRenderGeneration else { return }
+                previewBackground.image = blurred
             }
         }
     }
@@ -777,6 +829,7 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         let width = max(previewContainer.bounds.width, 1)
         let demoImage = previewImageNext ?? previewImage
         let previous = previewImage
+        let generation = previewRenderGeneration
         guard let demoImage else { return }
         isDemoRunning = true
         previewContainer.bringSubviewToFront(demoImageView)
@@ -809,10 +862,12 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
                 self.demoImageView.transform = .identity
             },
             completion: { _ in
+                guard generation == self.previewRenderGeneration else { return }
                 UIView.animate(
                     withDuration: 0.2,
                     animations: { self.previewImageView.alpha = 0 },
                     completion: { _ in
+                        guard generation == self.previewRenderGeneration else { return }
                         self.previewImageView.image = previous ?? demoImage
                         self.previewImageView.transform = .identity
                         self.demoImageView.alpha = 0
