@@ -1256,6 +1256,7 @@
 				D17E804327B06495553BFCB1 /* Resources */,
 				59B1F055EB05066245FC04C5 /* Frameworks */,
 				F648F5D454A31161FF9702EA /* Embed Frameworks */,
+				F51F6BBE894BE7718C4444BC /* Complete ONNX Runtime bundle metadata */,
 			);
 			buildRules = (
 			);
@@ -1425,6 +1426,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		F51F6BBE894BE7718C4444BC /* Complete ONNX Runtime bundle metadata */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Complete ONNX Runtime bundle metadata";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nframework=\"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/onnxruntime.framework\"\nif [ -d \"$framework\" ]; then\n  minimum_os=$(xcrun vtool -show-build \"$framework/onnxruntime\" | awk '/minos / { print $2; exit }')\n  test -n \"$minimum_os\"\n  /usr/libexec/PlistBuddy -c \"Add :MinimumOSVersion string $minimum_os\" \"$framework/Info.plist\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Set :MinimumOSVersion $minimum_os\" \"$framework/Info.plist\"\n  if [ \"${CODE_SIGNING_ALLOWED:-NO}\" = \"YES\" ]; then\n    /usr/bin/codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --preserve-metadata=identifier,entitlements \"$framework\"\n  fi\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		34D6940C18A5DFD5E35AD078 /* Sources */ = {

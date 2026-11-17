@@ -50,6 +50,20 @@ targets:
       - package: AMSMB2
         product: AMSMB2
         embed: true
+    postBuildScripts:
+      - name: Complete ONNX Runtime bundle metadata
+        script: |
+          set -eu
+          framework="${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/onnxruntime.framework"
+          if [ -d "$framework" ]; then
+            minimum_os=$(xcrun vtool -show-build "$framework/onnxruntime" | awk '/minos / { print $2; exit }')
+            test -n "$minimum_os"
+            /usr/libexec/PlistBuddy -c "Add :MinimumOSVersion string $minimum_os" "$framework/Info.plist" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion $minimum_os" "$framework/Info.plist"
+            if [ "${CODE_SIGNING_ALLOWED:-NO}" = "YES" ]; then
+              /usr/bin/codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY}" --preserve-metadata=identifier,entitlements "$framework"
+            fi
+          fi
+        basedOnDependencyAnalysis: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.photopilot.scaffold

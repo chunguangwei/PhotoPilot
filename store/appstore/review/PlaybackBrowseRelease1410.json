@@ -49,9 +49,26 @@
   "sharedTestsPassed": 58,
   "aiToolTestsPassed": 6,
   "appStore": {
-    "status": "waiting_for_user_physical_testing",
-    "uploadPerformed": false,
-    "reviewSubmissionPerformed": false
+    "status": "uploaded_processing",
+    "uploadPerformed": true,
+    "reviewSubmissionPerformed": false,
+    "version": "1.4.10",
+    "build": 71,
+    "uploadedIPASHA256": "14676c928693397497775785007cfc5f167631e4cf1aecb3f7e6238fc8fb2202",
+    "uploadedIPABytes": 23694255,
+    "onnxMinimumOSVersion": "15.0",
+    "metadataLocales": [
+      "en-US",
+      "zh-Hans",
+      "zh-Hant"
+    ],
+    "releaseType": "AFTER_APPROVAL",
+    "reviewNASStatus": "unreachable_user_notified",
+    "thirdPartyDSYMWarnings": [
+      "MediaPipeTasksCommon",
+      "MediaPipeTasksRetrieval",
+      "onnxruntime"
+    ]
   },
   "assets": [
     {

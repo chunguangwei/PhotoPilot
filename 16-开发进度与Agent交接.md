@@ -1,5 +1,13 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## 2026-11-17 App Store 1.4.10（71）更新提交进行中
+
+- 用户完成真机测试后明确授权更新App Store，并完成Xcode及App Store Connect登录。现有分发证书恢复自动签名，未新建账号或撤销证书。
+- 首次上传被Apple阻止，ONNX Runtime的嵌入framework Info.plist缺少MinimumOSVersion。二进制LC_BUILD_VERSION实际minos15.0。现于XcodeGen postBuild脚本从vtool读取实际minos补齐并重新签名framework，工程已通过make ios-generate重生成。修复后make check、ios-build、ios-analyze及Release archive、严格签名验证通过，四个framework均声明15.0。
+- 修正包于18:49上传成功，Apple开始处理。上传IPA23694255bytes，SHA256为14676c928693397497775785007cfc5f167631e4cf1aecb3f7e6238fc8fb2202，executable SHA256为d4672ef9b86d592b7483aae1cebfb4732afa8eeb6ea87fa32f0d60228c32d539。与旧开发签名归档及首次失败IPA分别记录。第三方MediaPipe及ONNX dSYM缺失产生符号上传警告，Apple接受上传，相关框架崩溃符号化存在限制。
+- 已建立App Store版本1.4.10，保存英文、简体中文、繁体中文描述、推广文本及更新说明，覆盖可选本地AI模型、暂停续扫、NAS按需播放和UI修复。保留原审核联系人及已发布隐私标签，上传6张自有合成图的ReviewPhotos.zip。英文iPhone5张及iPad6张商店截图从已上线版本继承。发布选项沿用审核后自动发布、全量更新、保留评分。
+- 旧审核NAS的WebDAV、SMB及SSH均超时，已向用户请求恢复服务器网络，尚未确认恢复。审核备注最终可用性复核和正式提交仍待完成，不宣称已提交审核。
+
 ## 2026-11-17 播放设置预览、首图与来源浏览 · 1.4.10（71）已发布
 
 - iOS播放设置预览旧helper仅查FrameSelection.asset.original_rel_path，遗漏sourceAsset及目录规则，并未沿用播放顺序。现复用实际FrameRepository队列，将本机引用/NAS映射为runtimeID、私有导入映射为原路径，遵循原有授权、排除及存储模式。小预览限制512px，首张就绪即显示，随后补转场演示图；管理返回刷新预览。
