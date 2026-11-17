@@ -62,7 +62,7 @@ struct AIModelDescriptor: Decodable, Sendable {
     var title: String { displayName[AIText.chinese ? "zh-Hans" : "en"] ?? id }
 }
 
-enum AIModelDownloadSource: Int, Sendable { case automatic, domestic, international }
+enum AIModelDownloadSource: Int, Codable, Sendable { case automatic, domestic, international }
 
 struct AIModelDownloadProgress: Sendable {
     let completedBytes: Int64
@@ -74,18 +74,26 @@ actor AIModelManager {
     let catalog: AIModelCatalog
     let root: URL
     private let sessionConfiguration: URLSessionConfiguration
+    private let background: AIBackgroundModelDownloads?
+    private var erased = false
+    private let beforeRemoval: (@Sendable () async -> Void)?
     private var downloads: [String: Task<Void, Error>] = [:]
     private var leasedIDs: Set<String> = []
+    private var deletingIDs: Set<String> = []
 
-    init(root: URL, catalog: AIModelCatalog, sessionConfiguration: URLSessionConfiguration = .ephemeral) {
+    init(root: URL, catalog: AIModelCatalog, sessionConfiguration: URLSessionConfiguration = .ephemeral, backgroundTransfers: Bool = false, beforeRemoval: (@Sendable () async -> Void)? = nil) {
+        self.beforeRemoval = beforeRemoval
         self.root = root
         self.catalog = catalog
         self.sessionConfiguration = sessionConfiguration.copy() as! URLSessionConfiguration
+        background = backgroundTransfers ? AIBackgroundModelDownloads.shared(root: root, catalog: catalog) : nil
+        if backgroundTransfers { Task { await self.restoreDownloads() } }
     }
 
     static func bundled(root: URL) throws -> AIModelManager {
         guard let url = Bundle.main.url(forResource: "ai-models", withExtension: "json") else { throw AIFrameError.invalidManifest }
-        return AIModelManager(root: root, catalog: try AIModelCatalog.load(data: Data(contentsOf: url)))
+        let defaultRoot = PersistenceController.defaultStoreURL().deletingLastPathComponent().appendingPathComponent("ai-models")
+        return AIModelManager(root: root, catalog: try AIModelCatalog.load(data: Data(contentsOf: url)), backgroundTransfers: root.standardizedFileURL == defaultRoot.standardizedFileURL)
     }
 
     func descriptor(id: String) throws -> AIModelDescriptor {
@@ -106,6 +114,7 @@ actor AIModelManager {
     }
 
     func acquire(_ model: AIModelDescriptor) throws -> URL {
+        guard !deletingIDs.contains(model.id), !erased else { throw AIFrameError.busy }
         guard isInstalled(model) else { throw AIFrameError.missingModel }
         guard !leasedIDs.contains(model.id) else { throw AIFrameError.busy }
         for file in model.files {
@@ -120,28 +129,67 @@ actor AIModelManager {
 
     func release(id: String) { leasedIDs.remove(id) }
 
-    func remove(id: String) throws {
-        guard downloads[id] == nil, !leasedIDs.contains(id) else { throw AIFrameError.busy }
+    func remove(id: String) async throws {
+        guard !erased else { throw CancellationError() }
+        guard !leasedIDs.contains(id), !deletingIDs.contains(id) else { throw AIFrameError.busy }
+        deletingIDs.insert(id)
+        defer { deletingIDs.remove(id) }
+        if let beforeRemoval { await beforeRemoval() }
+        await background?.remove(id)
+        let active = downloads[id]
+        active?.cancel()
+        _ = try? await active?.value
+        guard !erased else { return }
         let model = try descriptor(id: id)
         let directory = root.appendingPathComponent(model.id)
         if FileManager.default.fileExists(atPath: directory.path) { try FileManager.default.removeItem(at: directory) }
     }
 
     func cancelAllAndWait() async {
+        erased = true
+        await background?.erase()
         let active = Array(downloads.values)
         for task in active { task.cancel() }
         for task in active { _ = try? await task.value }
+        while !deletingIDs.isEmpty { await Task.yield() }
     }
 
-    func cancel(id: String) { downloads[id]?.cancel() }
+    func cancel(id: String) async {
+        await background?.pause(id)
+        let work = downloads[id]
+        work?.cancel()
+        _ = try? await work?.value
+    }
+
+    func downloadStates() async -> [AIModelDownloadState] { await background?.states() ?? [] }
+
+    private func restoreDownloads() async {
+        guard let background, !erased else { return }
+        for state in await background.states() where state.status == "downloading" {
+            Task { try? await self.download(id: state.modelID, source: state.source, allowCellular: state.allowCellular, progress: { _ in }) }
+        }
+    }
+
+    static func handleBackgroundEvents(identifier: String, completion: @escaping @MainActor @Sendable () -> Void) async {
+        guard identifier == AIBackgroundModelDownloads.identifier,
+              let manager = try? bundled(root: PersistenceController.defaultStoreURL().deletingLastPathComponent().appendingPathComponent("ai-models")),
+              let background = await manager.background else { await completion(); return }
+        await background.handleEvents(completion)
+    }
 
     func download(id: String, source: AIModelDownloadSource, allowCellular: Bool,
                   progress: @escaping @Sendable (AIModelDownloadProgress) -> Void) async throws {
+        guard !erased else { throw CancellationError() }
+        guard !deletingIDs.contains(id) else { throw AIFrameError.busy }
         if let task = downloads[id] { return try await task.value }
         let model = try descriptor(id: id)
         if isInstalled(model) { return }
         let directory = directory(for: model)
         let task = Task {
+            if let background {
+                try await background.download(model: model, source: source, allowCellular: allowCellular, progress: progress)
+                return
+            }
             try await Self.install(model, directory: directory, source: source, allowCellular: allowCellular, configuration: sessionConfiguration, progress: progress)
         }
         downloads[id] = task
@@ -273,7 +321,10 @@ actor AIModelManager {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
         var hash = SHA256()
-        while let data = try handle.read(upToCount: 1_048_576), !data.isEmpty { hash.update(data: data) }
+        while let data = try handle.read(upToCount: 1_048_576), !data.isEmpty {
+            try Task.checkCancellation()
+            hash.update(data: data)
+        }
         let actual = hash.finalize().map { String(format: "%02x", $0) }.joined()
         return actual == file.sha256.lowercased()
     }

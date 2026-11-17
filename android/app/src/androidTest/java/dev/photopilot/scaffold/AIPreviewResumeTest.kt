@@ -62,10 +62,10 @@ class AIPreviewResumeTest {
             val oldWriter = AIPreviewCheckpoint.open(db, model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = model.defaultThreshold)), null)
             dev.photopilot.scaffold.data.repo.AssetRepository(db, dev.photopilot.scaffold.data.repo.LibraryVersionRepository(db.settingsKvDao())).hideAssetGlobally(ids.first(), "validation", now)
             try { oldWriter.save(); fail("Hidden-photo checkpoints must stay invalidated") }
-            catch (invalidated: java.io.IOException) { assertEquals("preview_invalidated", invalidated.message) }
-            assertTrue(db.settingsKvDao().getByPrefix(AIPreviewCheckpoint.PREFIX).isEmpty())
+            catch (invalidated: java.io.IOException) { assertEquals("preview_superseded", invalidated.message) }
+            assertFalse(AIPreviewCheckpoint.open(db, model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = model.defaultThreshold)), null).assets.containsKey(ids.first()))
             val afterHide = next.preview(model, listOf(prefix), true, listOf(AIRule("a photo of a cat", threshold = model.defaultThreshold))) { _, _ -> }.single()
-            assertEquals(0, afterHide.reusedAssetCount)
+            assertEquals(2, afterHide.reusedAssetCount)
             assertEquals(2, afterHide.fingerprints.size)
             assertFalse(ids.first() in afterHide.fingerprints)
         } finally {

@@ -28,6 +28,7 @@ final class AIFrameFlowTests: XCTestCase {
         let create = app.buttons["创建相框"].firstMatch
         XCTAssertTrue(create.waitForExistence(timeout: 90))
         create.tap()
+        if app.buttons["手动选片"].exists { app.buttons["手动选片"].tap() }
         XCTAssertFalse(app.buttons["frame.ai.settings"].exists)
         app.buttons["目录"].tap()
         XCTAssertTrue(app.staticTexts["本机目录"].firstMatch.waitForExistence(timeout: 15))
@@ -63,9 +64,7 @@ final class AIFrameFlowTests: XCTestCase {
                                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launch()
         allowQAWirelessAccessIfPrompted()
-        let create = app.buttons["frames.createAI"]
-        XCTAssertTrue(create.waitForExistence(timeout: 90))
-        create.tap()
+        openAI(app)
         XCTAssertTrue(app.cells["ai.model.multilingual-clip-vitb32-lite"].waitForExistence(timeout: 20))
         capture("08-large-type-models", chinese: true)
         let category = app.textViews["ai.categories"]
@@ -87,9 +86,7 @@ final class AIFrameFlowTests: XCTestCase {
             app.launchArguments = ["-uitest.reset", "-uitest.onboarded", "-dev.photopilot.appLanguage", "system", "-AppleLanguages", chinese ? "(zh-Hans)" : "(en)"]
             app.launch()
             allowQAWirelessAccessIfPrompted()
-            let create = app.buttons["frames.createAI"]
-            XCTAssertTrue(create.waitForExistence(timeout: 90))
-            create.tap()
+            openAI(app)
             XCTAssertTrue(app.cells["ai.model.multilingual-clip-vitb32-lite"].waitForExistence(timeout: 20))
             capture("11-normal-models", chinese: chinese)
             XCUIDevice.shared.orientation = .landscapeLeft
@@ -108,6 +105,16 @@ final class AIFrameFlowTests: XCTestCase {
         }
     }
 
+    private func openAI(_ app: XCUIApplication) {
+        let direct = app.buttons["frames.createAI"]
+        let menu = app.buttons["frames.createOptions"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 10) || direct.waitForExistence(timeout: 80))
+        if direct.exists { direct.tap(); return }
+        menu.tap()
+        if app.buttons["Create AI frames"].exists { app.buttons["Create AI frames"].tap() }
+        else { app.buttons["AI 创建相框"].tap() }
+    }
+
     private func runFlow(chinese: Bool, modelID: String = "multilingual-clip-vitb32-lite", remote: Bool = false) throws {
         guard ProcessInfo.processInfo.environment["PHOTOPILOT_AI_QA_TESTING"] == "1" else {
             throw XCTSkip("Requires the isolated dev.photopilot.aiqa app with authorized model and image fixtures.")
@@ -117,10 +124,9 @@ final class AIFrameFlowTests: XCTestCase {
         if remote { app.launchArguments.append("-qa.remote") }
         app.launch()
         allowQAWirelessAccessIfPrompted()
-        let create = app.buttons["frames.createAI"]
-        XCTAssertTrue(create.waitForExistence(timeout: 90))
+        XCTAssertTrue(app.buttons["frames.createOptions"].waitForExistence(timeout: 10) || app.buttons["frames.createAI"].waitForExistence(timeout: 80))
         capture("01-frames", chinese: chinese)
-        create.tap()
+        openAI(app)
         let model = app.cells["ai.model." + modelID]
         XCTAssertTrue(model.waitForExistence(timeout: 20))
         model.tap()

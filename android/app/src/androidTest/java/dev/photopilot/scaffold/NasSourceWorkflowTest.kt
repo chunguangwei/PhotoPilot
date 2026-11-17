@@ -110,8 +110,12 @@ class NasSourceWorkflowTest {
                 root.pushOverlay(view)
                 MainActivity::class.java.getDeclaredMethod("refreshNasSources", SourcesView::class.java).apply { isAccessible = true }.invoke(activity, view)
             }
-            await { descendants(activity.window.decorView).filterIsInstance<TextView>().any { it.text.toString() == activity.getString(R.string.sources_remove_configuration) } }
-            touch(text(activity, R.string.sources_remove_configuration))
+            await { descendants(activity.window.decorView).filterIsInstance<TextView>().any { it.text.toString() == activity.getString(R.string.player_more) } }
+            touch(text(activity, R.string.player_more))
+            await { instrumentation.uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText(activity.getString(R.string.sources_remove_configuration))?.isNotEmpty() == true }
+            val remove = instrumentation.uiAutomation.rootInActiveWindow.findAccessibilityNodeInfosByText(activity.getString(R.string.sources_remove_configuration)).last()
+            val removeBounds = Rect().also { remove.getBoundsInScreen(it) }
+            touchAt(removeBounds.exactCenterX(), removeBounds.exactCenterY())
             await { instrumentation.uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText(activity.getString(R.string.common_delete))?.isNotEmpty() == true }
             capture("nas-delete-$language-$variant")
             val node = instrumentation.uiAutomation.rootInActiveWindow.findAccessibilityNodeInfosByText(activity.getString(R.string.common_delete)).last()
@@ -140,7 +144,15 @@ class NasSourceWorkflowTest {
         File(directory, "$name.png").outputStream().use { instrumentation.uiAutomation.takeScreenshot().compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
-    private suspend fun await(predicate: suspend () -> Boolean) = withTimeout(15000) { while (!predicate()) delay(100) }
+    private var waitNumber = 0
+    private suspend fun await(predicate: suspend () -> Boolean) {
+        val number = ++waitNumber
+        try {
+            withTimeout(15000) { while (!predicate()) delay(100) }
+        } catch (timeout: TimeoutCancellationException) {
+            throw AssertionError("NAS source workflow wait $number", timeout)
+        }
+    }
     private fun text(activity: Activity, resource: Int): View = descendants(activity.window.decorView).filterIsInstance<TextView>().last { it.text.toString() == activity.getString(resource) }
     private fun descendants(view: View): List<View> = listOf(view) + if (view is ViewGroup) (0 until view.childCount).flatMap { descendants(view.getChildAt(it)) } else emptyList()
     private fun touch(view: View) {

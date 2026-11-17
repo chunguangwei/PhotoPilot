@@ -1,5 +1,18 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## 2026-11-17 AI 暂停保存、模型设置与持久恢复 · 1.4.7（68）发布准备
+
+- 双端支持暂停分类并保存部分结果，下次继续未完成、变化或失败的照片。设置集中管理模型，缺模型的创建入口定位对应下载项，返回保留来源、规则、名称和选择。类别到相框映射事务性持久化，0匹配类别也可保存，重复确认不会重复建框。独立userPaused优先于automatic，保存、导入和重启均不解除手动暂停。
+- Android任务归进程协调器，使用dataSync前台服务和通用进度通知。重复启动合并初始化及通知循环，保持单一服务WakeLock，按startId结束。初始化期间通知暂停同时覆盖尚未launch的持久queued任务。逐照片增量checkpoint兼容旧header并fence旧owner，模型文件租约与推理槽分离。真实HTTP Range/If-Range暂停、重建不自动重跑、继续校验SHA、删除迟到响应及后台超时退出均有确定回归。
+- iOS采用系统后台URLSession文件级下载，入站文件持久恢复和可信offset重放。源/网络偏好变化使不兼容resumeData失效，完成文件保留。iOS26+前台发起分类使用CPU持续处理任务，旧系统采用有限后台时间及BGProcessing调度。每轮许可独立token，后台过期保留断点，原因不明的系统取消需明确继续。真机发现的Swift6回调队列崩溃已通过主队列launch和nonisolated expiration桥接修复。
+- 暂停草稿的隐私回归先RED后修。双端恢复和保存按当前eligibility及内容版本清理旧match。iOS缓存同时绑定libraryVersion与draft.updatedAt，缩略图解码前后复核隐私、删除及版本，覆盖迟到writer再次注入。Android按libraryVersion失效内存结果，隐藏只清目标及别名断点并更换owner，保留其它成功进度，预览复用RemoteThumbnailView及时撤权清图。名称、类别映射和手动暂停保持。
+- iOS最终完整322执行、6条件skip、0失败。独立iPhone13中英多类别暂停保存（含0图类）、重启仍暂停、已有框继续、中央模型管理、缺模型Scan定位及回程均通过。自有NAS协议夹具后台Home约5秒进度4到33，另一轮3/200到30/200，属于短时实证。真实ONNX/tokenizer5项及20条golden/Unicode边界通过。iPad模拟器中英暗色横屏大字号通过。0图卡省略大封面，非空小屏首页采用紧凑创建菜单，模型页去重标题及Ready假按钮，主Agent已目检截图。
+- Android常规connected完整97项，JUnit XML为93通过、4条件skip、0失败，380.727秒。早期93项批次因跨类残留和旧入口假设出现18失败，已修测试自身清理、异步initialized等待、locale恢复和真实popup入口，保留产品断言后重跑常规入口通过。0图卡小修后定向5/5通过43.3秒，中英截图已目检。大字横屏模型管理2/2及360dp大字竖屏暂停结果/首页2/2通过。跨进程专用prepare2/2及force-stop后verify2/2通过。本地只读SMB专项1/1通过11.20秒，覆盖两条选片、原图读取及播放入口，临时Impacket夹具EOF错误响应已按标准SMB2Error修正，生产SDK未变更。
+- 主Agent最终make check通过，含AI6项及共享58项、17表parity和616词条新鲜度。iOS最终build/analyze通过。Android正式wrapper9.1完整Debug、AndroidTest、lint、446 JVM及原签名Release通过，lint0错误203警告。常规9.1旧缓存缺transform，采用隔离GRADLE_USER_HOME/project-cache并复用现有依赖及临时官方仓缓存完成，未改wrapper或依赖版本。此前9.3.1验证记录单独保留。
+- iOS开发签名归档及iPhone保留数据覆盖升级已完成，公开metadata和设置页均核147/68。归档executable SHA256为dc7569c5f108428dbbfae4679cdc57a6b4cf458d4b658b78aef8e76292964400，最低OS15、无模型权重。Android最终APK154400910bytes，SHA256为c4321375da3ec47d98c0ec246eaa0d0895317aabfedca1d17c4285d868b0d504，原证书及4ABI保持，catalog一致、未夹带权重或私密测试配置。
+- 限制如实保留。Android华为真机本轮不可连接，使用API35模拟器。旧外部审核NAS的SMB及HTTPS WebDAV在Mac和AVD均独立5秒超时，未完成本轮外部服务UI段，未改其配置。WebDAV协议夹具及本地SMB链路有实证，旧146真实SMB3/HTTPS证据仍见下节。英文12小时制AM在360dp换行观察未纳入本次修复。Emulator37.2.13.0启动目录缺失且无现成缓存，准确签名Release隔离运行附加复验未执行，不能由签名检查推定运行已通过。5554 Debug68及原数据保留，1080×2400/420dpi/font1/自由旋转已恢复，AI唤醒及服务为0，临时SMB和私密配置已清理。临时启动的Colima已恢复原停止状态，无新大型SDK安装。
+- 独立静态审查的预览跨await身份、模型删除租约、Range重放、后台permit、FGS重入和隐私增量均已闭环。GitHub提交、tag及公开附件校验尚待本节发布回填。AppStore等待用户真机确认，未上传或提交审核。
+
 ## 2026-11-17 首页载入与全屏菜单反馈修复 · 1.4.6（67）已发布
 
 - 用户截图显示Android首页加载时只剩底部导航、播放器More菜单向屏外展开。首页原FramesView初始化没有内容，同一批引用照片在cover、queue、resolve、remoteItems等路径重复验证；dirty轮询可能叠加任务。现初始化即显示标题/加载状态，先展示相框元数据卡片，再填入实际校验数量及封面；失败提供重试，配置变化保留状态，新加载卡片不显示虚假的0张并禁用播放。

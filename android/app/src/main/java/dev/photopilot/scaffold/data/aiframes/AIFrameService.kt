@@ -8,10 +8,11 @@ import java.io.File
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.withLock
 
-class AIFrameService(internal val context: Context, internal val db: PhotoPilotDatabase) {
+class AIFrameService(internal val context: Context, internal val db: PhotoPilotDatabase, val models: AIModelManager = AIModelManager(context)) {
     var remoteMedia: dev.photopilot.scaffold.data.remote.RemoteMediaRepository? = null
-    val models = AIModelManager(context)
     val state = AIStateStore(db)
+    val tasks = AITaskCoordinator(this)
+    private val userPauseRequests = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     internal val previewJobs = java.util.concurrent.ConcurrentHashMap<Job, String>()
     @Volatile internal var closed = false
@@ -31,7 +32,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
         jobs[frameId]?.cancelAndJoin()
         db.withTransaction {
             val current = state.get(frameId) ?: return@withTransaction
-            if (db.frameDao().getById(frameId) != null) state.put(current.copy(revision = current.revision + 1, autoUpdate = enabled, status = "complete"))
+            if (db.frameDao().getById(frameId) != null) state.put(current.copy(revision = current.revision + 1, autoUpdate = enabled, status = if (current.userPaused) "user_paused" else "complete"))
         }
     }
 
@@ -44,7 +45,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
             val sameRule = previous != null && previous.modelId == model.id && previous.modelRevision == model.revision && previous.collections == collections.distinct() && previous.recursive == recursive && previous.rule == rule
             state.put(AIConfiguration(frameId, (previous?.revision ?: 0) + 1, model.id, model.revision, collections.distinct(), recursive, automatic, rule,
                 members = previous?.members.orEmpty(), processed = if (sameRule) previous.processed else emptyMap(), reviews = if (sameRule) previous.reviews else emptyMap(),
-                status = if (sameRule) "complete" else "idle", completed = if (sameRule) previous.completed else 0, failed = if (sameRule) previous.failed else 0, themes = if (sameRule) previous.themes else emptyMap()))
+                status = if (sameRule) "complete" else "idle", completed = if (sameRule) previous.completed else 0, failed = if (sameRule) previous.failed else 0, themes = if (sameRule) previous.themes else emptyMap(), userPaused = previous?.userPaused ?: false, total = previous?.total ?: 0))
         }
     }
     suspend fun deleteModel(model: AIModel) {
@@ -60,11 +61,28 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
     }
     suspend fun stop(frameId: String) { jobs[frameId]?.cancelAndJoin() }
     fun isRunning(frameId: String): Boolean = jobs[frameId]?.isActive == true
-    fun cancel(frameId: String) { jobs[frameId]?.cancel() }
+    fun cancel(frameId: String) { pause(frameId) }
+    fun pause(frameId: String) {
+        userPauseRequests.add(frameId)
+        scope.launch {
+            db.withTransaction { state.get(frameId)?.let { state.put(it.copy(userPaused = true, status = "user_paused", pauseReason = "user")) } }
+            onProgress?.invoke(frameId)
+        }
+    }
+    fun resume(frameId: String) {
+        scope.launch {
+            db.withTransaction { state.get(frameId)?.let { state.put(it.copy(userPaused = false, status = "idle", pauseReason = null)) } }
+            onProgress?.invoke(frameId)
+            userPauseRequests.remove(frameId)
+            jobs[frameId]?.join()
+            scan(frameId)
+        }
+    }
     suspend fun shutdown() {
         closed = true
         val previews = previewJobs.keys.toList()
         previews.forEach { it.cancel() }
+        tasks.shutdown()
         scope.coroutineContext[Job]?.cancelAndJoin()
         previews.forEach { it.join() }
     }
@@ -77,34 +95,60 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
     }
     fun scan(frameId: String) {
         synchronized(jobs) {
-            if (jobs[frameId]?.isActive == true) return
+            if (jobs[frameId]?.isActive == true || frameId in userPauseRequests) return
             jobs[frameId] = scope.launch {
                 val configuration = state.get(frameId) ?: return@launch
+                val runEpoch = tasks.executionEpoch
+                if (configuration.userPaused) return@launch
+                val model = models.models.firstOrNull { it.id == configuration.modelId }
+                if (model != null) tasks.begin("frame:$frameId", model)
                 try { runScan(configuration) }
                 catch (cancelled: CancellationException) { withContext(NonCancellable) { status(frameId, "cancelled", configuration.revision) }; throw cancelled }
                 catch (failure: Exception) { status(frameId, when (failure.message) { "runtime_unavailable" -> "runtime_unavailable"; "model_missing" -> "model_missing"; else -> "failed" }, configuration.revision) }
                 catch (_: LinkageError) { status(frameId, "runtime_unavailable", configuration.revision) }
-                finally { onProgress?.invoke(frameId) }
+                finally {
+                    tasks.end("frame:$frameId")
+                    onProgress?.invoke(frameId)
+                    val currentJob = currentCoroutineContext()[Job]
+                    jobs.remove(frameId, currentJob)
+                    val latest = state.get(frameId)
+                    if (!closed && !shouldPause() && latest?.resumeAutomatically == true && latest.status in listOf("running", "paused", "system_paused") && (tasks.executionEpoch != runEpoch || latest.status != "running")) {
+                        scope.launch { scan(frameId) }
+                    }
+                }
             }
         }
     }
-    internal fun shouldPause(): Boolean = !foreground || lowBattery() || context.getSystemService(android.os.PowerManager::class.java).currentThermalStatus >= android.os.PowerManager.THERMAL_STATUS_SEVERE
+    internal fun shouldPause(): Boolean = pauseReason() != null
+    internal fun pauseReason(): String? = when {
+        tasks.systemStopped -> tasks.systemStopReason
+        lowBattery() -> "low_battery"
+        context.getSystemService(android.os.PowerManager::class.java).currentThermalStatus >= android.os.PowerManager.THERMAL_STATUS_SEVERE -> "temperature"
+        !foreground && !tasks.serviceRunning -> "background"
+        else -> null
+    }
 
+    internal suspend fun markSystemStopped(frameId: String, expectedEpoch: Long) = db.withTransaction {
+        if (tasks.executionEpoch != expectedEpoch) return@withTransaction
+        state.get(frameId)?.let { if (!it.userPaused) state.put(it.copy(status = "system_paused", pauseReason = tasks.systemStopReason)) }
+    }
     private fun lowBattery(): Boolean {
         val battery = context.getSystemService(android.os.BatteryManager::class.java)
         val capacity = battery.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
         return capacity in 0..15 && !battery.isCharging
     }
     private suspend fun status(frameId: String, status: String, revision: Long) = db.withTransaction {
-        state.get(frameId)?.let { if (it.revision == revision && db.frameDao().getById(frameId) != null) state.put(it.copy(status = status)) }
+        state.get(frameId)?.let { if (it.revision == revision && db.frameDao().getById(frameId) != null) state.put(it.copy(status = status, pauseReason = if (status in listOf("paused", "system_paused")) pauseReason() else null)) }
     }
     private suspend fun runScan(initial: AIConfiguration) {
         val frameId = initial.frameId
+        val epoch = tasks.executionEpoch
         if (shouldPause()) { status(frameId, "paused", initial.revision); return }
+        if (initial.userPaused) return
         val model = models.models.firstOrNull { it.id == initial.modelId && it.revision == initial.modelRevision } ?: throw java.io.IOException("model_missing")
         if (!models.supported(model)) throw java.io.IOException("runtime_unavailable")
         require(models.ready(model)) { "model_missing" }
-        models.lock.withLock {
+        models.lease(model) {
             require(models.verify(model)) { "model_integrity" }
             val directory = models.directory(model)
             val embedder = createAIEmbedder(context, model, directory)
@@ -114,13 +158,23 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                 val excludes = initial.rule.excludes.map(engine::text)
                 val themes = AINameSuggestions.themes.mapValues { engine.text(it.value.first + " " + it.value.second) }
                 val candidates = mediaCandidates(initial.collections, initial.recursive)
-                status(frameId, "running", initial.revision)
+                db.withTransaction {
+                    state.get(frameId)?.let { current ->
+                        if (current.revision == initial.revision && !current.userPaused) {
+                            val validProcessed = current.processed.filter { (id, fingerprint) ->
+                                candidates[id]?.let { fingerprint == "${it.fingerprint}:${model.revision}:${model.preprocessingVersion}" } == true
+                            }
+                            state.put(current.copy(status = "running", processed = validProcessed, completed = validProcessed.size, failed = 0, total = candidates.size, pauseReason = null))
+                        }
+                    }
+                }
                 for (id in candidates.keys + initial.members) {
                     currentCoroutineContext().ensureActive()
-                    if (shouldPause()) { status(frameId, "paused", initial.revision); return }
-                    if (db.frameDao().getById(frameId) == null) return
-                    val configuration = state.get(frameId) ?: return
-                    if (!AIJobGuard.canCommit(initial.revision, configuration.revision, initial.modelRevision, configuration.modelRevision, false)) return
+                    if (shouldPause()) { status(frameId, "paused", initial.revision); return@lease }
+                    if (db.frameDao().getById(frameId) == null) return@lease
+                    val configuration = state.get(frameId) ?: return@lease
+                    if (configuration.userPaused || frameId in userPauseRequests || epoch != tasks.executionEpoch) return@lease
+                    if (!AIJobGuard.canCommit(initial.revision, configuration.revision, initial.modelRevision, configuration.modelRevision, false)) return@lease
                     val candidate = candidates[id]
                     val fingerprint = "${candidate?.fingerprint}:${model.revision}:${model.preprocessingVersion}"
                     val eligible = candidate != null && !excluded(candidate, frameId)
@@ -136,6 +190,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                     } catch (cancelled: CancellationException) { throw cancelled } catch (_: Exception) { failed = true; AIMatch.REJECT }
                     currentCoroutineContext().ensureActive()
                     db.withTransaction {
+                        if (epoch != tasks.executionEpoch) return@withTransaction
                         val latest = state.get(frameId) ?: return@withTransaction
                         if (!AIJobGuard.canCommit(initial.revision, latest.revision, initial.modelRevision, latest.modelRevision, false)) return@withTransaction
                         val frame = db.frameDao().getById(frameId) ?: return@withTransaction
@@ -156,7 +211,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                         val reviews = latest.reviews.toMutableMap().apply { if (!failed || !stillAllowed) { remove(id); if (match == AIMatch.REVIEW && stillAllowed) put(id, score) } }
                         val accumulatedThemes = latest.themes.toMutableMap()
                         if (match == AIMatch.MATCH && stillAllowed) themeScores.forEach { (key, value) -> accumulatedThemes[key] = (accumulatedThemes[key] ?: 0.0) + value }
-                        state.put(latest.copy(members = members, processed = processed, reviews = reviews, completed = latest.completed + 1, failed = latest.failed + if (failed) 1 else 0, themes = accumulatedThemes))
+                        state.put(latest.copy(members = members, processed = processed, reviews = reviews, completed = processed.size, failed = latest.failed + if (failed) 1 else 0, themes = accumulatedThemes))
                         if (id.startsWith("remote:") && !dev.photopilot.scaffold.data.logic.JsonMini.parseObject(frame.settingsJson).containsKey("mediaStorageMode")) {
                             val settings = dev.photopilot.scaffold.data.logic.JsonMini.parseObject(frame.settingsJson).toMutableMap()
                             settings["mediaStorageMode"] = "remote"
@@ -165,10 +220,11 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                         db.frameDao().bumpSelectionVersion(frame.id, now)
                         FrameRepository.sharedCache.clear()
                     }
+                    state.get(frameId)?.let { tasks.progress("frame:$frameId", it.completed, it.total) }
                     onProgress?.invoke(frameId)
                     yield()
                 }
-                db.withTransaction { state.get(frameId)?.let { if (it.revision == initial.revision) state.put(it.copy(status = "complete")) } }
+                db.withTransaction { state.get(frameId)?.let { if (it.revision == initial.revision && !it.userPaused) state.put(it.copy(status = "complete", pauseReason = null)) } }
             }
         }
     }

@@ -64,7 +64,7 @@ class ClipLegacyModelUITest {
                 withTimeout(5000) {
                     while (true) {
                         var ready = false
-                        instrumentation.runOnMainSync { ready = view.draftState()["names"] == expectedName && view.draftState()["folders"].orEmpty().contains(prefix) }
+                        instrumentation.runOnMainSync { ready = view.javaClass.getDeclaredField("initialized").apply { isAccessible = true }.getBoolean(view) && view.draftState()["names"] == expectedName && view.draftState()["folders"].orEmpty().contains(prefix) }
                         if (ready) break
                         delay(20)
                     }

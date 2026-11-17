@@ -33,6 +33,13 @@
         <key>NSAllowsLocalNetworking</key>
         <true/>
     </dict>
+    <key>UIBackgroundModes</key>
+    <array><string>processing</string></array>
+    <key>BGTaskSchedulerPermittedIdentifiers</key>
+    <array>
+        <string>$(PRODUCT_BUNDLE_IDENTIFIER).ai.processing</string>
+        <string>$(PRODUCT_BUNDLE_IDENTIFIER).ai.continued.*</string>
+    </array>
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>

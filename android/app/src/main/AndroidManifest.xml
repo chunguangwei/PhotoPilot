@@ -33,6 +33,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service android:name=".data.aiframes.AIWorkService" android:exported="false" android:foregroundServiceType="dataSync" />
         <service android:name=".data.aiframes.GemmaRuntimeService" android:exported="false" android:process=":ai_runtime" />
         <service
             android:name=".data.update.UpdateDownloadService"

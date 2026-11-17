@@ -10,6 +10,7 @@ struct FrameCardDTO: Sendable {
     let updatedAt: Int
     var storageMode: FrameStorageMode = .local
     var hasReferencedDevicePhotos = false
+    var aiPaused = false
 }
 
 struct FrameDetailDTO: Sendable {

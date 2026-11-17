@@ -63,9 +63,7 @@ class AIFrameGroupingInteractionTest {
                 assertTrue(threshold.isShown)
                 val identityMethod = view.javaClass.getDeclaredMethod("formIdentity").apply { isAccessible = true }
                 val identity = identityMethod.invoke(view) as String
-                val job = Job()
                 for ((field, value) in mapOf(
-                    "previewJob" to job,
                     "activePreviewIdentity" to identity,
                     "restoredPreviewIdentity" to identity,
                     "restoredPreviewNames" to listOf("Retained name"),
@@ -85,9 +83,7 @@ class AIFrameGroupingInteractionTest {
                 assertEquals(0, org.json.JSONArray(changed.getValue("previewNames")).length())
                 assertEquals(0, org.json.JSONArray(changed.getValue("previewChoices")).length())
                 view.javaClass.getDeclaredField("restoredPreviewIdentity").apply { isAccessible = true }.set(view, identityMethod.invoke(view))
-                labels.first { it.text.toString() in listOf("取消分类", "Cancel classification") }.performClick()
-                assertEquals("false", view.draftState()["previewReady"])
-                job.cancel()
+                assertEquals("true", view.draftState()["previewReady"])
                 val checks = view.javaClass.getDeclaredField("collectionChecks").apply { isAccessible = true }.get(view) as Map<*, *>
                 (checks[sources[0].id] as CheckBox).isChecked = true
                 val currentIdentity = identityMethod.invoke(view)

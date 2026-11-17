@@ -42,12 +42,15 @@ class FramesView(
         val hasNasSource: Boolean = true,
         val hasDeviceReferences: Boolean = false,
         val loading: Boolean = false,
+        val aiPaused: Boolean = false,
+        val aiProgress: String? = null,
     )
 
     var remoteMedia: dev.photopilot.scaffold.data.remote.RemoteMediaRepository? = null
     var onOpen: ((FrameEntity) -> Unit)? = null
     var onCreateAI: (() -> Unit)? = null
     var onCreate: (() -> Unit)? = null
+    var onContinueAI: ((FrameEntity) -> Unit)? = null
     var onRetry: (() -> Unit)? = null
     var onRename: ((FrameEntity) -> Unit)? = null
     var onDuplicate: ((FrameEntity) -> Unit)? = null
@@ -232,7 +235,9 @@ class FramesView(
             setOnClickListener { onOpen?.invoke(model.frame) }
             isFocusable = false
         }
-        if (!model.loading) card.addView(CoverView(context, model.cover, loader, model.remoteCover, remoteMedia), LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        if (!model.loading && model.playable > 0 && (model.cover != null || model.remoteCover != null)) {
+            card.addView(CoverView(context, model.cover, loader, model.remoteCover, remoteMedia), LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        }
         val details = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             val pad = res.getDimensionPixelSize(R.dimen.pp_space_16)
@@ -263,6 +268,13 @@ class FramesView(
             else -> res.getQuantityString(R.plurals.frames_playable_count, model.playable, model.playable)
         }
         addCount(photoCount, R.dimen.pp_space_8)
+        model.aiProgress?.let { addCount(it, R.dimen.pp_space_4) }
+        if (model.aiPaused) {
+            details.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, R.string.common_continue).apply {
+                text = if (resources.configuration.locales[0].language == "zh") "继续 AI 分类" else "Continue AI classification"
+                setOnClickListener { onContinueAI?.invoke(model.frame) }
+            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = res.getDimensionPixelSize(R.dimen.pp_space_8) })
+        }
         if (model.pending > 0) {
             addCount(res.getQuantityString(R.plurals.frames_pending_count, model.pending, model.pending), R.dimen.pp_space_4)
         }

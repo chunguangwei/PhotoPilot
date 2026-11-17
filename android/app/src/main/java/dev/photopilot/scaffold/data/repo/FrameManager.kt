@@ -95,7 +95,7 @@ class FrameManager(
         val frame = db.frameDao().getById(frameId) ?: return@withContext
         db.withTransaction {
             db.settingsKvDao().get("ai.frame.$frameId")?.let { db.settingsKvDao().delete(it) }
-            db.settingsKvDao().get("ai.preview-cache.$frameId")?.let { db.settingsKvDao().delete(it) }
+            dev.photopilot.scaffold.data.aiframes.AIPreviewCheckpoint.delete(db, frameId)
             db.frameDao().delete(frame)
         }
     }

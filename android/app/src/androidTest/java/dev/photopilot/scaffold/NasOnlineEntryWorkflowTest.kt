@@ -29,6 +29,32 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class NasOnlineEntryWorkflowTest {
+    private var localEditorFixtureId: String? = null
+
+    private suspend fun ensureLocalEditorFixture(env: AppEnvironment) {
+        if (env.database.assetDao().browseReadyPage(1, 0).isNotEmpty()) return
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val id = "nas-local-entry-${UUID.randomUUID()}"
+        val now = System.currentTimeMillis()
+        val file = java.io.File(context.filesDir, "originals/$id.png").apply { parentFile!!.mkdirs() }
+        val image = android.graphics.Bitmap.createBitmap(16, 16, android.graphics.Bitmap.Config.ARGB_8888)
+        file.outputStream().use { image.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        image.recycle()
+        val hash = dev.photopilot.scaffold.data.logic.ContentHash.sha256Hex(file.readBytes())
+        env.database.sourceDao().upsert(SourceEntity(id, SourceType.LOCAL_FILES, "Synthetic local entry", null, null, null, 0, RetentionPolicy.USER_MANAGED, SourceStatus.ACTIVE, 1, null, null, now, now))
+        env.database.sourceAssetDao().upsert(SourceAssetEntity(id, id, "$id.png", null, "1", file.length(), null, now, 0, AccessState.ACCESSIBLE, now, now))
+        env.database.assetDao().upsert(AssetEntity(id, hash, file.length(), AssetFormat.PNG, 16, 16, 1, OrientationClass.SQUARE, null, CapturedAtSource.UNKNOWN, now, "$id.png", "Synthetic.png", AssetReadiness.READY, null, false, null, deletedAt = null, createdAt = now, updatedAt = now))
+        env.database.assetOriginDao().upsert(AssetOriginEntity(id, id, now, PolicyState.ALLOWED, OriginState.ACTIVE, now, now))
+        localEditorFixtureId = id
+    }
+
+    private suspend fun cleanupLocalEditorFixture(env: AppEnvironment) {
+        val id = localEditorFixtureId ?: return
+        env.database.assetDao().getById(id)?.let { env.database.assetDao().delete(it) }
+        env.database.sourceDao().getById(id)?.let { env.database.sourceDao().delete(it) }
+        java.io.File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "originals/$id.png").delete()
+        localEditorFixtureId = null
+    }
     @Test fun metadataOnlyNasFoldersAppearThroughLibraryEntry() = runBlocking {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
@@ -213,6 +239,7 @@ class NasOnlineEntryWorkflowTest {
             env.frameManager.listFrames().filter { it.id !in framesBefore }.forEach { env.frameManager.deleteFrame(it.id) }
             env.localSources.disconnect(source.id, true, System.currentTimeMillis(), removeConfiguration = true)
             env.credentialStore.delete(endpoint)
+            cleanupLocalEditorFixture(env)
         }
     }
 
@@ -229,6 +256,7 @@ class NasOnlineEntryWorkflowTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         if (fromFrames) {
+            ensureLocalEditorFixture(env)
             instrumentation.runOnMainSync {
                 val home = MainActivity::class.java.getDeclaredMethod("buildFramesView").apply { isAccessible = true }.invoke(activity) as FramesView
                 home.onCreate!!.invoke()
@@ -402,6 +430,7 @@ class NasOnlineEntryWorkflowTest {
             } finally {
                 instrumentation.runOnMainSync { activity.finish() }
                 env.frameManager.listFrames().filter { it.id !in framesBefore }.forEach { env.frameManager.deleteFrame(it.id) }
+                cleanupLocalEditorFixture(env)
                 env.database.sourceDao().getAll().filter { it.id !in beforeSources }.forEach { env.localSources.disconnect(it.id, true, System.currentTimeMillis(), removeConfiguration = true) }
             }
         }

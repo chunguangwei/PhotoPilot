@@ -27,8 +27,8 @@ settings:
     SWIFT_VERSION: "6.0"
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     TARGETED_DEVICE_FAMILY: "2"
-    MARKETING_VERSION: "1.4.6"
-    CURRENT_PROJECT_VERSION: "67"
+    MARKETING_VERSION: "1.4.7"
+    CURRENT_PROJECT_VERSION: "68"
 targets:
   PhotoPilot:
     type: application
@@ -86,6 +86,8 @@ targets:
       - path: ../contracts/vectors/playback-queue.json
         buildPhase: resources
       - path: ../contracts/vectors/ai-frame-classify.json
+        buildPhase: resources
+      - path: ../contracts/vectors/ai-task-recovery.json
         buildPhase: resources
       - path: ../contracts/vectors/ai-wordpiece.json
         buildPhase: resources

@@ -233,6 +233,7 @@ class MainActivity : Activity() {
                             openFrameEditor(frame, entry.entries.mapNotNull { (key, value) -> if (key is String && value is String) key to value else null }.toMap())
                         }
                     }
+                    "aiModels" -> if (!permissionOnly) openAIModels(entry["modelId"] as? String)
                     "aiFrame" -> if (permissionOnly) continue else {
                         val id = entry["frameId"] as? String ?: ""
                         val frame = if (id.isEmpty()) null else env.database.frameDao().getById(id)
@@ -315,6 +316,7 @@ class MainActivity : Activity() {
     private val pollRunnable = object : Runnable {
         override fun run() {
             refreshJobUi()
+            root.keepScreenOn = activityResumed && environment?.aiFrames?.tasks?.hasActiveWork == true
             pollHandler.postDelayed(this, POLL_INTERVAL_MS)
         }
     }
@@ -355,6 +357,7 @@ class MainActivity : Activity() {
         updateProgressDialog = null
         playerEngine?.stop(clearSnapshot = false)
         playerEngine = null
+        environment?.aiFrames?.onProgress = null
         scope.cancel()
         super.onDestroy()
     }
@@ -374,6 +377,7 @@ class MainActivity : Activity() {
             }
         }
         environment?.aiFrames?.foreground = true
+        environment?.aiFrames?.tasks?.foregroundEntered()
         environment?.aiFrames?.resumeAutomatic()
         maybeAutoSyncNas()
         val engine = playerEngine
@@ -396,6 +400,7 @@ class MainActivity : Activity() {
 
     override fun onPause() {
         activityResumed = false
+        root.keepScreenOn = false
         pollHandler.removeCallbacks(pollRunnable)
         playerView?.onAppBackground()
         playerEngine?.onBackground()
@@ -412,8 +417,12 @@ class MainActivity : Activity() {
                 val env = AppEnvironment.shared(applicationContext)
                 database = env.database
                 environment = env
+                env.aiFrames.onProgress = { pollHandler.post { framesDirty = true } }
                 env.aiFrames.foreground = activityResumed
-                if (activityResumed) env.aiFrames.resumeAutomatic()
+                if (activityResumed) {
+                    env.aiFrames.tasks.foregroundEntered()
+                    env.aiFrames.resumeAutomatic()
+                }
                 val (completed, preferences) = withContext(Dispatchers.IO) {
                     env.settings.isOnboardingCompleted() to
                         (env.settings.appearance() to env.settings.language())
@@ -427,8 +436,9 @@ class MainActivity : Activity() {
                 launchView.onReady = {
                     if (completed) {
                         showMainContainer()
-                        maybeAutoPlay(env)
+                        if (!intent.hasExtra("aiTaskId")) maybeAutoPlay(env)
                         restoreOverlays(pendingOverlayRestore)
+                        routeAIIntent()
                     } else {
                         showWelcome()
                         restoreOverlays(pendingOverlayRestore, permissionOnly = true)
@@ -545,6 +555,7 @@ class MainActivity : Activity() {
 
     private fun buildSettingsView(): SettingsView {
         val view = SettingsView(this)
+        view.onAIModels = { openAIModels(null) }
         view.onAppearance = { index ->
             val value = APPEARANCE_VALUES[index]
             scope.launch {
@@ -1755,6 +1766,7 @@ class MainActivity : Activity() {
             }
         }
         view.onCreateAI = { openAIFrameEditor(null) }
+        view.onContinueAI = { frame -> environment?.aiFrames?.resume(frame.id); framesDirty = true }
         view.onPlay = { frame -> openPlayer(frame, fromSnapshot = false) }
         view.onPlaybackSettings = { frame -> openPlaybackSettings(frame) }
         view.onRename = { frame -> showRenameFrameDialog(frame) }
@@ -1799,7 +1811,18 @@ class MainActivity : Activity() {
                         val sourceIds = includedSources.map { it.sourceId } + env.database.frameDirectoryRuleDao().getByFrame(frame.id).mapNotNull { env.database.collectionDao().getById(it.collectionId)?.sourceId }
                         val hasNas = sourceIds.any { sources[it]?.type in setOf(SourceType.SMB, SourceType.WEBDAV) }
                         val hasDeviceReferences = sourceIds.any { JsonMini.parseObject(sources[it]?.settingsJson)["referenceOnly"] == true }
-                        FramesView.CardModel(frame, cover, items.size, pending, coverItem?.takeIf { it.remote != null }, hasNas, hasDeviceReferences)
+                        val ai = env.aiFrames.state.get(frame.id)
+                        val aiPaused = ai?.userPaused == true
+                        val aiProgress = ai?.let { configuration ->
+                            val zh = resources.configuration.locales[0].language == "zh"
+                            val state = if (aiPaused) { if (zh) "分类已暂停，待继续" else "Classification paused, ready to continue" }
+                                else if (configuration.status == "running") { if (zh) "分类中" else "Classifying" }
+                                else if (configuration.status == "complete") { if (zh) "分类完成" else "Classification complete" }
+                                else { if (zh) "分类待继续" else "Classification pending" }
+                            val reason = configuration.pauseReason?.let { dev.photopilot.scaffold.data.aiframes.aiPauseExplanation(it, zh) }.orEmpty()
+                            "$state · ${configuration.completed} / ${configuration.total}" + if (reason.isEmpty()) "" else System.lineSeparator() + reason
+                        }
+                        FramesView.CardModel(frame, cover, items.size, pending, coverItem?.takeIf { it.remote != null }, hasNas, hasDeviceReferences, aiPaused = aiPaused, aiProgress = aiProgress)
                     }
                     val empty = cardModels.none { it.playable > 0 } && env.database.assetDao().browsePage(1, 0).isEmpty() && sources.values.none { source ->
                         env.remoteMedia.isMetadataSource(source) && env.remoteMedia.members(source.id, "", true).isNotEmpty()
@@ -1882,6 +1905,41 @@ class MainActivity : Activity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (environment != null) routeAIIntent()
+    }
+
+    private fun routeAIIntent() {
+        val env = environment ?: return
+        val taskId = intent.getStringExtra("aiTaskId") ?: return
+        val modelId = intent.getStringExtra("aiModelId")
+        intent.removeExtra("aiTaskId")
+        intent.removeExtra("aiModelId")
+        scope.launch {
+            if (taskId.startsWith("frame:")) {
+                val frame = withContext(Dispatchers.IO) { env.database.frameDao().getById(taskId.removePrefix("frame:")) }
+                if (frame != null) openAIFrameEditor(frame)
+            } else {
+                val task = withContext(Dispatchers.IO) { env.aiFrames.tasks.record(taskId) }
+                if (task?.kind == "preview") {
+                    val frame = task.frameId?.let { withContext(Dispatchers.IO) { env.database.frameDao().getById(it) } }
+                    openAIFrameEditor(frame, task.draft + ("draftId" to task.id))
+                } else openAIModels(modelId ?: task?.modelId)
+            }
+        }
+    }
+
+    private fun openAIModels(modelId: String?) {
+        val env = environment ?: return
+        lateinit var view: dev.photopilot.scaffold.ui.aiframes.AIModelsView
+        view = dev.photopilot.scaffold.ui.aiframes.AIModelsView(this, env, modelId) {
+            if (root.topOverlay() === view) popOverlayTracked()
+        }
+        pushOverlayTracked(view, mapOf("type" to "aiModels", "modelId" to modelId.orEmpty()))
+    }
+
     private fun openAIFrameEditor(frame: FrameEntity?, draft: Map<String, String>? = null) {
         val env = environment ?: return
         lateinit var view: dev.photopilot.scaffold.ui.aiframes.AIFrameView
@@ -1897,6 +1955,7 @@ class MainActivity : Activity() {
         view.onLocalPhotos = { showPhotoPermissionOverlay() }
         view.onLocalFiles = { showLocalFilesChoices() }
         view.onConnect = { openNasForm() }
+        view.onManageModels = { modelId -> openAIModels(modelId) }
         pushOverlayTracked(view, mapOf("type" to "aiFrame", "frameId" to (frame?.id ?: "")))
     }
 

@@ -47,9 +47,13 @@ class RemoteReferenceReloadTest {
                 val rows = descendants(view).filterIsInstance<CheckBox>().filter { it.text.startsWith("Current ") }
                 assertEquals(4, rows.size)
                 assertEquals(1, rows.count { it.isChecked })
-                val buttons = descendants(view).filterIsInstance<TextView>()
-                buttons.single { it.text.toString() == "Reload B" }.performClick()
-                buttons.single { it.text.toString() == "Reload A" }.performClick()
+                for (name in listOf("Reload B", "Reload A")) {
+                    view.javaClass.getDeclaredMethod("chooseAdditionalSource").apply { isAccessible = true }.invoke(view)
+                    val list = android.view.inspector.WindowInspector.getGlobalWindowViews().flatMap(::descendants)
+                        .filterIsInstance<android.widget.ListView>().single { it.isShown }
+                    val position = (0 until list.adapter.count).single { list.adapter.getItem(it).toString() == name }
+                    list.performItemClick(list.getChildAt(position - list.firstVisiblePosition), position, list.adapter.getItemId(position))
+                }
             }
             await { descendants(view).filterIsInstance<CheckBox>().count { it.text.startsWith("Current ") } == 4 }
             delay(400)

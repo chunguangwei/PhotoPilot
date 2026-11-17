@@ -19,8 +19,30 @@ data class AIModel(val id: String, val revision: String, val runtime: String, va
     val preprocessingVersion: String get() = if (runtime == "onnx") "clip-bicubic-wordpiece-projection1" else "preprocess1"
 }
 
-class AIModelManager(private val context: Context) {
-    val lock = Mutex()
+class AIModelManager(
+    private val context: Context,
+    private val connectionFactory: (URL) -> HttpURLConnection = { it.openConnection() as HttpURLConnection },
+) {
+    private val connections = java.util.concurrent.ConcurrentHashMap<String, HttpURLConnection>()
+    fun interruptDownload(modelId: String) {
+        val connection = connections.remove(modelId) ?: return
+        runCatching { connection.disconnect() }
+    }
+    private val inferenceLock = Mutex()
+    private val modelLocks = java.util.concurrent.ConcurrentHashMap<String, Mutex>()
+    private fun modelLock(model: AIModel) = modelLocks.getOrPut(model.id) { Mutex() }
+    suspend fun <T> withModelFiles(model: AIModel, action: suspend () -> T): T = modelLock(model).withLock {
+        action()
+    }
+    suspend fun <T> lease(model: AIModel, action: suspend () -> T): T = withModelFiles(model) {
+        inferenceLock.withLock { action() }
+    }
+    fun downloadedBytes(model: AIModel): Long = model.files.sumOf { file ->
+        val folder = directory(model)
+        val readyFile = File(folder, file.name)
+        if (readyFile.isFile && readyFile.length() == file.size && File(folder, file.name + ".verified").readTextOrNull() == file.sha256) file.size
+        else File(folder, file.name + ".part").length().coerceIn(0, file.size)
+    }
     private val root = File(context.filesDir, "ai-models").apply { mkdirs() }
     val models: List<AIModel> by lazy {
         val json = JSONObject(context.assets.open("ai-models.json").bufferedReader().use { it.readText() })
@@ -51,22 +73,33 @@ class AIModelManager(private val context: Context) {
         if (!valid) File(directory(model), file.name + ".verified").delete()
         valid
     }
-    suspend fun delete(model: AIModel) = lock.withLock {
+    suspend fun delete(model: AIModel) = withModelFiles(model) {
         val folder = directory(model)
         folder.deleteRecursively()
         File(context.codeCacheDir, "ai-runtime/${folder.name}").deleteRecursively()
         Unit
     }
 
-    suspend fun download(model: AIModel, source: String, allowMetered: Boolean = false, progress: (Long, Long) -> Unit) = lock.withLock {
+    suspend fun download(model: AIModel, source: String, allowMetered: Boolean = false, shouldStop: () -> Boolean = { false }, progress: (Long, Long) -> Unit) = withModelFiles(model) {
         require(supported(model)) { "runtime_unavailable" }
         var installed = 0L
         for (file in model.files) {
-            currentCoroutineContext().ensureActive()
+            ensureCanContinue(shouldStop)
             val destination = File(directory(model), file.name)
             if (destination.isFile && destination.length() == file.size && hash(destination) == file.sha256) {
+                ensureCanContinue(shouldStop)
                 atomicWrite(File(directory(model), file.name + ".verified"), file.sha256)
                 installed += file.size
+                continue
+            }
+            val partial = File(directory(model), file.name + ".part")
+            if (partial.isFile && partial.length() == file.size && hash(partial) == file.sha256) {
+                ensureCanContinue(shouldStop)
+                if (!partial.renameTo(destination)) throw IOException("install")
+                atomicWrite(File(directory(model), file.name + ".verified"), file.sha256)
+                File(directory(model), file.name + ".resume").delete()
+                installed += file.size
+                progress(installed, model.bytes)
                 continue
             }
             val urls = when (source) { "domestic" -> file.domestic; "international" -> file.international; else -> file.domestic + file.international }
@@ -76,17 +109,21 @@ class AIModelManager(private val context: Context) {
             for (url in urls) {
                 currentCoroutineContext().ensureActive()
                 try {
-                    transfer(model, file, url, allowMetered) { bytes -> progress(installed + bytes, model.bytes) }
+                    transfer(model, file, url, allowMetered, shouldStop) { bytes -> progress(installed + bytes, model.bytes) }
                     done = true
                     break
-                } catch (failure: IOException) { lastFailure = failure }
+                } catch (failure: IOException) {
+                    if (failure.message in listOf("system_pause", "offline", "metered", "REMOTE_LOW_SPACE")) throw failure
+                    lastFailure = failure
+                }
             }
             if (!done) throw lastFailure ?: IOException("download")
             installed += file.size
         }
     }
 
-    private suspend fun transfer(model: AIModel, file: AIModelFile, url: String, allowMetered: Boolean, progress: (Long) -> Unit) {
+    private suspend fun transfer(model: AIModel, file: AIModelFile, url: String, allowMetered: Boolean, shouldStop: () -> Boolean, progress: (Long) -> Unit) {
+        ensureCanContinue(shouldStop)
         checkNetwork(allowMetered)
         require(URL(url).protocol == "https")
         val folder = directory(model)
@@ -96,7 +133,8 @@ class AIModelManager(private val context: Context) {
         val validIdentity = saved?.optString("url") == url && saved.optString("sha256") == file.sha256 && saved.optString("etag").isNotEmpty()
         var offset = if (validIdentity && part.length() < file.size) part.length() else 0L
         if (offset == 0L) part.delete()
-        val connection = URL(url).openConnection() as HttpURLConnection
+        val connection = connectionFactory(URL(url))
+        connections[model.id] = connection
         connection.connectTimeout = 30000
         connection.readTimeout = 30000
         if (offset > 0L) {
@@ -104,6 +142,7 @@ class AIModelManager(private val context: Context) {
             connection.setRequestProperty("If-Range", saved!!.getString("etag"))
         }
         try {
+            ensureCanContinue(shouldStop)
             val status = connection.responseCode
             if (status !in listOf(200, 206)) throw IOException("http_$status")
             if (status == 200) offset = 0
@@ -111,34 +150,43 @@ class AIModelManager(private val context: Context) {
                 part.delete(); identity.delete()
                 throw IOException("range_identity")
             }
-            val reclaimable = if (offset == 0L) part.length() else 0L
-            if (folder.usableSpace + reclaimable < file.size - offset + 64 * 1024) throw IOException("storage")
             val etag = connection.getHeaderField("ETag").orEmpty()
             atomicWrite(identity, JSONObject().put("url", url).put("etag", etag).put("sha256", file.sha256).toString())
+            dev.photopilot.scaffold.data.remote.DiskReservations.shared.reserve(file.size - offset, { folder.usableSpace }).use { claim ->
             connection.inputStream.use { input ->
                 java.io.FileOutputStream(part, offset > 0).use { output ->
                     val buffer = ByteArray(128 * 1024)
                     var count = offset
                     while (true) {
-                        currentCoroutineContext().ensureActive()
+                        ensureCanContinue(shouldStop)
                         checkNetwork(allowMetered)
                         val read = input.read(buffer)
                         if (read < 0) break
                         count += read
                         if (count > file.size) throw IOException("size")
-                        output.write(buffer, 0, read)
+                        ensureCanContinue(shouldStop)
+                        claim.write(read) { output.write(buffer, 0, read) }
                         progress(count)
                     }
                     output.fd.sync()
                 }
             }
+            }
+            ensureCanContinue(shouldStop)
             if (part.length() != file.size || hash(part) != file.sha256) { part.delete(); identity.delete(); throw IOException("integrity") }
-            currentCoroutineContext().ensureActive()
+            ensureCanContinue(shouldStop)
             val destination = File(folder, file.name)
             if (!part.renameTo(destination)) throw IOException("install")
             atomicWrite(File(folder, file.name + ".verified"), file.sha256)
             identity.delete()
-        } finally { connection.disconnect() }
+        } finally {
+            connections.remove(model.id, connection)
+            runCatching { connection.disconnect() }
+        }
+    }
+    private suspend fun ensureCanContinue(shouldStop: () -> Boolean) {
+        currentCoroutineContext().ensureActive()
+        if (shouldStop()) throw IOException("system_pause")
     }
     private fun checkNetwork(allowMetered: Boolean) {
         val manager = context.getSystemService(android.net.ConnectivityManager::class.java)

@@ -24,6 +24,10 @@ class AIFrameView(
     private val onChanged: () -> Unit,
     private val restoredDraft: Map<String, String>? = null,
 ) : LinearLayout(context) {
+    var onManageModels: ((String) -> Unit)? = null
+    private var draftId = restoredDraft?.get("draftId") ?: java.util.UUID.randomUUID().toString()
+    private var shownTaskGeneration: Long? = null
+    private var shownLibraryVersion: Long? = null
     var onLocalPhotos: (() -> Unit)? = null
     var onLocalFiles: (() -> Unit)? = null
     var onConnect: (() -> Unit)? = null
@@ -62,8 +66,6 @@ class AIFrameView(
     private var nameOverrides = emptyList<String>()
     private val results = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
     private val trackedFrames = mutableListOf<String>()
-    private var download: Job? = null
-    private var previewJob: Job? = null
     private var activePreviewIdentity: String? = null
     private var pendingPreview: List<AIPreview>? = null
     private var previewIdentity: String? = null
@@ -114,21 +116,13 @@ class AIFrameView(
         label(words("例如家人、宠物、海边，每行一个类别。预览后可修改名称和选片。", "For example, family, pets or the beach, one category per line. Edit names and photo selections in the preview."))
         column.addView(descriptions)
         modelPicker.adapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, environment.aiFrames.models.models.map { if (chinese) it.chinese else it.english })
-        sourcePicker.adapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, listOf(words("自动下载源", "Automatic download source"), words("国内下载源", "Domestic source"), words("国际下载源", "International source")))
         modelSection.body.addView(modelPicker)
-        modelSection.body.addView(sourcePicker)
         modelSection.body.addView(modelStatus)
+        modelSection.body.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, dev.photopilot.scaffold.R.string.common_settings).apply {
+            text = words("管理 / 下载模型", "Manage / download models")
+            setOnClickListener { onManageModels?.invoke(selectedModel().id) }
+        })
         column.addView(modelSection, LayoutParams(-1, -2).apply { topMargin = dp(16) })
-        downloadButton = button(words("下载模型", "Download model")) { confirmDownload() }
-        cancelDownloadButton = button(words("取消下载", "Cancel download")) { download?.cancel() }
-        deleteModelButton = button(words("删除此模型", "Delete selected model")) {
-            val model = selectedModel()
-            scope.launch { withContext(Dispatchers.IO) { environment.aiFrames.deleteModel(model) }; updateModelStatus() }
-        }
-        listOfNotNull(downloadButton, cancelDownloadButton, deleteModelButton).forEach {
-            column.removeView(it)
-            modelSection.body.addView(it)
-        }
         val advancedStart = column.childCount
         label(words("包含描述（每行一条，可选）", "Include descriptions (one per line, optional)"))
         column.addView(includes)
@@ -157,9 +151,11 @@ class AIFrameView(
         column.addView(automatic)
         automatic.setOnCheckedChangeListener { _, enabled ->
             if (initialized && existingFrame != null) scope.launch {
-                previewJob?.takeIf { it.isActive }?.cancel()
                 environment.aiFrames.setAutomatic(existingFrame.id, enabled)
-                previewRevision = withContext(Dispatchers.IO) { environment.aiFrames.state.get(existingFrame.id)?.revision ?: 0 }
+                previewRevision = withContext(Dispatchers.IO) {
+                    environment.aiFrames.tasks.refreshFrameRevision(draftId)
+                    environment.aiFrames.state.get(existingFrame.id)?.revision ?: 0
+                }
                 status.text = words("自动分类设置已保存", "Automatic classification setting saved")
                 onChanged()
             }
@@ -170,18 +166,14 @@ class AIFrameView(
         footer.addView(status, LayoutParams(-1, -2))
         footer.addView(startButton, LayoutParams(-1, -2))
         addView(footer, LayoutParams(-1, -2))
-        cancelButton = button(words("取消分类", "Cancel classification")) {
-            previewJob?.cancel()
-            activePreviewIdentity = null
-            restoredPreviewIdentity = null
-            restoredPreviewNames = null
-            restoredPreviewChoices = null
-            pendingPreview = null
-            results.removeAllViews()
-            trackedFrames.forEach(environment.aiFrames::cancel)
-            updateActions()
+        cancelButton = button(words("暂停并查看结果", "Pause and view results")) {
+            environment.aiFrames.tasks.pause(draftId)
+            trackedFrames.forEach(environment.aiFrames::pause)
         }
-        resumeButton = button(words("继续 / 重新扫描", "Resume / scan again")) { trackedFrames.forEach(environment.aiFrames::scan) }
+        resumeButton = button(words("继续分类", "Continue classification")) {
+            if (trackedFrames.isNotEmpty()) trackedFrames.forEach(environment.aiFrames::resume)
+            else scope.launch { environment.aiFrames.tasks.continueTask(draftId) }
+        }
         column.addView(results)
         modelPicker.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: AdapterView<*>?) = Unit
@@ -206,8 +198,12 @@ class AIFrameView(
                 trackedFrames.add(configuration.frameId)
             }
             if (configuration == null) threshold.setText(selectedModel().defaultThreshold.toString())
-            val pendingDraft = restoredDraft ?: if (existingFrame == null) withContext(Dispatchers.IO) { environment.aiFrames.lastPreviewDraft() } else null
+            val lastDraft = restoredDraft ?: if (existingFrame == null) withContext(Dispatchers.IO) { environment.aiFrames.lastPreviewDraft() } else null
+            val pendingDraft = if (restoredDraft == null && lastDraft != null) {
+                lastDraft["draftId"]?.let { environment.aiFrames.tasks.record(it)?.draft }?.takeIf { it.isNotEmpty() } ?: lastDraft
+            } else lastDraft
             pendingDraft?.let { draft ->
+                draftId = draft["draftId"] ?: draftId
                 descriptions.setText(draft["descriptions"] ?: descriptions.text)
                 includes.setText(draft["includes"] ?: includes.text)
                 excludes.setText(draft["excludes"] ?: excludes.text)
@@ -223,14 +219,13 @@ class AIFrameView(
             initialized = true
             updateFolderSummary()
             updateModelStatus()
-            refreshProgress()
-            if (restoredDraft?.get("previewReady") == "true") {
-                restoredPreviewNames = org.json.JSONArray(restoredDraft["previewNames"] ?: "[]").let(AIConfiguration::strings)
-                val choices = org.json.JSONArray(restoredDraft["previewChoices"] ?: "[]")
+            if (pendingDraft?.get("previewReady") == "true") {
+                restoredPreviewNames = org.json.JSONArray(pendingDraft["previewNames"] ?: "[]").let(AIConfiguration::strings)
+                val choices = org.json.JSONArray(pendingDraft["previewChoices"] ?: "[]")
                 restoredPreviewChoices = (0 until choices.length()).map { AIConfiguration.strings(choices.getJSONArray(it)).toSet() }
                 restoredPreviewIdentity = formIdentity()
-                previewAndShow()
             }
+            refreshProgress()
         }
     }
     private fun dp(value: Int) = (resources.displayMetrics.density * value).toInt()
@@ -305,11 +300,11 @@ class AIFrameView(
         val identity = formIdentity()
         val currentPreview = pendingPreview != null && previewIdentity == identity
         val currentRestore = restoredPreviewIdentity == identity
-        val scanningCurrent = previewJob?.isActive == true && activePreviewIdentity == identity
+        val scanningCurrent = environment.aiFrames.tasks.running(draftId) && activePreviewIdentity == identity
         val names = if (currentRestore) restoredPreviewNames.orEmpty() else if (currentPreview) previewNames.map { it.text.toString() } else emptyList()
         val choices = if (currentRestore) restoredPreviewChoices.orEmpty() else if (currentPreview) previewChosen else emptyList()
         return mapOf(
-        "descriptions" to descriptions.text.toString(), "includes" to includes.text.toString(),
+        "draftId" to draftId, "descriptions" to descriptions.text.toString(), "includes" to includes.text.toString(),
         "excludes" to excludes.text.toString(), "names" to nameOverrides.joinToString("\n"), "threshold" to threshold.text.toString(),
         "recursive" to recursive.isChecked.toString(), "automatic" to automatic.isChecked.toString(), "allIncludes" to allIncludes.isChecked.toString(),
         "folders" to org.json.JSONArray(collectionChecks.filterValues { it.isChecked }.keys.toList()).toString(),
@@ -341,8 +336,8 @@ class AIFrameView(
         return button
     }
     private fun updateActions() {
-        val downloading = download?.isActive == true
-        val scanning = previewJob?.isActive == true
+        val downloading = false
+        val scanning = environment.aiFrames.tasks.running(draftId)
         val savedScanning = trackedFrames.any(environment.aiFrames::isRunning)
         modelPicker.isEnabled = !downloading && !scanning && !savingPreview
         sourcePicker.isEnabled = !downloading && !savingPreview
@@ -359,7 +354,7 @@ class AIFrameView(
         val currentPreview = pendingPreview != null && previewIdentity == formIdentity()
         startButton?.visibility = if (currentPreview) View.GONE else View.VISIBLE
         confirmPreviewButton?.visibility = if (currentPreview) View.VISIBLE else View.GONE
-        confirmPreviewButton?.isEnabled = currentPreview && !savingPreview && (existingFrame != null || previewChosen.any { it.isNotEmpty() })
+        confirmPreviewButton?.isEnabled = currentPreview && !savingPreview
         if (pendingPreview != null && !currentPreview && !savingPreview) {
             val message = words("规则已修改，请重新预览", "Rules changed. Run preview again")
             if (status.text.toString() != message) status.text = message
@@ -367,42 +362,20 @@ class AIFrameView(
         startButton?.text = when {
             !supported -> words("选择兼容模型", "Choose compatible model")
             ready -> words("扫描并预览", "Scan and preview")
-            else -> words("下载模型", "Download model")
+            else -> words("前往下载模型", "Manage model download")
         }
         startButton?.setOnClickListener {
             when {
                 !supported -> modelSection.setExpanded(true)
                 ready -> previewAndShow()
-                else -> { modelSection.setExpanded(true); confirmDownload() }
+                else -> onManageModels?.invoke(selectedModel().id)
             }
         }
-        cancelButton?.visibility = if (scanning || savedScanning || pendingPreview != null) View.VISIBLE else View.GONE
+        cancelButton?.visibility = if (scanning || savedScanning) View.VISIBLE else View.GONE
         cancelButton?.isEnabled = !savingPreview
         listOfNotNull(downloadButton, deleteModelButton, startButton).forEach { it.alpha = if (it.isEnabled) 1f else .4f }
-        resumeButton?.visibility = if (trackedFrames.isNotEmpty() && !scanning && !savedScanning) View.VISIBLE else View.GONE
+        resumeButton?.visibility = if ((trackedFrames.isNotEmpty() || environment.aiFrames.tasks.cached(draftId)?.status in listOf("user_paused", "system_paused", "failed", "waiting", "needs_resume")) && !scanning && !savedScanning) View.VISIBLE else View.GONE
         resumeButton?.isEnabled = !savingPreview
-    }
-    private fun confirmDownload() {
-        val manager = context.getSystemService(android.net.ConnectivityManager::class.java)
-        val capabilities = manager.getNetworkCapabilities(manager.activeNetwork)
-        if (capabilities?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED) != true) {
-            AlertDialog.Builder(context).setMessage(words("模型下载约 %.1f MB，是否使用当前网络？", "Download approximately %.1f MB over this network?").format(selectedModel().bytes / 1e6)).setNegativeButton(words("取消", "Cancel"), null).setPositiveButton(words("下载", "Download")) { _, _ -> downloadModel(true) }.show()
-        } else downloadModel(false)
-    }
-    private fun downloadModel(allowMetered: Boolean) {
-        if (download?.isActive == true) return
-        val model = selectedModel()
-        val source = listOf("auto", "domestic", "international")[sourcePicker.selectedItemPosition]
-        download = scope.launch {
-            try {
-                withContext(Dispatchers.IO) { environment.aiFrames.models.download(model, source, allowMetered) { bytes, total -> post { modelStatus.text = words("下载中", "Downloading") + " ${bytes * 100 / total}%" } } }
-                updateModelStatus()
-                environment.aiFrames.resumeAutomatic()
-            } catch (_: CancellationException) { modelStatus.text = words("下载已取消，可继续", "Download cancelled, resume available") }
-            catch (_: Exception) { modelStatus.text = words("下载失败，请检查网络、下载源与可用空间后重试", "Download failed. Check network, source and free space, then retry") }
-            finally { post { updateActions() } }
-        }
-        updateActions()
     }
     private fun lines(input: EditText) = input.text.toString().lines().map(String::trim).filter(String::isNotEmpty)
     private fun formIdentity(): String = listOf(selectedModel().id, collectionChecks.filterValues { it.isChecked }.keys.joinToString(), recursive.isChecked, descriptions.text, includes.text, excludes.text, allIncludes.isChecked, threshold.text).joinToString("|" )
@@ -434,6 +407,13 @@ class AIFrameView(
         }
     }
     private fun previewAndShow() {
+        if (environment.aiFrames.tasks.cached(draftId)?.status == "saved") {
+            if (existingFrame == null) {
+                scope.launch { environment.aiFrames.tasks.continueTask(draftId) }
+                return
+            }
+            draftId = java.util.UUID.randomUUID().toString()
+        }
         val rules = rules() ?: return
         if (!environment.aiFrames.models.ready(selectedModel())) { status.text = words("请先下载模型", "Download the model first"); return }
         val model = selectedModel()
@@ -449,22 +429,16 @@ class AIFrameView(
         activePreviewIdentity = identity
         pendingPreview = null
         results.removeAllViews()
-        previewJob = scope.launch {
+        scope.launch {
             try {
-                if (restoredPreviewIdentity == identity) {
-                    while (!environment.aiFrames.foreground) delay(100)
-                }
                 val draft = draftState()
-                if (existingFrame == null) withContext(Dispatchers.IO) { environment.aiFrames.savePreviewDraft(draft) }
-                previewRevision = withContext(Dispatchers.IO) { existingFrame?.let { environment.aiFrames.state.get(it.id)?.revision } ?: 0 }
-                val previews = withContext(Dispatchers.IO) { environment.aiFrames.preview(model, sources, recursiveSelection, rules, existingFrame?.id) { count, total -> post { status.text = words("预览分类中", "Classifying preview") + " $count / $total" } } }
-                if (formIdentity() != identity) { status.text = words("规则已修改，请重新预览", "Rules changed. Run preview again"); return@launch }
-                pendingPreview = previews
-                previewIdentity = identity
-                showPreview(previews)
-            } catch (_: CancellationException) { status.text = words("预览已取消", "Preview cancelled") }
-            catch (failure: Exception) { status.text = errorText(failure) }
-            finally { post { updateActions() } }
+                withContext(Dispatchers.IO) {
+                    if (existingFrame == null) environment.aiFrames.savePreviewDraft(draft)
+                    environment.aiFrames.tasks.startPreview(draftId, model, sources, recursiveSelection, rules, existingFrame?.id, draft)
+                }
+                shownTaskGeneration = null
+                refreshProgress()
+            } catch (failure: Exception) { status.text = errorText(failure) }
         }
         updateActions()
     }
@@ -477,8 +451,15 @@ class AIFrameView(
         else -> words("操作失败，请检查模型并重试。", "Operation failed. Check the model and retry.")
     }
     private fun showPreview(previews: List<AIPreview>) {
+        confirmPreviewButton?.let { footer.removeView(it) }
         results.removeAllViews()
-        status.text = words("预览完成，确认后保存相框。边界照片默认不勾选，失败照片保留旧结果，可重试。", "Preview complete. Confirm to save frames. Borderline photos are unchecked. Failed photos keep their previous results and can be retried.")
+        val progress = previews.first()
+        status.text = if (progress.isComplete) words("预览完成 · ${progress.scannedCount} / ${progress.totalCount}，确认后保存相框。", "Preview complete · ${progress.scannedCount} / ${progress.totalCount}. Confirm to save frames.")
+            else words("已暂停 · 已扫描 ${progress.scannedCount} / ${progress.totalCount}。可保存所有类别相框（含 0 张照片），后续明确继续分类。", "Paused · ${progress.scannedCount} / ${progress.totalCount} scanned. Save all category frames, including empty ones, then explicitly continue later.")
+        results.addView(TextView(context).apply { text = words("待确认照片默认不勾选。失败与未扫描照片保留旧结果。", "Review photos are unchecked. Failed and unscanned photos keep their previous results.") })
+        environment.aiFrames.tasks.cached(draftId)?.reason?.let { reason ->
+            results.addView(TextView(context).apply { text = aiPauseExplanation(reason, chinese) })
+        }
         previewNames = previews.mapIndexed { index, preview ->
             val suggested = preview.suggestedNames(chinese)
             val name = input(words("相框名称", "Frame name"), true).apply { setText(restoredPreviewNames?.getOrNull(index) ?: nameOverrides.getOrNull(index) ?: suggested.firstOrNull() ?: preview.rule.description.take(60)) }
@@ -487,24 +468,29 @@ class AIFrameView(
             results.addView(name)
             if (suggested.isNotEmpty()) results.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, dev.photopilot.scaffold.R.string.common_done).apply { text = words("建议名称", "Suggested names"); setOnClickListener { AlertDialog.Builder(context).setItems(suggested.toTypedArray()) { _, choice -> name.setText(suggested[choice]) }.show() } })
             results.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, dev.photopilot.scaffold.R.string.common_done).apply { text = words("选择 / 预览照片", "Select / preview photos"); setOnClickListener { selectPreviewPhotos(preview, index) } })
-            if (preview.matches.isEmpty() && preview.reviews.isEmpty()) results.addView(TextView(context).apply { text = words("没有匹配照片，请调整规则后重新预览。", "No photos matched. Adjust the rules and preview again.") })
+            if (preview.isComplete && preview.matches.isEmpty() && preview.reviews.isEmpty()) results.addView(TextView(context).apply { text = words("没有匹配照片，请调整规则后重新预览。", "No photos matched. Adjust the rules and preview again.") })
             name
         }
         previewChosen = previews.mapIndexed { index, preview ->
             val available = preview.matches.keys + preview.reviews.keys
             (restoredPreviewChoices?.getOrNull(index)?.intersect(available) ?: preview.matches.keys).toMutableSet()
         }
+        val draftWatcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) { environment.aiFrames.tasks.rememberDraft(draftId, draftState()) }
+        }
+        previewNames.forEach { it.addTextChangedListener(draftWatcher) }
         restoredPreviewNames = null
         restoredPreviewChoices = null
         restoredPreviewIdentity = null
         confirmPreviewButton?.let(footer::removeView)
         confirmPreviewButton = dev.photopilot.scaffold.ui.widget.primaryButton(context, dev.photopilot.scaffold.R.string.common_done).apply {
             text = if (existingFrame == null) words("确认创建相框", "Confirm frame creation") else words("确认保存结果", "Confirm results")
-            isEnabled = existingFrame != null || previews.any { it.matches.isNotEmpty() || it.reviews.isNotEmpty() }
+            isEnabled = true
             setOnClickListener {
                 if (savingPreview) return@setOnClickListener
                 if (formIdentity() != previewIdentity) { status.text = words("规则已修改，请重新预览", "Rules changed. Run preview again"); return@setOnClickListener }
-                if (existingFrame == null && previewChosen.all { it.isEmpty() }) { status.text = words("请至少选择一张照片后确认", "Select at least one photo before confirming"); return@setOnClickListener }
                 savingPreview = true
                 isEnabled = false
                 status.text = words("正在保存相框…", "Saving frames…")
@@ -515,7 +501,7 @@ class AIFrameView(
                 val revision = previewRevision
                 scope.launch {
                     try {
-                        val saved = withContext(Dispatchers.IO) { environment.aiFrames.savePreviews(previews, confirmedNames, confirmedChoices, automaticSelection, existingFrame?.id, revision) }
+                        val saved = withContext(Dispatchers.IO) { environment.aiFrames.tasks.confirm(draftId, confirmedNames, confirmedChoices, automaticSelection) }
                         trackedFrames.addAll(saved.filter { it !in trackedFrames })
                         pendingPreview = null
                         retiredModelNotice = false
@@ -563,36 +549,101 @@ class AIFrameView(
                 if (id.startsWith("remote:")) environment.remoteMedia.item(id.removePrefix("remote:"))
                 else environment.database.assetDao().getById(id)?.let { dev.photopilot.scaffold.data.remote.PlaybackItem(local = it) }
             } }
-            val images = mutableListOf<android.graphics.Bitmap>()
             val list = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
             for (asset in assets) {
-                val image = ImageView(context).apply { adjustViewBounds = true; maxHeight = (240 * resources.displayMetrics.density).toInt() }
-                val bitmap = withContext(Dispatchers.IO) { runCatching { environment.remoteMedia.bitmap(asset, 256, 256) }.getOrNull() }
-                bitmap?.let { images.add(it); image.setImageBitmap(it) }
+                if (!environment.remoteMedia.valid(asset)) continue
+                val check = CheckBox(context).apply {
+                    text = "%.3f".format(preview.matches[asset.id] ?: preview.reviews[asset.id])
+                    isChecked = asset.id in previewChosen[category]
+                    setOnCheckedChangeListener { _, checked ->
+                        if (checked) previewChosen[category].add(asset.id) else previewChosen[category].remove(asset.id)
+                        updateActions()
+                    }
+                }
+                val image = dev.photopilot.scaffold.ui.remote.RemoteThumbnailView(context, environment.remoteMedia, asset, 256).apply {
+                    adjustViewBounds = true
+                    minimumHeight = dp(160)
+                    maxHeight = dp(240)
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    onUnavailable = {
+                        check.isChecked = false
+                        check.isEnabled = false
+                    }
+                }
                 list.addView(image)
-                list.addView(CheckBox(context).apply { text = "%.3f".format(preview.matches[asset.id] ?: preview.reviews[asset.id]); isChecked = asset.id in previewChosen[category]; setOnCheckedChangeListener { _, checked ->
-                    if (checked) previewChosen[category].add(asset.id) else previewChosen[category].remove(asset.id)
-                    updateActions()
-                } })
+                list.addView(check)
             }
+            if (!isAttachedToWindow) return@launch
             val builder = AlertDialog.Builder(context).setTitle(words("预览图片", "Preview photos")).setView(ScrollView(context).apply { addView(list) }).setPositiveButton(words("完成", "Done"), null)
             if ((page + 1) * 12 < ids.size) builder.setNeutralButton(words("下一页", "Next page")) { _, _ -> previewImages(preview, ids, category, page + 1) }
-            builder.create().apply { setOnDismissListener { images.clear() }; show() }
+            builder.show()
         }
     }
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         polling = scope.launch { while (isActive) { refreshProgress(); delay(1500) } }
     }
-    override fun onDetachedFromWindow() { polling?.cancel(); sourceReload?.cancel(); download?.cancel(); previewJob?.cancel(); super.onDetachedFromWindow() }
+    override fun onDetachedFromWindow() {
+        polling?.cancel()
+        sourceReload?.cancel()
+        environment.aiFrames.tasks.rememberDraft(draftId, draftState(), immediate = true)
+        super.onDetachedFromWindow()
+    }
     private suspend fun refreshProgress() {
+        if (!initialized) return
+        val libraryVersion = withContext(Dispatchers.IO) { dev.photopilot.scaffold.data.repo.LibraryVersionRepository(environment.database.settingsKvDao()).current() ?: 0L }
+        if (pendingPreview != null && shownLibraryVersion != libraryVersion) {
+            restoredPreviewNames = previewNames.map { it.text.toString() }
+            restoredPreviewChoices = previewChosen.map { it.toSet() }
+            restoredPreviewIdentity = formIdentity()
+            shownTaskGeneration = null
+        }
+        val task = withContext(Dispatchers.IO) { environment.aiFrames.tasks.record(draftId) }
+        if (task?.status == "saved") trackedFrames.addAll(task.frameIds.filter { it !in trackedFrames })
+        if (task?.status in listOf("deleted", "deleting", "model_missing")) {
+            pendingPreview = null
+            previewIdentity = null
+            shownTaskGeneration = null
+            results.removeAllViews()
+            updateModelStatus()
+        }
+        if (task != null && task.rules == rules() && task.modelId == selectedModel().id && task.collections.toSet() == collectionChecks.filterValues { it.isChecked }.keys && task.recursive == recursive.isChecked) {
+            if (environment.aiFrames.tasks.running(draftId)) {
+                status.text = if (task.status == "queued") words("等待模型或其他分类任务…", "Waiting for the model or another classification task…")
+                    else words("分类中 ${task.done} / ${task.total}", "Classifying ${task.done} / ${task.total}")
+            }
+            else if (shownTaskGeneration != task.generation && task.status != "saved") {
+                val requestedDraft = draftId
+                val requestedIdentity = formIdentity()
+                val requestedGeneration = task.generation
+                val previews = withContext(Dispatchers.IO) { environment.aiFrames.tasks.previewResult(requestedDraft) }
+                val latest = environment.aiFrames.tasks.cached(requestedDraft)
+                val currentLibraryVersion = withContext(Dispatchers.IO) { dev.photopilot.scaffold.data.repo.LibraryVersionRepository(environment.database.settingsKvDao()).current() ?: 0L }
+                if (currentLibraryVersion != libraryVersion || !isAttachedToWindow || draftId != requestedDraft || formIdentity() != requestedIdentity || latest?.generation != requestedGeneration || latest.status in listOf("deleted", "deleting", "saved", "model_missing")) {
+                    status.text = words("配置或任务已变更，请重新预览。", "Configuration or task changed. Run preview again.")
+                    updateActions()
+                    return
+                }
+                if (previews != null) {
+                    pendingPreview = previews
+                    previewIdentity = requestedIdentity
+                    previewRevision = task.frameRevision
+                    shownTaskGeneration = requestedGeneration
+                    shownLibraryVersion = libraryVersion
+                    showPreview(previews)
+                }
+            }
+        }
+        if (task != null && !environment.aiFrames.tasks.running(draftId) && pendingPreview == null && task.status in listOf("failed", "waiting", "system_paused", "needs_resume")) {
+            status.text = aiPauseExplanation(task.reason, chinese)
+        }
         updateActions()
-        if (previewJob?.isActive == true || pendingPreview != null) return
+        if (environment.aiFrames.tasks.running(draftId) || pendingPreview != null) return
         val configurations = withContext(Dispatchers.IO) { trackedFrames.mapNotNull { environment.aiFrames.state.get(it) } }
         if (configurations.isEmpty()) return
         status.text = configurations.joinToString("\n") { c ->
-            val state = if (environment.aiFrames.models.models.none { it.id == c.modelId && it.revision == c.modelRevision }) words("旧模型已替换，请选择新模型并重新预览", "The previous model was replaced. Select a model and preview again") else when (c.status) { "running" -> words("分类中", "Classifying"); "complete" -> words("已完成", "Complete"); "cancelled" -> words("已取消，可继续", "Cancelled, resumable"); "paused" -> words("已暂停", "Paused"); "model_missing" -> words("请下载模型以继续分类", "Download the model to continue classification"); "runtime_unavailable" -> words("此设备无法运行标准模型，请选择紧凑版模型。", "This device cannot run the standard model. Choose the compact model."); "failed" -> words("失败，请重试", "Failed, retry available"); else -> words("待开始", "Ready") }
-            "${c.rule.description} · $state · " + words("已处理 ${c.completed}，入选 ${c.members.size}，待确认 ${c.reviews.size}，失败 ${c.failed}", "${c.completed} processed, ${c.members.size} matched, ${c.reviews.size} to review, ${c.failed} failed")
+            val state = if (environment.aiFrames.models.models.none { it.id == c.modelId && it.revision == c.modelRevision }) words("旧模型已替换，请选择新模型并重新预览", "The previous model was replaced. Select a model and preview again") else if (c.userPaused) words("手动暂停，待继续", "Paused by you, ready to continue") else when (c.status) { "running" -> words("分类中", "Classifying"); "complete" -> words("已完成", "Complete"); "cancelled" -> words("已取消，可继续", "Cancelled, resumable"); "paused" -> words("已暂停", "Paused"); "model_missing" -> words("请下载模型以继续分类", "Download the model to continue classification"); "runtime_unavailable" -> words("此设备无法运行标准模型，请选择紧凑版模型。", "This device cannot run the standard model. Choose the compact model."); "failed" -> words("失败，请重试", "Failed, retry available"); else -> words("待开始", "Ready") }
+            "${c.rule.description} · $state · " + (c.pauseReason?.let { aiPauseExplanation(it, chinese) + " " }.orEmpty()) + words("已处理 ${c.completed}，入选 ${c.members.size}，待确认 ${c.reviews.size}，失败 ${c.failed}", "${c.completed} processed, ${c.members.size} matched, ${c.reviews.size} to review, ${c.failed} failed")
         }
         if (configurations.any { it.status == "running" }) return
         results.removeAllViews()

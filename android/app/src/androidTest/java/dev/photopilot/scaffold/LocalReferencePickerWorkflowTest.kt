@@ -32,6 +32,7 @@ class LocalReferencePickerWorkflowTest {
     private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
     private val key = "test.reference.native-picker"
     private var systemClicks = 0
+    private val preserveForRestart get() = InstrumentationRegistry.getArguments().getString("preservePickerFixture") == "true"
 
     @Test fun prepareThroughSystemFilePickerAndSaveSelection() = runBlocking {
         val context = instrumentation.targetContext
@@ -39,6 +40,8 @@ class LocalReferencePickerWorkflowTest {
         if (android.os.Build.VERSION.SDK_INT >= 33) context.getSystemService(android.app.LocaleManager::class.java).applicationLocales = android.os.LocaleList.forLanguageTags(language)
         val env = AppEnvironment.shared(context)
         env.settings.setLanguage(language)
+        val framesBefore = env.database.frameDao().getAll().map { it.id }.toSet()
+        val sourcesBefore = env.database.sourceDao().getAll().map { it.id }.toSet()
         val resolver = context.contentResolver
         val name = "PhotoPilot-reference-${System.currentTimeMillis()}.png"
         val uri = requireNotNull(resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ContentValues().apply {
@@ -132,6 +135,7 @@ class LocalReferencePickerWorkflowTest {
         } finally {
             capture("reference-picker-before-finish")
             instrumentation.runOnMainSync { activity.finish() }
+            if (!preserveForRestart) cleanupPreparation(env, framesBefore, sourcesBefore, uri, key)
         }
         Unit
     }
@@ -142,6 +146,8 @@ class LocalReferencePickerWorkflowTest {
         if (android.os.Build.VERSION.SDK_INT >= 33) context.getSystemService(android.app.LocaleManager::class.java).applicationLocales = android.os.LocaleList.forLanguageTags(language)
         val env = AppEnvironment.shared(context)
         env.settings.setLanguage(language)
+        val framesBefore = env.database.frameDao().getAll().map { it.id }.toSet()
+        val sourcesBefore = env.database.sourceDao().getAll().map { it.id }.toSet()
         val resolver = context.contentResolver
         val name = "PhotoPilot-tree-${System.currentTimeMillis()}.png"
         val uri = requireNotNull(resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ContentValues().apply {
@@ -209,7 +215,10 @@ class LocalReferencePickerWorkflowTest {
             val metadata = JsonMini.parseObject(env.database.settingsKvDao().get("reference.asset.${selected.id}")?.valueJson)
             val now = System.currentTimeMillis()
             env.database.settingsKvDao().upsert(SettingsKvEntity("$key.tree", JsonMini.toJson(mapOf("sourceId" to source.id, "assetId" to selected.id, "frameId" to frame.id, "uri" to metadata["uri"], "grantUri" to grantUri, "fixtureUri" to uri.toString(), "pid" to android.os.Process.myPid())), now, now))
-        } finally { instrumentation.runOnMainSync { activity.finish() } }
+        } finally {
+            instrumentation.runOnMainSync { activity.finish() }
+            if (!preserveForRestart) cleanupPreparation(env, framesBefore, sourcesBefore, uri, "$key.tree")
+        }
         Unit
     }
 
@@ -253,6 +262,14 @@ class LocalReferencePickerWorkflowTest {
             env.database.settingsKvDao().get(stateKey)?.let { env.database.settingsKvDao().delete(it) }
         }
         Unit
+    }
+
+    private suspend fun cleanupPreparation(env: AppEnvironment, framesBefore: Set<String>, sourcesBefore: Set<String>, fixture: Uri, stateKey: String) {
+        env.database.frameDao().getAll().filter { it.id !in framesBefore }.forEach { env.frameManager.deleteFrame(it.id) }
+        env.database.sourceDao().getAll().filter { it.id !in sourcesBefore && env.localReferences.isReference(it) }
+            .forEach { env.localSources.disconnect(it.id, true, System.currentTimeMillis(), removeConfiguration = true) }
+        env.database.settingsKvDao().deleteKey(stateKey)
+        deleteFixture(fixture)
     }
 
     private fun deleteFixture(uri: Uri) {
@@ -333,7 +350,23 @@ class LocalReferencePickerWorkflowTest {
         instrumentation.runOnMainSync { view.requestRectangleOnScreen(Rect(0, 0, view.width, view.height), true) }
         SystemClock.sleep(350)
         val visible = Rect()
-        instrumentation.runOnMainSync { assertTrue("Control must be visible", view.getGlobalVisibleRect(visible)) }
+        var target = view
+        val label = (view as? TextView)?.text?.toString()
+        var shown = false
+        repeat(50) {
+            if (!shown) {
+                instrumentation.runOnMainSync {
+                    if (!target.isAttachedToWindow && label != null) {
+                        android.view.inspector.WindowInspector.getGlobalWindowViews().flatMap(::descendants)
+                            .filterIsInstance<TextView>().lastOrNull { it.javaClass == view.javaClass && it.text.toString() == label && it.isShown }?.let { target = it }
+                    }
+                    target.requestRectangleOnScreen(Rect(0, 0, target.width, target.height), true)
+                    shown = target.getGlobalVisibleRect(visible)
+                }
+                if (!shown) SystemClock.sleep(50)
+            }
+        }
+        assertTrue("Control must be visible", shown)
         touchAt(visible.exactCenterX(), visible.exactCenterY())
     }
     private fun touchAt(x: Float, y: Float) {

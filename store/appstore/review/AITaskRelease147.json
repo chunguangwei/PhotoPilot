@@ -1,0 +1,79 @@
+{
+  "version": "1.4.7",
+  "build": 68,
+  "status": "release_prepared",
+  "changes": [
+    "Persistent user pause and partial frame creation",
+    "Resume unfinished or changed classification inputs",
+    "Settings model management with focused download navigation and retained drafts",
+    "Recoverable transfers and scan tasks",
+    "Privacy-aware restored drafts and revocable thumbnails",
+    "Compact zero-photo frame cards"
+  ],
+  "android": {
+    "jvmExecuted": 446,
+    "jvmFailures": 0,
+    "lintErrors": 0,
+    "lintWarnings": 203,
+    "nativeExecuted": 97,
+    "nativePassed": 93,
+    "nativeSkipped": 4,
+    "nativeFailures": 0,
+    "nativeSeconds": 380.727,
+    "postZeroCoverUITestsPassed": 5,
+    "crossProcessPreparePassed": 2,
+    "crossProcessVerifyPassed": 2,
+    "localSmbEndToEndPassed": 1,
+    "physicalDeviceAvailable": false,
+    "originalSignerPreserved": true,
+    "finalGradle": "9.1.0",
+    "finalBuildCacheMode": "isolated user and project caches with existing dependency cache",
+    "releaseRuntimeSmoke": "unavailable_missing_emulator_binary",
+    "postZeroCoverLargeTextMatrixPassed": 4,
+    "testDeviceStateRestored": true
+  },
+  "ios": {
+    "nativeExecuted": 322,
+    "nativeSkipped": 6,
+    "nativeFailures": 0,
+    "buildPassed": true,
+    "analyzePassed": true,
+    "installedPhoneVersion": "1.4.7",
+    "installedPhoneBuild": 68,
+    "phone": "iPhone 13",
+    "qaNas": "synthetic protocol fixture",
+    "shortBackgroundProgressVerified": true,
+    "ipadLayout": "simulator",
+    "executableSHA256": "dc7569c5f108428dbbfae4679cdc57a6b4cf458d4b658b78aef8e76292964400",
+    "signedArchive": "development"
+  },
+  "sharedTestsPassed": 58,
+  "aiToolTestsPassed": 6,
+  "appStore": {
+    "status": "waiting_for_user_physical_testing",
+    "uploadPerformed": false,
+    "reviewSubmissionPerformed": false
+  },
+  "knownObservations": [
+    "External review NAS SMB and HTTPS WebDAV ports timed out independently on host and emulator during this run",
+    "English 12-hour clock AM wraps at 360dp",
+    "Installed Emulator 37.2.13.0 launch binaries are missing and no existing cached copy was found; exact signed Release runtime was not rechecked"
+  ],
+  "assets": [
+    {
+      "name": "PhotoPilot-v1.4.7-68.apk",
+      "bytes": 154400910,
+      "sha256": "c4321375da3ec47d98c0ec246eaa0d0895317aabfedca1d17c4285d868b0d504"
+    },
+    {
+      "name": "AMSMB2-4.0.3-source.tar.gz",
+      "bytes": 329872,
+      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077"
+    },
+    {
+      "name": "SMBSourceManifest.json",
+      "bytes": 33554,
+      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e"
+    }
+  ]
+}

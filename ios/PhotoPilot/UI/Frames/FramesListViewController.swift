@@ -8,7 +8,9 @@ final class FramesListViewController: UIViewController {
     private let scrollView = UIScrollView()
     private let pageStack = UIStackView()
     private let header = UIStackView()
-    private let createButton = ActionButton(titleKey: "frames.create", style: .secondary)
+    private let createButton = UIButton(type: .system)
+    private let aiButton = UIButton(type: .system)
+    private let onlineButton = UIButton(type: .system)
     private var cardViews: [UIControl] = []
     private var columnCount = 0
     private var pageWidthConstraint: NSLayoutConstraint?
@@ -40,10 +42,28 @@ final class FramesListViewController: UIViewController {
 
         NotificationCenter.default.addObserver(self, selector: #selector(remoteMediaChanged), name: .remoteMediaChanged, object: nil)
         createButton.addTarget(self, action: #selector(handleCreate), for: .touchUpInside)
+        var createConfiguration = UIButton.Configuration.bordered()
+        createConfiguration.title = L10n.string("frames.create")
+        createConfiguration.image = UIImage(systemName: "plus")
+        createConfiguration.imagePadding = 8
+        createConfiguration.baseForegroundColor = ThemeColor.accentAction
+        createConfiguration.baseBackgroundColor = ThemeColor.panel
+        createConfiguration.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14)
+        createButton.configuration = createConfiguration
+        createButton.titleLabel?.font = ThemeFont.body()
+        createButton.titleLabel?.adjustsFontForContentSizeCategory = true
+        createButton.titleLabel?.numberOfLines = 0
+        createButton.accessibilityIdentifier = "frames.createOptions"
+        createButton.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
+        createButton.showsMenuAsPrimaryAction = true
+        createButton.menu = UIMenu(children: [
+            UIAction(title: AIText.value("Create AI frames", "AI 创建相框"), image: UIImage(systemName: "sparkles"), identifier: UIAction.Identifier("frames.createAI")) { [weak self] _ in self?.openAIFrames() },
+            UIAction(title: AIText.value("Online photos", "在线选片"), image: UIImage(systemName: "network"), identifier: UIAction.Identifier("frames.onlinePhotos")) { [weak self] _ in self?.openOnlinePhotos() },
+            UIAction(title: AIText.value("Select photos manually", "手动选片"), image: UIImage(systemName: "rectangle.stack")) { [weak self] _ in self?.handleCreate() }
+        ])
         titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         createButton.setContentHuggingPriority(.required, for: .horizontal)
         header.addArrangedSubview(titleLabel)
-        let aiButton = UIButton(type: .system)
         aiButton.setTitle(AIText.value("Create AI frames", "AI 创建相框"), for: .normal)
         aiButton.titleLabel?.font = ThemeFont.body()
         aiButton.titleLabel?.adjustsFontForContentSizeCategory = true
@@ -52,7 +72,6 @@ final class FramesListViewController: UIViewController {
         aiButton.accessibilityIdentifier = "frames.createAI"
         aiButton.addTarget(self, action: #selector(openAIFrames), for: .touchUpInside)
         header.addArrangedSubview(aiButton)
-        let onlineButton = UIButton(type: .system)
         onlineButton.setTitle(AIText.value("Online photos", "在线选片"), for: .normal)
         onlineButton.titleLabel?.font = ThemeFont.body()
         onlineButton.titleLabel?.adjustsFontForContentSizeCategory = true
@@ -127,7 +146,7 @@ final class FramesListViewController: UIViewController {
         }
         let availableWidth = width - 2 * inset
         let largeText = traitCollection.preferredContentSizeCategory.isAccessibilityCategory
-        let headerAxis: NSLayoutConstraint.Axis = availableWidth >= 480 && !largeText ? .horizontal : .vertical
+        let headerAxis: NSLayoutConstraint.Axis = !largeText && (!cards.isEmpty || availableWidth >= 480) ? .horizontal : .vertical
         if header.axis != headerAxis {
             header.axis = headerAxis
             header.alignment = headerAxis == .horizontal ? .center : .fill
@@ -180,6 +199,7 @@ final class FramesListViewController: UIViewController {
                    let firstID = (try? await environment.frames.buildPlayQueue(frameID: card.id))?.first {
                     relPath = firstID.hasPrefix("remote:") ? firstID : try? await environment.assets.fetchAsset(id: firstID)?.originalRelPath
                 }
+                let paused = (try? await environment.aiFrames.store.state(frameID: card.id))?.isUserPaused ?? false
                 enriched.append(FrameCardDTO(
                     id: card.id,
                     name: card.name,
@@ -188,7 +208,8 @@ final class FramesListViewController: UIViewController {
                     pendingCount: counts.pending,
                     updatedAt: card.updatedAt,
                     storageMode: card.storageMode,
-                    hasReferencedDevicePhotos: card.hasReferencedDevicePhotos
+                    hasReferencedDevicePhotos: card.hasReferencedDevicePhotos,
+                    aiPaused: paused
                 ))
             }
             cards = enriched
@@ -214,6 +235,8 @@ final class FramesListViewController: UIViewController {
         cardViews.removeAll()
         let isEmpty = cards.isEmpty
         cardsStack.isHidden = isEmpty
+        aiButton.isHidden = !isEmpty
+        onlineButton.isHidden = !isEmpty
         if isEmpty {
             createButton.removeFromSuperview()
         } else if createButton.superview == nil {
@@ -284,8 +307,6 @@ final class FramesListViewController: UIViewController {
         control.tag = index
         control.addTarget(self, action: #selector(handleOpenCard(_:for:)), for: .touchUpInside)
 
-        let cover = FrameCoverView(loader: loader, relPath: card.coverRelPath)
-        cover.heightAnchor.constraint(equalTo: cover.widthAnchor, multiplier: 10.0 / 16.0).isActive = true
 
         let nameLabel = UILabel()
         nameLabel.text = card.name
@@ -295,7 +316,7 @@ final class FramesListViewController: UIViewController {
         nameLabel.numberOfLines = 0
 
         let playableLabel = UILabel()
-        playableLabel.text = Self.playableCountText(for: card)
+        playableLabel.text = Self.playableCountText(for: card) + (card.aiPaused ? AIText.value(" · Paused, continue in AI settings", " · 已暂停，可在 AI 设置中继续") : "")
         playableLabel.font = ThemeFont.meta()
         playableLabel.adjustsFontForContentSizeCategory = true
         playableLabel.textColor = ThemeColor.textSecondary
@@ -351,7 +372,14 @@ final class FramesListViewController: UIViewController {
         details.isLayoutMarginsRelativeArrangement = true
         details.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16)
 
-        let content = UIStackView(arrangedSubviews: [cover, details])
+        var sections: [UIView] = []
+        if card.playableCount > 0 || card.coverRelPath != nil {
+            let cover = FrameCoverView(loader: loader, relPath: card.coverRelPath)
+            cover.heightAnchor.constraint(equalTo: cover.widthAnchor, multiplier: 10.0 / 16.0).isActive = true
+            sections.append(cover)
+        }
+        sections.append(details)
+        let content = UIStackView(arrangedSubviews: sections)
         content.axis = .vertical
         content.translatesAutoresizingMaskIntoConstraints = false
         control.addSubview(content)

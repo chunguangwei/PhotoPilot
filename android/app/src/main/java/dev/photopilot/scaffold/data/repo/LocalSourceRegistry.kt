@@ -247,7 +247,7 @@ class LocalSourceRegistry(
         val remoteIds = sourceAssets.map { it.id }.toSet()
         val collections = db.collectionDao().getAll().associateBy { it.id }
         val aiState = AIStateStore(db)
-        AIPreviewCheckpoint.invalidateAll(db)
+        AIPreviewCheckpoint.removeAssets(db, remoteIds.map { "remote:$it" }.toSet())
         for (frame in db.frameDao().getAll()) {
             val selections = db.frameSelectionDao().getByFrame(frame.id)
             val related = selections.filter { it.sourceAssetId in remoteIds }

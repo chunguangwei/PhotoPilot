@@ -26,7 +26,10 @@ class RemotePreviewRevocationTest {
     @Test fun shownPreviewClearsAfterSourceRevocation() = exercise(false)
     @Test fun delayedPreviewDoesNotDisplayAfterRevocation() = exercise(true)
 
-    private fun exercise(delayed: Boolean) = runBlocking {
+    @Test fun shownAIDraftPreviewClearsAfterSourceRevocation() = exercise(false, true)
+    @Test fun delayedAIDraftPreviewDoesNotDisplayAfterRevocation() = exercise(true, true)
+
+    private fun exercise(delayed: Boolean, aiPreview: Boolean = false) = runBlocking {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val env = AppEnvironment.shared(context)
@@ -56,15 +59,26 @@ class RemotePreviewRevocationTest {
         db.sourceDao().upsert(SourceEntity(id, SourceType.WEBDAV, "Preview fixture", id, null, null, 0, RetentionPolicy.USER_MANAGED, SourceStatus.ACTIVE, 1, null, "{\"catalogOnly\":true}", now, now))
         db.sourceAssetDao().upsert(SourceAssetEntity("$id-photo", id, "preview.png", null, "1", bytes.size.toLong(), null, now, 0, AccessState.ACCESSIBLE, now, now))
         val activity = instrumentation.startActivitySync(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        lateinit var view: RemoteFrameView
-        fun previewImages(): List<ImageView> = WindowInspector.getGlobalWindowViews().filter { root -> root !== activity.window.decorView && descendants(root).filterIsInstance<TextView>().any { it.text.toString() == "preview.png" } }.flatMap(::descendants).filterIsInstance<ImageView>().filter { it.drawable != null && it.isShown }
+        lateinit var view: View
+        val uiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        fun previewImages(): List<ImageView> = WindowInspector.getGlobalWindowViews().filter { root -> root !== activity.window.decorView && descendants(root).filterIsInstance<TextView>().any { it.text.toString() in setOf("preview.png", "Preview photos", "预览图片") } }.flatMap(::descendants).filterIsInstance<ImageView>().filter { it.drawable != null && it.isShown }
         try {
             instrumentation.runOnMainSync {
-                view = RemoteFrameView(activity, env, null, mapOf("sourceId" to id))
+                view = if (aiPreview) dev.photopilot.scaffold.ui.aiframes.AIFrameView(activity, env, uiScope, null, {}, {}, restoredDraft = mapOf("folders" to "[]"))
+                    else RemoteFrameView(activity, env, null, mapOf("sourceId" to id))
                 activity.setContentView(view)
             }
             delay(500)
-            instrumentation.runOnMainSync { descendants(view).filterIsInstance<TextView>().first { it.text.toString() == "Preview" || it.text.toString() == "预览" }.performClick() }
+            instrumentation.runOnMainSync {
+                if (aiPreview) {
+                    val key = "remote:$id-photo"
+                    val model = env.aiFrames.models.models.first { it.runtime == "onnx" }
+                    val preview = dev.photopilot.scaffold.data.aiframes.AIPreview(model, emptyList(), false, dev.photopilot.scaffold.data.aiframes.AIRule("Synthetic"), mapOf(key to .5f), emptyMap(), emptyMap(), emptyMap(), 0)
+                    view.javaClass.getDeclaredField("previewChosen").apply { isAccessible = true }.set(view, listOf(mutableSetOf(key)))
+                    view.javaClass.getDeclaredMethod("previewImages", dev.photopilot.scaffold.data.aiframes.AIPreview::class.java, List::class.java, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType)
+                        .apply { isAccessible = true }.invoke(view, preview, listOf(key), 0, 0)
+                } else descendants(view).filterIsInstance<TextView>().first { it.text.toString() == "Preview" || it.text.toString() == "预览" }.performClick()
+            }
             assertTrue(opened.await(3, TimeUnit.SECONDS))
             if (!delayed) {
                 var shown = false
@@ -79,6 +93,7 @@ class RemotePreviewRevocationTest {
         } finally {
             release.countDown()
             instrumentation.runOnMainSync { activity.finish() }
+            uiScope.cancel()
             server.close(); serverScope.coroutineContext[Job]?.cancelAndJoin()
             env.credentialStore.delete(id)
             db.sourceDao().getById(id)?.let { db.sourceDao().delete(it) }

@@ -34,6 +34,7 @@ class RemoteRehydratePrivacyTest {
         db.assetDao().upsert(AssetEntity(id, hash, bytes.size.toLong(), AssetFormat.PNG, if (deleting) 7 else 6, 5, 1, OrientationClass.LANDSCAPE, null, CapturedAtSource.UNKNOWN, now, "$id.png", "photo.png", AssetReadiness.PENDING, null, false, null, deletedAt = null, createdAt = now, updatedAt = now))
         db.assetOriginDao().upsert(AssetOriginEntity(id, id, now, PolicyState.ALLOWED, OriginState.ACTIVE, now, now))
         val frame = manager.createFrame("Restore privacy fixture")
+        db.frameDao().update(frame.copy(settingsJson = org.json.JSONObject(frame.settingsJson).put("mediaStorageMode", "local").toString()))
         val repository = FrameRepository(db, LibraryVersionRepository(db.settingsKvDao()), original.parentFile!!)
         repository.save(frame.id, 0, addIncludes = listOf(SelectionRefEdit(id, null)))
         val realStore = LocalImportStore(original.parentFile!!, temp)

@@ -1,5 +1,6 @@
 import CoreData
 import XCTest
+import UIKit
 @testable import PhotoPilot
 
 @MainActor
@@ -41,6 +42,145 @@ final class AIFrameStoreTests: XCTestCase {
         let context = controller.container.viewContext
         context.reset()
         return try context.fetch(NSFetchRequest<NSManagedObject>(entityName: "FrameSelection"))
+    }
+
+    func testUserPauseSurvivesConfigurationAndOnlyExplicitResumeClearsIt() async throws {
+        let controller = try library()
+        let store = AIFrameStore(controller: controller)
+        var configuration = config
+        configuration.automatic = true
+        configuration = try await store.configure(configuration)
+        try await store.stop(frameID: "frame", status: "userPaused")
+        _ = try await store.configure(configuration)
+        let paused = try await store.state(frameID: "frame")
+        XCTAssertTrue(paused?.isUserPaused == true)
+        XCTAssertFalse(paused?.shouldRunOnForeground == true)
+        try await store.resume(frameID: "frame")
+        let resumed = try await store.state(frameID: "frame")
+        XCTAssertTrue(resumed?.shouldRunOnForeground == true)
+    }
+
+    func testPartialCategoryIsIdempotentAndTransfersProcessedFingerprints() async throws {
+        let controller = try library()
+        let store = AIFrameStore(controller: controller)
+        var configuration = config
+        configuration.frameID = "draft-category"
+        configuration.automatic = true
+        let match = AIFrameMatch(assetID: "asset", score: 0.8, decision: .matched, themes: [], contentVersion: "hash")
+        let id = try await store.savePartialCategory(draftID: "draft", categoryID: "cats", name: "Cats", configuration: configuration,
+            matches: [match], processedVersions: ["asset": "hash:multilingual-clip-vitb32-lite:fixed:preprocess2"], userPaused: true)
+        let again = try await store.savePartialCategory(draftID: "draft", categoryID: "cats", name: "Cats", configuration: configuration,
+            matches: [match], processedVersions: ["asset": "hash:multilingual-clip-vitb32-lite:fixed:preprocess2"], userPaused: true)
+        XCTAssertEqual(id, again)
+        let state = try await store.state(frameID: id)
+        XCTAssertEqual(state?.completedContentVersions["asset"], "hash:multilingual-clip-vitb32-lite:fixed:preprocess2")
+        XCTAssertTrue(state?.isUserPaused == true)
+        XCTAssertFalse(state?.shouldRunOnForeground == true)
+        XCTAssertEqual(try selections(controller).filter { $0.value(forKeyPath: "frame.id") as? String == id }.count, 1)
+        configuration.frameID = "empty-draft"
+        let empty = try await store.savePartialCategory(draftID: "draft", categoryID: "unstarted", name: "Unstarted", configuration: configuration,
+            matches: [], processedVersions: [:], userPaused: true)
+        XCTAssertNotEqual(id, empty)
+        let emptyState = try await store.state(frameID: empty)
+        XCTAssertTrue(emptyState?.isUserPaused == true)
+    }
+
+    func testPartialSaveKeepsUnscannedOwnedMemberThenScannedRejectRemovesIt() async throws {
+        let controller = try library()
+        let store = AIFrameStore(controller: controller)
+        let committed = try await store.configure(config)
+        try await store.applyPreview(frameID: "frame", configuration: committed,
+            matches: [AIFrameMatch(assetID: "asset", score: 1, decision: .matched, themes: [], contentVersion: "hash")])
+        _ = try await store.savePartialCategory(draftID: "partial", categoryID: "category", name: "Partial", configuration: committed,
+            matches: [], processedVersions: [:], userPaused: true)
+        let partial = try await store.state(frameID: "frame")
+        XCTAssertTrue(partial?.ownedAssetIDs.contains("asset") == true)
+        _ = try await store.savePartialCategory(draftID: "partial", categoryID: "category", name: "Partial", configuration: committed,
+            matches: [AIFrameMatch(assetID: "asset", score: 0, decision: .rejected, themes: [], contentVersion: "hash")],
+            processedVersions: ["asset": "hash:multilingual-clip-vitb32-lite:fixed:preprocess2"], userPaused: true)
+        let rejected = try await store.state(frameID: "frame")
+        XCTAssertFalse(rejected?.ownedAssetIDs.contains("asset") == true)
+    }
+
+    func testMappedDraftCannotOverwriteLaterRuleEdit() async throws {
+        let store = AIFrameStore(controller: try library())
+        let committed = try await store.configure(config)
+        _ = try await store.savePartialCategory(draftID: "partial", categoryID: "category", name: "Partial", configuration: committed,
+            matches: [], processedVersions: [:], userPaused: true)
+        var replacement = committed
+        replacement.rule.category = "new rule"
+        _ = try await store.configure(replacement)
+        do {
+            _ = try await store.savePartialCategory(draftID: "partial", categoryID: "category", name: "Old", configuration: committed,
+                matches: [], processedVersions: [:], userPaused: true)
+            XCTFail("An old saved draft must preserve newer settings")
+        } catch { XCTAssertEqual(error as? AIFrameError, .staleRun) }
+        let state = try await store.state(frameID: "frame")
+        XCTAssertEqual(state?.configuration.rule.category, "new rule")
+    }
+
+    func testPreparingMultipleCategoriesIncludesUnstartedWorkInTotal() async throws {
+        let service = AIFrameService(controller: try library())
+        var first = config
+        first.frameID = "uncreated-one"
+        var second = first
+        second.frameID = "uncreated-two"
+        second.rule.category = "beach"
+        let draft = try await service.prepareDraft(configurations: [first, second], existingID: nil)
+        XCTAssertEqual(draft.categories.map(\.total), [1, 1])
+        XCTAssertEqual(draft.totalCount, 2)
+    }
+
+    func testPausedDraftDropsGloballyHiddenMatchesBeforeRestoreAndPartialSave() async throws {
+        let controller = try library()
+        let service = AIFrameService(controller: controller)
+        let environment = AppEnvironment(persistence: controller)
+        try FileManager.default.createDirectory(at: environment.originalsRootURL, withIntermediateDirectories: true)
+        let bytes = UIGraphicsImageRenderer(size: CGSize(width: 16, height: 16)).pngData { context in
+            UIColor.systemRed.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 16, height: 16))
+        }
+        try bytes.write(to: environment.originalsRootURL.appendingPathComponent("cat.jpg"))
+        let thumbnail = await ThumbnailLoader(originalsRoot: environment.originalsRootURL).thumbnail(relPath: "cat.jpg", pointSize: 56, scale: 1)
+        XCTAssertNotNil(thumbnail)
+        let draft = try await service.prepareDraft(configurations: [config], existingID: nil)
+        try await service.drafts.recordResult(id: draft.id, categoryID: draft.categories[0].id,
+            match: AIFrameMatch(assetID: "asset", score: 1, decision: .matched, themes: [], contentVersion: "hash"),
+            version: "hash:multilingual-clip-vitb32-lite:fixed:preprocess2")
+        try await service.pauseDraft(id: draft.id)
+        try await AssetRepository(controller: controller).hideAssetGlobally(id: "asset")
+        let restored = try await service.currentDraft()
+        XCTAssertTrue(restored?.categories[0].matches.isEmpty == true)
+        XCTAssertTrue(restored?.categories[0].selected.isEmpty == true)
+        XCTAssertTrue(restored?.userPaused == true)
+        try await service.drafts.recordResult(id: draft.id, categoryID: draft.categories[0].id,
+            match: AIFrameMatch(assetID: "asset", score: 1, decision: .matched, themes: [], contentVersion: "hash"),
+            version: "hash:multilingual-clip-vitb32-lite:fixed:preprocess2")
+        let afterLateWriter = try await service.currentDraft()
+        XCTAssertTrue(afterLateWriter?.categories[0].matches.isEmpty == true)
+        XCTAssertTrue(afterLateWriter?.categories[0].selected.isEmpty == true)
+        let page = AIFrameViewController(environment: environment)
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = UINavigationController(rootViewController: page)
+        page.loadViewIfNeeded()
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        for _ in 0..<40 {
+            window.layoutIfNeeded()
+            if page.tableView.numberOfSections == 5 { break }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTAssertEqual(page.tableView.numberOfSections, 5)
+        if page.tableView.numberOfSections == 5 {
+            XCTAssertEqual(page.tableView.numberOfRows(inSection: 4), 1)
+            XCTAssertFalse(page.tableView.visibleCells.contains { $0.accessibilityIdentifier == "ai.match.asset" })
+        } else { XCTFail((page.presentedViewController as? UIAlertController)?.message ?? "The paused draft did not load") }
+        do {
+            let frames = try await service.saveDraft(id: draft.id)
+            XCTAssertEqual(frames.count, 1)
+            let state = try await service.store.state(frameID: frames[0])
+            XCTAssertTrue(state?.ownedAssetIDs.isEmpty == true)
+        } catch { XCTFail("Privacy exclusion should preserve the ability to save other partial results") }
     }
 
     func testSavedStateSurvivesASecondStoreInstance() async throws {

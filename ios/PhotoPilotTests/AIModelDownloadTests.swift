@@ -34,7 +34,7 @@ private final class ModelDownloadProtocol: URLProtocol, @unchecked Sendable {
 
 @MainActor
 final class AIModelDownloadTests: XCTestCase {
-    private func manager() throws -> (AIModelManager, AIModelDescriptor, URL) {
+    private func manager(beforeRemoval: (@Sendable () async -> Void)? = nil) throws -> (AIModelManager, AIModelDescriptor, URL) {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let bytes = Data("abcdef".utf8)
         let digest = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
@@ -46,7 +46,31 @@ final class AIModelDownloadTests: XCTestCase {
         let catalog = try AIModelCatalog.load(data: data)
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [ModelDownloadProtocol.self]
-        return (AIModelManager(root: root, catalog: catalog, sessionConfiguration: configuration), catalog.models[0], root)
+        return (AIModelManager(root: root, catalog: catalog, sessionConfiguration: configuration, beforeRemoval: beforeRemoval), catalog.models[0], root)
+    }
+
+    func testRemovalBlocksNewModelLeaseAndDownloadAcrossSuspension() async throws {
+        let gate = ModelRemovalBarrier()
+        let (manager, model, root) = try manager(beforeRemoval: { await gate.wait() })
+        defer { try? FileManager.default.removeItem(at: root) }
+        ModelDownloadProtocol.fixture = ModelDownloadFixture { request, _ in
+            (HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: ["Content-Length": "6"])!, Data("abcdef".utf8))
+        }
+        try await manager.download(id: model.id, source: .international, allowCellular: false, progress: { _ in })
+        let removal = Task { try await manager.remove(id: model.id) }
+        for _ in 0..<100 {
+            if await gate.reached() { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        do { _ = try await manager.acquire(model); XCTFail("A deleting model must not grant another inference lease") }
+        catch { XCTAssertEqual(error as? AIFrameError, .busy) }
+        await manager.release(id: model.id)
+        do { try await manager.download(id: model.id, source: .international, allowCellular: false, progress: { _ in }); XCTFail("A deleting model must not start a download") }
+        catch { XCTAssertEqual(error as? AIFrameError, .busy) }
+        await gate.release()
+        try await removal.value
+        let installed = await manager.isInstalled(model)
+        XCTAssertFalse(installed)
     }
 
     func testCompositeModelDownloadsAllFilesUsingFilePinnedURLs() async throws {
@@ -161,4 +185,12 @@ final class AIModelDownloadTests: XCTestCase {
         } catch { XCTAssertEqual(error as? AIFrameError, .invalidDownload) }
         XCTAssertEqual(try Data(contentsOf: root.appendingPathComponent("fixture/fixed/model.onnx.partial")), Data("abc".utf8))
     }
+}
+
+private actor ModelRemovalBarrier {
+    private var continuation: CheckedContinuation<Void, Never>?
+    private var entered = false
+    func wait() async { entered = true; await withCheckedContinuation { continuation = $0 } }
+    func reached() -> Bool { entered }
+    func release() { continuation?.resume(); continuation = nil }
 }

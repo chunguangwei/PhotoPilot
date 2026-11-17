@@ -187,6 +187,16 @@ final class SettingsViewController: UIViewController {
             ]
         ))
 
+        let modelsButton = UIButton(type: .system)
+        modelsButton.setTitle(AIText.value("AI model management", "AI 模型管理"), for: .normal)
+        modelsButton.titleLabel?.font = ThemeFont.body()
+        modelsButton.titleLabel?.adjustsFontForContentSizeCategory = true
+        modelsButton.titleLabel?.numberOfLines = 0
+        modelsButton.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget).isActive = true
+        modelsButton.accessibilityIdentifier = "settings.aiModels"
+        modelsButton.addTarget(self, action: #selector(openAIModels), for: .touchUpInside)
+        formStack.addArrangedSubview(modelsButton)
+
         let holidayButton = ActionButton(titleKey: "common.settings", style: .secondary)
         holidayButton.accessibilityIdentifier = "settings.holiday.open"
         holidayButton.setContentHuggingPriority(.required, for: .horizontal)
@@ -619,6 +629,10 @@ final class SettingsViewController: UIViewController {
         present(alert, animated: true)
     }
 
+    @objc private func openAIModels() {
+        present(UINavigationController(rootViewController: AIModelsViewController(environment: environment)), animated: true)
+    }
+
     private func eraseAllData() {
         Task { [weak self] in
             guard let self, let window = view.window else { return }
@@ -626,6 +640,7 @@ final class SettingsViewController: UIViewController {
             await environment.frameStorage.stopAll()
             await environment.remoteMedia.prepareForErase()
             await environment.aiFrames.prepareForErase()
+            AIApplicationRuntime.forget(environment.persistence.storeURL)
             for runner in environment.runners.values {
                 try? await runner.cancel()
             }

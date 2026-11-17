@@ -496,6 +496,15 @@ interface WeatherSnapshotDao {
 
 @Dao
 interface SettingsKvDao {
+    @Query("SELECT * FROM settings_kv WHERE key >= :start AND key < :end ORDER BY key")
+    suspend fun getRange(start: String, end: String): List<SettingsKvEntity>
+
+    @Query("DELETE FROM settings_kv WHERE key >= :start AND key < :end")
+    suspend fun deleteRange(start: String, end: String)
+
+    @Query("DELETE FROM settings_kv WHERE key = :key")
+    suspend fun deleteKey(key: String)
+
     @Query("SELECT * FROM settings_kv WHERE key LIKE :prefix || '%'")
     suspend fun getByPrefix(prefix: String): List<SettingsKvEntity>
 

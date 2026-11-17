@@ -1,6 +1,7 @@
 import UIKit
 
 final class ImportProgressViewController: UIViewController {
+    private let wakeOwner = "import." + UUID().uuidString
     private static let pollIntervalNanos: UInt64 = 1_000_000_000
 
     private let runner: ImportRunner
@@ -152,13 +153,13 @@ final class ImportProgressViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        UIApplication.shared.isIdleTimerDisabled = true
+        ScreenWakeOwner.shared.set(wakeOwner, enabled: true)
         startPolling()
     }
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        UIApplication.shared.isIdleTimerDisabled = false
+        ScreenWakeOwner.shared.set(wakeOwner, enabled: false)
         pollTask?.cancel()
         pollTask = nil
     }

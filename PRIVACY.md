@@ -1,8 +1,8 @@
 # PhotoPilot · 光屿 Privacy Policy / 隐私政策
 
-Effective date / 生效日期：2026-11-15
+Effective date / 生效日期：2026-11-17
 Contact / 联系方式：chunguangwee@gmail.com
-Scope / 适用：PhotoPilot 1.1.58、1.2.0、1.3.0 与拟更新 1.4.0（iOS/iPadOS 与 Android）；AI 相框段适用于 1.2.0 起，远端按需段适用于 1.3.0 起。Versions 1.1.55–1.1.58 use Open-Meteo only; earlier 1.1.53/1.1.54 builds used wttr.in weather fallback. / 1.1.55–1.1.58 仅使用 Open-Meteo；旧版 1.1.53/1.1.54 包含 wttr.in 天气备用请求。
+Scope / 适用：PhotoPilot 1.1.58–1.4.6 与拟更新 1.4.7（iOS/iPadOS 与 Android）；AI 相框段适用于 1.2.0 起，远端按需段适用于 1.3.0 起。Versions 1.1.55–1.1.58 use Open-Meteo only; earlier 1.1.53/1.1.54 builds used wttr.in weather fallback. / 1.1.55–1.1.58 仅使用 Open-Meteo；旧版 1.1.53/1.1.54 包含 wttr.in 天气备用请求。
 
 ---
 
@@ -30,6 +30,9 @@ The current release is free, with no advertising, subscriptions or in-app purcha
 11. **App Store statistics (iOS/iPadOS)** — Apple may provide the developer with aggregate download and usage reports through App Store Connect. Some usage metrics depend on users choosing to share diagnostics and usage information with app developers and on privacy thresholds. PhotoPilot contains no separate analytics SDK and does not send its own usage events to our server. These reports do not provide us with your photos or NAS credentials. See [Apple’s Analytics privacy explanation](https://developer.apple.com/help/app-store-connect-analytics/engagement/app-usage).
 
 12. **Optional local AI frames (from 1.2.0)** — When you use AI frames, category descriptions, include/exclude rules, selected album/folder identifiers, photo-derived feature vectors, local tags, suggested names and classification progress are processed and stored on your device. The app does not send these inputs or your photos to a cloud AI service. You choose a model and download its weight and tokenizer files before using it; after installation, classification of available local photos works offline. Remote photos require source access when a usable local or cached copy is unavailable. Automatic classification of later-imported photos is optional, off by default and can be changed later. Manually added or excluded photos are protected from automatic changes.
+
+From 1.4.7, Settings provides AI model download management. Download intent, progress, resumable-transfer information and classification checkpoints stay on the device. Model transfers may continue through the operating system’s background download facilities. You can pause classification, save completed results and continue unfinished work later. Explicit user pauses remain until you choose to continue. Operating-system interruptions preserve available checkpoints for recovery.
+
 13. **AI model downloads (from 1.2.0)** — Downloads use fixed model versions. The China source prioritizes ModelScope and can fall back to hf-mirror. The international source uses Hugging Face and its delivery infrastructure. These providers see your connection IP, model-file URL and normal HTTP request headers. No photo, category prompt, private album path or NAS credential is included in those requests. The mirror may redirect to an overseas CDN; selecting it does not mean the server is physically located in China. Provider logging and retention follow their policies; PhotoPilot does not operate these download services. See the [Hugging Face Privacy Policy](https://huggingface.co/privacy) and [ModelScope Privacy Policy](https://modelscope.cn/protocol/terms-privacy-policy). Models can be removed to free space without deleting your photos or saved frames.
 
 14. **Remote frames (from 1.3.0)** — Online selection indexes metadata from a WebDAV or SMB server you configure. Playback, previews and local AI classification read selected photos into a shared app-private temporary cache. Requests send the server the requested paths, authentication and connection information. The raw-photo cache has a 128MiB shared limit, including partial downloads, and is automatically evicted. The operating system may also clear it. Enabling local sync retains selected originals for offline access. You can review and confirm release of eligible re-downloadable local copies while copies needed by other local consumers remain protected. Models, metadata, explicitly retained originals and other imports use additional storage. NAS operations are read-only.
@@ -102,6 +105,9 @@ For privacy questions, contact chunguangwee@gmail.com.
 11. **App Store 统计（iOS/iPadOS）**：Apple 可以通过 App Store Connect 向开发者提供汇总下载与使用报告。部分使用指标取决于用户是否同意向开发者分享诊断与使用信息，以及隐私门槛。PhotoPilot 没有单独的统计 SDK，不会向我们的服务器发送自建使用事件。这些报告不会向我们提供你的照片或 NAS 凭证。参见 [Apple 统计隐私说明](https://developer.apple.com/help/app-store-connect-analytics/engagement/app-usage)。
 
 12. **可选的本地 AI 相框（1.2.0 起）**：分类描述、包含/排除规则、所选相册/目录标识、照片特征向量、本地标签、名称建议和分类进度均在设备本地处理及保存；不会将这些输入或照片发送给云端 AI。你先选择并下载模型权重与分词器，安装后可对已在本机可用的照片离线分类。远端照片没有可用本地副本或缓存时，仍需访问来源。对后续导入照片的持续自动分类默认关闭、可选且后期可修改；人工添加或排除的照片受到保护。
+
+1.4.7 起，设置提供 AI 模型下载管理。下载意图、进度、续传信息和分类断点保存在本机。模型传输可通过操作系统的后台下载能力继续。你可暂停分类、保存已完成结果，并在以后继续未完成工作。手动暂停保持到你明确选择继续。系统中断则保留可用断点以供恢复。
+
 13. **AI 模型下载（1.2.0 起）**：应用按固定版本下载模型。国内源优先使用 ModelScope，并提供 hf-mirror 回退，国际源使用 Hugging Face 及其分发设施。服务方能看到连接 IP、模型文件 URL 和正常 HTTP 请求头；请求不包含照片、分类提示词、私人相册路径或 NAS 凭证。镜像可能跳转海外 CDN，选择国内镜像不等于服务器位于中国境内。服务日志及保留规则由相应服务方政策决定，PhotoPilot 不运营这些下载服务。参见 [Hugging Face 隐私政策](https://huggingface.co/privacy)与 [ModelScope 隐私政策](https://modelscope.cn/protocol/terms-privacy-policy)。删除模型不会删除已保存的相框和照片。
 
 14. **远端相框（1.3.0 起）**：在线选片会从你配置的 WebDAV 或 SMB 服务器索引照片元数据。播放、预览与本地 AI 分类按需读取所选照片，并使用应用私有的共享临时缓存。服务器接收所请求的路径、认证及连接信息。照片原始文件临时缓存全应用共用 128MiB 限额，包含未完成下载，并自动淘汰；系统也可能清理缓存。开启本地同步会保留所选原图供离线访问。你可查看并确认释放符合条件、可重新下载的本地副本，其他本地使用者需要的副本受到保护。模型、元数据、明确保留的原图及其他导入内容另行占用空间。对 NAS 的操作均为只读。

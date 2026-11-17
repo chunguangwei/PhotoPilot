@@ -107,6 +107,16 @@ struct AIFrameConfiguration: Codable, Sendable, Equatable {
     var automatic = false
     var revision = 1
 
+    var scanFingerprint: Data {
+        var context = self
+        context.frameID = ""
+        context.revision = 1
+        context.automatic = false
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        return (try? encoder.encode(context)) ?? Data()
+    }
+
     func validate() throws {
         try rule.validate()
         guard !frameID.isEmpty, !modelID.isEmpty, !modelRevision.isEmpty,
@@ -136,6 +146,8 @@ struct AIFrameState: Codable, Sendable {
     var matches: [String: AIFrameMatch] = [:]
     var runToken: AIFrameRunToken?
     var status = "idle"
+    var userPaused: Bool? = nil
+    var isUserPaused: Bool { userPaused == true || ["userPaused", "cancelled", "needsResume"].contains(status) }
     var lastError: String?
     var succeeded = 0
     var failed = 0
@@ -165,11 +177,11 @@ struct AIFrameState: Codable, Sendable {
     }
 
     var shouldRunOnForeground: Bool {
-        !["cancelled", "failed"].contains(status)
+        !isUserPaused && !["cancelled", "failed", "needsResume"].contains(status)
             && (configuration.automatic || ["running", "pausedAuto"].contains(status))
     }
 
-    mutating func cancel() { runToken = nil; status = "cancelled" }
+    mutating func cancel() { runToken = nil; status = "cancelled"; userPaused = true }
 
     mutating func recordManualChange(includes: Set<String>, removed: Set<String>) {
         ownedAssetIDs.subtract(includes.union(removed))

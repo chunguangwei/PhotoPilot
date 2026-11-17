@@ -54,7 +54,7 @@ class NasRetainedConfigurationTest {
             assertEquals(SourceType.LOCAL_FILES, db.sourceDao().getById(localSourceId)?.type)
             assertEquals(listOf(id), db.frameSelectionDao().getByFrame(frame.id).map { it.assetId })
             assertEquals(listOf(id), env.frames.buildPlayQueue(frame.id))
-            assertEquals(listOf(id), env.frames.buildPlayQueue(directoryFrame.id))
+            assertEquals(setOf(id, "remote:$otherRemote"), env.frames.buildPlayQueue(directoryFrame.id).toSet())
             assertEquals(id, db.frameDao().getById(frame.id)?.coverAssetId)
             assertFalse(JsonMini.parseObject(db.frameDao().getById(frame.id)?.settingsJson).containsKey("remoteCoverRef"))
             assertTrue(env.aiFrames.state.get(frame.id)?.members.orEmpty().isEmpty())

@@ -80,7 +80,7 @@ class PhoneCreationInteractionTest {
             withTimeout(15000) {
                 while (true) {
                     val found = descendants(activity.window.decorView).filterIsInstance<AIFrameView>().lastOrNull()
-                    if (found != null) { editor = found; break }
+                    if (found != null && found.javaClass.getDeclaredField("initialized").apply { isAccessible = true }.getBoolean(found)) { editor = found; break }
                     delay(100)
                 }
             }

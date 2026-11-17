@@ -54,6 +54,7 @@ class SettingsView(context: Context) : ScrollView(context) {
     var onWeatherUnits: ((Int) -> Unit)? = null
     var onWeatherChooseCity: (() -> Unit)? = null
     var onWeatherManualRefresh: (() -> Unit)? = null
+    var onAIModels: (() -> Unit)? = null
     var onHoliday: (() -> Unit)? = null
 
     private lateinit var weatherError: TextView
@@ -99,6 +100,10 @@ class SettingsView(context: Context) : ScrollView(context) {
         column.removeAllViews()
         addText(column, R.string.settings_title, R.dimen.pp_text_heading, R.color.pp_text_primary, 0, heading = true)
 
+        column.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, R.string.common_settings).apply {
+            text = if (resources.configuration.locales[0].language == "zh") "AI 模型管理" else "AI model management"
+            setOnClickListener { onAIModels?.invoke() }
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = res.getDimensionPixelSize(R.dimen.pp_space_16) })
         val appearanceGroup = section(R.string.settings_appearance)
         addOptionRow(
             appearanceGroup,

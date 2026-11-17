@@ -39,7 +39,7 @@ class AIFrameLayoutTest {
                 if (variant.contains("dark")) uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or Configuration.UI_MODE_NIGHT_YES
             }
             val themedContext = android.view.ContextThemeWrapper(activity, R.style.Theme_PhotoPilot).apply { applyOverrideConfiguration(configuration) }
-            view = AIFrameView(themedContext, environment, uiScope, null, {}, {})
+            view = AIFrameView(themedContext, environment, uiScope, null, {}, {}, restoredDraft = mapOf("draftId" to java.util.UUID.randomUUID().toString(), "automatic" to "false", "folders" to "[]"))
             activity.setContentView(android.widget.FrameLayout(activity).apply { fitsSystemWindows = true; addView(view) })
         }
         withTimeout(15000) {

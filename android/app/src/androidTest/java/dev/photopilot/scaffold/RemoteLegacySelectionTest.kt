@@ -58,7 +58,7 @@ class RemoteLegacySelectionTest {
                 assertFalse("Adding first NAS photo requires explicit offline opt-in", sync.isChecked)
             }
             withTimeout(15000) {
-                while (descendants(view).filterIsInstance<android.widget.TextView>().first { it.text.toString() in listOf("Resume local sync", "继续本地同步") }.isEnabled) delay(100)
+                while (!descendants(view).filterIsInstance<android.widget.TextView>().first { it.text.toString() in listOf("Save frame", "保存相框") }.isEnabled) delay(100)
             }
             instrumentation.runOnMainSync {
                 descendants(view).filterIsInstance<android.widget.TextView>().first { it.text.toString() in listOf("Save frame", "保存相框") }.performClick()

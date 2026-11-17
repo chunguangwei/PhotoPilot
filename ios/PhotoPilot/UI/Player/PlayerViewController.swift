@@ -203,6 +203,7 @@ final class PlayerImageLoader: @unchecked Sendable {
 }
 
 final class PlayerViewController: UIViewController {
+    private let wakeOwner = "player." + UUID().uuidString
     static let blurDimOpacity: CGFloat = 0.4
     private static let controlsHideDelayNanos: UInt64 = 4_000_000_000
     private static let transitionWatchdogNanos: UInt64 = 12_000_000_000
@@ -487,7 +488,7 @@ final class PlayerViewController: UIViewController {
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         restoreBrightness()
-        UIApplication.shared.isIdleTimerDisabled = false
+        ScreenWakeOwner.shared.set(wakeOwner, enabled: false)
         if Self.activePlayer === self {
             Self.activePlayer = nil
         }
@@ -2055,7 +2056,7 @@ final class PlayerViewController: UIViewController {
         frontImageView.accessibilityLabel = queue.isEmpty
             ? nil
             : FormatStrings.string("a11y.current_photo", index + 1, queue.count)
-        UIApplication.shared.isIdleTimerDisabled = idleTimerShouldBeDisabled()
+        ScreenWakeOwner.shared.set(wakeOwner, enabled: idleTimerShouldBeDisabled())
         if controllerState == PlaybackController.paused {
             pauseButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
             pauseButton.accessibilityLabel = L10n.string("player.play")
@@ -2217,7 +2218,7 @@ final class PlayerViewController: UIViewController {
         musicPlayer.stop()
         clearTextures()
         restoreBrightness()
-        UIApplication.shared.isIdleTimerDisabled = false
+        ScreenWakeOwner.shared.set(wakeOwner, enabled: false)
         dismiss(animated: true)
     }
 

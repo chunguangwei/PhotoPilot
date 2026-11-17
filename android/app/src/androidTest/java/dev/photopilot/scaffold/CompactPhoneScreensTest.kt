@@ -105,6 +105,16 @@ class CompactPhoneScreensTest {
                     more.requestRectangleOnScreen(android.graphics.Rect(0, 0, more.width, more.height), true)
                 }
                 instrumentation.waitForIdleSync()
+                withTimeout(5000) {
+                    var visible = false
+                    while (!visible) {
+                        instrumentation.runOnMainSync {
+                            more.requestRectangleOnScreen(android.graphics.Rect(0, 0, more.width, more.height), true)
+                            visible = more.getGlobalVisibleRect(android.graphics.Rect())
+                        }
+                        if (!visible) delay(50)
+                    }
+                }
                 instrumentation.runOnMainSync {
                     assertTrue("NAS menu anchor must be on screen", more.getGlobalVisibleRect(android.graphics.Rect()))
                     more.performClick()

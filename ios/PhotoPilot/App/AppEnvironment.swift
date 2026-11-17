@@ -32,7 +32,9 @@ final class AppEnvironment: @unchecked Sendable {
             .appendingPathComponent("originals", isDirectory: true)
     }
 
-    init(persistence: PersistenceController, weatherProvider: (any WeatherProvider)? = nil, remoteMedia: RemoteMediaService? = nil) {
+    init(persistence suppliedPersistence: PersistenceController, weatherProvider: (any WeatherProvider)? = nil, remoteMedia: RemoteMediaService? = nil) {
+        let resources = AIApplicationRuntime.resolve(controller: suppliedPersistence, media: remoteMedia)
+        let persistence = resources.controller
         self.persistence = persistence
         let settings = AppSettingsRepository(container: persistence.container)
         self.settings = settings
@@ -40,11 +42,11 @@ final class AppEnvironment: @unchecked Sendable {
         self.nasNetworkPolicy = networkPolicy
         self.sources = SourceRepository(container: persistence.container)
         self.assets = AssetRepository(controller: persistence)
-        self.remoteMedia = remoteMedia ?? RemoteMediaService.shared(controller: persistence)
+        self.remoteMedia = resources.media
         self.frameStorage = FrameStorageService(controller: persistence, media: self.remoteMedia)
         self.frames = FrameRepository(controller: persistence)
         self.frameManager = FrameManager(controller: persistence)
-        self.aiFrames = AIFrameService(controller: persistence, media: self.remoteMedia)
+        self.aiFrames = resources.service
         self.holidayStore = HolidayStore(controller: persistence)
         self.photoLibraryAdapter = PhotoLibrarySourceAdapter(networkPolicy: networkPolicy)
         Task { [remoteMedia = self.remoteMedia, aiFrames, frameStorage] in

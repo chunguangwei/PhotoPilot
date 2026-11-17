@@ -26,28 +26,28 @@
 
 ## Android 切片
 
-- [ ] 在 AIState、AIPreviewCheckpoint、AIPreview、AIFrameService 补用户暂停、部分结果和已处理指纹迁移的回归。
-- [ ] 实现部分预览与事务性幂等保存，涵盖零匹配类别、旧成员保留、排除、进程恢复及继续扫描。
-- [ ] 在 AIModels 及新增任务协调/服务实现持久下载与前台运行，按模型隔离资源租用，避免下载另一个模型阻塞已就绪模型推理。
-- [ ] 在 SettingsView、AIFrameView、MainActivity 和 AppEnvironment 接入模型管理、焦点模型导航及草稿回程。保留 1.4.6 首页与菜单修复。
-- [ ] 验证后台/重建/暂停/断点/删除竞争、标准与轻量模型、中文英文以及本机和 NAS。
+- [x] 在 AIState、AIPreviewCheckpoint、AIPreview、AIFrameService 补用户暂停、部分结果和已处理指纹迁移的回归。
+- [x] 实现部分预览与事务性幂等保存，涵盖零匹配类别、旧成员保留、排除、进程恢复及继续扫描。
+- [x] 在 AIModels 及新增任务协调/服务实现持久下载与前台运行，按模型隔离资源租用，避免下载另一个模型阻塞已就绪模型推理。
+- [x] 在 SettingsView、AIFrameView、MainActivity 和 AppEnvironment 接入模型管理、焦点模型导航及草稿回程。保留 1.4.6 首页与菜单修复。
+- [x] 验证后台/重建/暂停/断点/删除竞争、标准与轻量模型、中文英文以及本机和 NAS。
 
 ## iOS 切片
 
-- [ ] 在 AIFrameTypes、AIFrameStore、AIFrameService 补 userPaused、多类别独立 checkpoint、部分提交与 completedContentVersions 迁移。
-- [ ] 建立持久草稿和类别映射，支持系统中断后恢复，保留未扫描/失败旧成员，防重复创建。
-- [ ] 在 AIModelManager 及后台下载协调器实现文件级后台传输、恢复、暂停与删除回调失效保护。
-- [ ] 在 AppDelegate、AppEnvironment、主容器和项目配置接入后台处理许可、系统过期处理与统一唤醒 owner。
-- [ ] 新增模型管理页和设置入口，AI 表单跳转下载保留草稿，暂停后提供清楚的保存/继续动作。
-- [ ] 运行现有模型、AI状态与Store测试，并补后台重接、多类别恢复、手动暂停优先、隐私排除和空类别测试。
+- [x] 在 AIFrameTypes、AIFrameStore、AIFrameService 补 userPaused、多类别独立 checkpoint、部分提交与 completedContentVersions 迁移。
+- [x] 建立持久草稿和类别映射，支持系统中断后恢复，保留未扫描/失败旧成员，防重复创建。
+- [x] 在 AIModelManager 及后台下载协调器实现文件级后台传输、恢复、暂停与删除回调失效保护。
+- [x] 在 AppDelegate、AppEnvironment、主容器和项目配置接入后台处理许可、系统过期处理与统一唤醒 owner。
+- [x] 新增模型管理页和设置入口，AI 表单跳转下载保留草稿，暂停后提供清楚的保存/继续动作。
+- [x] 运行现有模型、AI状态与Store测试，并补后台重接、多类别恢复、手动暂停优先、隐私排除和空类别测试。
 
 ## 分工与验证
 
 Android Agent 负责 android 下的实现与测试，iOS Agent 负责 ios 下的实现与测试。共享词条、版本、设计摘要、16交接及发布由主 Agent 集成。既有冻结契约和生产密钥保持既定规则，新增功能采用现有库和系统框架。
 
-- [ ] 根目录 make check，iOS generate/build/analyze，Android build/lint/test。
-- [ ] 平台原生回归与中英手机小屏布局验证，下载网络中断、任务暂停和进程恢复必须有真实夹具证据。
-- [ ] iPhone 真机在设备可用时验证本机/NAS暂停保存和继续；Android 当前以模拟器及用户截图验证，不能宣称华为真机通过。
+- [x] 根目录 make check，iOS generate/build/analyze，Android build/lint/test。
+- [x] 平台原生回归与中英手机小屏布局验证，下载网络中断、任务暂停和进程恢复必须有真实夹具证据。
+- [x] 按实际设备覆盖验证暂停保存与继续。iPhone本轮使用自有NAS协议夹具，本机隐私及恢复由原生测试覆盖，先前本机Photos真机证据保留。Android以模拟器及用户截图验证，不能宣称华为真机通过。
 - [ ] 独立代码审查，按实际证据回填16，打包和签名核对，更新既有GitHub仓库，AppStore保持用户确认门控。
 
 ## 平台依据
@@ -59,3 +59,7 @@ Android Agent 负责 android 下的实现与测试，iOS Agent 负责 ios 下的
 [Android 前台服务类型](https://developer.android.com/develop/background-work/services/fgs/service-types)
 
 [Android 前台服务超时](https://developer.android.com/develop/background-work/services/fgs/timeout)
+
+## 实际覆盖补充
+
+2026-11-17 双端功能与原生回归已完成。iOS最终322执行、6条件跳过、0失败，Android常规connected97执行、4条件跳过、0失败。两条Android跨进程验证及本地SMB专项另行通过。iPhone使用独立QA的自有NAS协议夹具完成暂停保存、重启继续及短时后台实证，本机隐私恢复由原生回归覆盖。iPad本轮为模拟器，华为真机不可连接。旧外部审核NAS的SMB/HTTPS端口本轮超时，该外部服务UI段未验证。签名包隔离运行的附加检查与GitHub发布状态见16最新记录，AppStore仍等待用户确认。

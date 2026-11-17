@@ -21,8 +21,11 @@ data class AIConfiguration(
     val completed: Int = 0,
     val failed: Int = 0,
     val themes: Map<String, Double> = emptyMap(),
+    val userPaused: Boolean = false,
+    val total: Int = 0,
+    val pauseReason: String? = null,
 ) {
-    val resumeAutomatically: Boolean get() = (autoUpdate && status != "cancelled") || status in listOf("running", "paused")
+    val resumeAutomatically: Boolean get() = !userPaused && (status in listOf("running", "paused", "system_paused", "waiting") || (autoUpdate && status in listOf("idle", "complete")))
 
     fun json(): JSONObject = JSONObject().put("version", 1).put("frameId", frameId)
         .put("revision", revision).put("modelId", modelId).put("modelRevision", modelRevision)
@@ -30,7 +33,7 @@ data class AIConfiguration(
         .put("description", rule.description).put("includes", JSONArray(rule.includes)).put("excludes", JSONArray(rule.excludes))
         .put("requireAll", rule.requireAll).put("threshold", rule.threshold.toDouble())
         .put("members", JSONArray(members.toList())).put("processed", JSONObject(processed)).put("reviews", JSONObject(reviews))
-        .put("themes", JSONObject(themes)).put("status", status).put("completed", completed).put("failed", failed)
+        .put("themes", JSONObject(themes)).put("userPaused", userPaused).put("total", total).put("pauseReason", pauseReason).put("status", status).put("completed", completed).put("failed", failed)
 
     companion object {
         fun parse(json: JSONObject): AIConfiguration {
@@ -43,7 +46,7 @@ data class AIConfiguration(
                 AIRule(json.getString("description"), strings(json.getJSONArray("includes")), strings(json.getJSONArray("excludes")), json.getBoolean("requireAll"), json.getDouble("threshold").toFloat()),
                 strings(json.getJSONArray("members")).toSet(), processed.keys().asSequence().associateWith { processed.getString(it) },
                 reviews.keys().asSequence().associateWith { reviews.getDouble(it).toFloat() }, json.getString("status"), json.getInt("completed"), json.getInt("failed"),
-                json.optJSONObject("themes")?.let { theme -> theme.keys().asSequence().associateWith { theme.getDouble(it) } }.orEmpty(),
+                json.optJSONObject("themes")?.let { theme -> theme.keys().asSequence().associateWith { theme.getDouble(it) } }.orEmpty(), json.optBoolean("userPaused", false), json.optInt("total", json.optInt("completed", 0)), json.optString("pauseReason").takeIf { it.isNotEmpty() },
             )
         }
         fun strings(array: JSONArray) = (0 until array.length()).map { array.getString(it) }
@@ -56,9 +59,9 @@ class AIStateStore(private val db: PhotoPilotDatabase) {
     suspend fun get(frameId: String): AIConfiguration? = settings.rawValue("ai.frame.$frameId")?.let { runCatching { AIConfiguration.parse(JSONObject(it)) }.getOrNull() }
     suspend fun put(configuration: AIConfiguration) = settings.putRaw("ai.frame.${configuration.frameId}", configuration.json().toString())
     suspend fun removeAsset(assetId: String, now: Long) {
-        AIPreviewCheckpoint.invalidateAll(db)
-        db.settingsKvDao().getByPrefix("ai.vector.").forEach { db.settingsKvDao().delete(it) }
         val refs = setOf(assetId) + db.assetOriginDao().getByAsset(assetId).map { "remote:${it.sourceAssetId}" }
+        AIPreviewCheckpoint.removeAssets(db, refs)
+        db.settingsKvDao().getByPrefix("ai.vector.").forEach { db.settingsKvDao().delete(it) }
         for (frame in db.frameDao().getAll()) {
             val configuration = get(frame.id)
             if (configuration != null && refs.any { it in configuration.members || it in configuration.processed || it in configuration.reviews }) {

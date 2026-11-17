@@ -8,6 +8,8 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         var selected: Set<String>
         var initiallySelected: Set<String>
         var savedFrameID: String?
+        var categoryID = ""
+        var complete = false
     }
 
     private let environment: AppEnvironment
@@ -28,6 +30,12 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
     private var selectedModelID = "embeddinggemma2-vision"
     private var selectedCollections: Set<String> = []
     private var previews: [Preview] = []
+    private var draftID: String?
+    private var draftStatus = "idle"
+    private var formDirty = false
+    private var renderedDraftDate: Date?
+    private var renderedSavedStatus = ""
+    private var loadedFrameRevision = 1
     private var existingName: String?
     private var preservedExclusions: Set<String> = []
     private var busy = false
@@ -115,23 +123,25 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        guard let frameID else { return }
+        stateMonitor?.cancel()
         stateMonitor = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
-                if !self.busy && !self.downloading,
-                   let state = try? await self.environment.aiFrames.store.state(frameID: frameID) {
-                    let wasRunning = self.savedJobRunning
+                if let id = self.draftID, let draft = try? await self.environment.aiFrames.draft(id: id) {
+                    self.display(draft)
+                } else if let frameID = self.frameID, let state = try? await self.environment.aiFrames.store.state(frameID: frameID) {
                     self.savedJobRunning = state.status == "running"
-                    if self.savedJobRunning || wasRunning || state.lastError != nil {
-                        let errorText = state.lastError.map { code in
-                            AIFrameError(rawValue: code)?.localizedDescription ?? AIText.value("Classification failed. Check the model and scan again.", "分类失败，请检查模型并重新扫描。")
-                        }
-                        self.statusLabel.text = errorText ?? AIText.value("Processed \(state.succeeded + state.skipped)/\(state.total) · Failed \(state.failed)", "已处理 \(state.succeeded + state.skipped)/\(state.total) · 失败 \(state.failed)")
+                    self.statusLabel.text = state.isUserPaused ? AIText.value("Paused. Tap Continue to scan remaining photos.", "已暂停，点击继续处理剩余照片。")
+                        : AIText.value("Processed \(state.succeeded + state.skipped)/\(state.total) · Failed \(state.failed)", "已处理 \(state.succeeded + state.skipped)/\(state.total) · 失败 \(state.failed)")
+                    if self.renderedSavedStatus != state.status {
+                        self.renderedSavedStatus = state.status
+                        self.tableView.reloadSections(IndexSet(integer: 3), with: .none)
                     }
-                    if wasRunning != self.savedJobRunning { self.tableView.reloadSections(IndexSet(integer: 3), with: .none) }
                 }
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                let oldInstalled = self.installed
+                try? await self.refreshInstalled()
+                if oldInstalled != self.installed { self.tableView.reloadSections(IndexSet(integer: 0), with: .none) }
+                try? await Task.sleep(nanoseconds: 700_000_000)
             }
         }
     }
@@ -156,6 +166,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
                 preservedExclusions = Set(detail.excludeRefs)
             }
             if let frameID, let config = try await environment.aiFrames.configuration(frameID: frameID) {
+                loadedFrameRevision = config.revision
                 selectedModelID = config.modelID
                 selectedCollections = Set(config.collectionIDs)
                 categoryInput.text = config.rule.category
@@ -169,6 +180,17 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
                 existingName = detail.name
                 preservedExclusions = Set(detail.excludeRefs)
                 if let state = try await environment.aiFrames.store.state(frameID: frameID) { preservedExclusions.formUnion(state.manualExcludedAssetIDs) }
+            } else if frameID == nil, let draft = try await environment.aiFrames.currentDraft(), let first = draft.categories.first {
+                selectedModelID = first.configuration.modelID
+                selectedCollections = Set(first.configuration.collectionIDs)
+                categoryInput.text = draft.categories.map { $0.configuration.rule.category }.joined(separator: "\n")
+                includesInput.text = first.configuration.rule.includes.joined(separator: "\n")
+                excludesInput.text = first.configuration.rule.excludes.joined(separator: "\n")
+                thresholdSlider.value = first.configuration.rule.threshold
+                recursiveSwitch.isOn = first.configuration.recursive
+                matchControl.selectedSegmentIndex = first.configuration.rule.matchAll ? 0 : 1
+                automaticSwitch.isOn = first.configuration.automatic
+                display(draft)
             } else if frameID == nil, let previous = await environment.aiFrames.resumablePreviewConfiguration() {
                 selectedModelID = previous.modelID
                 selectedCollections = Set(previous.collectionIDs)
@@ -183,6 +205,20 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
             } else if let model = models.first {
                 selectedModelID = model.id
                 thresholdSlider.value = model.defaultThreshold ?? 0.2
+            }
+            if let form = try await environment.aiFrames.drafts.loadForm(), form.frameID == frameID {
+                selectedModelID = form.modelID
+                selectedCollections = Set(form.collections)
+                categoryInput.text = form.categoryText
+                includesInput.text = form.includesText
+                excludesInput.text = form.excludesText
+                thresholdSlider.value = form.threshold
+                recursiveSwitch.isOn = form.recursive
+                automaticSwitch.isOn = form.automatic
+                matchControl.selectedSegmentIndex = form.matchAll ? 0 : 1
+                draftID = form.draftID ?? draftID
+                formDirty = form.scanDirty
+                if formDirty { previews.removeAll() }
             }
             if !models.contains(where: { $0.id == selectedModelID }), let replacement = models.first(where: { $0.runtime == "onnx" }) ?? models.first {
                 selectedModelID = replacement.id
@@ -205,7 +241,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
-        case 0: return models.count + 3
+        case 0: return models.count + 1
         case 1: return folderRows.count + 2
         case 2: return filtersExpanded ? 7 : 2
         case 3: return 3
@@ -228,9 +264,12 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         case 0: return AIText.value("Models download on demand. Both support Chinese and English. Domestic mirrors may redirect to overseas servers.", "模型按需下载，两种模型均支持中英文。国内镜像可能重定向至境外服务器。")
         case 1: return collections.isEmpty ? AIText.value("Add photos from Photo Library, files, folders, or NAS, then choose folders to classify.", "从照片库、照片文件、目录或 NAS 添加照片，再选择要分类的目录。") : nil
         case 2: return AIText.value("For example: family, pets or the beach. Enter one category per line. Each category creates a frame, with a name you can edit in the preview.", "例如：家人、宠物、海边。每行填写一个类别，每个类别会生成一个相框；预览结果后可修改名称。")
-        case 3: return AIText.value("Only selected folders are scanned. Continuous classification processes new photos after import while the app is open. It can be changed later.", "仅扫描选定目录。持续分类会在导入完成且 App 打开时处理新照片，之后可修改。")
+        case 3: return AIText.value("Only selected folders are scanned. Continuous classification processes new photos. Pausing takes priority until you explicitly continue. Background work depends on iOS permission.", "仅扫描选定目录。持续分类处理新增照片。手动暂停后需明确继续；后台处理受 iOS 运行许可约束。")
         default:
             let preview = previews[section - 4]
+            if !preview.complete {
+                return AIText.value("Partial results · \(preview.selected.count) selected. Unscanned photos remain pending. Save now or continue scanning.", "部分结果 · 已选 \(preview.selected.count) 张。未扫描照片待继续，可先保存相框。")
+            }
             return preview.matches.contains(where: { $0.decision != .rejected }) ? AIText.value("Review the matches, edit the suggested name and deselect mistakes before saving.", "保存前请确认匹配结果、修改建议名称并取消误选。") : AIText.value("No matches. Adjust the descriptions or lower the threshold, then scan again.", "没有匹配照片，请调整描述或降低阈值后重新扫描。")
         }
     }
@@ -272,7 +311,8 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
             if indexPath.row == 0 {
                 configureToggle(cell, title: AIText.value("Continuous auto-classification", "持续自动分类"), toggle: automaticSwitch)
             } else if indexPath.row == 1 {
-                cell.textLabel?.text = savedJobRunning ? AIText.value("Cancel classification", "取消分类任务") : (busy || downloading ? L10n.string("common.cancel") : AIText.value("Scan and preview", "扫描并预览"))
+                cell.textLabel?.text = savedJobRunning || busy ? AIText.value("Pause and view results", "暂停并查看结果")
+                    : (draftID != nil || frameID != nil ? AIText.value("Continue scanning", "继续扫描") : AIText.value("Scan and preview", "扫描并预览"))
                 cell.textLabel?.textColor = view.tintColor
                 cell.accessibilityIdentifier = "ai.scan"
                 cell.isUserInteractionEnabled = !saving
@@ -290,11 +330,11 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
             let size = ByteCountFormatter.string(fromByteCount: model.byteSize, countStyle: .file)
             cell.detailTextLabel?.text = size + " · " + (installed.contains(model.id) ? AIText.value("Downloaded", "已下载") : AIText.value("Download required", "需要下载"))
             cell.accessoryType = model.id == selectedModelID ? .checkmark : .none
-        } else if row == models.count { embed([sourceControl], in: cell) }
-        else {
-            let delete = row == models.count + 2
-            cell.textLabel?.text = delete ? AIText.value("Delete downloaded model", "删除已下载模型") : AIText.value("Download selected model", "下载所选模型")
-            cell.textLabel?.textColor = delete ? .systemRed : view.tintColor
+        } else {
+            cell.textLabel?.text = AIText.value("Manage AI models", "管理 AI 模型")
+            cell.textLabel?.textColor = view.tintColor
+            cell.accessibilityIdentifier = "ai.manageModels"
+            cell.accessoryType = .disclosureIndicator
         }
     }
 
@@ -348,10 +388,16 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
             let path: String
             if match.assetID.hasPrefix("remote:") { path = match.assetID }
             else {
-                guard let asset = try? await environment.assets.fetchAsset(id: match.assetID) else { return }
+                guard let asset = try? await environment.assets.fetchAsset(id: match.assetID),
+                      !asset.privacyExcluded, asset.deletedAt == nil, asset.readiness == "ready" else { return }
                 path = asset.originalRelPath
             }
             let thumbnail = await thumbnailLoader.thumbnail(relPath: path, pointSize: 56, scale: self.traitCollection.displayScale)
+            if !match.assetID.hasPrefix("remote:") {
+                guard let current = try? await environment.assets.fetchAsset(id: match.assetID),
+                      !current.privacyExcluded, current.deletedAt == nil, current.readiness == "ready",
+                      match.contentVersion == nil || current.contentHash == match.contentVersion else { return }
+            }
             guard let cell, self.tableView.indexPath(for: cell) == indexPath else { return }
             cell.imageView?.image = thumbnail
             cell.setNeedsLayout()
@@ -372,10 +418,12 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
                 Task {
                     await environment.aiFrames.cancel(frameID: frameID)
                     savedJobRunning = false
-                    statusLabel.text = AIText.value("Classification cancelled. Scan again to resume.", "分类已取消，可重新扫描以继续。")
+                    statusLabel.text = AIText.value("Classification paused. Tap Continue to resume.", "分类已暂停，点击继续以恢复。")
                     tableView.reloadSections(IndexSet(integer: 3), with: .none)
                 }
-            } else if busy || downloading { cancelOperation() } else { scan() }
+            } else if busy, let id = draftID {
+                Task { try? await environment.aiFrames.pauseDraft(id: id) }
+            } else { scan() }
             return
         }
         guard !busy, !downloading else { return }
@@ -385,8 +433,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
                 selectedModelID = models[indexPath.row].id
                 thresholdSlider.value = models[indexPath.row].defaultThreshold ?? 0.2
                 settingsChanged()
-            } else if indexPath.row == models.count + 1 { confirmDownload() }
-            else if indexPath.row == models.count + 2 { deleteModel() }
+            } else { openModelManagement() }
         case 1:
             if indexPath.row == 0 {
                 openSources()
@@ -401,6 +448,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
             let index = indexPath.section - 4
             let id = visibleMatches(index)[indexPath.row - 1].assetID
             if previews[index].selected.contains(id) { previews[index].selected.remove(id) } else { previews[index].selected.insert(id) }
+            persistPresentation(index)
         default: break
         }
         tableView.reloadData()
@@ -436,14 +484,25 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
     @objc private func settingsChanged() { thresholdLabel.text = thresholdTitle; invalidatePreview() }
     @objc private func automaticChanged() {
         for index in previews.indices { previews[index].configuration.automatic = automaticSwitch.isOn }
+        let automatic = automaticSwitch.isOn
+        if let id = draftID {
+            Task { try? await environment.aiFrames.drafts.update(id) { draft in
+                for index in draft.categories.indices { draft.categories[index].configuration.automatic = automatic }
+            } }
+        }
+        persistForm()
     }
     private func invalidatePreview() {
+        formDirty = true
+        persistForm()
         if !previews.isEmpty { previews.removeAll(); tableView.reloadData() }
+        draftStatus = "idle"
         navigationItem.rightBarButtonItem?.isEnabled = frameID != nil
     }
     @objc private func nameChanged(_ field: UITextField) {
         guard previews.indices.contains(field.tag) else { return }
         previews[field.tag].name = field.text ?? ""
+        persistPresentation(field.tag)
     }
 
     private func configurations() throws -> [AIFrameConfiguration] {
@@ -455,6 +514,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
                                                        collectionIDs: selectedCollections.sorted(),
                                                        rule: AIFrameRule(category: category, includes: lines(includesInput.text), excludes: lines(excludesInput.text),
                                                                          matchAll: matchControl.selectedSegmentIndex == 0, threshold: thresholdSlider.value))
+            if frameID != nil { configuration.revision = loadedFrameRevision }
             configuration.recursive = recursiveSwitch.isOn
             configuration.automatic = automaticSwitch.isOn
             try configuration.validate()
@@ -467,48 +527,93 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })) as? [String] ?? []
     }
 
+    private func persistPresentation(_ index: Int) {
+        guard let id = draftID, previews.indices.contains(index), !previews[index].categoryID.isEmpty else { return }
+        let preview = previews[index]
+        Task { try? await environment.aiFrames.drafts.presentation(id: id, categoryID: preview.categoryID, name: preview.name, selected: preview.selected) }
+    }
+
+    private func display(_ draft: AIScanDraft) {
+        guard !saving, !formDirty, renderedDraftDate != draft.updatedAt else { return }
+        renderedDraftDate = draft.updatedAt
+        let wasBusy = busy
+        draftID = draft.id
+        draftStatus = draft.status
+        busy = ["running", "pausing"].contains(draft.status)
+        let editingName = containsActiveInput(view)
+        if !editingName && !(wasBusy && busy) {
+            previews = draft.categories.map { category in
+                var preview = Preview(configuration: category.configuration, name: category.name, matches: category.matches,
+                    selected: category.selected, initiallySelected: category.initiallySelected, savedFrameID: category.frameID)
+                preview.categoryID = category.id
+                preview.complete = category.complete
+                return preview
+            }
+        }
+        let state: String
+        if draft.status == "pausing" { state = AIText.value("Pausing after the current photo", "完成当前照片后暂停") }
+        else if draft.userPaused || draft.status == "needsResume" { state = AIText.value("Paused · continue when ready", "已暂停 · 可稍后继续") }
+        else if draft.status == "complete" { state = AIText.value("Classification complete", "分类完成") }
+        else if draft.status == "running" { state = AIText.value("Classifying", "正在分类") }
+        else { state = AIText.value("Ready to continue", "待继续") }
+        statusLabel.text = state + " · " + AIText.value("Classification progress \(draft.completedCount)/\(draft.totalCount)", "分类进度 \(draft.completedCount)/\(draft.totalCount)") + (draft.lastError.map { "\n" + $0 } ?? "")
+        progressView.progress = draft.totalCount > 0 ? Float(draft.completedCount) / Float(draft.totalCount) : 0
+        if !editingName && !(wasBusy && busy) { updateBusy() }
+    }
+
     private func scan() {
         view.endEditing(true)
-        do {
-            let configurations = try configurations()
-            guard installed.contains(selectedModelID) else { throw AIFrameError.missingModel }
-            busy = true
-            statusLabel.text = AIText.value("Preparing the local model…", "正在准备本机模型…")
-            progressView.progress = 0
-            previews.removeAll()
-            updateBusy()
-            operation = Task { [weak self] in
-                guard let self else { return }
-                do {
-                    for configuration in configurations {
-                        let results = try await environment.aiFrames.preview(configuration: configuration) { [weak self] progress in
-                            Task { @MainActor [weak self] in
-                                guard let self else { return }
-                                self.statusLabel.text = AIText.value("\(progress.completed)/\(progress.total) · \(progress.matched) matched · \(progress.review) review · \(progress.failed) failed", "\(progress.completed)/\(progress.total) · 匹配 \(progress.matched) · 待确认 \(progress.review) · 失败 \(progress.failed)")
-                                self.progressView.progress = progress.total > 0 ? Float(progress.completed) / Float(progress.total) : 0
-                            }
-                        }
-                        try Task.checkCancellation()
-                        let themeIDs = results.filter { $0.decision == .matched }.flatMap(\.themes)
-                        let counts = Dictionary(grouping: themeIDs, by: { $0 }).mapValues(\.count)
-                        let themes = counts.keys.sorted { counts[$0, default: 0] > counts[$1, default: 0] }
-                        let name = existingName ?? AIFrameNames.suggestion(category: configuration.rule.category, themes: themes)
-                        let selected = Set(results.filter { $0.decision == .matched && !preservedExclusions.contains($0.assetID) }.map(\.assetID))
-                        previews.append(Preview(configuration: configuration, name: name, matches: results,
-                                                selected: selected, initiallySelected: selected))
-                    }
-                    if previews.allSatisfy({ $0.matches.isEmpty }) { statusLabel.text = AIText.value("No eligible photos in the selected folders.", "所选目录中没有可分类照片。") }
-                } catch is CancellationError { statusLabel.text = AIText.value("Scan cancelled.", "已取消扫描。") }
-                catch { show(error) }
-                busy = false
-                updateBusy()
-            }
-        } catch { show(error) }
+        operation = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let draft = try await environment.aiFrames.prepareDraft(configurations: configurations(), existingID: draftID)
+                if let existingName, draft.categories.count == 1, let category = draft.categories.first {
+                    try await environment.aiFrames.drafts.presentation(id: draft.id, categoryID: category.id, name: existingName, selected: category.selected)
+                }
+                draftID = draft.id
+                formDirty = false
+                persistForm()
+                display(draft)
+                guard installed.contains(selectedModelID) else { openModelManagement(); return }
+                try await environment.aiFrames.startDraft(id: draft.id)
+                if let running = try await environment.aiFrames.draft(id: draft.id) { display(running) }
+            } catch { show(error) }
+        }
+    }
+
+    private func openModelManagement() {
+        view.endEditing(true)
+        Task { [weak self] in
+            guard let self else { return }
+            try? await environment.aiFrames.drafts.saveForm(formSnapshot())
+            let models = AIModelsViewController(environment: environment, focusModelID: selectedModelID)
+            present(UINavigationController(rootViewController: models), animated: true)
+        }
     }
 
     @objc private func save() {
         view.endEditing(true)
         guard !busy, !downloading else { return }
+        if let id = draftID, !previews.isEmpty {
+            guard previews.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else { show(AIFrameError.invalidRules); return }
+            for index in previews.indices { persistPresentation(index) }
+            busy = true
+            saving = true
+            updateBusy()
+            operation = Task { [weak self] in
+                guard let self else { return }
+                do {
+                    for preview in previews { try await environment.aiFrames.drafts.presentation(id: id, categoryID: preview.categoryID, name: preview.name, selected: preview.selected) }
+                    _ = try await environment.aiFrames.saveDraft(id: id)
+                    onSaved?()
+                    dismiss(animated: true)
+                } catch { show(error) }
+                busy = false
+                saving = false
+                updateBusy()
+            }
+            return
+        }
         if previews.isEmpty {
             guard let frameID else { return }
             do {
@@ -569,66 +674,44 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         }
     }
 
-    private func confirmDownload() {
-        guard let model = models.first(where: { $0.id == selectedModelID }) else { return }
-        let alert = UIAlertController(title: model.title,
-                                      message: AIText.value("Download \(ByteCountFormatter.string(fromByteCount: model.byteSize, countStyle: .file)) of model files?", "下载 \(ByteCountFormatter.string(fromByteCount: model.byteSize, countStyle: .file)) 模型文件？"), preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: AIText.value("Wi-Fi only", "仅 Wi-Fi"), style: .default) { [weak self] _ in self?.download(allowCellular: false) })
-        alert.addAction(UIAlertAction(title: AIText.value("Allow cellular", "允许蜂窝网络"), style: .default) { [weak self] _ in self?.download(allowCellular: true) })
-        alert.addAction(UIAlertAction(title: L10n.string("common.cancel"), style: .cancel))
-        present(alert, animated: true)
-    }
-
-    private func download(allowCellular: Bool) {
-        downloading = true
-        updateBusy()
-        let modelID = selectedModelID
-        let source = AIModelDownloadSource(rawValue: sourceControl.selectedSegmentIndex) ?? .automatic
-        operation = Task { [weak self] in
-            guard let self else { return }
-            do {
-                guard let manager = environment.aiFrames.models else { throw AIFrameError.invalidManifest }
-                try await manager.download(id: modelID, source: source, allowCellular: allowCellular) { [weak self] progress in
-                    Task { @MainActor [weak self] in
-                        self?.progressView.progress = Float(progress.fraction)
-                        self?.statusLabel.text = ByteCountFormatter.string(fromByteCount: progress.completedBytes, countStyle: .file) + " / " + ByteCountFormatter.string(fromByteCount: progress.totalBytes, countStyle: .file)
-                    }
-                }
-                try await refreshInstalled()
-                statusLabel.text = AIText.value("Model verified and ready for offline use.", "模型已校验，可离线使用。")
-            } catch is CancellationError { statusLabel.text = AIText.value("Download paused. Tap Download to resume.", "下载已暂停，点击下载可继续。") }
-            catch { show(error) }
-            downloading = false
-            updateBusy()
-        }
-    }
-
-    private func deleteModel() {
-        Task {
-            do {
-                guard let manager = environment.aiFrames.models else { throw AIFrameError.invalidManifest }
-                try await manager.remove(id: selectedModelID)
-                try await refreshInstalled()
-                tableView.reloadData()
-            } catch { show(error) }
-        }
-    }
-
-    private func cancelOperation() {
-        operation?.cancel()
-        Task {
-            await environment.aiFrames.cancelPreview()
-            if downloading, let manager = environment.aiFrames.models { await manager.cancel(id: selectedModelID) }
-        }
-    }
-
     @objc private func dismissKeyboard() { view.endEditing(true) }
 
-    @objc private func close() { cancelOperation(); dismiss(animated: true) }
+    private func containsActiveInput(_ view: UIView) -> Bool {
+        view.isFirstResponder || view.subviews.contains { containsActiveInput($0) }
+    }
+
+    private func formSnapshot() -> AIFormDraft {
+        var form = AIFormDraft()
+        form.scanDirty = formDirty
+        form.modelID = selectedModelID
+        form.collections = Array(selectedCollections)
+        form.categoryText = categoryInput.text ?? ""
+        form.includesText = includesInput.text ?? ""
+        form.excludesText = excludesInput.text ?? ""
+        form.threshold = thresholdSlider.value
+        form.automatic = automaticSwitch.isOn
+        form.recursive = recursiveSwitch.isOn
+        form.matchAll = matchControl.selectedSegmentIndex == 0
+        form.frameID = frameID
+        form.draftID = draftID
+        return form
+    }
+
+    private func persistForm() {
+        let form = formSnapshot()
+        Task { try? await environment.aiFrames.drafts.saveForm(form) }
+    }
+
+    @objc private func close() {
+        view.endEditing(true)
+        let form = formSnapshot()
+        Task { try? await environment.aiFrames.drafts.saveForm(form) }
+        dismiss(animated: true)
+    }
 
     private func updateBusy() {
         navigationItem.leftBarButtonItem?.isEnabled = !saving
-        navigationItem.rightBarButtonItem?.isEnabled = !busy && !downloading && (frameID != nil || !previews.isEmpty)
+        navigationItem.rightBarButtonItem?.isEnabled = !busy && !downloading && (frameID != nil || (!previews.isEmpty && draftStatus != "idle"))
         for control in [recursiveSwitch, automaticSwitch] { control.isEnabled = !busy && !downloading }
         for input in [categoryInput, includesInput, excludesInput] { input.isEditable = !busy && !downloading }
         matchControl.isEnabled = !busy && !downloading

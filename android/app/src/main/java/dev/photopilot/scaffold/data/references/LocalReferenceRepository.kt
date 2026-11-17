@@ -188,7 +188,7 @@ class LocalReferenceRepository(
             val originals = db.assetOriginDao().getBySourceAssets(listOf(asset.id)).map { it.assetId }.distinct()
             val repository = dev.photopilot.scaffold.data.repo.AssetRepository(db, LibraryVersionRepository(db.settingsKvDao()))
             for (original in originals) repository.hideAssetGlobally(original, dev.photopilot.scaffold.data.repo.AssetRepository.REASON_PRIVACY_HIDE, now)
-            dev.photopilot.scaffold.data.aiframes.AIPreviewCheckpoint.invalidateAll(db)
+            dev.photopilot.scaffold.data.aiframes.AIPreviewCheckpoint.removeAssets(db, setOf("remote:${asset.id}") + originals)
             db.settingsKvDao().getByPrefix("ai.vector.").forEach { db.settingsKvDao().delete(it) }
             val aiState = dev.photopilot.scaffold.data.aiframes.AIStateStore(db)
             val ref = "remote:${asset.id}"

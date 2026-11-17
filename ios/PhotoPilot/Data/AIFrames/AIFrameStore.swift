@@ -48,9 +48,9 @@ actor AIFrameStore {
             configuration.revision = previous.revision + 1
             state.configuration = configuration
             state.runToken = nil
-            state.status = "idle"
+            state.status = state.isUserPaused ? "userPaused" : (state.status == "failed" ? "failed" : "idle")
             state.lastError = nil
-            if previous.rule != configuration.rule || previous.modelID != configuration.modelID || previous.modelRevision != configuration.modelRevision || previous.collectionIDs != configuration.collectionIDs || previous.recursive != configuration.recursive {
+            if previous.scanFingerprint != configuration.scanFingerprint {
                 state.completedContentVersions.removeAll()
                 state.matches.removeAll()
             }
@@ -65,7 +65,7 @@ actor AIFrameStore {
         return try await context.perform {
             guard try Self.frame(context, id: frameID) != nil,
                   var state = try Self.read(context: context, frameID: frameID),
-                  state.configuration == configuration else { throw AIFrameError.staleRun }
+                  state.configuration == configuration, !state.isUserPaused else { throw AIFrameError.staleRun }
             let token = state.beginRun()
             state.total = total
             state.skipped = skipped
@@ -80,9 +80,22 @@ actor AIFrameStore {
         try await context.perform {
             guard var state = try Self.read(context: context, frameID: frameID),
                   expectedConfiguration == nil || state.configuration == expectedConfiguration else { return }
-            state.cancel()
-            state.status = status
+            state.runToken = nil
+            if ["cancelled", "userPaused", "needsResume"].contains(status) { state.userPaused = true }
+            state.status = state.isUserPaused && !["cancelled", "needsResume"].contains(status) ? "userPaused" : status
             state.lastError = lastError
+            try Self.write(state, context: context)
+            try context.save()
+        }
+    }
+
+    func resume(frameID: String) async throws {
+        let context = controller.container.newBackgroundContext()
+        try await context.perform {
+            guard var state = try Self.read(context: context, frameID: frameID) else { return }
+            state.userPaused = false
+            state.status = "idle"
+            state.lastError = nil
             try Self.write(state, context: context)
             try context.save()
         }
@@ -204,12 +217,21 @@ actor AIFrameStore {
     func applyPreview(frameID: String, configuration: AIFrameConfiguration, matches: [AIFrameMatch], manualIncludes: Set<String> = [], manualExcludes: Set<String> = []) async throws {
         let context = controller.container.newBackgroundContext()
         try await context.perform {
+            try Self.applyPreview(context: context, frameID: frameID, configuration: configuration, matches: matches,
+                manualIncludes: manualIncludes, manualExcludes: manualExcludes)
+            try context.save()
+        }
+    }
+
+    private static func applyPreview(context: NSManagedObjectContext, frameID: String, configuration: AIFrameConfiguration,
+        matches: [AIFrameMatch], manualIncludes: Set<String> = [], manualExcludes: Set<String> = [],
+        processedVersions: [String: String] = [:], userPaused: Bool? = nil, complete: Bool = true) throws {
             guard let frame = try Self.frame(context, id: frameID),
                   var state = try Self.read(context: context, frameID: frameID), state.configuration == configuration else { throw AIFrameError.staleRun }
             let candidates = try Self.candidates(context, configuration: configuration)
             let eligible = Set(candidates.map(\.id))
             let currentVersions = Dictionary(uniqueKeysWithValues: candidates.map { ($0.id, $0.contentHash) })
-            for match in matches where match.assetID.hasPrefix("remote:") {
+            for match in matches where match.contentVersion != nil || match.assetID.hasPrefix("remote:") {
                 guard match.contentVersion != nil, currentVersions[match.assetID] == match.contentVersion else { throw AIFrameError.staleRun }
             }
             let includeAliases = try manualIncludes.reduce(into: Set<String>()) { $0.formUnion(try RemoteMediaRepository.referenceAliases(context: context, runtimeID: $1)) }
@@ -240,9 +262,74 @@ actor AIFrameStore {
                 try Self.apply(match, asset: asset, frame: frame, state: &state, context: context)
                 state.matches[match.assetID] = match
             }
-            for id in state.ownedAssetIDs.subtracting(eligible) { try Self.removeOwned(id, frame: frame, state: &state, context: context) }
+            if complete {
+                for id in state.ownedAssetIDs.subtracting(eligible) { try Self.removeOwned(id, frame: frame, state: &state, context: context) }
+            }
+            for (id, version) in processedVersions where eligible.contains(id) {
+                if let content = currentVersions[id], version == content + ":" + configuration.modelID + ":" + configuration.modelRevision + ":preprocess2" {
+                    state.completedContentVersions[id] = version
+                }
+            }
+            if let userPaused { state.userPaused = userPaused }
+            if state.isUserPaused { state.runToken = nil; state.status = "userPaused" }
             try Self.write(state, context: context)
-            try context.save()
+    }
+
+    func mappedFrameID(draftID: String, categoryID: String) async throws -> String? {
+        let context = controller.container.newBackgroundContext()
+        return try await context.perform {
+            guard let json = try Self.setting(context, key: "ai.draft.frame.v1." + draftID + "." + categoryID)?.value(forKey: "value_json") as? String else { return nil }
+            return try JSONDecoder().decode(String.self, from: Data(json.utf8))
+        }
+    }
+
+    func savePartialCategory(draftID: String, categoryID: String, name: String, configuration: AIFrameConfiguration,
+        matches: [AIFrameMatch], processedVersions: [String: String], userPaused: Bool,
+        manualIncludes: Set<String> = [], manualExcludes: Set<String> = [], complete: Bool = false) async throws -> String {
+        try configuration.validate()
+        let context = controller.container.newBackgroundContext()
+        return try await LibraryStorageGate.shared(storeURL: controller.storeURL).perform {
+            try await context.perform {
+                let key = "ai.draft.frame.v1." + draftID + "." + categoryID
+                let mapping = try Self.setting(context, key: key)
+                let mapped = (mapping?.value(forKey: "value_json") as? String).flatMap { try? JSONDecoder().decode(String.self, from: Data($0.utf8)) }
+                let existing = try Self.frame(context, id: configuration.frameID)
+                let id = mapped ?? (existing == nil ? UUID().uuidString : configuration.frameID)
+                let frame: NSManagedObject
+                if let current = try Self.frame(context, id: id) { frame = current }
+                else if mapped != nil { throw AIFrameError.staleRun }
+                else {
+                    let folders = NSFetchRequest<NSManagedObject>(entityName: "Collection")
+                    folders.predicate = NSPredicate(format: "id IN %@ AND source.type IN %@", configuration.collectionIDs, ["webdav", "smb"])
+                    let remote = try context.count(for: folders) > 0 || matches.contains { $0.assetID.hasPrefix("remote:") }
+                    frame = try FrameManager.insertFrame(context: context, frameID: id, name: name,
+                        storageMode: remote ? .remote : nil,
+                        now: Int(Date().timeIntervalSince1970 * 1000))
+                }
+                var committed = configuration
+                committed.frameID = id
+                var state = try Self.read(context: context, frameID: id) ?? AIFrameState(configuration: committed)
+                if mapped == nil, existing != nil, state.configuration.revision != configuration.revision { throw AIFrameError.staleRun }
+                if mapped != nil, state.configuration.scanFingerprint != committed.scanFingerprint { throw AIFrameError.staleRun }
+                if state.configuration.scanFingerprint != committed.scanFingerprint {
+                    state.completedContentVersions.removeAll()
+                    state.matches.removeAll()
+                    committed.revision = state.configuration.revision + 1
+                } else { committed.revision = state.configuration.revision }
+                state.configuration = committed
+                state.runToken = nil
+                state.userPaused = userPaused || state.isUserPaused
+                state.status = state.isUserPaused ? "userPaused" : "complete"
+                try Self.write(state, context: context)
+                try Self.applyPreview(context: context, frameID: id, configuration: committed, matches: matches,
+                    manualIncludes: manualIncludes, manualExcludes: manualExcludes, processedVersions: processedVersions,
+                    userPaused: state.isUserPaused, complete: complete)
+                frame.setValue(name, forKey: "name")
+                let row = try mapping ?? NSEntityDescription.insertNewObject(forEntityName: "SettingsKV", into: context)
+                try Self.assign(row, key: key, data: JSONEncoder().encode(id))
+                try context.save()
+                return id
+            }
         }
     }
 

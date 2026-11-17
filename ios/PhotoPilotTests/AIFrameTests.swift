@@ -47,6 +47,8 @@ final class AIFrameTests: XCTestCase {
         state.cancel()
         XCTAssertFalse(state.shouldRunOnForeground)
         state.status = "pausedAuto"
+        XCTAssertFalse(state.shouldRunOnForeground)
+        state.userPaused = false
         XCTAssertTrue(state.shouldRunOnForeground)
         state.status = "failed"
         XCTAssertFalse(state.shouldRunOnForeground)

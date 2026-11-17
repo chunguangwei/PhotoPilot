@@ -57,6 +57,10 @@ class AIFrameWorkflowTest {
             assertEquals(FrameSelectionMode.INCLUDE, db.frameSelectionDao().getByFrame(second.id).single().mode)
             val failureFrame = service.savePreviews(listOf(previews[0]), listOf("Failure validation"), listOf(setOf(prefix)), false).single()
             created = created + failureFrame
+            val unscannedState = requireNotNull(service.state.get(failureFrame))
+            val partialPreview = previews[0].copy(matches = emptyMap(), reviews = emptyMap(), fingerprints = emptyMap())
+            service.savePreviews(listOf(partialPreview), listOf("Unscanned retained"), listOf(emptySet()), false, failureFrame, unscannedState.revision)
+            assertTrue("Unscanned existing AI members must survive partial confirmation", prefix in requireNotNull(service.state.get(failureFrame)).members)
             val failureState = requireNotNull(service.state.get(failureFrame))
             val failedPreview = previews[0].copy(matches = emptyMap(), reviews = emptyMap(), fingerprints = emptyMap(), failed = 1, failedAssetIDs = setOf(prefix))
             service.savePreviews(listOf(failedPreview), listOf("Failure validation"), listOf(emptySet()), false, failureFrame, failureState.revision)

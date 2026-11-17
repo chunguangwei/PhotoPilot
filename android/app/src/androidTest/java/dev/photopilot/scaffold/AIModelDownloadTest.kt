@@ -9,6 +9,24 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AIModelDownloadTest {
+    @Test fun completePartialRecoversFromHashWithoutAnotherNetworkRequest() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val manager = AIModelManager(context)
+        val compact = manager.models.single { it.runtime == "onnx" }
+        val file = compact.files.single { it.name == "vocab.txt" }.copy(international = emptyList(), domestic = emptyList())
+        val model = compact.copy(id = "complete-part-" + UUID.randomUUID(), files = listOf(file))
+        val folder = manager.directory(model)
+        try {
+            File(context.filesDir, "ai-validation/multilingual-clip/vocab.txt").copyTo(File(folder, file.name + ".part"))
+            manager.download(model, "auto", true) { _, _ -> }
+            assertTrue(manager.ready(model))
+            assertTrue(manager.verify(model))
+            assertFalse(File(folder, file.name + ".part").exists())
+        } finally {
+            folder.deleteRecursively()
+        }
+    }
+
     @Test fun verifiedFileRecoversMissingMarkerAndBrokenResumeMetadataDownloadsCorrectBytes() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val manager = AIModelManager(context)
