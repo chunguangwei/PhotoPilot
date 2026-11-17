@@ -1,0 +1,260 @@
+{
+  "meta": {
+    "truth": "docs/superpowers/plans/2026-11-17-ai-pause-model-management.md",
+    "rule": "Explicit user pause and stopped or failed tasks require explicit continuation. Interrupted active work can recover. Completed and idle jobs run automatically only with automatic enabled."
+  },
+  "cases": [
+    {
+      "id": "AIR-01",
+      "state": "running",
+      "androidStatus": "running",
+      "iosStatus": "running",
+      "automatic": false,
+      "userPaused": false,
+      "expectedResume": true
+    },
+    {
+      "id": "AIR-02",
+      "state": "running",
+      "androidStatus": "running",
+      "iosStatus": "running",
+      "automatic": false,
+      "userPaused": true,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-03",
+      "state": "running",
+      "androidStatus": "running",
+      "iosStatus": "running",
+      "automatic": true,
+      "userPaused": false,
+      "expectedResume": true
+    },
+    {
+      "id": "AIR-04",
+      "state": "running",
+      "androidStatus": "running",
+      "iosStatus": "running",
+      "automatic": true,
+      "userPaused": true,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-05",
+      "state": "systemPaused",
+      "androidStatus": "paused",
+      "iosStatus": "pausedAuto",
+      "automatic": false,
+      "userPaused": false,
+      "expectedResume": true
+    },
+    {
+      "id": "AIR-06",
+      "state": "systemPaused",
+      "androidStatus": "paused",
+      "iosStatus": "pausedAuto",
+      "automatic": false,
+      "userPaused": true,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-07",
+      "state": "systemPaused",
+      "androidStatus": "paused",
+      "iosStatus": "pausedAuto",
+      "automatic": true,
+      "userPaused": false,
+      "expectedResume": true
+    },
+    {
+      "id": "AIR-08",
+      "state": "systemPaused",
+      "androidStatus": "paused",
+      "iosStatus": "pausedAuto",
+      "automatic": true,
+      "userPaused": true,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-09",
+      "state": "idle",
+      "androidStatus": "idle",
+      "iosStatus": "idle",
+      "automatic": false,
+      "userPaused": false,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-10",
+      "state": "idle",
+      "androidStatus": "idle",
+      "iosStatus": "idle",
+      "automatic": false,
+      "userPaused": true,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-11",
+      "state": "idle",
+      "androidStatus": "idle",
+      "iosStatus": "idle",
+      "automatic": true,
+      "userPaused": false,
+      "expectedResume": true
+    },
+    {
+      "id": "AIR-12",
+      "state": "idle",
+      "androidStatus": "idle",
+      "iosStatus": "idle",
+      "automatic": true,
+      "userPaused": true,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-13",
+      "state": "complete",
+      "androidStatus": "complete",
+      "iosStatus": "complete",
+      "automatic": false,
+      "userPaused": false,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-14",
+      "state": "complete",
+      "androidStatus": "complete",
+      "iosStatus": "complete",
+      "automatic": false,
+      "userPaused": true,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-15",
+      "state": "complete",
+      "androidStatus": "complete",
+      "iosStatus": "complete",
+      "automatic": true,
+      "userPaused": false,
+      "expectedResume": true
+    },
+    {
+      "id": "AIR-16",
+      "state": "complete",
+      "androidStatus": "complete",
+      "iosStatus": "complete",
+      "automatic": true,
+      "userPaused": true,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-17",
+      "state": "cancelled",
+      "androidStatus": "cancelled",
+      "iosStatus": "cancelled",
+      "automatic": false,
+      "userPaused": false,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-18",
+      "state": "cancelled",
+      "androidStatus": "cancelled",
+      "iosStatus": "cancelled",
+      "automatic": false,
+      "userPaused": true,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-19",
+      "state": "cancelled",
+      "androidStatus": "cancelled",
+      "iosStatus": "cancelled",
+      "automatic": true,
+      "userPaused": false,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-20",
+      "state": "cancelled",
+      "androidStatus": "cancelled",
+      "iosStatus": "cancelled",
+      "automatic": true,
+      "userPaused": true,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-21",
+      "state": "failed",
+      "androidStatus": "failed",
+      "iosStatus": "failed",
+      "automatic": false,
+      "userPaused": false,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-22",
+      "state": "failed",
+      "androidStatus": "failed",
+      "iosStatus": "failed",
+      "automatic": false,
+      "userPaused": true,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-23",
+      "state": "failed",
+      "androidStatus": "failed",
+      "iosStatus": "failed",
+      "automatic": true,
+      "userPaused": false,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-24",
+      "state": "failed",
+      "androidStatus": "failed",
+      "iosStatus": "failed",
+      "automatic": true,
+      "userPaused": true,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-25",
+      "state": "needsResume",
+      "androidStatus": "needsResume",
+      "iosStatus": "needsResume",
+      "automatic": false,
+      "userPaused": false,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-26",
+      "state": "needsResume",
+      "androidStatus": "needsResume",
+      "iosStatus": "needsResume",
+      "automatic": false,
+      "userPaused": true,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-27",
+      "state": "needsResume",
+      "androidStatus": "needsResume",
+      "iosStatus": "needsResume",
+      "automatic": true,
+      "userPaused": false,
+      "expectedResume": false
+    },
+    {
+      "id": "AIR-28",
+      "state": "needsResume",
+      "androidStatus": "needsResume",
+      "iosStatus": "needsResume",
+      "automatic": true,
+      "userPaused": true,
+      "expectedResume": false
+    }
+  ]
+}
