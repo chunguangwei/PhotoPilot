@@ -1,6 +1,6 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
-## 2026-11-17 播放设置预览、首图与来源浏览 · 1.4.10（71）待发布
+## 2026-11-17 播放设置预览、首图与来源浏览 · 1.4.10（71）已发布
 
 - iOS播放设置预览旧helper仅查FrameSelection.asset.original_rel_path，遗漏sourceAsset及目录规则，并未沿用播放顺序。现复用实际FrameRepository队列，将本机引用/NAS映射为runtimeID、私有导入映射为原路径，遵循原有授权、排除及存储模式。小预览限制512px，首张就绪即显示，随后补转场演示图；管理返回刷新预览。
 - 播放首图先请求已授权缓存预览，随后沿用完整图解码。提取RemoteMediaService.cachedImage共用既有内存/磁盘权威检查，不因预览另行下载原图。预览阶段维持preparing，完整图就绪后才开始停留计时。加载指示器本地化，退出、失败、取消及撤权清理；generation保护迟到前景/模糊背景，取消不再更新错误提示。
@@ -9,7 +9,7 @@
 - 本轮Android验证按用户明确选择收窄为构建与代码检查。5554在最终安装前消失，无qemu进程，现有emulator组件及AVD目录缺失；已请求恢复授权，用户选择本轮构建/检查。未安装SDK或重建AVD，修复后原生GREEN未执行。最终71 Debug/AndroidTest/原签名Release构建、446 JVM通过，lint0错误204警告。独立静态审查无开放重要项，不把测试编译或旧实现RED记为运行通过。
 - iOS最终338执行、331通过、7条件跳过、0失败，89.542秒。独立验证模型QA6/6通过，补测其中5项模型条件。iPhone13生产71覆盖升级后真实NAS相框的播放设置预览→管理照片→返回预览→开始播放→首张清晰图→退出完整流程1/1通过28.010秒。主Agent目检设置3秒预览、返回2秒预览、播放初始及3秒/清晰图截图均有照片。截图仅留本机忽略目录，未修改相框选片或保存设置。首轮临时UI脚本误对单元素调用allElementsBoundByIndex编译失败，改为查询集合后重跑。
 - make check、iOS build/analyze及开发签名归档严格校验通过。最终iOS executable SHA256为0b9caff322d5ce627be77a2730cfe16ff804b8a422f7dc3e28cf208f3bfbe2dd，最低OS15、无内置模型权重。Android四ABI原签名APK154433782bytes，SHA256为142784503306b8dcbfc8e7be459ec6adf8266ce57d6c593f9afee207272e5caa，catalog一致、无模型权重。签名初次文本比对常量有抄写错误，改为直接与149证书摘要比较一致。物理iPad未接入，本轮Android无运行验收。
-- iPhone和模拟器自有QA应用已清理，生产71保持用户数据，未导出生产数据库。缓存预览缺失时首次图片仍受NAS网络和文件大小影响，此时显示加载反馈。发布验证记录为store/appstore/review/PlaybackBrowseRelease1410.json。App Store继续等待用户确认，无上传或提交审核。
+- iPhone和模拟器自有QA应用已清理，生产71保持用户数据，未导出生产数据库。缓存预览缺失时首次图片仍受NAS网络和文件大小影响，此时显示加载反馈。源码6bc8bfa及annotated tag v1.4.10已推送main，[GitHub v1.4.10](https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.10)已公开为Latest。4份附件匿名完整下载后的大小及SHA256均与本地及GitHub摘要一致。发布验证记录为store/appstore/review/PlaybackBrowseRelease1410.json。App Store继续等待用户确认，无上传或提交审核。
 
 
 ## 2026-11-17 相框照片管理与远端预览修复 · 1.4.9（70）已发布
