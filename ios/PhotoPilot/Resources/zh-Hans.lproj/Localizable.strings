@@ -580,3 +580,4 @@
 "sources.browse_photos" = "浏览照片";
 "sources.refresh_index" = "刷新照片列表";
 "source.local.add" = "添加本机来源";
+"frames.load_failed" = "无法载入相框，请重试。";

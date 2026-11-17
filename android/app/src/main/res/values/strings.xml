@@ -658,4 +658,5 @@
     <string name="sources.browse_photos">Browse photos</string>
     <string name="sources.refresh_index">Refresh photo list</string>
     <string name="source.local.add">Add device source</string>
+    <string name="frames.load_failed">Unable to load frames. Please retry.</string>
 </resources>

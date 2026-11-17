@@ -20,6 +20,7 @@ class LocalReferenceRepositoryInstrumentedTest {
         var permission = true
         var persistent = true
         var decodes = 0
+        var reads = 0
         val grants = linkedSetOf<String>()
         val released = mutableSetOf<String>()
         var releaseFailure: String? = null
@@ -27,10 +28,13 @@ class LocalReferenceRepositoryInstrumentedTest {
         val deniedUris = mutableSetOf<String>()
         var rawProviderDenial = false
         var onDecode: (() -> Unit)? = null
+        var onRead: (() -> Unit)? = null
         override fun photos(): List<LocalReferenceEntry> { checkPermission(); return entries.values.toList() }
         override fun tree(uri: String): List<LocalReferenceEntry> { checkPermission(); return entries.values.toList() }
         override fun document(uri: String, key: String): LocalReferenceEntry? {
+            reads++
             checkPermission()
+            onRead?.invoke()
             if (uri in deniedUris) {
                 if (rawProviderDenial) throw SecurityException("Synthetic provider denial")
                 throw LocalReferenceException("LOCAL_REFERENCE_PERMISSION_REQUIRED")
@@ -70,6 +74,223 @@ class LocalReferenceRepositoryInstrumentedTest {
         try { block(LocalReferenceRepository(context, db, access), db, access, root) }
         finally { db.close(); root.deleteRecursively() }
     }
+    @Test fun playbackSnapshotValidatesEachDevicePhotoOnceAndStillHonorsRevocation() = runBlocking {
+        isolated { repo, db, access, root ->
+            val uris = (1..12).map { Uri.parse("content://fixture/document/snapshot-$it") }
+            uris.forEach { uri -> access.entries[uri.toString()] = LocalReferenceEntry(uri.toString(), uri.toString(), "1", 1) }
+            val source = repo.indexFiles(uris, 0)
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            val remote = dev.photopilot.scaffold.data.remote.RemoteMediaRepository(context, db, { null }, { false }).apply { localReferences = repo }
+            val frames = dev.photopilot.scaffold.data.repo.FrameRepository(db, dev.photopilot.scaffold.data.repo.LibraryVersionRepository(db.settingsKvDao()), File(root, "originals")).apply { remoteMedia = remote }
+            val frame = dev.photopilot.scaffold.data.repo.FrameManager(db).createFrame("Snapshot fixture")
+            db.sourceAssetDao().getBySource(source.id).forEach { asset ->
+                db.frameSelectionDao().upsertResolved(frame.id, null, asset.id, FrameSelectionMode.INCLUDE, null, 1)
+            }
+            access.reads = 0
+            val items = frames.playbackItems(frame.id)
+            assertEquals(12, items.size)
+            assertEquals("Each photo must be validated once per playback snapshot", 12, access.reads)
+            access.permission = false
+            assertTrue(frames.playbackItems(frame.id).isEmpty())
+        }
+    }
+
+    @Test fun loadingFramesKeepNamesAndRetryStateThroughConfigurationChange() = runBlocking {
+        isolated { _, db, _, root ->
+            val frame = dev.photopilot.scaffold.data.repo.FrameManager(db).createFrame("Visible before validation")
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            instrumentation.runOnMainSync {
+                val context = instrumentation.targetContext
+                val view = dev.photopilot.scaffold.ui.frames.FramesView(context, root)
+                fun labels(node: android.view.View): List<android.widget.TextView> =
+                    (if (node is android.widget.TextView) listOf(node) else emptyList()) +
+                        (if (node is android.view.ViewGroup) (0 until node.childCount).flatMap { labels(node.getChildAt(it)) } else emptyList())
+                view.showLoadingFrames(listOf(frame))
+                view.measure(android.view.View.MeasureSpec.makeMeasureSpec(1080, android.view.View.MeasureSpec.EXACTLY), android.view.View.MeasureSpec.makeMeasureSpec(2400, android.view.View.MeasureSpec.EXACTLY))
+                view.layout(0, 0, 1080, 2400)
+                assertTrue(labels(view).any { it.text.toString() == frame.name })
+                assertFalse(labels(view).single { it.text.toString() == context.getString(R.string.frames_play) }.isEnabled)
+                view.showLoadFailure()
+                view.dispatchConfigurationChanged(android.content.res.Configuration(context.resources.configuration))
+                assertTrue(labels(view).any { it.text.toString() == context.getString(R.string.frames_load_failed) })
+                var retried = false
+                view.onRetry = { retried = true; view.showLoading() }
+                assertTrue(labels(view).single { it.text.toString() == context.getString(R.string.common_retry) }.performClick())
+                assertTrue(retried)
+                assertTrue(labels(view).any { it.text.toString() == context.getString(R.string.common_loading) })
+                view.render(emptyList(), false)
+                assertFalse(labels(view).any { it.text.toString() == context.getString(R.string.common_loading) })
+                assertTrue(labels(view).any { it.text.toString() == context.getString(R.string.frames_empty_title) })
+            }
+        }
+    }
+
+    @Test fun realHomeLoadShowsNamesThenCompletesQueuedRefreshAndCancelsOnDeparture() = runBlocking {
+        isolated { repo, db, access, root ->
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            val base = instrumentation.targetContext
+            val context = object : ContextWrapper(base) {
+                override fun getApplicationContext(): Context = this
+                override fun getFilesDir(): File = File(root, "files").apply { mkdirs() }
+                override fun getCacheDir(): File = File(root, "cache").apply { mkdirs() }
+                override fun getDatabasePath(name: String): File = File(root, name)
+            }
+            val env = dev.photopilot.scaffold.data.AppEnvironment.create(context, db)
+            env.remoteMedia.localReferences = repo
+            val uri = Uri.parse("content://fixture/document/blocked-home")
+            access.entries[uri.toString()] = LocalReferenceEntry(uri.toString(), uri.toString(), "1", 1)
+            val source = repo.indexFiles(listOf(uri), 0)
+            val asset = db.sourceAssetDao().getBySource(source.id).single()
+            val frame = env.frameManager.createFrame("Home metadata before provider validation")
+            db.frameSelectionDao().upsertResolved(frame.id, null, asset.id, FrameSelectionMode.INCLUDE, null, 1)
+            val activity = instrumentation.startActivitySync(android.content.Intent(base, MainActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
+            kotlinx.coroutines.delay(6500)
+            val environmentField = MainActivity::class.java.getDeclaredField("environment").apply { isAccessible = true }
+            val activeField = MainActivity::class.java.getDeclaredField("activeFramesView").apply { isAccessible = true }
+            val jobField = MainActivity::class.java.getDeclaredField("framesReloadJob").apply { isAccessible = true }
+            val dirtyField = MainActivity::class.java.getDeclaredField("framesDirty").apply { isAccessible = true }
+            val versionField = MainActivity::class.java.getDeclaredField("lastLibraryVersionJson").apply { isAccessible = true }
+            val reload = MainActivity::class.java.getDeclaredMethod("reloadFrames", dev.photopilot.scaffold.ui.frames.FramesView::class.java).apply { isAccessible = true }
+            val previous = environmentField.get(activity)
+            val entered = java.util.concurrent.CountDownLatch(1)
+            val release = java.util.concurrent.CountDownLatch(1)
+            val nextEntered = java.util.concurrent.CountDownLatch(1)
+            val nextRelease = java.util.concurrent.CountDownLatch(1)
+            var view: dev.photopilot.scaffold.ui.frames.FramesView? = null
+            fun labels(node: android.view.View): List<String> =
+                (if (node is android.widget.TextView) listOf(node.text.toString()) else emptyList()) +
+                    (if (node is android.view.ViewGroup) (0 until node.childCount).flatMap { labels(node.getChildAt(it)) } else emptyList())
+            suspend fun awaitIdle() {
+                kotlinx.coroutines.withTimeout(15000) {
+                    while (true) {
+                        var idle = false
+                        instrumentation.runOnMainSync { idle = jobField.get(activity) == null && !dirtyField.getBoolean(activity) }
+                        if (idle) break
+                        kotlinx.coroutines.delay(50)
+                    }
+                }
+            }
+            try {
+                val version = db.settingsKvDao().get(dev.photopilot.scaffold.data.logic.LibraryVersionLogic.KEY)?.valueJson
+                access.onRead = { entered.countDown(); check(release.await(15, java.util.concurrent.TimeUnit.SECONDS)) }
+                instrumentation.runOnMainSync {
+                    (jobField.get(activity) as? kotlinx.coroutines.Job)?.cancel()
+                    environmentField.set(activity, env)
+                    val pollHandler = MainActivity::class.java.getDeclaredField("pollHandler").apply { isAccessible = true }.get(activity) as android.os.Handler
+                    val pollRunnable = MainActivity::class.java.getDeclaredField("pollRunnable").apply { isAccessible = true }.get(activity) as Runnable
+                    pollHandler.removeCallbacks(pollRunnable)
+                    versionField.set(activity, version)
+                    val screen = dev.photopilot.scaffold.ui.frames.FramesView(activity, context.filesDir)
+                    view = screen
+                    activeField.set(activity, screen)
+                    jobField.set(activity, null)
+                    dirtyField.setBoolean(activity, false)
+                    reload.invoke(activity, screen)
+                }
+                assertTrue(entered.await(15, java.util.concurrent.TimeUnit.SECONDS))
+                instrumentation.runOnMainSync {
+                    val screen = requireNotNull(view)
+                    screen.measure(android.view.View.MeasureSpec.makeMeasureSpec(1080, android.view.View.MeasureSpec.EXACTLY), android.view.View.MeasureSpec.makeMeasureSpec(2400, android.view.View.MeasureSpec.EXACTLY))
+                    screen.layout(0, 0, 1080, 2400)
+                    assertTrue(labels(screen).contains(frame.name))
+                    assertTrue(labels(screen).contains(base.getString(R.string.common_loading)))
+                    val running = jobField.get(activity)
+                    repeat(8) { reload.invoke(activity, screen) }
+                    assertSame(running, jobField.get(activity))
+                    assertTrue(dirtyField.getBoolean(activity))
+                }
+                release.countDown()
+                awaitIdle()
+                instrumentation.runOnMainSync {
+                    val screen = requireNotNull(view)
+                    assertFalse(labels(screen).contains(base.getString(R.string.common_loading)))
+                    assertFalse(labels(screen).contains(base.getString(R.string.frames_load_failed)))
+                    assertTrue(labels(screen).contains(frame.name))
+                    val playButtons = arrayListOf<android.view.View>()
+                    screen.findViewsWithText(playButtons, base.getString(R.string.frames_play), android.view.View.FIND_VIEWS_WITH_TEXT)
+                    assertTrue(playButtons.single().isEnabled)
+                }
+                access.onRead = { nextEntered.countDown(); check(nextRelease.await(15, java.util.concurrent.TimeUnit.SECONDS)) }
+                instrumentation.runOnMainSync { reload.invoke(activity, requireNotNull(view)) }
+                assertTrue(nextEntered.await(15, java.util.concurrent.TimeUnit.SECONDS))
+                lateinit var cancelled: kotlinx.coroutines.Job
+                instrumentation.runOnMainSync {
+                    cancelled = jobField.get(activity) as kotlinx.coroutines.Job
+                    dirtyField.setBoolean(activity, true)
+                    activeField.set(activity, null)
+                    cancelled.cancel()
+                }
+                nextRelease.countDown()
+                cancelled.join()
+                instrumentation.runOnMainSync { assertNull(jobField.get(activity)) }
+            } finally {
+                release.countDown()
+                nextRelease.countDown()
+                access.onRead = null
+                instrumentation.runOnMainSync {
+                    activeField.set(activity, null)
+                    (jobField.get(activity) as? kotlinx.coroutines.Job)?.cancel()
+                    environmentField.set(activity, previous)
+                    activity.finish()
+                }
+                env.runner.shutdownAndJoin()
+                env.aiFrames.shutdown()
+                env.remoteCopies.shutdown()
+                env.remoteMedia.close()
+            }
+        }
+    }
+
+    @Test fun repeatedHomeRefreshCoalescesAndStalePageCannotCancelCurrentLoad() = runBlocking {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
+        val activity = instrumentation.startActivitySync(android.content.Intent(context, MainActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
+        kotlinx.coroutines.delay(6500)
+        val placeholder = kotlinx.coroutines.Job()
+        try {
+            instrumentation.runOnMainSync {
+                val activeField = MainActivity::class.java.getDeclaredField("activeFramesView").apply { isAccessible = true }
+                val jobField = MainActivity::class.java.getDeclaredField("framesReloadJob").apply { isAccessible = true }
+                val dirtyField = MainActivity::class.java.getDeclaredField("framesDirty").apply { isAccessible = true }
+                (jobField.get(activity) as? kotlinx.coroutines.Job)?.cancel()
+                val current = dev.photopilot.scaffold.ui.frames.FramesView(activity, context.cacheDir)
+                activeField.set(activity, current)
+                jobField.set(activity, placeholder)
+                dirtyField.setBoolean(activity, false)
+                val reload = MainActivity::class.java.getDeclaredMethod("reloadFrames", dev.photopilot.scaffold.ui.frames.FramesView::class.java).apply { isAccessible = true }
+                repeat(12) { reload.invoke(activity, current) }
+                assertSame(placeholder, jobField.get(activity))
+                assertTrue(placeholder.isActive)
+                assertTrue(dirtyField.getBoolean(activity))
+                dirtyField.setBoolean(activity, false)
+                val detached = dev.photopilot.scaffold.ui.frames.FramesView(activity, context.cacheDir)
+                reload.invoke(activity, detached)
+                assertSame(placeholder, jobField.get(activity))
+                assertTrue(placeholder.isActive)
+                assertFalse(dirtyField.getBoolean(activity))
+                activeField.set(activity, null)
+                jobField.set(activity, null)
+            }
+        } finally {
+            placeholder.cancel()
+            instrumentation.runOnMainSync { activity.finish() }
+        }
+    }
+
+    @Test fun framesScreenHasImmediateTitleAndLoadingStateBeforeAnyDatabaseResult() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.runOnMainSync {
+            val context = instrumentation.targetContext
+            val view = dev.photopilot.scaffold.ui.frames.FramesView(context, context.cacheDir)
+            fun labels(node: android.view.View): List<String> =
+                (if (node is android.widget.TextView) listOf(node.text.toString()) else emptyList()) +
+                    (if (node is android.view.ViewGroup) (0 until node.childCount).flatMap { labels(node.getChildAt(it)) } else emptyList())
+            assertTrue(labels(view).contains(context.getString(R.string.frames_title)))
+            assertTrue(labels(view).contains(context.getString(R.string.common_loading)))
+            assertFalse(labels(view).contains(context.getString(R.string.frames_empty_title)))
+        }
+    }
+
     @Test fun indexingStoresReferencesWithoutOriginalsAssetsOrImportJobs() = runBlocking {
         isolated { repo, db, access, root ->
             val uri = "content://local-reference-fixture/document/one"

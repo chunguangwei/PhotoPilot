@@ -4604,6 +4604,13 @@
       "platform": "all",
       "zh": "添加本机来源",
       "en": "Add device source"
+    },
+    {
+      "key": "frames.load_failed",
+      "section": "3. 相框",
+      "platform": "all",
+      "zh": "无法载入相框，请重试。",
+      "en": "Unable to load frames. Please retry."
     }
   ]
 }

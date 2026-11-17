@@ -642,4 +642,5 @@
     <string name="sources.browse_photos">浏览照片</string>
     <string name="sources.refresh_index">刷新照片列表</string>
     <string name="source.local.add">添加本机来源</string>
+    <string name="frames.load_failed">无法载入相框，请重试。</string>
 </resources>

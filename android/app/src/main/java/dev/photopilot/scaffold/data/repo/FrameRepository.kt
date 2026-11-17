@@ -107,7 +107,7 @@ class FrameRepository(
         }
     }
 
-    suspend fun coverItem(frameId: String): dev.photopilot.scaffold.data.remote.PlaybackItem? {
+    suspend fun coverItem(frameId: String, items: List<dev.photopilot.scaffold.data.remote.PlaybackItem>? = null): dev.photopilot.scaffold.data.remote.PlaybackItem? {
         val frame = db.frameDao().getById(frameId) ?: return null
         val settings = dev.photopilot.scaffold.data.logic.JsonMini.parseObject(frame.settingsJson)
         val remoteRef = settings["remoteCoverRef"] as? String
@@ -116,7 +116,8 @@ class FrameRepository(
             remoteMedia?.item(remoteRef, allowRetainedCopy = allowRetained)?.let { return it }
         }
         frame.coverAssetId?.let { eligibleCover(it) }?.let { return dev.photopilot.scaffold.data.remote.PlaybackItem(local = it) }
-        return playbackItems(frameId).let { items -> buildPlayQueue(frameId).firstOrNull()?.let { id -> items.firstOrNull { it.id == id } } }
+        val snapshot = items ?: playbackItems(frameId)
+        return buildPlayQueue(frameId, snapshot).firstOrNull()?.let { id -> snapshot.firstOrNull { it.id == id } }
     }
 
     suspend fun eligibleCover(assetId: String): dev.photopilot.scaffold.data.db.AssetEntity? = withIo {
@@ -125,7 +126,9 @@ class FrameRepository(
         asset.takeIf { allowed && File(originalsDir, it.originalRelPath).isFile }
     }
 
-    suspend fun resolve(frameId: String): SelectionResolution = withIo {
+    suspend fun resolve(frameId: String): SelectionResolution = resolve(frameId, null)
+
+    private suspend fun resolve(frameId: String, remoteSnapshot: List<dev.photopilot.scaffold.data.remote.PlaybackItem>?): SelectionResolution = withIo {
         val frame = db.frameDao().getById(frameId)
             ?: throw IllegalArgumentException("frame not found: $frameId")
         val sources = db.sourceDao().getAll()
@@ -162,7 +165,7 @@ class FrameRepository(
             }.toMap()
         }
         val localResolution = SelectionResolver.resolve(skeleton.copy(assets = assets))
-        val remote = remoteItems(frameId)
+        val remote = remoteSnapshot ?: remoteItems(frameId)
         val requiresLocalCopies = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies(frame.settingsJson)
         val ready = remote.filter { !requiresLocalCopies || it.local != null || remoteMedia?.isLocalReference(it) == true }.map { it.id }
         val referencedLocalIds = remote.flatMap { item ->
@@ -316,17 +319,18 @@ class FrameRepository(
         val remote = remoteItems(frameId)
         val requiresLocalCopies = dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies(frame.settingsJson)
         val includedRemote = remote.filter { !requiresLocalCopies || it.local != null || remoteMedia?.isLocalReference(it) == true }
-        val localIds = resolve(frameId).playable.filter { !it.startsWith("remote:") }
+        val localIds = resolve(frameId, remote).playable.filter { !it.startsWith("remote:") }
         val remoteLocalIds = includedRemote.flatMap { item ->
             listOfNotNull(item.local?.id) + db.assetOriginDao().getBySourceAssets(listOfNotNull(item.sourceAssetId)).map { it.assetId }
         }.toSet()
         db.assetDao().getByIds(localIds).filter { it.id !in remoteLocalIds }.map { dev.photopilot.scaffold.data.remote.PlaybackItem(local = it) } + includedRemote
     }
 
-    suspend fun buildPlayQueue(frameId: String): List<String> = withIo {
+    suspend fun buildPlayQueue(frameId: String): List<String> = buildPlayQueue(frameId, playbackItems(frameId))
+
+    suspend fun buildPlayQueue(frameId: String, items: List<dev.photopilot.scaffold.data.remote.PlaybackItem>): List<String> = withIo {
         val frame = db.frameDao().getById(frameId) ?: return@withIo emptyList()
         val selections = db.frameSelectionDao().getByFrame(frameId).associateBy { it.refKey }
-        val items = playbackItems(frameId)
         PlaybackQueue.buildQueue(items.map { item ->
             val selection = selections[item.sourceAssetId ?: item.id]
             QueueAsset(item.id, item.capturedAt, item.importedAt, selection?.manualOrder, selection?.addedAt ?: item.importedAt)

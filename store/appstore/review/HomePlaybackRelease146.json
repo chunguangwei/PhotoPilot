@@ -1,0 +1,74 @@
+{
+  "version": "1.4.6",
+  "build": 67,
+  "status": "verified_pending_github_publication",
+  "changes": [
+    "Home title and loading state are constructed immediately",
+    "Frame names are displayed before provider validation finishes",
+    "One playback snapshot is reused for count cover and pending metadata",
+    "Repeated same-page refresh requests are coalesced and obsolete loads are cancelled",
+    "Full-screen More actions use a scrollable native dialog"
+  ],
+  "android": {
+    "nativeTestsPassed": 38,
+    "nativeFailures": 0,
+    "nativeSkipped": 0,
+    "nativeSeconds": 221.43,
+    "playerMenuLayoutConfigurations": 16,
+    "providerReadRegression": {
+      "fixturePhotos": 12,
+      "before": 24,
+      "after": 12,
+      "measurement": "synthetic provider reads per playback snapshot"
+    },
+    "realBlockedProviderCompletionAndCancellationTest": true,
+    "jvmTestsPassed": 441,
+    "lintErrors": 0,
+    "lintWarnings": 204,
+    "physicalDeviceAvailable": false,
+    "releaseRuntimeSmoke": {
+      "passed": true,
+      "apkSha256": "4dab2db1c1624730e36d29586e3bcb8dd4b0a7478ef24402bfc605fee8cb61f4",
+      "checks": [
+        "welcome public fixture selection and decoded playback",
+        "More dialog all actions visible",
+        "Playback settings Save and Cancel visible and operable",
+        "Exit returns to populated home card"
+      ],
+      "originalEmulatorRestored": true
+    },
+    "originalSignerPreserved": true
+  },
+  "ios": {
+    "buildPassed": true,
+    "analyzePassed": true,
+    "installedPhoneVersion": "1.4.5",
+    "installedPhoneBuild": 66
+  },
+  "sharedTestsPassed": 58,
+  "appStore": {
+    "status": "waiting_for_user_physical_testing",
+    "uploadPerformed": false,
+    "reviewSubmissionPerformed": false
+  },
+  "assets": [
+    {
+      "name": "PhotoPilot-v1.4.6-67.apk",
+      "bytes": 154237042,
+      "sha256": "4dab2db1c1624730e36d29586e3bcb8dd4b0a7478ef24402bfc605fee8cb61f4"
+    },
+    {
+      "name": "AMSMB2-4.0.3-source.tar.gz",
+      "bytes": 329872,
+      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077"
+    },
+    {
+      "name": "SMBSourceManifest.json",
+      "bytes": 33554,
+      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e"
+    }
+  ],
+  "knownObservations": [
+    "English 12-hour clock AM wraps at 360dp; captured for follow-up layout review"
+  ]
+}

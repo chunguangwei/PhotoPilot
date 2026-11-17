@@ -580,3 +580,4 @@
 "sources.browse_photos" = "Browse photos";
 "sources.refresh_index" = "Refresh photo list";
 "source.local.add" = "Add device source";
+"frames.load_failed" = "Unable to load frames. Please retry.";

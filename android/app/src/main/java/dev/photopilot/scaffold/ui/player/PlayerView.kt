@@ -1,5 +1,6 @@
 package dev.photopilot.scaffold.ui.player
 
+import android.app.AlertDialog
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
@@ -19,7 +20,6 @@ import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.PopupMenu
 import android.widget.TextView
 import dev.photopilot.scaffold.R
 import dev.photopilot.scaffold.data.remote.PlaybackItem
@@ -234,7 +234,7 @@ class PlayerView(
         pauseButton = controlButton(R.drawable.ic_player_pause_24, R.string.player_pause) { togglePause() }
         controlsRow.addView(pauseButton)
         controlsRow.addView(controlButton(R.drawable.ic_player_next_24, R.string.player_next) { engine?.userNext() })
-        controlsRow.addView(controlButton(R.drawable.ic_player_more_24, R.string.player_more) { anchor -> showMoreMenu(anchor) })
+        controlsRow.addView(controlButton(R.drawable.ic_player_more_24, R.string.player_more) { showMoreMenu() })
         controlsRow.addView(controlButton(R.drawable.ic_player_exit_24, R.string.player_exit) { onExit?.invoke() })
         controlsBar.addView(controlsRow, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
         addView(
@@ -778,20 +778,23 @@ class PlayerView(
         }
     }
 
-    private fun showMoreMenu(anchor: View) {
-        val menu = PopupMenu(context, anchor)
-        menu.menu.add(0, MENU_REMOVE_CURRENT, 0, resources.getString(R.string.player_remove_current))
-        menu.menu.add(0, MENU_SETTINGS, 1, resources.getString(R.string.frames_playback_settings))
-        menu.menu.add(0, MENU_EXIT, 2, resources.getString(R.string.player_exit))
-        menu.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                MENU_REMOVE_CURRENT -> engine?.removeCurrent()
-                MENU_SETTINGS -> onPlaybackSettings?.invoke(frame)
-                MENU_EXIT -> onExit?.invoke()
+    private fun showMoreMenu() {
+        val labels = arrayOf(
+            resources.getString(R.string.player_remove_current),
+            resources.getString(R.string.frames_playback_settings),
+            resources.getString(R.string.player_exit),
+        )
+        AlertDialog.Builder(context)
+            .setTitle(R.string.player_more)
+            .setItems(labels) { _, action ->
+                when (action) {
+                    0 -> engine?.removeCurrent()
+                    1 -> onPlaybackSettings?.invoke(frame)
+                    2 -> onExit?.invoke()
+                }
             }
-            true
-        }
-        menu.show()
+            .setNegativeButton(R.string.common_cancel, null)
+            .show()
     }
 
     fun reloadSettings(freshFrame: FrameEntity) {
@@ -1099,9 +1102,6 @@ class PlayerView(
     }
 
     private companion object {
-        const val MENU_REMOVE_CURRENT = 1
-        const val MENU_EXIT = 2
-        const val MENU_SETTINGS = 3
         const val CONTROLS_HIDE_MS = 4_000L
         const val CLOCK_TICK_MS = 30_000L
         const val SECOND_TICK_MS = 1_000L

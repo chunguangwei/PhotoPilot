@@ -260,6 +260,7 @@ class MainActivity : Activity() {
     private var activeSourcesView: SourcesView? = null
     private var activeLibraryView: LibraryView? = null
     private var activeFramesView: FramesView? = null
+    private var framesReloadJob: Job? = null
     private var activeSettingsView: SettingsView? = null
     private var progressView: ImportProgressView? = null
     private var progressJobId: String? = null
@@ -523,6 +524,7 @@ class MainActivity : Activity() {
                 sectionBackHandler = null
                 activeSourcesView = null
                 activeLibraryView = null
+                framesReloadJob?.cancel()
                 activeFramesView = null
                 activeSettingsView = null
                 when (section) {
@@ -1764,6 +1766,7 @@ class MainActivity : Activity() {
             }
         }
         view.onDelete = { frame -> showDeleteFrameDialog(frame) }
+        view.onRetry = { reloadFrames(view) }
         activeFramesView = view
         reloadFrames(view)
         return view
@@ -1771,32 +1774,51 @@ class MainActivity : Activity() {
 
     private fun reloadFrames(view: FramesView) {
         val env = environment ?: return
-        scope.launch {
-            val (cards, libraryEmpty) = withContext(Dispatchers.IO) {
-                val frames = env.frameManager.listFrames()
-                val sources = env.database.sourceDao().getAll().associateBy { it.id }
-                val cardModels = frames.map { frame ->
-                    val coverItem = env.frames.coverItem(frame.id)
-                    val cover = coverItem?.takeIf { it.remote == null }?.local
-                    val playable = env.frames.resolve(frame.id).playable.size
-                    val remoteMode = !dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies(frame.settingsJson)
-                    val readySources = env.frames.remoteItems(frame.id).filter { it.local != null || env.remoteMedia.isLocalReference(it) }.mapNotNull { it.sourceAssetId }.toSet()
-                    val includedSources = env.database.frameSelectionDao().pendingIncludedSourceAssets(frame.id)
-                    val pending = if (remoteMode) 0 else includedSources.count { it.id !in readySources }
-                    val sourceIds = includedSources.map { it.sourceId } + env.database.frameDirectoryRuleDao().getByFrame(frame.id).mapNotNull { env.database.collectionDao().getById(it.collectionId)?.sourceId }
-                    val hasNas = sourceIds.any { sources[it]?.type in setOf(SourceType.SMB, SourceType.WEBDAV) }
-                    val hasDeviceReferences = sourceIds.any { JsonMini.parseObject(sources[it]?.settingsJson)["referenceOnly"] == true }
-                    FramesView.CardModel(frame, cover, playable, pending, coverItem?.takeIf { it.remote != null }, hasNas, hasDeviceReferences)
+        if (activeFramesView !== view) return
+        if (framesReloadJob?.isActive == true) {
+            framesDirty = true
+            return
+        }
+        framesDirty = false
+        view.showLoading()
+        framesReloadJob = scope.launch {
+            try {
+                val frames = withContext(Dispatchers.IO) { env.frameManager.listFrames() }
+                if (activeFramesView !== view) return@launch
+                view.showLoadingFrames(frames)
+                val (cards, libraryEmpty) = withContext(Dispatchers.IO) {
+                    val sources = env.database.sourceDao().getAll().associateBy { it.id }
+                    val cardModels = frames.map { frame ->
+                        val items = env.frames.playbackItems(frame.id)
+                        val coverItem = env.frames.coverItem(frame.id, items)
+                        val cover = coverItem?.takeIf { it.remote == null }?.local
+                        val remoteMode = !dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies(frame.settingsJson)
+                        val readySources = items.filter { it.local != null || env.remoteMedia.isLocalReference(it) }.mapNotNull { it.sourceAssetId }.toSet()
+                        val includedSources = env.database.frameSelectionDao().pendingIncludedSourceAssets(frame.id)
+                        val pending = if (remoteMode) 0 else includedSources.count { it.id !in readySources }
+                        val sourceIds = includedSources.map { it.sourceId } + env.database.frameDirectoryRuleDao().getByFrame(frame.id).mapNotNull { env.database.collectionDao().getById(it.collectionId)?.sourceId }
+                        val hasNas = sourceIds.any { sources[it]?.type in setOf(SourceType.SMB, SourceType.WEBDAV) }
+                        val hasDeviceReferences = sourceIds.any { JsonMini.parseObject(sources[it]?.settingsJson)["referenceOnly"] == true }
+                        FramesView.CardModel(frame, cover, items.size, pending, coverItem?.takeIf { it.remote != null }, hasNas, hasDeviceReferences)
+                    }
+                    val empty = cardModels.none { it.playable > 0 } && env.database.assetDao().browsePage(1, 0).isEmpty() && sources.values.none { source ->
+                        env.remoteMedia.isMetadataSource(source) && env.remoteMedia.members(source.id, "", true).isNotEmpty()
+                    }
+                    cardModels to empty
                 }
-                val empty = env.database.assetDao().browsePage(1, 0).isEmpty() && sources.values.none { source ->
-                    env.remoteMedia.isMetadataSource(source) && env.remoteMedia.members(source.id, "", true).isNotEmpty()
+                if (activeFramesView === view) {
+                    view.render(cards, libraryEmpty)
                 }
-                cardModels to empty
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                if (activeFramesView === view) view.showLoadFailure()
+            } finally {
+                if (framesReloadJob === coroutineContext[Job]) {
+                    framesReloadJob = null
+                    if (coroutineContext[Job]?.isActive == true && activeFramesView === view && framesDirty) reloadFrames(view)
+                }
             }
-            if (activeFramesView === view) {
-                view.render(cards, libraryEmpty)
-            }
-            framesDirty = false
         }
     }
 

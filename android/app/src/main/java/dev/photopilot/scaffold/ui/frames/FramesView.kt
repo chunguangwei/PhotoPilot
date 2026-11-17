@@ -41,12 +41,14 @@ class FramesView(
         val remoteCover: dev.photopilot.scaffold.data.remote.PlaybackItem? = null,
         val hasNasSource: Boolean = true,
         val hasDeviceReferences: Boolean = false,
+        val loading: Boolean = false,
     )
 
     var remoteMedia: dev.photopilot.scaffold.data.remote.RemoteMediaRepository? = null
     var onOpen: ((FrameEntity) -> Unit)? = null
     var onCreateAI: (() -> Unit)? = null
     var onCreate: (() -> Unit)? = null
+    var onRetry: (() -> Unit)? = null
     var onRename: ((FrameEntity) -> Unit)? = null
     var onDuplicate: ((FrameEntity) -> Unit)? = null
     var onDelete: ((FrameEntity) -> Unit)? = null
@@ -62,15 +64,43 @@ class FramesView(
     private var currentCards = emptyList<CardModel>()
     private var currentLibraryEmpty = true
     private var headerHorizontal = false
+    private enum class ContentState { LOADING, READY, FAILED }
+    private var contentState = ContentState.LOADING
 
     init {
         setBackgroundColor(context.getColor(R.color.pp_surface_canvas))
         addView(contentColumn, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        renderContent()
     }
 
     fun render(cards: List<CardModel>, libraryEmpty: Boolean) {
         currentCards = cards.toList()
         currentLibraryEmpty = libraryEmpty
+        contentState = ContentState.READY
+        renderContent()
+    }
+
+    fun showLoading() {
+        contentState = ContentState.LOADING
+        renderContent()
+    }
+
+    fun showLoadingFrames(frames: List<FrameEntity>) {
+        val previous = currentCards.associateBy { it.frame.id }
+        currentCards = frames.map { frame -> previous[frame.id]?.copy(frame = frame) ?: CardModel(frame, null, 0, 0, loading = true) }
+        currentLibraryEmpty = false
+        showLoading()
+    }
+
+    fun showLoadFailure() {
+        contentState = ContentState.FAILED
+        renderContent()
+    }
+
+    private fun renderContent() {
+        val cards = currentCards
+        val libraryEmpty = currentLibraryEmpty
+        val ready = contentState == ContentState.READY
         val res = resources
         contentColumn.removeAllViews()
         headerRow.removeAllViews()
@@ -81,21 +111,29 @@ class FramesView(
             setAccessibilityHeading(true)
         }
         headerRow.addView(header)
-        if (cards.isNotEmpty()) {
+        if (cards.isNotEmpty() || !ready) {
             headerRow.addView(actionButton(R.string.frames_create, false).apply {
                 setOnClickListener { showCreateMenu(it) }
             })
         }
         contentColumn.addView(headerRow, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-        if (cards.isEmpty()) {
+        if (!ready) {
+            addText(contentColumn, if (contentState == ContentState.LOADING) R.string.common_loading else R.string.frames_load_failed, R.dimen.pp_text_body, R.color.pp_text_secondary, R.dimen.pp_space_16)
+            if (contentState == ContentState.LOADING) {
+                contentColumn.addView(android.widget.ProgressBar(context).apply { importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO })
+            } else {
+                contentColumn.addView(actionButton(R.string.common_retry, false).apply { setOnClickListener { onRetry?.invoke() } })
+            }
+        }
+        if (ready && cards.isEmpty()) {
             addText(contentColumn, R.string.frames_empty_title, R.dimen.pp_text_heading, R.color.pp_text_primary, R.dimen.pp_space_24)
             addText(contentColumn, R.string.frames_empty_body, R.dimen.pp_text_body, R.color.pp_text_secondary, R.dimen.pp_space_8)
         }
-        if (libraryEmpty) {
+        if (ready && libraryEmpty) {
             addText(contentColumn, R.string.frames_curate_hint_title, R.dimen.pp_text_body, R.color.pp_text_primary, R.dimen.pp_space_24)
             addText(contentColumn, R.string.frames_curate_hint_body, R.dimen.pp_text_body, R.color.pp_text_secondary, R.dimen.pp_space_8)
         }
-        if (cards.isEmpty()) {
+        if (ready && cards.isEmpty()) {
             contentColumn.addView(
                 actionButton(R.string.frames_create, true).apply { setOnClickListener { showCreateMenu(it) } },
                 LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
@@ -118,7 +156,7 @@ class FramesView(
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        render(currentCards, currentLibraryEmpty)
+        renderContent()
     }
 
     private fun updateLayout(widthPx: Int) {
@@ -194,7 +232,7 @@ class FramesView(
             setOnClickListener { onOpen?.invoke(model.frame) }
             isFocusable = false
         }
-        card.addView(CoverView(context, model.cover, loader, model.remoteCover, remoteMedia), LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        if (!model.loading) card.addView(CoverView(context, model.cover, loader, model.remoteCover, remoteMedia), LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         val details = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             val pad = res.getDimensionPixelSize(R.dimen.pp_space_16)
@@ -219,6 +257,7 @@ class FramesView(
         }
         val remoteMode = !dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies(model.frame.settingsJson)
         val photoCount = when {
+            model.loading -> res.getString(R.string.common_loading)
             model.hasDeviceReferences -> if (resources.configuration.locales[0].language == "zh") "${model.playable} 张照片" else "${model.playable} ${if (model.playable == 1) "photo" else "photos"}"
             remoteMode && model.hasNasSource -> remotePhotoCount(model.playable, resources.configuration.locales[0].language == "zh")
             else -> res.getQuantityString(R.plurals.frames_playable_count, model.playable, model.playable)
@@ -229,7 +268,7 @@ class FramesView(
         }
         val play = actionButton(R.string.frames_play, true).apply {
             setOnClickListener { onPlay?.invoke(model.frame) }
-            isEnabled = model.playable > 0
+            isEnabled = !model.loading && model.playable > 0
             alpha = if (isEnabled) 1f else DISABLED_ALPHA
         }
         val target = res.getDimensionPixelSize(R.dimen.pp_touch_target)
