@@ -1,12 +1,16 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
-## 2026-11-17 App Store 1.4.10（71）更新提交进行中
+## 2026-11-17 App Store 1.4.10（71）已提交，等待审核
 
 - 用户完成真机测试后明确授权更新App Store，并完成Xcode及App Store Connect登录。现有分发证书恢复自动签名，未新建账号或撤销证书。
 - 首次上传被Apple阻止，ONNX Runtime的嵌入framework Info.plist缺少MinimumOSVersion。二进制LC_BUILD_VERSION实际minos15.0。现于XcodeGen postBuild脚本从vtool读取实际minos补齐并重新签名framework，工程已通过make ios-generate重生成。修复后make check、ios-build、ios-analyze及Release archive、严格签名验证通过，四个framework均声明15.0。
 - 修正包于18:49上传成功，Apple开始处理。上传IPA23694255bytes，SHA256为14676c928693397497775785007cfc5f167631e4cf1aecb3f7e6238fc8fb2202，executable SHA256为d4672ef9b86d592b7483aae1cebfb4732afa8eeb6ea87fa32f0d60228c32d539。与旧开发签名归档及首次失败IPA分别记录。第三方MediaPipe及ONNX dSYM缺失产生符号上传警告，Apple接受上传，相关框架崩溃符号化存在限制。
 - 已建立App Store版本1.4.10，保存英文、简体中文、繁体中文描述、推广文本及更新说明，覆盖可选本地AI模型、暂停续扫、NAS按需播放和UI修复。保留原审核联系人及已发布隐私标签，上传6张自有合成图的ReviewPhotos.zip。英文iPhone5张及iPad6张商店截图从已上线版本继承。发布选项沿用审核后自动发布、全量更新、保留评分。
 - Apple已处理完成71，随构建加密问卷按实际SMB实现选择额外标准算法、法国不分发，保存后缺少合规状态解除。71已选入1.4.10并重载核验，供应地区147、法国/EU27/中国大陆未供应均从后台复核。版本已加入审核草稿，出现“提交以供审核”最终按钮，尚未点击。旧审核NAS的WebDAV、SMB及SSH均超时，DNS仍指向既有服务器，已向用户请求恢复服务器网络。已移除草稿备注中不可用账号及旧“审核期间持续可用”的失实承诺，保留合成图附件、AI与本机步骤。待测试服务器恢复后补回并复核NAS审核入口，再正式提交。
+
+- 后续用户已登录VPS网页控制台，主Agent通过noVNC只读检查。WebDAV、SMB、SSH均active，22/5005/5006监听，主机INPUT允许、Fail2ban只限制22的指定来源，本机WebDAV返回预期401，服务器HTTPS出站200。没有重启、改防火墙、服务、端口或账号。控制台初次键盘Shift传递不完整令curl URL冒号变分号，两次只读检查未有效执行，修正实际Shift键事件后取得401。随后Mac外部TCP/SSH自行恢复，具体上游故障原因未定。可信HTTPS WebDAV与加密SMB各实际枚举并读取全部6张合成图，SHA256与历史样本全部相同，证据留本机nas-recheck.json，不把通用协议读取写成新增真机验收。
+- 已补回并保存有效NAS审核账号及本机/AI/NAS操作步骤，审核草稿正式提交成功。后台显示“已提交1个项目”，提交详情核验iOS App1.4.10、1.4.10(71)、“等待审核”，提交时间2026-11-17 21:50（北京时间），提交ID2da7a2c5-f566-4d8c-88e8-eaa34ff4636c。审核后自动发布、立即全量、保留评分。审核服务及维护timer保持运行。Apple审核结果尚待，不宣称已经批准或已上架该更新。
+
 
 ## 2026-11-17 播放设置预览、首图与来源浏览 · 1.4.10（71）已发布
 

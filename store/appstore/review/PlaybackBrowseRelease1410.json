@@ -49,9 +49,9 @@
   "sharedTestsPassed": 58,
   "aiToolTestsPassed": 6,
   "appStore": {
-    "status": "ready_in_review_draft_pending_review_nas_recovery",
+    "status": "waiting_for_review",
     "uploadPerformed": true,
-    "reviewSubmissionPerformed": false,
+    "reviewSubmissionPerformed": true,
     "version": "1.4.10",
     "build": 71,
     "uploadedIPASHA256": "14676c928693397497775785007cfc5f167631e4cf1aecb3f7e6238fc8fb2202",
@@ -63,7 +63,7 @@
       "zh-Hant"
     ],
     "releaseType": "AFTER_APPROVAL",
-    "reviewNASStatus": "unreachable_user_notified",
+    "reviewNASStatus": "recovered_both_protocols_six_hashes_verified",
     "thirdPartyDSYMWarnings": [
       "MediaPipeTasksCommon",
       "MediaPipeTasksRetrieval",
@@ -77,7 +77,24 @@
     "distributedInFrance": false,
     "territories": 147,
     "chinaMainlandAndEUExcludedVerified": true,
-    "obsoleteNASAvailabilityClaimRemoved": true
+    "obsoleteNASAvailabilityClaimRemoved": true,
+    "reviewSubmissionID": "2da7a2c5-f566-4d8c-88e8-eaa34ff4636c",
+    "reviewSubmittedAt": "2026-11-17T21:50:00+08:00",
+    "reviewNASServerConfigurationChanged": false,
+    "reviewNASVerified": {
+      "webdav": {
+        "trustedTLS": true,
+        "photos": 6,
+        "hashesMatchPrior": true
+      },
+      "smb": {
+        "encrypted": true,
+        "photos": 6,
+        "hashesMatchPrior": true
+      }
+    },
+    "reviewNotesUpdatedAndSaved": true,
+    "reviewStatusVerifiedFromSubmissionDetail": true
   },
   "assets": [
     {
