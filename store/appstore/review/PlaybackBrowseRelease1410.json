@@ -49,7 +49,7 @@
   "sharedTestsPassed": 58,
   "aiToolTestsPassed": 6,
   "appStore": {
-    "status": "uploaded_processing",
+    "status": "ready_in_review_draft_pending_review_nas_recovery",
     "uploadPerformed": true,
     "reviewSubmissionPerformed": false,
     "version": "1.4.10",
@@ -68,7 +68,16 @@
       "MediaPipeTasksCommon",
       "MediaPipeTasksRetrieval",
       "onnxruntime"
-    ]
+    ],
+    "buildProcessingComplete": true,
+    "buildSelectedAndReloadVerified": true,
+    "reviewDraftCreated": true,
+    "exportComplianceSaved": true,
+    "additionalStandardEncryption": true,
+    "distributedInFrance": false,
+    "territories": 147,
+    "chinaMainlandAndEUExcludedVerified": true,
+    "obsoleteNASAvailabilityClaimRemoved": true
   },
   "assets": [
     {
