@@ -1,12 +1,14 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
-## 2026-11-17 首页载入与全屏菜单反馈修复 · 1.4.6（67）验证中
+## 2026-11-17 首页载入与全屏菜单反馈修复 · 1.4.6（67）已发布
 
 - 用户截图显示Android首页加载时只剩底部导航、播放器More菜单向屏外展开。首页原FramesView初始化没有内容，同一批引用照片在cover、queue、resolve、remoteItems等路径重复验证；dirty轮询可能叠加任务。现初始化即显示标题/加载状态，先展示相框元数据卡片，再填入实际校验数量及封面；失败提供重试，配置变化保留状态，新加载卡片不显示虚假的0张并禁用播放。
 - FrameRepository仅在同一次调用中复用已校验remote/items快照，不跨请求缓存权限结果。Main同页刷新合并，dirty完成后补刷，切页取消旧任务，并用Job身份保护清理。已有排除、来源撤权、别名去重、本地副本偏好与队列顺序沿用真实判断。12图合成Provider回归单次snapshot读取由24次降至12次，此为合成调用数，未记为华为真机耗时优化倍数。
 - PlayerView More改为系统可滚动动作对话框，保留移除当前、播放设置、退出及取消。320/360dp、横竖、中英、1/2倍字16种组合全部动作在屏内并验证设置/退出回调。华为PopupMenu厂商裁切无法在API35完全同等复现，RED记录为独立菜单交互契约失败。
 - 最终准确67主包与test包SHA一致，原生38/38通过221.43秒，无跳过，包含真实阻塞Provider下元数据先显示、dirty补刷/离页取消、加载失败重试/配置恢复、权限撤回、真实SMB3及HTTPS WebDAV六路选片播放、普通/AI确认。首次两项新测试漏做View measure/layout导致失败，已修正测量时机，定向2/2后完整38重跑通过。旧包RED包含24对12读取、空初始页面及菜单契约三项预期失败。Android441 JVM、lint0错误204警告、共享58、iOSbuild/analyze均通过。
-- Android真机本轮仍无法连接。正式67原签名包在独立只读API35模拟器完成公开夹具选片到解码播放、More三项、播放设置底部Save/Cancel及退出后首页卡片复验，截图由主Agent目检。原5554数据、Debug包、尺寸/密度/字体恢复核对一致。英文12小时制AM在360dp下换行，留作后续布局复核观察。当前iPhone安装版本为上轮1.4.5/66；AppStore继续等待用户真机确认。新增双端AI暂停保存、设置模型管理及持久任务需求正在只读设计，待当前修复提交后实施。
+- Android真机本轮仍无法连接。正式67原签名包在独立只读API35模拟器完成公开夹具选片到解码播放、More三项、播放设置底部Save/Cancel及退出后首页卡片复验，截图由主Agent目检。原5554数据、Debug包、尺寸/密度/字体恢复核对一致。英文12小时制AM在360dp下换行，留作后续布局复核观察。当前iPhone安装版本为上轮1.4.5/66；AppStore继续等待用户真机确认。新增双端AI暂停保存、设置模型管理及持久任务需求已按用户要求进入双端实现，计划见docs/superpowers/plans/2026-11-17-ai-pause-model-management.md，共享恢复政策向量28项；新增功能的完成状态尚待后续实测回填。
+
+- 独立代码审查未发现重要问题，补充的真实阻塞Provider回归覆盖了dirty完成补刷和离页取消。代码`4d4d162`及annotated tag `v1.4.6`已推送main，[GitHub v1.4.6](https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.6)已公开为Latest。APK154237042bytes，SHA`4dab2db1c1624730e36d29586e3bcb8dd4b0a7478ef24402bfc605fee8cb61f4`，原签名/四ABI保持；4项公开附件匿名完整下载，大小/SHA与本地及GitHub摘要一致。验证摘要`store/appstore/review/HomePlaybackRelease146.json`。
 
 ## 2026-11-16 来源页真实布局与重复入口修复 · 1.4.5（66）已发布
 
