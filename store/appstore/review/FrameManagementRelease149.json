@@ -1,0 +1,91 @@
+{
+  "version": "1.4.9",
+  "build": 70,
+  "status": "release_prepared",
+  "changes": [
+    "Android source-aware existing frame management and mixed selections",
+    "iOS selected-photo priority and visible-only cancellable thumbnail loading",
+    "Shared-budget persistent previews with epoch and content-hash authority",
+    "Bounded SMB read batching and transient busy retry"
+  ],
+  "android": {
+    "jvmExecuted": 446,
+    "jvmFailures": 0,
+    "lintErrors": 0,
+    "lintWarnings": 204,
+    "nativeExecuted": 21,
+    "nativePassed": 21,
+    "nativeSkipped": 0,
+    "nativeFailures": 0,
+    "nativeSeconds": 34.428,
+    "physicalDeviceAvailable": false,
+    "reference55Fixture": "metadata-only workflow fixture, no actual NAS read or 55 image decodes",
+    "originalSignerPreserved": true,
+    "releaseRuntimeSmoke": "unavailable_missing_emulator_binary",
+    "testDeviceStateRestored": true
+  },
+  "ios": {
+    "nativeExecuted": 332,
+    "nativePassed": 325,
+    "nativeSkipped": 7,
+    "nativeFailures": 0,
+    "nativeSeconds": 79.159,
+    "realModelQAPassed": 6,
+    "realModelQASkipped": 0,
+    "phone": "iPhone 13",
+    "installedPhoneVersion": "1.4.9",
+    "installedPhoneBuild": 70,
+    "physicalReadOnlyFrameCheckPassed": true,
+    "selectedCountRetained": 31,
+    "visibleTiles": 12,
+    "readyAt8Seconds": 11,
+    "readyAt23Seconds": 12,
+    "readyAt53Seconds": 12,
+    "readyAfterReopening2Seconds": 12,
+    "failuresAtFinalObservation": 0,
+    "all31ImagesIndividuallyDecoded": false,
+    "signedArchive": "development",
+    "executableSHA256": "30330e9376ddb894d81316e9083759581b8481e8bd64462634263cbb2137e837",
+    "buildPassed": true,
+    "analyzePassed": true,
+    "ownQAAppsRemoved": true
+  },
+  "sharedTestsPassed": 58,
+  "aiToolTestsPassed": 6,
+  "appStore": {
+    "status": "waiting_for_user_physical_testing",
+    "uploadPerformed": false,
+    "reviewSubmissionPerformed": false
+  },
+  "assets": [
+    {
+      "name": "PhotoPilot-v1.4.9-70.apk",
+      "bytes": 154417398,
+      "sha256": "6195e269df3696299eafd33cc4c70c7eb89871564881b1e8666fda51fece16d8",
+      "anonymousDownloadVerified": false
+    },
+    {
+      "name": "AMSMB2-4.0.3-source.tar.gz",
+      "bytes": 329872,
+      "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077",
+      "anonymousDownloadVerified": false
+    },
+    {
+      "name": "SMBSourceManifest.json",
+      "bytes": 33554,
+      "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e",
+      "anonymousDownloadVerified": false
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 273,
+      "sha256": "f6530e16c0eab0f135fc73603f4f53c22355315ad334f9d1b4227f442470a9ff",
+      "anonymousDownloadVerified": false
+    }
+  ],
+  "knownObservations": [
+    "Uncached generic NAS photos require an initial bounded temporary original transfer; latency depends on file size and network",
+    "Physical Android phone and iPad were unavailable in this run",
+    "Exact signed Android Release independent runtime was not rechecked because emulator launch binary is missing"
+  ]
+}

@@ -30,9 +30,22 @@ final class ThumbnailLoader: @unchecked Sendable {
     }
 
     func thumbnail(relPath: String, pointSize: CGFloat, scale: CGFloat) async -> UIImage? {
+        try? await image(relPath: relPath, pointSize: pointSize, scale: scale)
+    }
+
+    func image(relPath: String, pointSize: CGFloat, scale: CGFloat) async throws -> UIImage {
+        try Task.checkCancellation()
         let pixels = max(1, Int((pointSize * scale).rounded(.up)))
         if relPath.hasPrefix("remote:"), let media {
-            return try? await media.image(runtimeID: relPath, width: pixels, height: pixels)
+            var retries = 0
+            while true {
+                do { return try await media.image(runtimeID: relPath, width: pixels, height: pixels) }
+                catch RemoteMediaError.busy {
+                    guard retries < 3 else { throw RemoteMediaError.busy }
+                    retries += 1
+                    try await Task.sleep(nanoseconds: UInt64(retries) * 200_000_000)
+                }
+            }
         }
         let key = "thumbnail:\(relPath)#\(pixels)"
         let generation = RemoteDecodedImages.shared.generation()
@@ -60,8 +73,10 @@ final class ThumbnailLoader: @unchecked Sendable {
             }
             return UIImage(cgImage: cgImage)
         }.value
-        guard generation == RemoteDecodedImages.shared.generation() else { return nil }
-        if let image { RemoteDecodedImages.shared.store(image, key: key, generation: generation) }
+        try Task.checkCancellation()
+        guard generation == RemoteDecodedImages.shared.generation() else { throw RemoteMediaError.revoked }
+        guard let image else { throw RemoteMediaError.invalidFile }
+        RemoteDecodedImages.shared.store(image, key: key, generation: generation)
         return image
     }
 }

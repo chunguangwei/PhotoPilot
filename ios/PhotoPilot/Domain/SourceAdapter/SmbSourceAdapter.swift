@@ -408,7 +408,7 @@ final class SmbSourceAdapter: RemoteReadableSource, @unchecked Sendable {
                 try Task.checkCancellation()
                 try networkPolicy?.check()
                 let remaining = maximumBytes - offset
-                let length = Int(min(65_536, max(1, remaining + 1)))
+                let length = Int(min(262_144, max(1, remaining + 1)))
                 let data = try await client.readChunk(atPath: resolved.subpath, offset: offset, length: length)
                 try Task.checkCancellation()
                 guard data.count <= length, Int64(data.count) <= remaining else { throw RemoteMediaError.tooLarge }

@@ -11,6 +11,7 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
     private let showsCloseButton: Bool
 
     private var items: [LibraryItemDTO] = []
+    private var preferredAssetIDs: Set<String> = []
     private var visibleCount = 0
     private var columns = 0
     private var itemSide: CGFloat = 0
@@ -51,6 +52,13 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
     func setExternalItems(_ items: [LibraryItemDTO]?) {
         externalItems = items
         reload()
+    }
+
+    func prioritizePhotos(_ ids: Set<String>) {
+        guard ids != preferredAssetIDs else { return }
+        preferredAssetIDs = ids
+        guard isViewLoaded, !items.isEmpty else { return }
+        apply(items: items)
     }
 
     func applySelection(_ ids: Set<String>) {
@@ -268,7 +276,7 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
     }
 
     private func apply(items fetched: [LibraryItemDTO]) {
-        items = fetched
+        items = fetched.filter { preferredAssetIDs.contains($0.id) } + fetched.filter { !preferredAssetIDs.contains($0.id) }
         visibleCount = min(Self.pageSize, fetched.count)
         emptyTitleLabel.text = L10n.string(emptyTitleKey ?? "library.empty_title")
         emptyBodyLabel.text = L10n.string(emptyBodyKey ?? "library.empty_body")
@@ -331,23 +339,37 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         cell.configure(assetID: item.id, accessibilityText: Self.accessibilityText(for: item))
         cell.setCellSelected(selectionEnabled && selectedAssetIDs.contains(item.id), announced: false)
         applyStarState(to: cell, assetID: item.id)
-        let side = max(itemSide, ThemeMetrics.gridCellMin)
-        let scale = collectionView.traitCollection.displayScale
-        cell.imageTask?.cancel()
-        cell.imageTask = Task { [weak cell, loader] in
-            let image = await loader.thumbnail(
-                relPath: item.originalRelPath,
-                pointSize: side,
-                scale: scale
-            )
-            guard !Task.isCancelled, let cell, cell.assetID == item.id else { return }
-            if let image {
-                cell.showImage(image)
-            } else {
-                cell.showFailure()
-            }
+        cell.onRetry = { [weak self, weak cell] in
+            guard let self, let cell, cell.assetID == item.id else { return }
+            self.loadThumbnail(item: item, cell: cell)
         }
         return cell
+    }
+
+    private func loadThumbnail(item: LibraryItemDTO, cell: AssetGridCell) {
+        guard !item.isPending, cell.assetID == item.id, cell.imageView.image == nil else { return }
+        let side = max(itemSide, ThemeMetrics.gridCellMin)
+        let scale = traitCollection.displayScale
+        cell.imageTask?.cancel()
+        cell.showLoading()
+        cell.imageTask = Task { [weak cell, loader] in
+            do {
+                let image = try await loader.image(relPath: item.originalRelPath, pointSize: side, scale: scale)
+                guard !Task.isCancelled, let cell, cell.assetID == item.id else { return }
+                cell.imageTask = nil
+                cell.showImage(image)
+            } catch {
+                guard !Task.isCancelled, let cell, cell.assetID == item.id else { return }
+                cell.imageTask = nil
+                cell.showFailure(reason: error.localizedDescription)
+            }
+        }
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        guard let cell = cell as? AssetGridCell else { return }
+        cell.imageTask?.cancel()
+        cell.imageTask = nil
     }
 
     func collectionView(
@@ -355,6 +377,9 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
         willDisplay cell: UICollectionViewCell,
         forItemAt indexPath: IndexPath
     ) {
+        if let cell = cell as? AssetGridCell, indexPath.item < items.count {
+            loadThumbnail(item: items[indexPath.item], cell: cell)
+        }
         guard indexPath.item >= visibleCount - Self.prefetchThreshold,
               visibleCount < items.count else { return }
         let previous = visibleCount

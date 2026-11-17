@@ -454,6 +454,8 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
                 gridChild?.enableRemoteMedia(sourceID: remoteSourceID)
             }
             selectedAssetIDs = Set(fetched.includeAssetRefs + fetched.includeSourceAssetRefs.map { "remote:" + $0 }).union(initialSelection)
+            let framePhotoIDs = Set((try? await environment.frames.buildPlayQueue(frameID: frameID)) ?? [])
+            gridChild?.prioritizePhotos(selectedAssetIDs.union(framePhotoIDs))
             currentExcludes = Set(fetched.excludeRefs)
             dynamicRules = Dictionary(uniqueKeysWithValues: fetched.rules.map { ($0.collectionId, $0) })
             recursiveFlags = Dictionary(uniqueKeysWithValues: fetched.rules.map { ($0.collectionId, $0.recursive) })

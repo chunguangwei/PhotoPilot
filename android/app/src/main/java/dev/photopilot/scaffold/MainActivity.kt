@@ -230,7 +230,7 @@ class MainActivity : Activity() {
                             id.takeIf { it.isNotEmpty() }?.let { env.database.frameDao().getById(it) }
                         }
                         if (id.isEmpty() || frame != null) {
-                            openFrameEditor(frame, entry.entries.mapNotNull { (key, value) -> if (key is String && value is String) key to value else null }.toMap())
+                            openFrameEditorResolved(frame, entry.entries.mapNotNull { (key, value) -> if (key is String && value is String) key to value else null }.toMap())
                         }
                     }
                     "aiModels" -> if (!permissionOnly) openAIModels(entry["modelId"] as? String)
@@ -1033,6 +1033,18 @@ class MainActivity : Activity() {
         view.onConnect = { openNasForm() }
         view.onLocalPhotos = { showPhotoPermissionOverlay() }
         view.onLocalFiles = { showLocalFilesChoices() }
+        view.onAISettings = {
+            scope.launch {
+                val fresh = withContext(Dispatchers.IO) { view.savedFrame?.id?.let { env.database.frameDao().getById(it) } }
+                if (root.topOverlay() !== view) return@launch
+                remoteFrameView = null
+                popOverlayTracked()
+                frameEditView?.takeIf { root.topOverlay() === it }?.let { closeFrameEditor() }
+                framesDirty = true
+                openFrameEditorResolved(fresh)
+                openAIFrameEditor(fresh)
+            }
+        }
         view.onSaved = {
             remoteFrameView = null
             framesDirty = true
@@ -1050,7 +1062,7 @@ class MainActivity : Activity() {
                     scope.launch {
                         val fresh = withContext(Dispatchers.IO) { view.savedFrame?.id?.let { env.database.frameDao().getById(it) } }
                         closeFrameEditor()
-                        openFrameEditor(fresh)
+                        openFrameEditorResolved(fresh)
                     }
                 }
             }
@@ -1976,7 +1988,29 @@ class MainActivity : Activity() {
     }
 
     private fun openFrameEditor(frame: FrameEntity?, draft: Map<String, String>? = null) {
+        scope.launch { openFrameEditorResolved(frame, draft) }
+    }
+
+    private suspend fun openFrameEditorResolved(frame: FrameEntity?, draft: Map<String, String>? = null) {
         val env = environment ?: return
+        val referenceFrame = frame != null && withContext(Dispatchers.IO) {
+            env.database.frameSelectionDao().getByFrame(frame.id).any { it.sourceAssetId != null } ||
+                env.frames.nasSelectionAliases(frame.id).isNotEmpty() ||
+                env.database.frameDirectoryRuleDao().getByFrame(frame.id).any { rule ->
+                    env.database.collectionDao().getById(rule.collectionId)?.sourceId?.let { id ->
+                        env.database.sourceDao().getById(id)?.let { env.remoteMedia.isMetadataSource(it) }
+                    } == true
+                }
+        }
+        val privateDraft = draft?.containsKey("removedExcludes") == true
+        val hasPrivateSelections = frame != null && privateDraft && withContext(Dispatchers.IO) {
+            env.database.frameSelectionDao().getByFrame(frame.id).any { it.assetId != null } ||
+                draft?.get("selected")?.let { org.json.JSONArray(it).length() > 0 } == true
+        }
+        if (referenceFrame && !hasPrivateSelections) {
+            openRemoteFrame(frame, if (privateDraft) draft?.filterKeys { it == "name" } else draft)
+            return
+        }
         val view = FrameEditView(this, File(filesDir, "originals"))
         var referenceSources = emptySet<String>()
         view.dataSource = object : FrameEditView.DataSource {
@@ -2227,7 +2261,7 @@ class MainActivity : Activity() {
         framesDirty = true
         closeFrameEditor()
         if (continuation != null) {
-            openFrameEditor(saved)
+            openFrameEditorResolved(saved)
             continuation(saved)
         } else if (root.baseView !is MainContainerView) {
             showMainContainer()

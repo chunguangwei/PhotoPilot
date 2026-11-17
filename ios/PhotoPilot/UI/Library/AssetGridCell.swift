@@ -14,6 +14,9 @@ final class AssetGridCell: UICollectionViewCell {
     private(set) var cellSelected = false
     private var starVisible = false
     var onStarTap: (() -> Void)?
+    var onRetry: (() -> Void)?
+    private let loadingIndicator = UIActivityIndicatorView(style: .medium)
+    private let retryButton = UIButton(type: .system)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -33,7 +36,21 @@ final class AssetGridCell: UICollectionViewCell {
         statusLabel.textAlignment = .center
         statusLabel.isHidden = true
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(statusLabel)
+        retryButton.setTitle(L10n.string("common.retry"), for: .normal)
+        retryButton.titleLabel?.font = ThemeFont.meta()
+        retryButton.tintColor = ThemeColor.accentAction
+        retryButton.isHidden = true
+        retryButton.addTarget(self, action: #selector(handleRetry), for: .touchUpInside)
+        let statusStack = UIStackView(arrangedSubviews: [statusLabel, retryButton])
+        statusStack.axis = .vertical
+        statusStack.alignment = .center
+        statusStack.spacing = ThemeMetrics.space4
+        statusStack.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(statusStack)
+        loadingIndicator.color = ThemeColor.textSecondary
+        loadingIndicator.hidesWhenStopped = true
+        loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(loadingIndicator)
 
         badgeView.image = UIImage(systemName: "checkmark.circle.fill")
         badgeView.tintColor = ThemeColor.accentAction
@@ -63,8 +80,13 @@ final class AssetGridCell: UICollectionViewCell {
             imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             imageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-            statusLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            statusLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            statusStack.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            statusStack.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            statusStack.widthAnchor.constraint(lessThanOrEqualTo: contentView.widthAnchor, constant: -8),
+            retryButton.heightAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget),
+            retryButton.widthAnchor.constraint(greaterThanOrEqualToConstant: ThemeMetrics.touchTarget),
+            loadingIndicator.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            loadingIndicator.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
             badgeView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: ThemeMetrics.space4),
             badgeView.trailingAnchor.constraint(
                 equalTo: contentView.trailingAnchor,
@@ -99,6 +121,11 @@ final class AssetGridCell: UICollectionViewCell {
         statusLabel.textColor = ThemeColor.statusError
         statusLabel.isHidden = true
         onStarTap = nil
+        onRetry = nil
+        loadingIndicator.stopAnimating()
+        retryButton.isHidden = true
+        accessibilityCustomActions = nil
+        accessibilityValue = nil
         setStarVisible(false, isCover: false)
         setCellSelected(false, announced: false)
     }
@@ -108,6 +135,7 @@ final class AssetGridCell: UICollectionViewCell {
         isAccessibilityElement = true
         accessibilityLabel = accessibilityText
         accessibilityTraits = [.image]
+        showLoading()
     }
 
     func setCellSelected(_ selected: Bool, announced: Bool) {
@@ -141,18 +169,46 @@ final class AssetGridCell: UICollectionViewCell {
         onStarTap?()
     }
 
+    @objc private func handleRetry() { onRetry?() }
+
+    func showLoading() {
+        imageView.image = nil
+        statusLabel.isHidden = true
+        retryButton.isHidden = true
+        loadingIndicator.startAnimating()
+        accessibilityValue = L10n.string("common.loading")
+        accessibilityCustomActions = nil
+    }
+
     func showImage(_ image: UIImage) {
         imageView.image = image
         statusLabel.isHidden = true
+        retryButton.isHidden = true
+        loadingIndicator.stopAnimating()
+        accessibilityValue = nil
+        accessibilityCustomActions = nil
     }
 
-    func showFailure() {
+    func showFailure(reason: String? = nil) {
         imageView.image = nil
+        loadingIndicator.stopAnimating()
+        statusLabel.text = L10n.string("library.status_failed")
+        statusLabel.textColor = ThemeColor.statusError
         statusLabel.isHidden = false
+        retryButton.isHidden = false
+        accessibilityValue = reason ?? L10n.string("library.status_failed")
+        accessibilityCustomActions = [UIAccessibilityCustomAction(name: L10n.string("common.retry")) { [weak self] _ in
+            self?.onRetry?()
+            return true
+        }]
     }
 
     func showPending() {
         imageView.image = nil
+        loadingIndicator.stopAnimating()
+        retryButton.isHidden = true
+        accessibilityCustomActions = nil
+        accessibilityValue = L10n.string("library.pending_badge")
         statusLabel.text = L10n.string("library.pending_badge")
         statusLabel.textColor = ThemeColor.textSecondary
         statusLabel.isHidden = false

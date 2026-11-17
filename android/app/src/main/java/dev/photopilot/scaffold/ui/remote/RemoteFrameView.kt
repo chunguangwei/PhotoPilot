@@ -21,6 +21,8 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     var onConnect: (() -> Unit)? = null
     var onLocalPhotos: (() -> Unit)? = null
     var onLocalFiles: (() -> Unit)? = null
+    var onAISettings: (() -> Unit)? = null
+    private var afterSave: (() -> Unit)? = null
     val savedFrame: FrameEntity? get() = frame
     private val firstUse = restoredDraft?.get("firstUse") == "true"
     private var loaded = false
@@ -39,6 +41,8 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     private var manualOrderEdited = false
     private val selected = mutableSetOf<String>()
     private val initial = mutableSetOf<String>()
+    private val privateAssets = mutableMapOf<String, AssetEntity>()
+    private val privatePhotos = LinearLayout(context).apply { orientation = VERTICAL }
     private val name = EditText(context)
     private val sync = Switch(context)
     private val storageHint = TextView(context)
@@ -102,12 +106,26 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         add(feedback)
         sourceSelector.setOnClickListener { chooseAdditionalSource() }
         add(sourceSelector)
+        add(privatePhotos)
         photos.orientation = VERTICAL; add(photos)
         previousPage.setOnClickListener { page = (page - 1).coerceAtLeast(0); loadPhotos() }
         nextPage.setOnClickListener { page++; loadPhotos() }
         navigation.addView(previousPage, LayoutParams(0, -2, 1f))
         navigation.addView(nextPage, LayoutParams(0, -2, 1f))
         add(navigation)
+        val aiSettings = secondaryButton(context, text("AI classification rules", "AI 分类规则")).apply {
+            visibility = View.GONE
+            setOnClickListener {
+                val proceed = { onAISettings?.invoke(); Unit }
+                if (hasChanges()) {
+                    AlertDialog.Builder(context).setTitle(dev.photopilot.scaffold.R.string.playback_unsaved_title)
+                        .setPositiveButton(dev.photopilot.scaffold.R.string.common_save) { _, _ -> afterSave = onAISettings; save() }
+                        .setNeutralButton(dev.photopilot.scaffold.R.string.common_discard) { _, _ -> proceed() }
+                        .setNegativeButton(dev.photopilot.scaffold.R.string.common_cancel, null).show()
+                } else proceed()
+            }
+        }
+        if (!firstUse) add(aiSettings)
         if (!firstUse) add(secondaryButton(context, text("Arrange selected photos", "调整所选照片顺序")).apply { setOnClickListener { arrangePhotos() } })
         if (!firstUse) storageSection.body.addView(secondaryButton(context, text("Clear temporary cache", "清理临时缓存")).also { clearControl = it }.apply { setOnClickListener { scope.launch { withContext(Dispatchers.IO) { env.remoteMedia.cache.clear() }; updateStatus() } } })
         if (!firstUse) storageSection.body.addView(secondaryButton(context, text("Pause local sync", "暂停本地同步")).also { pauseControl = it }.apply { setOnClickListener { frame?.let { env.remoteCopies.pause(it.id) }; updateStatus() } })
@@ -137,8 +155,24 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                     initialRules.add(rule.collectionId)
                     initialRuleRows[rule.collectionId] = directoryRules.getValue(rule.collectionId)
                 }
-                manualOrder.addAll(rows.filter { it.mode == FrameSelectionMode.INCLUDE && (it.sourceAssetId != null || it.assetId in aliases) }.sortedWith(compareBy({ it.manualOrder == null }, { it.manualOrder ?: 0 }, { it.addedAt })).mapNotNull { it.sourceAssetId ?: aliases[it.assetId] })
-                initial.addAll(rows.filter { it.mode == FrameSelectionMode.INCLUDE }.mapNotNull { it.sourceAssetId ?: aliases[it.assetId] }); selected.addAll(initial)
+                manualOrder.addAll(rows.filter { it.mode == FrameSelectionMode.INCLUDE }.sortedWith(compareBy({ it.manualOrder == null }, { it.manualOrder ?: 0 }, { it.addedAt })).mapNotNull { it.sourceAssetId ?: aliases[it.assetId] ?: it.assetId })
+                val privateIds = rows.filter { it.mode == FrameSelectionMode.INCLUDE && it.assetId != null && it.assetId !in aliases }.mapNotNull { it.assetId }
+                privateAssets.putAll(withContext(Dispatchers.IO) { env.database.assetDao().getByIds(privateIds).associateBy { it.id } })
+                initial.addAll(rows.filter { it.mode == FrameSelectionMode.INCLUDE }.mapNotNull { it.sourceAssetId ?: aliases[it.assetId] ?: it.assetId }); selected.addAll(initial)
+                if (sourceId == null) {
+                    val location = withContext(Dispatchers.IO) {
+                        val asset = rows.firstNotNullOfOrNull { row -> row.sourceAssetId?.let { env.database.sourceAssetDao().getById(it) } }
+                            ?: aliases.values.firstNotNullOfOrNull { env.database.sourceAssetDao().getById(it) }
+                        val collection = directoryRules.keys.firstNotNullOfOrNull { env.database.collectionDao().getById(it) }
+                        val id = asset?.sourceId ?: collection?.sourceId
+                        val source = id?.let { env.database.sourceDao().getById(it) }
+                        val path = if (source?.type in setOf(SourceType.LOCAL_PHOTOS, SourceType.LOCAL_FILES)) ""
+                            else asset?.remoteKey?.substringBeforeLast('/', "") ?: collection?.relPath.orEmpty()
+                        id to path
+                    }
+                    sourceId = location.first
+                    folder = location.second
+                }
             }
             restoredDraft?.let { draft ->
                 draft["manualOrder"]?.let { raw -> runCatching { org.json.JSONArray(raw) }.getOrNull() }?.let { values -> manualOrder.clear(); (0 until values.length()).forEach { manualOrder.add(values.getString(it)) } }
@@ -153,6 +187,18 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                     }
                 }
             }
+            privateAssets.values.forEach { asset ->
+                privatePhotos.addView(CheckBox(context).apply {
+                    text = asset.originalFileName ?: asset.id
+                    isChecked = asset.id in selected
+                    minimumHeight = dp(48)
+                    setOnCheckedChangeListener { _, checked ->
+                        if (checked) selected.add(asset.id) else selected.remove(asset.id)
+                        updateStatus()
+                    }
+                })
+            }
+            aiSettings.visibility = if (frame?.let { withContext(Dispatchers.IO) { env.aiFrames.state.get(it.id) } } != null) View.VISIBLE else View.GONE
             loaded = true
             confirm.isEnabled = true
             reloadSources()
@@ -168,13 +214,14 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         "sourceId" to sourceId.orEmpty(), "folder" to folder, "page" to page.toString(),
         "firstUse" to firstUse.toString(), "scopeIds" to (scopeIds?.let { org.json.JSONArray(it.toList()).toString() } ?: ""),
     )
+    private fun hasChanges(): Boolean = selected != initial || directoryRules != initialRuleRows ||
+        name.text.toString().trim() != (initialName ?: text("My frame", "我的相框")) ||
+        coverSourceAssetId != initialCover || sync.isChecked != initialMode || manualOrderEdited
+
     fun requestBack() {
         if (busy) return
         if (!loaded) return
-        val dirty = selected != initial || directoryRules != initialRuleRows ||
-            name.text.toString().trim() != (initialName ?: text("My frame", "我的相框")) ||
-            coverSourceAssetId != initialCover || sync.isChecked != initialMode || manualOrderEdited
-        if (dirty) {
+        if (hasChanges()) {
             AlertDialog.Builder(context).setTitle(dev.photopilot.scaffold.R.string.playback_unsaved_title)
                 .setPositiveButton(dev.photopilot.scaffold.R.string.common_discard) { _, _ -> onBack?.invoke() }
                 .setNegativeButton(dev.photopilot.scaffold.R.string.common_cancel, null).show()
@@ -428,7 +475,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
         manualOrder.addAll(selected.filter { it !in manualOrder })
         if (manualOrder.isEmpty()) return
         scope.launch {
-            val labels = withContext(Dispatchers.IO) { manualOrder.map { id -> env.database.sourceAssetDao().getById(id)?.let { env.remoteMedia.displayName(it) } ?: id } }
+            val labels = withContext(Dispatchers.IO) { manualOrder.map { id -> privateAssets[id]?.originalFileName ?: env.database.sourceAssetDao().getById(id)?.let { env.remoteMedia.displayName(it) } ?: id } }
             AlertDialog.Builder(context).setTitle(text("Photo order", "照片顺序")).setItems(labels.toTypedArray()) { _, index ->
                 AlertDialog.Builder(context).setTitle(labels[index]).setItems(arrayOf(text("Move earlier", "向前移动"), text("Move later", "向后移动"), text("Move to start", "移至开头"), text("Move to end", "移至末尾"))) { _, action ->
                     val target = when (action) { 0 -> (index - 1).coerceAtLeast(0); 1 -> (index + 1).coerceAtMost(manualOrder.lastIndex); 2 -> 0; else -> manualOrder.lastIndex }
@@ -457,7 +504,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                 val saved = withContext(Dispatchers.IO) {
                     env.database.withTransaction {
                         for (id in selectedIds - initial) {
-                            if (env.remoteMedia.item(id, allowRetainedCopy = false) == null) throw java.io.IOException("REMOTE_REVOKED")
+                            if (id !in privateAssets && env.remoteMedia.item(id, allowRetainedCopy = false) == null) throw java.io.IOException("REMOTE_REVOKED")
                         }
                         val current = frame ?: env.frameManager.createFrame(savedName.ifEmpty { text("My frame", "我的相框") })
                         val beforeMigration = requireNotNull(env.database.frameDao().getById(current.id))
@@ -477,8 +524,8 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                             updatedAt = System.currentTimeMillis(),
                         ))
                         val result = env.frames.save(current.id, latest.selectionVersion,
-                            addIncludes = (selectedIds - initial).map { SelectionRefEdit(null, it) },
-                            removeRefs = (initial - selectedIds).map { SelectionRefEdit(null, it) },
+                            addIncludes = (selectedIds - initial).map { if (it in privateAssets) SelectionRefEdit(it, null) else SelectionRefEdit(null, it) },
+                            removeRefs = (initial - selectedIds).map { if (it in privateAssets) SelectionRefEdit(it, null) else SelectionRefEdit(null, it) },
                             ruleChanges = rules.filter { it != initialRuleRows[it.collectionId] }.map { rule -> dev.photopilot.scaffold.data.logic.RuleChange(rule.collectionId, rule.recursive, rule.includeFuture, true, emptyList(), System.currentTimeMillis()) },
                             removeRules = (initialRules - directoryRules.keys).toList(),
                             manualOrderRefs = order,
@@ -494,7 +541,11 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                 runCatching {
                     if (FramePlaybackSettings.requiresLocalCopies(current.settingsJson)) env.remoteCopies.start(current.id) else env.remoteCopies.pause(current.id)
                 }
-            }.onSuccess { onSaved?.invoke() }.onFailure { showError(it) }
+            }.onSuccess {
+                val continuation = afterSave
+                afterSave = null
+                if (continuation != null) continuation() else onSaved?.invoke()
+            }.onFailure { afterSave = null; showError(it) }
             busy = false
             setEditingEnabled(this@RemoteFrameView, true)
         }

@@ -54,11 +54,13 @@ actor RemoteIndexFixture: RemoteReadableSource {
     private(set) var downloads = 0
     private(set) var requested: [String] = []
     let failing: Set<String>
+    private var busyAttempts: Int
     let files: [SourceAssetDescriptor]
     static let pixels = Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR4nGPQ6LmEFTEMLQkA7nNhgWN/1oEAAAAASUVORK5CYII=")!
 
-    init(paths: [String] = ["family/cat.jpg", "family/holiday/dog.jpg", "family2/car.jpg"], failing: Set<String> = []) {
+    init(paths: [String] = ["family/cat.jpg", "family/holiday/dog.jpg", "family2/car.jpg"], failing: Set<String> = [], busyAttempts: Int = 0) {
         self.failing = failing
+        self.busyAttempts = busyAttempts
         files = paths.map { SourceAssetDescriptor(remoteID: $0, revision: "v1", byteSize: Self.pixels.count, remoteTakenAtMillis: nil) }
     }
 
@@ -68,6 +70,7 @@ actor RemoteIndexFixture: RemoteReadableSource {
 
     func downloadRemote(remoteID: String, to destination: URL, maximumBytes: Int64) async throws {
         downloads += 1
+        if busyAttempts > 0 { busyAttempts -= 1; throw RemoteMediaError.busy }
         requested.append(remoteID)
         if failing.contains(remoteID) { throw RemoteMediaError.unavailable }
         guard maximumBytes >= Self.pixels.count else { throw RemoteMediaError.tooLarge }
@@ -80,6 +83,8 @@ actor RemoteIndexFixture: RemoteReadableSource {
 private final class RemoteSMBTransport: SmbTransport, @unchecked Sendable {
     private let lock = NSLock()
     private var lengths: [Int] = []
+    private let bytes: Data
+    init(bytes: Data = RemoteIndexFixture.pixels) { self.bytes = bytes }
     func requests() -> [Int] { lock.withLock { lengths } }
     func connectShare(name: String, encrypted: Bool) async throws {}
     func disconnectShare(gracefully: Bool) async throws {}
@@ -89,7 +94,6 @@ private final class RemoteSMBTransport: SmbTransport, @unchecked Sendable {
     }
     func readChunk(atPath path: String, offset: Int64, length: Int) async throws -> Data {
         lock.withLock { lengths.append(length) }
-        let bytes = RemoteIndexFixture.pixels
         guard offset < bytes.count else { return Data() }
         return bytes[Int(offset)..<min(bytes.count, Int(offset) + length)]
     }
@@ -145,6 +149,145 @@ final class RemoteProtocolTests: XCTestCase {
         do { _ = try await service.acquire(runtimeID: row.descriptor.runtimeID); XCTFail() }
         catch { XCTAssertEqual(error as? RemoteMediaError, .revoked) }
         XCTAssertEqual(try context.count(for: NSFetchRequest<NSManagedObject>(entityName: "Asset")), 0)
+    }
+
+    func testDecodedThumbnailSurvivesOriginalCacheEvictionWithoutAnotherDownload() async throws {
+        let (controller, sourceID) = try library()
+        let fixture = RemoteIndexFixture(paths: ["own.png"])
+        let service = RemoteMediaService(controller: controller, cacheRoot: controller.storeURL.deletingLastPathComponent().appendingPathComponent("cache"), adapterFactory: { _ in fixture })
+        _ = try await service.index(sourceID: sourceID)
+        let records = try await service.repository.records(sourceID: sourceID)
+        let record = try XCTUnwrap(records.first)
+        _ = try await service.image(runtimeID: record.descriptor.runtimeID, width: 64, height: 64)
+        await service.cache.clear()
+        _ = try await service.image(runtimeID: record.descriptor.runtimeID, width: 64, height: 64)
+        let downloads = await fixture.downloads
+        XCTAssertEqual(downloads, 1)
+        let source = try XCTUnwrap(controller.container.viewContext.fetch(NSFetchRequest<NSManagedObject>(entityName: "Source")).first)
+        source.setValue("disconnected", forKey: "status")
+        try controller.container.viewContext.save()
+        do {
+            _ = try await service.image(runtimeID: record.descriptor.runtimeID, width: 64, height: 64)
+            XCTFail("A cached thumbnail must respect source revocation")
+        } catch {
+            XCTAssertEqual(error as? RemoteMediaError, .revoked)
+        }
+    }
+
+    func testPreviewSurvivesOriginalEvictionAndServiceRestartWithinSharedBudget() async throws {
+        let (controller, sourceID) = try library()
+        let fixture = RemoteIndexFixture(paths: ["own.png"])
+        let root = controller.storeURL.deletingLastPathComponent().appendingPathComponent("cache")
+        let service = RemoteMediaService(controller: controller, cacheRoot: root, budget: 4096, adapterFactory: { _ in fixture })
+        _ = try await service.index(sourceID: sourceID)
+        let records = try await service.repository.records(sourceID: sourceID)
+        let record = try XCTUnwrap(records.first)
+        _ = try await service.image(runtimeID: record.descriptor.runtimeID, width: 64, height: 64)
+        let usage = await service.cache.usage()
+        XCTAssertGreaterThan(usage, Int64(RemoteIndexFixture.pixels.count))
+        let previewBytes = max(1, usage - Int64(RemoteIndexFixture.pixels.count))
+        let token = try await service.cache.reserveTransient(bytes: 4096 - previewBytes)
+        await service.cache.releaseTransient(token)
+        RemoteDecodedImages.shared.clear()
+        let restarted = RemoteMediaService(controller: controller, cacheRoot: root, budget: 4096, adapterFactory: { _ in fixture })
+        let image = try await restarted.image(runtimeID: record.descriptor.runtimeID, width: 64, height: 64)
+        XCTAssertEqual(image.cgImage?.width, 8)
+        let downloads = await fixture.downloads
+        XCTAssertEqual(downloads, 1)
+        let finalUsage = await restarted.cache.usage()
+        XCTAssertLessThanOrEqual(finalUsage, 4096)
+        let context = controller.container.viewContext
+        let tombstone = NSEntityDescription.insertNewObject(forEntityName: "LocalTombstone", into: context)
+        for (key, value) in ["id": "preview-tombstone", "content_hash": "sha256:" + SHA256Hex.digest(data: RemoteIndexFixture.pixels), "reason": "user_delete", "created_at": 0, "updated_at": 0] as [String: Any] {
+            tombstone.setValue(value, forKey: key)
+        }
+        try context.save()
+        RemoteDecodedImages.shared.clear()
+        let revoked = RemoteMediaService(controller: controller, cacheRoot: root, budget: 4096, adapterFactory: { _ in fixture })
+        do {
+            _ = try await revoked.image(runtimeID: record.descriptor.runtimeID, width: 64, height: 64)
+            XCTFail("Persisted previews must honor content tombstones after restart")
+        } catch { XCTAssertEqual(error as? RemoteMediaError, .revoked) }
+    }
+
+    func testGridCellShowsLoadingAndOffersRetryAfterFailure() {
+        let cell = AssetGridCell(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
+        cell.configure(assetID: "fixture", accessibilityText: "Photo")
+        func children(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(children) }
+        XCTAssertTrue(children(cell).compactMap { $0 as? UIActivityIndicatorView }.contains { $0.isAnimating })
+        cell.showFailure()
+        XCTAssertTrue(children(cell).compactMap { $0 as? UIButton }.contains { $0.title(for: .normal) == L10n.string("common.retry") && !$0.isHidden })
+    }
+
+    func testSMBBoundedReadAmortizesFileOpenRoundTrips() async throws {
+        let payload = Data(repeating: 7, count: 1_048_576)
+        let transport = RemoteSMBTransport(bytes: payload)
+        let adapter = SmbSourceAdapter(config: .init(host: "nas.invalid", port: 445, share: "photos", username: "", password: ""), directories: [""], managerFactory: { transport })
+        let destination = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: destination) }
+        try await adapter.downloadRemote(remoteID: "own.png", to: destination, maximumBytes: Int64(payload.count))
+        XCTAssertEqual(try Data(contentsOf: destination), payload)
+        XCTAssertLessThanOrEqual(transport.requests().count, 5)
+        XCTAssertTrue(transport.requests().allSatisfy { $0 <= 262_144 })
+    }
+
+    func testThumbnailLoaderRetriesTransientBusyAndCancellationStopsRetry() async throws {
+        let (controller, sourceID) = try library()
+        let fixture = RemoteIndexFixture(paths: ["own.png"], busyAttempts: 1)
+        let service = RemoteMediaService(controller: controller, cacheRoot: controller.storeURL.deletingLastPathComponent().appendingPathComponent("cache"), adapterFactory: { _ in fixture })
+        _ = try await service.index(sourceID: sourceID)
+        let records = try await service.repository.records(sourceID: sourceID)
+        let record = try XCTUnwrap(records.first)
+        let loader = ThumbnailLoader(originalsRoot: controller.storeURL.deletingLastPathComponent(), media: service)
+        let image = try await loader.image(relPath: record.descriptor.runtimeID, pointSize: 64, scale: 1)
+        XCTAssertEqual(image.cgImage?.width, 8)
+        let fetched = await fixture.downloads
+        XCTAssertEqual(fetched, 2)
+        await service.clearCache()
+        let busy = RemoteIndexFixture(paths: ["own.png"], busyAttempts: 10)
+        let cancelledService = RemoteMediaService(controller: controller, cacheRoot: controller.storeURL.deletingLastPathComponent().appendingPathComponent("cancelled-cache"), adapterFactory: { _ in busy })
+        let cancelledLoader = ThumbnailLoader(originalsRoot: controller.storeURL.deletingLastPathComponent(), media: cancelledService)
+        let task = Task { try await cancelledLoader.image(relPath: record.descriptor.runtimeID, pointSize: 64, scale: 1) }
+        for _ in 0..<100 {
+            if await busy.downloads > 0 { break }
+            try await Task.sleep(nanoseconds: 5_000_000)
+        }
+        task.cancel()
+        do { _ = try await task.value; XCTFail("Cancelled cells must stop retrying") }
+        catch { XCTAssertTrue(error is CancellationError) }
+        let cancelledDownloads = await busy.downloads
+        XCTAssertEqual(cancelledDownloads, 1)
+    }
+
+    func testFrameManagementLoadsSelectedPhotosBeforeOtherSourcePhotos() async throws {
+        let (controller, sourceID) = try library()
+        let fixture = RemoteIndexFixture()
+        let service = RemoteMediaService(controller: controller, adapterFactory: { _ in fixture })
+        _ = try await service.index(sourceID: sourceID)
+        let environment = AppEnvironment(persistence: controller, remoteMedia: service)
+        let items = try await environment.assets.libraryItems(includeRemote: true)
+        let target = try XCTUnwrap(items.last)
+        XCTAssertNotEqual(items.first?.id, target.id)
+        let frame = try await environment.frameManager.createFrame(name: "Fixture", storageMode: .remote)
+        _ = try await environment.frames.save(frameID: frame, baseVersion: 0, addIncludes: [MediaReference(runtimeID: target.id).selection])
+        let editor = FrameEditViewController(environment: environment, frameID: frame)
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = editor
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        func children(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(children) }
+        var collection: UICollectionView?
+        for _ in 0..<100 {
+            window.layoutIfNeeded()
+            collection = children(editor.view).compactMap { $0 as? UICollectionView }.first
+            if collection?.numberOfItems(inSection: 0) == items.count,
+               editor.children.compactMap({ $0 as? AssetGridViewController }).first?.selectedAssetIDs.contains(target.id) == true { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        let grid = try XCTUnwrap(collection)
+        let first = try XCTUnwrap(grid.cellForItem(at: IndexPath(item: 0, section: 0)) as? AssetGridCell)
+        XCTAssertEqual(first.assetID, target.id)
+        XCTAssertEqual(grid.numberOfItems(inSection: 0), items.count)
     }
 
     func testMetadataIndexKeepsUnicodeByteDistinctFoldersSeparate() async throws {
@@ -236,7 +379,7 @@ final class RemoteProtocolTests: XCTestCase {
         let rows = try await service.repository.records(sourceID: sourceID)
         let record = try XCTUnwrap(rows.first)
         _ = try await service.image(runtimeID: record.descriptor.runtimeID, width: 64, height: 64)
-        XCTAssertTrue(transport.requests().allSatisfy { $0 <= 65_536 })
+        XCTAssertTrue(transport.requests().allSatisfy { $0 <= 262_144 })
         XCTAssertFalse(transport.requests().isEmpty)
         XCTAssertEqual(try controller.container.viewContext.count(for: NSFetchRequest<NSManagedObject>(entityName: "Asset")), 0)
     }

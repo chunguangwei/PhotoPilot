@@ -4,11 +4,15 @@ import Foundation
 struct RemoteMediaLease: Sendable {
     let fileURL: URL
     let descriptor: RemoteMediaDescriptor
+    let contentHash: String?
+    private let cacheIdentity: String
     private let owner: RemoteMediaCache?
     private let token: UUID
     private let cleanup: (@Sendable () async -> Void)?
 
-    init(fileURL: URL, descriptor: RemoteMediaDescriptor, owner: RemoteMediaCache? = nil, token: UUID = UUID(), cleanup: (@Sendable () async -> Void)? = nil) {
+    init(fileURL: URL, descriptor: RemoteMediaDescriptor, owner: RemoteMediaCache? = nil, token: UUID = UUID(), cleanup: (@Sendable () async -> Void)? = nil, cacheIdentity: String? = nil, contentHash: String? = nil) {
+        self.cacheIdentity = cacheIdentity ?? descriptor.identity
+        self.contentHash = contentHash
         self.fileURL = fileURL
         self.descriptor = descriptor
         self.owner = owner
@@ -17,7 +21,7 @@ struct RemoteMediaLease: Sendable {
     }
 
     func release() async {
-        await owner?.release(identity: descriptor.identity, token: token)
+        await owner?.release(identity: cacheIdentity, token: token)
         await cleanup?()
     }
 }
@@ -33,6 +37,7 @@ actor RemoteMediaCache {
         let filename: String
         let bytes: Int64
         var accessed: Date
+        var contentHash: String? = nil
     }
 
     private struct Work {
@@ -207,6 +212,39 @@ actor RemoteMediaCache {
         }
     }
 
+    func cachedPreview(_ descriptor: RemoteMediaDescriptor, authorized: @escaping Authority) async throws -> RemoteMediaLease? {
+        try Task.checkCancellation()
+        guard await authorized(descriptor) else { throw RemoteMediaError.revoked }
+        try restore()
+        let key = descriptor.identity + "\u{0}preview-512-v1"
+        guard var entry = entries[key], entry.descriptor == descriptor, entry.contentHash != nil else { return nil }
+        let url = root.appendingPathComponent(entry.filename)
+        guard fileSize(url) == entry.bytes else { removeEntry(key); return nil }
+        let token = UUID()
+        entry.accessed = Date()
+        entries[key] = entry
+        readers[key, default: []].insert(token)
+        saveIndex()
+        return RemoteMediaLease(fileURL: url, descriptor: descriptor, owner: self, token: token, cacheIdentity: key, contentHash: entry.contentHash)
+    }
+
+    func storePreview(_ data: Data, descriptor: RemoteMediaDescriptor, contentHash: String, authorized: @escaping Authority) async throws {
+        try Task.checkCancellation()
+        guard !data.isEmpty, data.count <= 1_048_576, !contentHash.isEmpty else { throw RemoteMediaError.tooLarge }
+        guard await authorized(descriptor) else { throw RemoteMediaError.revoked }
+        try Task.checkCancellation()
+        try restore()
+        let key = descriptor.identity + "\u{0}preview-512-v1"
+        if let entry = entries[key], fileSize(root.appendingPathComponent(entry.filename)) == entry.bytes { return }
+        let bytes = Int64(data.count)
+        try makeRoom(bytes)
+        guard freeSpace() >= bytes + freeReserve else { throw RemoteMediaError.lowSpace }
+        let filename = SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined() + ".media"
+        try data.write(to: root.appendingPathComponent(filename), options: .atomic)
+        entries[key] = Entry(descriptor: descriptor, filename: filename, bytes: bytes, accessed: Date(), contentHash: contentHash)
+        saveIndex()
+    }
+
     func release(identity: String, token: UUID) {
         readers[identity]?.remove(token)
         if readers[identity]?.isEmpty == true { readers[identity] = nil }
@@ -246,11 +284,11 @@ actor RemoteMediaCache {
 
     func invalidateUnauthorized(_ authorized: @escaping Authority) async -> Bool {
         var changed = false
-        let candidates = entries.values.map(\.descriptor) + work.values.map(\.descriptor)
-        for descriptor in candidates where !(await authorized(descriptor)) {
+        let candidates = entries.map { ($0.key, $0.value.descriptor) } + work.map { ($0.key, $0.value.descriptor) }
+        for (key, descriptor) in candidates where !(await authorized(descriptor)) {
             changed = true
-            work[descriptor.identity]?.task?.cancel()
-            removeEntry(descriptor.identity)
+            work[key]?.task?.cancel()
+            removeEntry(key)
         }
         if changed { saveIndex() }
         return changed
