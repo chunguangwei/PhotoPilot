@@ -63,10 +63,10 @@ suspend fun AIFrameService.preview(
                 val folder = models.directory(model)
                 val adapter = createAIEmbedder(context, model, folder)
                 adapter.use { engine ->
-                    val descriptions = rules.map { engine.text(it.description) }
-                    val includes = rules.map { rule -> rule.includes.map(engine::text) }
-                    val excludes = rules.map { rule -> rule.excludes.map(engine::text) }
-                    val themeVectors = AINameSuggestions.themes.mapValues { engine.text(it.value.first + " " + it.value.second) }
+                    val descriptions = rules.map { textVector(engine, it.description) }
+                    val includes = rules.map { rule -> rule.includes.map { textVector(engine, it) } }
+                    val excludes = rules.map { rule -> rule.excludes.map { textVector(engine, it) } }
+                    val themeVectors = AINameSuggestions.themes.mapValues { textVector(engine, it.value.first + " " + it.value.second) }
                     val candidates = mediaCandidates(collections, recursive)
                     val assetIds = candidates.keys.toSet()
                     checkpoint.prune(candidates.mapValues { it.value.fingerprint })

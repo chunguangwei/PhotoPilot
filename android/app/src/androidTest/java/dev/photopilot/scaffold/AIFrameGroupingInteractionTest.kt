@@ -32,8 +32,10 @@ class AIFrameGroupingInteractionTest {
         }
         sources.forEach { source ->
             db.sourceDao().upsert(source)
-            db.collectionDao().upsert(CollectionEntity(source.id, null, source.id, "QA album", "same", CollectionType.SOURCE_FOLDER, source.id, now, now))
+            db.collectionDao().upsert(CollectionEntity(source.id, null, source.id, "QA album", if (source.type == SourceType.LOCAL_FILES) "" else "same", CollectionType.SOURCE_FOLDER, source.id, now, now))
         }
+        db.collectionDao().upsert(CollectionEntity("$prefix-child", sources[1].id, sources[1].id, "Trips", "Camera/Trips", CollectionType.SOURCE_FOLDER, "Camera/Trips", now, now))
+        db.collectionDao().upsert(CollectionEntity("$prefix-photo-album", null, sources[0].id, "Camera photos", "albums/123456", CollectionType.SOURCE_FOLDER, "albums/123456", now, now))
         env.settings.setOnboardingCompleted(true)
         val activity = instrumentation.startActivitySync(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -52,9 +54,18 @@ class AIFrameGroupingInteractionTest {
             instrumentation.runOnMainSync {
                 val folders = view.javaClass.getDeclaredField("folders").apply { isAccessible = true }.get(view) as View
                 val labels = (descendants(view) + descendants(folders)).filterIsInstance<TextView>()
+                var pickedFolder = false
+                view.onLocalFolder = { pickedFolder = true }
+                view.onLocalFiles = { fail("Folder action must not open the file picker") }
+                labels.single { it.text.toString() in listOf("本机目录", "Device folder") && it.isClickable }.performClick()
+                assertTrue(pickedFolder)
                 assertEquals(1, labels.count { it.text.toString() in listOf("本机目录", "On this device") })
                 assertTrue(labels.any { it.text.toString() == sources[2].displayName })
                 assertTrue(labels.any { it.text.toString() == sources[3].displayName })
+                val localChild = labels.filterIsInstance<CheckBox>().single { it.contentDescription?.toString() == "${sources[1].displayName}/Camera/Trips" }
+                assertTrue(localChild.text.toString().contains("Camera"))
+                assertTrue(labels.filterIsInstance<CheckBox>().any { it.text.toString() == "Camera photos" })
+                assertFalse(labels.filterIsInstance<CheckBox>().any { it.text.toString().contains("123456") })
                 assertFalse(descendants(view).filterIsInstance<EditText>().any { it.hint?.toString()?.contains("Frame names") == true || it.hint?.toString()?.contains("相框名称，每行") == true })
                 val optional = labels.first { it.text.toString() in listOf("更多筛选条件（可选）", "More filters (optional)") }
                 val threshold = descendants(view).filterIsInstance<EditText>().first { it.text.toString().toFloatOrNull() != null }
@@ -102,6 +113,19 @@ class AIFrameGroupingInteractionTest {
                 view.javaClass.getDeclaredMethod("updateActions").apply { isAccessible = true }.invoke(view)
                 assertFalse(confirm.isShown)
                 assertTrue(scan.isShown)
+            }
+            instrumentation.runOnMainSync { view.reloadCollections(sources[1].id) }
+            withTimeout(10000) {
+                while (true) {
+                    var selected = false
+                    instrumentation.runOnMainSync {
+                        selected = org.json.JSONArray(view.draftState().getValue("folders")).let { array ->
+                            (0 until array.length()).any { array.getString(it) == sources[1].id }
+                        }
+                    }
+                    if (selected) break
+                    delay(100)
+                }
             }
         } finally {
             instrumentation.runOnMainSync { activity.finish() }

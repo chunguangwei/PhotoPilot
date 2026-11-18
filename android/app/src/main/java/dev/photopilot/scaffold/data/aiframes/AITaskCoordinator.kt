@@ -216,7 +216,7 @@ class AITaskCoordinator(private val aiFrames: AIFrameService) {
                     }
                 }
             } catch (failure: Throwable) {
-                val protection = aiFrames.pauseReason()
+                val protection = (failure as? AIProtectionPause)?.reason ?: aiFrames.pauseReason()
                 val reason = when {
                     protection != null -> protection
                     failure.message == "metered" -> "wifi_required"

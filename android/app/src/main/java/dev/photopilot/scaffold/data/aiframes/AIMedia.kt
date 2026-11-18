@@ -55,19 +55,21 @@ internal suspend fun AIFrameService.mediaVector(candidate: AIMedia, engine: AIEm
         db.settingsKvDao().upsert(row.copy(updatedAt = now))
         return FloatArray(array.length()) { array.getDouble(it).toFloat() }
     }
-    val vector = if (candidate.item.remote != null) {
-        val media = requireNotNull(remoteMedia)
-        if (media.isLocalReference(candidate.item)) {
-            val bitmap = requireNotNull(media.bitmap(candidate.item, 1024, 1024)) { "LOCAL_REFERENCE_UNAVAILABLE" }
-            engine.image(bitmap)
-        } else media.read(candidate.item) { file, orientation ->
-            val bitmap = AIImageDecoder.decode(file, orientation)
+    val vector = inferencePacer.run {
+        if (candidate.item.remote != null) {
+            val media = requireNotNull(remoteMedia)
+            if (media.isLocalReference(candidate.item)) {
+                val bitmap = requireNotNull(media.bitmap(candidate.item, 1024, 1024)) { "LOCAL_REFERENCE_UNAVAILABLE" }
+                engine.image(bitmap)
+            } else media.read(candidate.item) { file, orientation ->
+                val bitmap = AIImageDecoder.decode(file, orientation)
+                try { engine.image(bitmap) } finally { bitmap.recycle() }
+            }
+        } else {
+            val asset = requireNotNull(candidate.item.local)
+            val bitmap = AIImageDecoder.decode(File(context.filesDir, "originals/${asset.originalRelPath}"), asset.exifOrientation.toInt())
             try { engine.image(bitmap) } finally { bitmap.recycle() }
         }
-    } else {
-        val asset = requireNotNull(candidate.item.local)
-        val bitmap = AIImageDecoder.decode(File(context.filesDir, "originals/${asset.originalRelPath}"), asset.exifOrientation.toInt())
-        try { engine.image(bitmap) } finally { bitmap.recycle() }
     }
     val value = JSONArray(vector.map { it.toDouble() }).toString()
     val now = System.currentTimeMillis()

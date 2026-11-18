@@ -30,6 +30,7 @@ class AIFrameView(
     private var shownLibraryVersion: Long? = null
     var onLocalPhotos: (() -> Unit)? = null
     var onLocalFiles: (() -> Unit)? = null
+    var onLocalFolder: (() -> Unit)? = null
     var onConnect: (() -> Unit)? = null
     private val chinese = resources.configuration.locales[0].language == "zh"
     private fun words(zh: String, en: String) = if (chinese) zh else en
@@ -103,10 +104,11 @@ class AIFrameView(
             setOnClickListener { onLocalPhotos?.invoke() }
         }, LayoutParams(0, -2, 1f))
         sourceActions.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, dev.photopilot.scaffold.R.string.source_local_files_choose_folder).apply {
-            text = words("文件或目录", "Files or folders")
-            setOnClickListener { onLocalFiles?.invoke() }
+            text = words("本机目录", "Device folder")
+            setOnClickListener { onLocalFolder?.invoke() }
         }, LayoutParams(0, -2, 1f))
         column.addView(sourceActions)
+        button(words("选择照片文件", "Choose photo files")) { onLocalFiles?.invoke() }
         folderSummary.textSize = 15f
         folderSummary.setTextColor(context.getColor(dev.photopilot.scaffold.R.color.pp_text_secondary))
         column.addView(folderSummary)
@@ -230,10 +232,19 @@ class AIFrameView(
     }
     private fun dp(value: Int) = (resources.displayMetrics.density * value).toInt()
 
-    fun reloadCollections() {
+    fun reloadCollections(addedSourceId: String? = null) {
         sourceReload?.cancel()
         sourceReload = scope.launch {
-            populateCollections(collectionChecks.filterValues { it.isChecked }.keys.toSet())
+            val selected = collectionChecks.filterValues { it.isChecked }.keys.toMutableSet()
+            val addedRoot = withContext(Dispatchers.IO) {
+                addedSourceId?.let { id ->
+                    environment.database.sourceDao().getById(id)?.takeIf {
+                        it.type in setOf(dev.photopilot.scaffold.data.db.SourceType.LOCAL_FILES, dev.photopilot.scaffold.data.db.SourceType.LOCAL_PHOTOS)
+                    }?.let { environment.database.collectionDao().getBySourceAndPath(id, "")?.id }
+                }
+            }
+            addedRoot?.let { selected.add(it) }
+            populateCollections(selected)
             updateFolderSummary()
             chooseFolders()
         }
@@ -253,8 +264,14 @@ class AIFrameView(
                 setAccessibilityHeading(true)
             })
             for (row in rows) {
-                val fullName = if (sourceId == null) row.name else row.relPath?.takeIf { it.isNotBlank() } ?: row.name
-                val shortName = if (sourceId == null) fullName else fullName.substringAfterLast('/')
+                val path = row.relPath?.takeIf { it.isNotBlank() }
+                val deviceFolder = sources[row.sourceId]?.type == dev.photopilot.scaffold.data.db.SourceType.LOCAL_FILES
+                val fullName = when {
+                    sourceId != null -> path ?: row.name
+                    deviceFolder && path != null -> listOfNotNull(sources[row.sourceId]?.displayName, path).joinToString("/")
+                    else -> row.name
+                }
+                val shortName = if (sourceId == null && !deviceFolder) row.name else fullName.substringAfterLast('/')
                 val check = CheckBox(context).apply {
                     text = if (shortName == fullName) shortName else shortName + "\n" + fullName.substringBeforeLast('/').takeLast(48)
                     contentDescription = fullName

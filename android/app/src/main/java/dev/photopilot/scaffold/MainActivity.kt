@@ -992,7 +992,7 @@ class MainActivity : Activity() {
         }
         val aiEditor = root.topOverlay() as? dev.photopilot.scaffold.ui.aiframes.AIFrameView
         if (aiEditor != null) {
-            aiEditor.reloadCollections()
+            aiEditor.reloadCollections(source.id)
             return
         }
         val editor = remoteFrameView
@@ -1983,7 +1983,8 @@ class MainActivity : Activity() {
             restoredDraft = draft,
         )
         view.onLocalPhotos = { showPhotoPermissionOverlay() }
-        view.onLocalFiles = { showLocalFilesChoices() }
+        view.onLocalFiles = { launchFilePicker() }
+        view.onLocalFolder = { launchFolderPicker() }
         view.onConnect = { openNasForm() }
         view.onManageModels = { modelId -> openAIModels(modelId) }
         pushOverlayTracked(view, mapOf("type" to "aiFrame", "frameId" to (frame?.id ?: "")))

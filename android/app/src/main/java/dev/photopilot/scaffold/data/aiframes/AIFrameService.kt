@@ -8,6 +8,8 @@ import java.io.File
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.withLock
 
+internal class AIProtectionPause(val reason: String) : java.io.IOException("preview_paused")
+
 class AIFrameService(internal val context: Context, internal val db: PhotoPilotDatabase, val models: AIModelManager = AIModelManager(context)) {
     var remoteMedia: dev.photopilot.scaffold.data.remote.RemoteMediaRepository? = null
     val state = AIStateStore(db)
@@ -104,7 +106,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                 if (model != null) tasks.begin("frame:$frameId", model)
                 try { runScan(configuration) }
                 catch (cancelled: CancellationException) { withContext(NonCancellable) { status(frameId, "cancelled", configuration.revision) }; throw cancelled }
-                catch (failure: Exception) { status(frameId, when (failure.message) { "runtime_unavailable" -> "runtime_unavailable"; "model_missing" -> "model_missing"; else -> "failed" }, configuration.revision) }
+                catch (failure: Exception) { status(frameId, when (failure.message) { "runtime_unavailable" -> "runtime_unavailable"; "model_missing" -> "model_missing"; "preview_paused" -> "paused"; else -> "failed" }, configuration.revision, (failure as? AIProtectionPause)?.reason) }
                 catch (_: LinkageError) { status(frameId, "runtime_unavailable", configuration.revision) }
                 finally {
                     tasks.end("frame:$frameId")
@@ -118,6 +120,11 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                 }
             }
         }
+    }
+    internal val inferencePacer = AIInferencePacer(thermalStatus = { context.getSystemService(android.os.PowerManager::class.java).currentThermalStatus })
+    internal suspend fun textVector(engine: AIEmbedder, text: String): FloatArray {
+        pauseReason()?.let { throw AIProtectionPause(it) }
+        return inferencePacer.run { engine.text(text) }
     }
     internal fun shouldPause(): Boolean = pauseReason() != null
     internal fun pauseReason(): String? = when {
@@ -137,8 +144,8 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
         val capacity = battery.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
         return capacity in 0..15 && !battery.isCharging
     }
-    private suspend fun status(frameId: String, status: String, revision: Long) = db.withTransaction {
-        state.get(frameId)?.let { if (it.revision == revision && db.frameDao().getById(frameId) != null) state.put(it.copy(status = status, pauseReason = if (status in listOf("paused", "system_paused")) pauseReason() else null)) }
+    private suspend fun status(frameId: String, status: String, revision: Long, protectionReason: String? = null) = db.withTransaction {
+        state.get(frameId)?.let { if (it.revision == revision && db.frameDao().getById(frameId) != null) state.put(it.copy(status = status, pauseReason = if (status in listOf("paused", "system_paused")) protectionReason ?: pauseReason() else null)) }
     }
     private suspend fun runScan(initial: AIConfiguration) {
         val frameId = initial.frameId
@@ -149,14 +156,15 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
         if (!models.supported(model)) throw java.io.IOException("runtime_unavailable")
         require(models.ready(model)) { "model_missing" }
         models.lease(model) {
+            if (shouldPause()) { status(frameId, "paused", initial.revision); return@lease }
             require(models.verify(model)) { "model_integrity" }
             val directory = models.directory(model)
             val embedder = createAIEmbedder(context, model, directory)
             embedder.use { engine ->
-                val description = engine.text(initial.rule.description)
-                val includes = initial.rule.includes.map(engine::text)
-                val excludes = initial.rule.excludes.map(engine::text)
-                val themes = AINameSuggestions.themes.mapValues { engine.text(it.value.first + " " + it.value.second) }
+                val description = textVector(engine, initial.rule.description)
+                val includes = initial.rule.includes.map { textVector(engine, it) }
+                val excludes = initial.rule.excludes.map { textVector(engine, it) }
+                val themes = AINameSuggestions.themes.mapValues { textVector(engine, it.value.first + " " + it.value.second) }
                 val candidates = mediaCandidates(initial.collections, initial.recursive)
                 db.withTransaction {
                     state.get(frameId)?.let { current ->
