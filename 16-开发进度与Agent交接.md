@@ -1,5 +1,14 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## 2026-11-18 Android AI 温控与本机目录选择修正
+
+- 用户反馈 Android AI 扫描提示温度过高，以及 AI 创建/分类规则中无法明确按目录选择。本轮未连接到 ADB 真机，不能判定华为实际热状态是否误报，也不声称真机复现或通过。
+- 代码核实原扫描只在系统 THERMAL_STATUS_SEVERE 时暂停，文本/图片连续推理没有主动休息。新增可取消的推理节流，按耗时与系统 NONE/LIGHT/MODERATE 热状态增加休息；保留严重温控暂停、已处理指纹和预览 checkpoint。文本准备期间也检查保护条件，自动分类的保护中断记录为 paused 而非 failed。中英提示明确系统温控暂停且进度已保存。
+- AI 页面拆分照片库、本机目录与照片文件入口，本机目录直接调用 ACTION_OPEN_DOCUMENT_TREE。授权返回后自动选中该本机来源根目录，保留原选择，子目录显示来源及父路径，避免同名目录混淆；包含子目录选项沿用用户设置。系统对存储根目录、Download 根目录及 Android/data、obb 的授权限制仍由系统执行。
+- 新增 3 项 JVM 推理节流回归，独立 Kotlin/JUnit 执行 3/3 通过。补充原生交互回归覆盖目录动作与文件动作分离、授权后自动选根目录、路径可辨识；当前无设备且 Emulator 组件缺失，原生交互测试 NOT_RUN。make check 通过。完整 make android-build、android-lint、android-test 通过，449 项 JVM 中 447 通过、2 项因模型夹具缺失跳过、零失败；lint 0 错误、204 条既有警告。最终 androidTest 测试包与 Release 签名包构建通过，未执行设备测试。缓存清理后已重新获取 Gradle/依赖，未安装 SDK。验证摘要与日志位于 .build/ai-thermal-folder-fix-20261118/verification.json。
+- 修复代码提交 5e4a6ed 已成功快进推送至现有 GitHub origin/main，未新建 tag 或 Release。
+- 提供本机签名候选包 .build/ai-thermal-folder-fix-20261118/PhotoPilot-1.4.10-71-ai-fix-candidate.apk，仍沿用 1.4.10（71），仅供手动覆盖验证，不作为自动更新或正式新版本。未发布 GitHub Release、未上传或提交 App Store。后续必须实机验证华为外屏目录授权及连续扫描温控恢复，不能将节流单测当作温度误报已消除的证据。
+
 ## 2026-11-17 本机历史构建清理
 
 - 用户因磁盘不足授权清理不用的构建和打包文件。已清理171个旧构建、QA、xcresult、旧版本发布和临时模型/Gradle缓存目录，du合计约48.25GiB；另移除首轮失败签名导出的重复副本。项目.build从约19GiB降到379MiB，Android app/build及项目.gradle缓存已清理。
