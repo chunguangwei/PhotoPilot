@@ -1,0 +1,30 @@
+{
+  "version": "1.4.11",
+  "build": 72,
+  "platform": "Android",
+  "date": "2026-11-18",
+  "makeCheck": "PASS",
+  "debugBuild": "PASS",
+  "releaseBuild": "PASS",
+  "androidTestBuild": "PASS",
+  "unitTests": {
+    "tests": 449,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 204
+  },
+  "deviceTests": "NOT_RUN: no adb device / no emulator component",
+  "iOS": {
+    "version": "1.4.10 (71)",
+    "changed": false,
+    "directoryAudit": "separate photo-file/folder actions; UIDocumentPicker .folder; references asCopy false",
+    "thermalAudit": "pauses at serious; no inference pacing; no new runtime validation"
+  },
+  "appStoreSubmitted": false,
+  "releaseStatus": "prepared",
+  "apkSha256": "08c69bba6345bf05aeef2fb541f290f84b3cee7f3694b724339af8f2ce57fd42"
+}
