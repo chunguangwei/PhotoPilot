@@ -1,11 +1,11 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
-## 2026-11-18 Android 1.4.11（72）发布准备与 iOS 核对
+## 2026-11-18 Android 1.4.11（72）已发布与 iOS 核对
 
 - 用户明确授权直接发布安卓 AI 温控/本机目录修复，并询问 iOS 是否存在同类问题。Android 已升至 1.4.11（72）；iOS 保持 1.4.10（71），未改 iOS 工程、未上传或提交 App Store。
 - iOS 代码检查确认来源菜单分别调用照片文件选择器与 UIDocumentPicker(.folder, asCopy: false)，连接后将来源目录加入 AI 选择；未发现安卓此次入口混淆的同一接线问题。iOS checkForeground 同样在 thermalState >= serious 时暂停，目前没有主动推理减载，不能称 iOS 没有过热暂停风险；本轮未做 iOS 真机复测或实现其节流。
 - 新版本 make check、android-build、android-lint、android-test 均通过，449 项 JVM 中 447 通过、2 项缺少模型夹具跳过，零失败；lint 0 错误、204 既有警告。最终 Release 与 androidTest 包构建通过。仍无安卓真机/可用模拟器，未宣称运行时验收。
-- 正式签名包 .build/releases/v1.4.11/PhotoPilot-v1.4.11-72.apk 已核实版本、包名及与 1.4.10 相同证书，SHA256 为 08c69bba6345bf05aeef2fb541f290f84b3cee7f3694b724339af8f2ce57fd42。保留既有 SMB 源码归档/清单，重新生成 SHA256SUMS；发布验证记录 store/appstore/review/AndroidAIRelease1411.json。GitHub 上传和公开结果须按实际回填。
+- 正式签名包 .build/releases/v1.4.11/PhotoPilot-v1.4.11-72.apk 已核实版本、包名及与 1.4.10 相同证书，SHA256 为 08c69bba6345bf05aeef2fb541f290f84b3cee7f3694b724339af8f2ce57fd42。保留既有 SMB 源码归档/清单，重新生成 SHA256SUMS；发布验证记录 store/appstore/review/AndroidAIRelease1411.json。源码 276fd45 与 annotated tag v1.4.11 已推送；GitHub Release v1.4.11 已公开设为 Latest。4 份附件匿名完整下载后的大小、SHA256 与本地及 GitHub digest 全部一致。认证 latest API 返回 v1.4.11；本机匿名 latest API 因 GitHub 限流返回 HTTP403，不宣称该网络下应用匿名检查更新已通过。正式下载地址 https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.11 。
 
 ## 2026-11-18 Android AI 温控与本机目录选择修正
 
