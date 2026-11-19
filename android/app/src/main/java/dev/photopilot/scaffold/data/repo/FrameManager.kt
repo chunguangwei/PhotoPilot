@@ -54,10 +54,11 @@ class FrameManager(
         db.frameDao().update(frame.copy(orderMode = mode, updatedAt = nowMillis()))
     }
 
-    suspend fun setCover(frameId: String, assetId: String?) = withContext(Dispatchers.IO) {
+    suspend fun setCover(frameId: String, assetId: String?, sourceAssetId: String? = null) = withContext(Dispatchers.IO) {
         val frame = db.frameDao().getById(frameId) ?: return@withContext
         val settings = dev.photopilot.scaffold.data.logic.JsonMini.parseObject(frame.settingsJson).toMutableMap()
-        settings.remove("remoteCoverRef")
+        if (sourceAssetId == null) settings.remove("remoteCoverRef")
+        else settings["remoteCoverRef"] = sourceAssetId
         db.frameDao().update(frame.copy(coverAssetId = assetId, settingsJson = dev.photopilot.scaffold.data.logic.JsonMini.toJson(settings), updatedAt = nowMillis()))
     }
 

@@ -638,7 +638,7 @@ class AIFrameView(
     }
     private fun selectPreviewPhotos(preview: AIPreview, index: Int) {
         val ids = (preview.matches.keys + preview.reviews.keys).toList()
-        openResultPicker(ids, previewChosen[index]) { selected ->
+        openResultPicker(ids, previewChosen[index]) { selected, _ ->
             check(pendingPreview?.getOrNull(index) === preview) { "preview_superseded" }
             previewChosen[index].apply { clear(); addAll(selected) }
             environment.aiFrames.tasks.rememberDraft(draftId, draftState(), immediate = true)
@@ -650,13 +650,14 @@ class AIFrameView(
         if (id.startsWith("remote:")) environment.remoteMedia.item(id.removePrefix("remote:"))
         else environment.database.assetDao().getById(id)?.let { dev.photopilot.scaffold.data.remote.PlaybackItem(local = it) }
 
-    private fun openResultPicker(ids: List<String>, initial: Set<String>, save: suspend (Set<String>) -> Unit) {
+    private fun openResultPicker(ids: List<String>, initial: Set<String>, allowCover: Boolean = false, save: suspend (Set<String>, String?) -> Unit) {
         val selected = initial.intersect(ids.toSet()).toMutableSet()
         val pageSize = 24
         val pageCount = ((ids.size + pageSize - 1) / pageSize).coerceAtLeast(1)
         var page = 0
         var loading: Job? = null
         var saving = false
+        var coverId: String? = null
         val body = LinearLayout(context).apply { orientation = VERTICAL; setPadding(dp(12), 0, dp(12), 0) }
         val summary = TextView(context)
         val grid = LinearLayout(context).apply { orientation = VERTICAL }
@@ -683,6 +684,7 @@ class AIFrameView(
         fun refreshSummary() {
             summary.text = words("已选 ${selected.size} / ${ids.size} 张 · 第 ${page + 1} / $pageCount 页",
                 "${selected.size} / ${ids.size} selected · Page ${page + 1} / $pageCount")
+            if (coverId in selected) summary.append(words(" · 已选封面", " · Cover selected"))
         }
         fun loadPage() {
             loading?.cancel()
@@ -717,6 +719,16 @@ class AIFrameView(
                         }
                         tile.addView(image, LayoutParams(-1, dp(80)))
                         tile.addView(check)
+                        if (allowCover) tile.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, dev.photopilot.scaffold.R.string.frames_set_cover).apply {
+                            text = words("设封面", "Set cover")
+                            setOnClickListener {
+                                if (!saving && check.isEnabled) {
+                                    coverId = photo.id
+                                    check.isChecked = true
+                                    refreshSummary()
+                                }
+                            }
+                        })
                         row.addView(tile, LayoutParams(0, -2, 1f).apply { marginEnd = dp(4) })
                         checks[photo.id] = check
                     }
@@ -751,7 +763,7 @@ class AIFrameView(
             val snapshot = selected.toSet()
             scope.launch {
                 try {
-                    save(snapshot)
+                    save(snapshot, coverId?.takeIf { it in snapshot })
                     dialog.dismiss()
                 } catch (cancelled: CancellationException) {
                     throw cancelled
@@ -859,24 +871,37 @@ class AIFrameView(
         }
     }
     private fun preview(configuration: AIConfiguration) {
-        val initial = configuration.members
-        val ids = (initial + configuration.reviews.keys).toList()
-        openResultPicker(ids, initial) { selected ->
-            withContext(Dispatchers.IO) {
-                val frame = requireNotNull(environment.database.frameDao().getById(configuration.frameId))
-                fun ref(id: String) = if (id.startsWith("remote:")) SelectionRefEdit(null, id.removePrefix("remote:"))
-                    else SelectionRefEdit(id, null)
-                val additions = (selected - initial).mapNotNull { id ->
-                    resultPhoto(id)?.takeIf { environment.remoteMedia.valid(it) }?.let { ref(id) }
-                }
-                val removals = (initial - selected).map(::ref)
-                if (additions.isNotEmpty() || removals.isNotEmpty()) {
-                    val result = environment.frames.save(frame.id, frame.selectionVersion, addIncludes = additions, addExcludes = removals)
-                    check(result is dev.photopilot.scaffold.data.logic.SelectionSaveResult.Ok)
-                }
+        scope.launch {
+            val initial = withContext(Dispatchers.IO) {
+                environment.database.frameSelectionDao().getByFrame(configuration.frameId)
+                    .filter { it.mode == dev.photopilot.scaffold.data.db.FrameSelectionMode.INCLUDE }
+                    .mapNotNull { row -> row.sourceAssetId?.let { "remote:$it" } ?: row.assetId }.toSet()
             }
-            onChanged()
-            status.text = words("选片已保存", "Selection saved")
+            if (!isAttachedToWindow) return@launch
+            val ids = (initial + configuration.members + configuration.reviews.keys).toList()
+            openResultPicker(ids, initial, allowCover = true) { selected, cover ->
+                withContext(Dispatchers.IO) {
+                    val frame = requireNotNull(environment.database.frameDao().getById(configuration.frameId))
+                    fun ref(id: String) = if (id.startsWith("remote:")) SelectionRefEdit(null, id.removePrefix("remote:"))
+                        else SelectionRefEdit(id, null)
+                    val additions = (selected - initial).mapNotNull { id ->
+                        resultPhoto(id)?.takeIf { environment.remoteMedia.valid(it) }?.let { ref(id) }
+                    }
+                    val removals = (initial - selected).map(::ref)
+                    if (additions.isNotEmpty() || removals.isNotEmpty()) {
+                        val result = environment.frames.save(frame.id, frame.selectionVersion, addIncludes = additions, addExcludes = removals)
+                        check(result is dev.photopilot.scaffold.data.logic.SelectionSaveResult.Ok)
+                    }
+                    if (cover != null) {
+                        val item = resultPhoto(cover)
+                        if (item != null && environment.remoteMedia.valid(item)) {
+                            environment.frameManager.setCover(frame.id, item.local?.id.takeUnless { item.remote != null }, item.sourceAssetId)
+                        }
+                    }
+                }
+                onChanged()
+                status.text = words("选片已保存", "Selection saved")
+            }
         }
     }
 }

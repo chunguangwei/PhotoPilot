@@ -54,6 +54,10 @@ Android 1.4.16 起，已保存规则可直接「继续相框分类」，新建�
 
 On Android 1.4.16 and later, resume classification with saved rules or scan and preview when creating or changing rules. The results picker supports individual selection, page selection, and selecting all results. Unfinished scans retain their progress after a cold start and wait for manual resume. Export AI diagnostics from Settings.
 
+Android 1.4.17 起，已有 AI 相框的卡片提供「AI 分类规则」。打开「预览匹配 / 待确认照片」会勾选已保存进相框的照片。选片页的「设封面」和选片一起通过「确认保存」生效。
+
+On Android 1.4.17 and later, open AI classification rules directly from the frame card. The results picker restores saved photo selections and saves a chosen cover with the selection.
+
 - **EmbeddingGemma 2 文本＋图像版 / standard** 约387.7 MB，使用分类所需的文本和图像部分。Android 标准模型需要64位进程。
 - **多语 CLIP 轻量版 / Multilingual CLIP Lite** 约201.5 MB，包含文本编码器、图像编码器、投影和词表。完整下载比标准版小约48%，支持中英文零样本图像分类。
 - 模型按需下载，国内源优先 ModelScope，国际源使用 Hugging Face，另提供 hf-mirror 回退。安装前校验固定版本及 SHA-256。备用镜像可能跳转海外 CDN，可用性取决于网络。下载完成后照片、提示词和分类都留在本机。

@@ -50,6 +50,7 @@ class FramesView(
     var onOpen: ((FrameEntity) -> Unit)? = null
     var onCreateAI: (() -> Unit)? = null
     var onCreate: (() -> Unit)? = null
+    var onAIRules: ((FrameEntity) -> Unit)? = null
     var onContinueAI: ((FrameEntity) -> Unit)? = null
     var onRetry: (() -> Unit)? = null
     var onRename: ((FrameEntity) -> Unit)? = null
@@ -269,6 +270,12 @@ class FramesView(
         }
         addCount(photoCount, R.dimen.pp_space_8)
         model.aiProgress?.let { addCount(it, R.dimen.pp_space_4) }
+        if (model.aiProgress != null) {
+            details.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, R.string.common_edit).apply {
+                text = if (resources.configuration.locales[0].language == "zh") "AI 分类规则" else "AI classification rules"
+                setOnClickListener { onAIRules?.invoke(model.frame) }
+            })
+        }
         if (model.aiPaused) {
             details.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, R.string.common_continue).apply {
                 text = if (resources.configuration.locales[0].language == "zh") "继续 AI 分类" else "Continue AI classification"

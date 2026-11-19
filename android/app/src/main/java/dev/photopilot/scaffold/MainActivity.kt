@@ -1789,6 +1789,7 @@ class MainActivity : Activity() {
             }
         }
         view.onCreateAI = { openAIFrameEditor(null) }
+        view.onAIRules = { frame -> openAIFrameEditor(frame) }
         view.onContinueAI = { frame -> environment?.aiFrames?.resume(frame.id); framesDirty = true }
         view.onPlay = { frame -> openPlayer(frame, fromSnapshot = false) }
         view.onPlaybackSettings = { frame -> openPlaybackSettings(frame) }
@@ -1839,7 +1840,7 @@ class MainActivity : Activity() {
                         val aiProgress = ai?.let { configuration ->
                             val zh = resources.configuration.locales[0].language == "zh"
                             val state = if (aiPaused) { if (zh) "分类已暂停，待继续" else "Classification paused, ready to continue" }
-                                else if (configuration.status == "running") { if (zh) "分类中" else "Classifying" }
+                                else if (env.aiFrames.isRunning(frame.id)) { if (zh) "分类中" else "Classifying" }
                                 else if (configuration.status == "complete") { if (zh) "分类完成" else "Classification complete" }
                                 else { if (zh) "分类待继续" else "Classification pending" }
                             val reason = configuration.pauseReason
