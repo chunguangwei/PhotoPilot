@@ -62,6 +62,10 @@ Android 1.4.18 起，AI 选片页用星标设置封面。点「确认保存」�
 
 On Android 1.4.18 and later, use the star in the AI results picker to choose a cover. Saving a cover from any frame editor refreshes the frame card.
 
+Android 1.4.19 起，AI 分类在低内存设备上更稳：模型运行按可用内存分级加载，内存不足时跳过而不是崩溃；扫描与预览遇到内存耗尽转为暂停，停止占用释放缓存。明文 NAS 例外按主机名匹配，旧「主机:端口」记录仍然可用。
+
+On Android 1.4.19 and later, AI classification is safer on low-memory devices: the model runtime loads only when usable memory is available instead of crashing OOM, and memory-exhausted scans pause gracefully while bitmap caches are released. Plaintext NAS exceptions match by host name, with legacy host:port entries still honored.
+
 - **EmbeddingGemma 2 文本＋图像版 / standard** 约387.7 MB，使用分类所需的文本和图像部分。Android 标准模型需要64位进程。
 - **多语 CLIP 轻量版 / Multilingual CLIP Lite** 约201.5 MB，包含文本编码器、图像编码器、投影和词表。完整下载比标准版小约48%，支持中英文零样本图像分类。
 - 模型按需下载，国内源优先 ModelScope，国际源使用 Hugging Face，另提供 hf-mirror 回退。安装前校验固定版本及 SHA-256。备用镜像可能跳转海外 CDN，可用性取决于网络。下载完成后照片、提示词和分类都留在本机。

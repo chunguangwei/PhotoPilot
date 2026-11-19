@@ -1,0 +1,63 @@
+{
+  "version": "1.4.19",
+  "build": 80,
+  "platform": "Android",
+  "date": "2026-11-19",
+  "makeCheck": "PASS",
+  "debugBuild": "PASS",
+  "releaseBuild": "PASS",
+  "unitTests": {
+    "tests": 452,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 204
+  },
+  "deviceTests": "NOT_RUN: no adb device / no emulator component",
+  "changes": [
+    "AIMemoryPolicy memory-tiered model runtime gating; skip load instead of OOM",
+    "AIFrameService catches OutOfMemoryError as low_memory pause; runScan fail-fast memory gate",
+    "AIPreview memory gate before embedder creation",
+    "AIModels.supported(context) memory-aware; verify reuses .verified marker instead of rehashing",
+    "NasTlsPolicy cleartext exceptions match by host name with legacy host:port tolerance",
+    "RemoteLocalCopies disk cap = half of free space with 2x reserve (iOS parity)",
+    "PlayerEngine nextReady requires a decoded frame; retry after prefetch completion",
+    "AppSettingsRepository.isOnboardingCompleted falls back to saved frames (selection_version > 0)",
+    "MainActivity.onTrimMemory releases thumbnail and remote decode LruCaches",
+    "SmbTransportSecurityTest updated for host-scoped opt-in contract"
+  ],
+  "sourceCommit": "0498473",
+  "tag": "v1.4.19",
+  "releaseUrl": "https://github.com/chunguangwei/PhotoPilot/releases/tag/v1.4.19",
+  "githubLatest": true,
+  "apiVerification": {
+    "authenticatedLatestApi": "PASS (v1.4.19)",
+    "assets": [
+      {
+        "name": "AMSMB2-4.0.3-source.tar.gz",
+        "bytes": 329872,
+        "sha256": "0b4bd6046f2f06d79cd82a36f967f11b85b8e39aade627e1d6f5504ddd2e5077"
+      },
+      {
+        "name": "PhotoPilot-v1.4.19-80.apk",
+        "bytes": 154482934,
+        "sha256": "8528f9256a283fd110ef92eedf2a3d25537f29bd8cb5b06239939e05c7fb8fc3"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 274,
+        "sha256": "291a6592e87761d3dae63ed3d509932be0ff7c81206a3f5171ccf3a7d3ce9dba"
+      },
+      {
+        "name": "SMBSourceManifest.json",
+        "bytes": 33554,
+        "sha256": "2839e53051c6982cf3a760dd0115a431c6815ccdf8f37f37ecd77ecb1c97644e"
+      }
+    ]
+  },
+  "localAssetNote": "APK built and verified from android/app/build/outputs/apk/release; SMB assets unchanged from v1.4.18 and copied forward; local SHA256SUMS matches GitHub digest for all four assets",
+  "signingCertificateSha256": "9cd985f16aec8a0e492ff834aa7a07de6b426f224b2fd6d788a5965cc1b4f37c"
+}

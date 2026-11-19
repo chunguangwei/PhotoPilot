@@ -1,0 +1,51 @@
+{
+  "version": "1.4.11",
+  "build": 72,
+  "platform": "iOS",
+  "date": "2026-11-19",
+  "purpose": "fix iOS 15 launch crash in SmbSourceAdapter",
+  "crashRootCause": {
+    "device": "iPad 9th gen (iPad13,10), iPadOS 15.6",
+    "source": "real .ips crash reports",
+    "symbol": "_$s6Darwin14POSIXErrorCodeO10EOPNOTSUPPACvgZ",
+    "reason": "POSIXErrorCode.EOPNOTSUPP case comparison pulls libswift_DarwinFoundation1 symbol introduced in iOS 18.0; iOS 15.6 dyld terminates at launch (Symbol not found). Prior iPad Air 2 OOM theory ruled out."
+  },
+  "fix": {
+    "file": "ios/PhotoPilot/Domain/SourceAdapter/SmbSourceAdapter.swift",
+    "change": "compare posix.code.rawValue == EOPNOTSUPP || ENOTSUP instead of the .EOPNOTSUPP enum case (both switch sites)",
+    "nmVerify": {
+      "oldIpa": "referenced late symbol 1 time",
+      "newBuild": "referenced 0 times"
+    },
+    "regressionCheck": [
+      "/tmp/scan_late_symbols.py",
+      "/tmp/check_binary_late.py"
+    ]
+  },
+  "versionBump": {
+    "marketingVersion": "1.4.11",
+    "buildNumber": 72,
+    "sourceCommit": "0498473",
+    "iosFilesChanged": [
+      "ios/project.yml",
+      "ios/PhotoPilot.xcodeproj/project.pbxproj",
+      "ios/PhotoPilot/Domain/SourceAdapter/SmbSourceAdapter.swift"
+    ]
+  },
+  "upload": {
+    "status": "Uploaded / Processing",
+    "exportCompliance": "encryption=yes; type=standard(self-implemented or supplementing Apple OS); france=no",
+    "encryptionExemptionFlag": false,
+    "testFlightSymbolWarnings": [
+      "MediaPipeTasksCommon",
+      "MediaPipeTasksTextRetrieval",
+      "onnxruntime"
+    ],
+    "symbolWarningsNote": "third-party prebuilt frameworks without dSYM; harmless"
+  },
+  "pending": [
+    "Build 72 must reach Completed before it can be bound in the 1.4.11 App Store version page",
+    "iOS AI memory gating implemented only on stale copy; not yet ported to latest iOS code; no decision from user"
+  ],
+  "appStoreSubmitted": false
+}

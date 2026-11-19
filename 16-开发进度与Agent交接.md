@@ -5,7 +5,7 @@
 - 真机 `.ips`（iPad 9，iPadOS 15.6）确认启动崩溃根因：`SmbSourceAdapter` 比较 `POSIXErrorCode.EOPNOTSUPP` 会引用仅 iOS 18+ 提供的 `libswift_DarwinFoundation1` 符号，iOS 15.6 dyld 直接终止（Symbol not found），旧「iPad Air 2 OOM」推断排除。
 - 修复改为 `posix.code.rawValue == EOPNOTSUPP || ENOTSUP`，`nm -u` 核对旧 IPA 引用该符号 1 次、新构建 0 次；/tmp/scan_late_symbols.py 与 check_binary_late.py 为可复用回归检查。
 - ios/project.yml 升至 1.4.11（72）；commit cf49b0b。Developer 签名归档导出（Apple Distribution、Store profile、beta-reports-active）并由用户上传；Build 72 状态「正在处理」，TestFlight 下三条 Upload Symbols Failed 均为第三方预编译框架（MediaPipeTasksCommon/Retrieval、onnxruntime）无 dSYM，无害。
-- App Store 出口合规已答：使用加密=是；类型=标准加密算法；法国分发=否，去「缺少出口合规证明」置「准备提交」。Build 72 需转「完成」后才能在 1.4.11 版本页绑定。
+- App Store 出口合规已答：使用加密=是；类型=标准加密算法；法国分发=否，去「缺少出口合规证明」置「准备提交」。Build 72 需转「完成」后才能在 1.4.11 版本页绑定。证据 store/appstore/review/iOSLaunchFix1411.json。
 - iOS AI 内存门控（550MB 下限、deviceUnsupported、延迟 processPending）仅做在旧副本未迁入最新 iOS 代码，未确认是否进下一包。
 
 ## Android 1.4.19（80）内存与稳定性优化
@@ -18,7 +18,7 @@
 - AppSettingsRepository.isOnboardingCompleted 增加 FrameDao 回退（selection_version > 0 视为已完成），与 iOS AppSettingsRepository.swift:22-32 一致。
 - MainActivity.onTrimMemory 清空缩略图与远端解码 LruCache。
 - make check 58 通过；Debug/Release 构建、lint、JVM 单测 452 通过；APK 验签 9cd985f1…。
-- 源码 0498473 与 v1.4.19 标签已推送，GitHub Release 已创建（APK、SHA256SUMS、AMSMB2 源码 tar、SMBSourceManifest 四资产），APK/SHA256 与本地一致，签名指纹 9cd985f1…。华为真机待复测。
+- 源码 0498473 与 v1.4.19 标签已推送，GitHub Release 已创建（APK、SHA256SUMS、AMSMB2 源码 tar、SMBSourceManifest 四资产）并自动设为 Latest，GitHub digest 与本地一致，签名指纹 9cd985f1…；发布证据 store/appstore/review/AndroidAIRelease1419.json。华为真机待复测。
 
 ## Android 1.4.18（79）已发布
 
