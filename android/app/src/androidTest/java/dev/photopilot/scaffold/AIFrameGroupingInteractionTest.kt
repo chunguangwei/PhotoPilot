@@ -127,6 +127,12 @@ class AIFrameGroupingInteractionTest {
                     delay(100)
                 }
             }
+            instrumentation.runOnMainSync {
+                val folderList = view.javaClass.getDeclaredField("folders").apply { isAccessible = true }.get(view) as View
+                assertNull("Returning from local folder authorization must leave the chooser closed", folderList.parent)
+                val summary = view.javaClass.getDeclaredField("folderSummary").apply { isAccessible = true }.get(view) as TextView
+                assertTrue(summary.text.toString().contains("QA album"))
+            }
         } finally {
             instrumentation.runOnMainSync { activity.finish() }
             scope.cancel()

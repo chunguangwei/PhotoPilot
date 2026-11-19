@@ -284,7 +284,7 @@ class AITaskCoordinator(private val aiFrames: AIFrameService) {
             commitAllowed = { executionEpoch == epoch && records[task.id]?.generation == task.generation },
             onLeaseAcquired = {
                 executingPreviews.add(task.id)
-                scope.launch { update(task.id, task.generation) { if (it.status == "queued") it.copy(status = "running") else it } }
+                update(task.id, task.generation) { if (it.status == "queued") it.copy(status = "running", total = 0) else it }
             },
         ) { count, total ->
             val now = android.os.SystemClock.elapsedRealtime()
@@ -439,7 +439,7 @@ class AITaskCoordinator(private val aiFrames: AIFrameService) {
         }
     }
 
-    private fun allowForegroundExecution() = synchronized(active) {
+    internal fun allowForegroundExecution() = synchronized(active) {
         if (systemStopped) executionEpoch++
         systemStopped = false
     }

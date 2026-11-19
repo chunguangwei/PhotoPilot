@@ -39,7 +39,7 @@ suspend fun AIFrameService.preview(
     allowPartial: Boolean = false,
     stopRequested: () -> Boolean = { false },
     commitAllowed: () -> Boolean = { true },
-    onLeaseAcquired: () -> Unit = {},
+    onLeaseAcquired: suspend () -> Unit = {},
     progress: (Int, Int) -> Unit,
 ): List<AIPreview> {
     check(!closed)
@@ -72,6 +72,7 @@ suspend fun AIFrameService.preview(
                     checkpoint.prune(candidates.mapValues { it.value.fingerprint })
                     val reused = checkpoint.assets.size
                     val visited = (checkpoint.assets.keys + checkpoint.failures.keys).toMutableSet()
+                    progress(visited.size, assetIds.size)
                     var completedAll = true
                     for ((id, candidate) in candidates) {
                         currentCoroutineContext().ensureActive()

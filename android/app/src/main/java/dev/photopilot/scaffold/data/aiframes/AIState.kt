@@ -25,7 +25,7 @@ data class AIConfiguration(
     val total: Int = 0,
     val pauseReason: String? = null,
 ) {
-    val resumeAutomatically: Boolean get() = !userPaused && (status in listOf("running", "paused", "system_paused", "waiting") || (autoUpdate && status in listOf("idle", "complete")))
+    val resumeAutomatically: Boolean get() = !userPaused && (status in listOf("queued", "running", "paused", "system_paused", "waiting") || (autoUpdate && status in listOf("idle", "complete")))
 
     fun json(): JSONObject = JSONObject().put("version", 1).put("frameId", frameId)
         .put("revision", revision).put("modelId", modelId).put("modelRevision", modelRevision)

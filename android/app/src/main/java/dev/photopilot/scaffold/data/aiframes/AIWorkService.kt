@@ -20,6 +20,7 @@ class AIWorkService : Service() {
     private var latestStartId = 0
     private var pausePending = false
     private var timedOut = false
+    private var restoring = false
     private val chinese get() = dev.photopilot.scaffold.ui.UiPreferenceOverrides.wrap(this).resources.configuration.locales[0].language == "zh"
     private fun words(en: String, zh: String) = if (chinese) zh else en
 
@@ -61,6 +62,7 @@ class AIWorkService : Service() {
             return START_NOT_STICKY
         }
         timedOut = false
+        restoring = restoring || intent == null
         pausePending = pausePending || intent?.action == "pause"
         try {
             startForeground(ID, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
@@ -80,8 +82,16 @@ class AIWorkService : Service() {
                     aiFrames = frames
                     coordinator = frames.tasks
                     frames.tasks.attachService(owner)
-                    if (pausePending) consumePause() else frames.tasks.recover()
                     ensureNotificationLoop(frames.tasks)
+                    try {
+                        if (pausePending) consumePause()
+                        else {
+                            frames.tasks.recover()
+                            if (restoring) frames.resumeAutomatic().join()
+                        }
+                    } finally {
+                        restoring = false
+                    }
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {
@@ -104,7 +114,7 @@ class AIWorkService : Service() {
                 if (frames.tasks.running(task.id) || task.mayRecover) frames.tasks.pause(task.id).join()
             }
             for (configuration in frames.state.all()) {
-                if (frames.isRunning(configuration.frameId) || configuration.status in listOf("running", "paused", "system_paused", "waiting")) {
+                if (frames.isRunning(configuration.frameId) || configuration.status in listOf("queued", "running", "paused", "system_paused", "waiting")) {
                     frames.pause(configuration.frameId)
                 }
             }
@@ -125,14 +135,14 @@ class AIWorkService : Service() {
             var lastRenew = SystemClock.elapsedRealtime()
             var emptyTicks = 0
             while (isActive && !timedOut) {
-                emptyTicks = if (tasks.hasActiveWork) 0 else emptyTicks + 1
+                emptyTicks = if (tasks.hasActiveWork || initialization?.isActive == true) 0 else emptyTicks + 1
                 if (emptyTicks >= 3) {
                     if (stopSelfResult(latestStartId)) break
                     emptyTicks = 0
                 }
                 val state = tasks.notificationState(chinese)
                 getSystemService(NotificationManager::class.java).notify(ID, notification(state))
-                if (tasks.hasActiveWork && SystemClock.elapsedRealtime() - lastRenew >= WAKE_RENEW) {
+                if (tasks.hasActiveWork && (wakeLock?.isHeld != true || SystemClock.elapsedRealtime() - lastRenew >= WAKE_RENEW)) {
                     wakeLock?.acquire(WAKE_TIMEOUT)
                     lastRenew = SystemClock.elapsedRealtime()
                 }

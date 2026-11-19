@@ -73,11 +73,14 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
     }
     fun resume(frameId: String) {
         scope.launch {
-            db.withTransaction { state.get(frameId)?.let { state.put(it.copy(userPaused = false, status = "idle", pauseReason = null)) } }
-            onProgress?.invoke(frameId)
-            userPauseRequests.remove(frameId)
+            if (foreground) tasks.allowForegroundExecution()
             jobs[frameId]?.join()
+            db.withTransaction {
+                state.get(frameId)?.let { state.put(it.copy(userPaused = false, status = "queued", pauseReason = null)) }
+            }
+            userPauseRequests.remove(frameId)
             scan(frameId)
+            onProgress?.invoke(frameId)
         }
     }
     suspend fun shutdown() {
@@ -88,11 +91,9 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
         scope.coroutineContext[Job]?.cancelAndJoin()
         previews.forEach { it.join() }
     }
-    fun resumeAutomatic() {
-        scope.launch {
-            for (configuration in state.all()) {
-                if (configuration.resumeAutomatically) scan(configuration.frameId)
-            }
+    fun resumeAutomatic(): Job = scope.launch {
+        for (configuration in state.all()) {
+            if (configuration.resumeAutomatically) scan(configuration.frameId)
         }
     }
     fun scan(frameId: String) {
@@ -130,7 +131,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
     internal fun pauseReason(): String? = when {
         tasks.systemStopped -> tasks.systemStopReason
         lowBattery() -> "low_battery"
-        context.getSystemService(android.os.PowerManager::class.java).currentThermalStatus >= android.os.PowerManager.THERMAL_STATUS_SEVERE -> "temperature"
+        shouldPauseForThermalStatus(context.getSystemService(android.os.PowerManager::class.java).currentThermalStatus) -> "temperature"
         !foreground && !tasks.serviceRunning -> "background"
         else -> null
     }
@@ -141,8 +142,13 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
     }
     private fun lowBattery(): Boolean {
         val battery = context.getSystemService(android.os.BatteryManager::class.java)
-        val capacity = battery.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
-        return capacity in 0..15 && !battery.isCharging
+        val snapshot = context.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
+        val level = snapshot?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = snapshot?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
+        val capacity = if (scale > 0 && level in 0..scale) (level.toLong() * 100 / scale).toInt()
+            else battery.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        val plugged = snapshot?.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+        return capacity in 1..15 && plugged == 0 && !battery.isCharging
     }
     private suspend fun status(frameId: String, status: String, revision: Long, protectionReason: String? = null) = db.withTransaction {
         state.get(frameId)?.let { if (it.revision == revision && db.frameDao().getById(frameId) != null) state.put(it.copy(status = status, pauseReason = if (status in listOf("paused", "system_paused")) protectionReason ?: pauseReason() else null)) }
@@ -179,6 +185,10 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                 for (id in candidates.keys + initial.members) {
                     currentCoroutineContext().ensureActive()
                     if (shouldPause()) { status(frameId, "paused", initial.revision); return@lease }
+                    if (previewJobs.isNotEmpty()) {
+                        status(frameId, "paused", initial.revision)
+                        return@lease
+                    }
                     if (db.frameDao().getById(frameId) == null) return@lease
                     val configuration = state.get(frameId) ?: return@lease
                     if (configuration.userPaused || frameId in userPauseRequests || epoch != tasks.executionEpoch) return@lease

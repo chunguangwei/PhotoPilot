@@ -1,5 +1,36 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## Android AI 加载动效
+
+- 参考 ImagePilot 的等待反馈，在安卓 AI 页面底部加入不定进度动效。提交时立即显示准备状态，随后区分等待模型、加载模型和扫描张数，任务暂停或结束后收起动效。
+- make check、Debug / Release 构建、lint、JVM 单测及签名校验通过。候选包 .build/android-ai-loading/PhotoPilot-1.4.11-72-ai-loading.apk，华为真机动效仍待复测。
+
+## Android AI 前台服务恢复
+
+- 系统重建前台服务后恢复已保存相框的待继续扫描，沿用持久化检查点及手动暂停规则。恢复前获取限时 CPU 唤醒锁，初始化时避免空闲退出，活跃任务续期时补取已过期锁。
+- make check、Android Debug / Release、lint、JVM 单测和 APK 签名验证通过。候选包为 .build/android-ai-keepalive/PhotoPilot-1.4.11-72-ai-keepalive.apk。锁屏、切后台与系统重建尚未在华为真机复测，未发布新版。
+
+## 2026-11-19 Android 继续分类恢复
+
+- 前台手动继续已保存相框时解除系统留下的后台停止标记，等待旧任务退出后持久化排队状态，再从原有检查点扫描。表单即时反馈并清理挡住实时进度的旧预览呈现。
+- make check、Debug / Release 构建、lint、JVM 单测及 APK 签名验证通过。候选包位于 .build/android-ai-resume/PhotoPilot-1.4.11-72-ai-resume-fix.apk，未运行华为真机复测，未发布新版。
+
+## 2026-11-19 Android AI 排队、电量和空相框编辑
+
+- 分类预览等待时，已有相框扫描在照片处理边界让出模型，保留检查点。暂停和继续移至固定底部，暂停动作优先针对当前预览。
+- 电量保护优先读取系统电池广播，结合充电状态判断。首页过滤已不适用的低电量原因。空 AI 相框解释选片和查看分类进度的入口，并对无效来源回退。
+- make check、Android Debug、Release、lint 和 JVM 测试通过，签名候选包位于 .build/android-ai-queue/PhotoPilot-1.4.11-72-ai-queue-fix.apk。无 ADB 真机，未确认华为实际状态与 UI 复测，未发布新版。
+
+## Android AI 扫描启动温控修正
+
+- 华为截图显示在 0/1758 时因温控暂停。代码原在 severe 级直接停止，之前的节流无法覆盖启动时已处于该级的情况。现 severe 继续低速推理，critical 及以上暂停并保留进度。实际设备报告级别未读取。
+- 新增严重限频减载及临界暂停回归，make check、Debug / Release 构建、lint 与 JVM 测试通过。签名候选包包含目录交互修复，沿用 1.4.11（72）。无华为真机结果，未发布新版。
+
+## Android AI 来源交互修正
+
+- 本机来源授权后更新已选内容，直接回到 AI 表单。摘要显示选中项名称，手动选择其他来源入口保留。预览排队或已有相框正在分类时隐藏扫描入口。
+- 项目检查、Android 构建、lint、JVM 单测、原生测试包与签名候选包构建均通过。已补充返回后保持选择器关闭及显示目录名称的原生回归，当前无 ADB 设备，未执行真机用例。候选包沿用 1.4.11（72），未发布新版。
+
 ## 2026-11-18 Android 1.4.11（72）已发布与 iOS 核对
 
 - 用户明确授权直接发布安卓 AI 温控/本机目录修复，并询问 iOS 是否存在同类问题。Android 已升至 1.4.11（72）；iOS 保持 1.4.10（71），未改 iOS 工程、未上传或提交 App Store。

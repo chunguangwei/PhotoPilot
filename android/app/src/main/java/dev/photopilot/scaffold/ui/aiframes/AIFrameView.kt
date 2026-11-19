@@ -42,6 +42,12 @@ class AIFrameView(
     private var sourceReload: Job? = null
     private val modelPicker = Spinner(context)
     private val sourcePicker = Spinner(context)
+    private var submittingPreview = false
+    private val processing = ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal).apply {
+        isIndeterminate = true
+        visibility = View.GONE
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+    }
     private val status = TextView(context).apply {
         textSize = 14f
         setTextColor(context.getColor(dev.photopilot.scaffold.R.color.pp_text_secondary))
@@ -110,6 +116,8 @@ class AIFrameView(
         column.addView(sourceActions)
         button(words("选择照片文件", "Choose photo files")) { onLocalFiles?.invoke() }
         folderSummary.textSize = 15f
+        folderSummary.maxLines = 3
+        folderSummary.ellipsize = android.text.TextUtils.TruncateAt.END
         folderSummary.setTextColor(context.getColor(dev.photopilot.scaffold.R.color.pp_text_secondary))
         column.addView(folderSummary)
         button(words("选择已连接相册 / NAS", "Choose connected albums / NAS")) { chooseFolders() }
@@ -165,16 +173,27 @@ class AIFrameView(
         if (existingFrame != null) button(words("保存设置（不扫描）", "Save settings without scanning"), primary = true) { saveSettings() }
         startButton = button(words("扫描并预览", "Scan and preview"), primary = true) { previewAndShow() }
         column.removeView(startButton)
+        footer.addView(processing, LayoutParams(-1, dp(6)))
         footer.addView(status, LayoutParams(-1, -2))
         footer.addView(startButton, LayoutParams(-1, -2))
         addView(footer, LayoutParams(-1, -2))
         cancelButton = button(words("暂停并查看结果", "Pause and view results")) {
-            environment.aiFrames.tasks.pause(draftId)
-            trackedFrames.forEach(environment.aiFrames::pause)
+            if (environment.aiFrames.tasks.running(draftId)) environment.aiFrames.tasks.pause(draftId)
+            else trackedFrames.forEach(environment.aiFrames::pause)
         }
         resumeButton = button(words("继续分类", "Continue classification")) {
-            if (trackedFrames.isNotEmpty()) trackedFrames.forEach(environment.aiFrames::resume)
-            else scope.launch { environment.aiFrames.tasks.continueTask(draftId) }
+            status.text = words("正在继续分类…", "Resuming classification…")
+            if (trackedFrames.isNotEmpty()) {
+                pendingPreview = null
+                previewIdentity = null
+                results.removeAllViews()
+                trackedFrames.forEach(environment.aiFrames::resume)
+            } else scope.launch { environment.aiFrames.tasks.continueTask(draftId) }
+            updateActions()
+        }
+        for (action in listOfNotNull(cancelButton, resumeButton)) {
+            column.removeView(action)
+            footer.addView(action, LayoutParams(-1, -2))
         }
         column.addView(results)
         modelPicker.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -236,17 +255,22 @@ class AIFrameView(
         sourceReload?.cancel()
         sourceReload = scope.launch {
             val selected = collectionChecks.filterValues { it.isChecked }.keys.toMutableSet()
-            val addedRoot = withContext(Dispatchers.IO) {
-                addedSourceId?.let { id ->
-                    environment.database.sourceDao().getById(id)?.takeIf {
-                        it.type in setOf(dev.photopilot.scaffold.data.db.SourceType.LOCAL_FILES, dev.photopilot.scaffold.data.db.SourceType.LOCAL_PHOTOS)
-                    }?.let { environment.database.collectionDao().getBySourceAndPath(id, "")?.id }
-                }
+            val addedSource = withContext(Dispatchers.IO) {
+                addedSourceId?.let { environment.database.sourceDao().getById(it) }
             }
-            addedRoot?.let { selected.add(it) }
+            val localSource = addedSource?.type in setOf(
+                dev.photopilot.scaffold.data.db.SourceType.LOCAL_FILES,
+                dev.photopilot.scaffold.data.db.SourceType.LOCAL_PHOTOS,
+            )
+            if (localSource && addedSource != null) {
+                val root = withContext(Dispatchers.IO) {
+                    environment.database.collectionDao().getBySourceAndPath(addedSource.id, "")
+                }
+                root?.let { selected.add(it.id) }
+            }
             populateCollections(selected)
             updateFolderSummary()
-            chooseFolders()
+            if (addedSource != null && !localSource) chooseFolders()
         }
     }
 
@@ -288,9 +312,11 @@ class AIFrameView(
     }
 
     private fun updateFolderSummary() {
-        val count = collectionChecks.values.count { it.isChecked }
+        val selected = collectionChecks.values.filter { it.isChecked }
+        val count = selected.size
         folderSummary.text = if (count == 0) words("请选择本机相册或 NAS 目录", "Choose a device album or NAS folder")
-            else words("已选 $count 个相册 / 目录", "$count albums / folders selected")
+            else words("已选 $count 个相册 / 目录", "$count albums / folders selected") + "\n" +
+                selected.takeLast(3).joinToString(" · ") { it.text.toString().substringBefore('\n') }
     }
 
     private fun chooseFolders() {
@@ -367,9 +393,11 @@ class AIFrameView(
         downloadButton?.isEnabled = !downloading && !scanning && !savingPreview && !ready && environment.aiFrames.models.supported(selectedModel())
         cancelDownloadButton?.visibility = if (downloading) View.VISIBLE else View.GONE
         deleteModelButton?.isEnabled = ready && !downloading && !scanning && !savingPreview
-        startButton?.isEnabled = !downloading && !scanning && !savingPreview && initialized
+        val classificationActive = submittingPreview || scanning || savedScanning
+        processing.visibility = if (classificationActive) View.VISIBLE else View.GONE
+        startButton?.isEnabled = !downloading && !classificationActive && !savingPreview && initialized
         val currentPreview = pendingPreview != null && previewIdentity == formIdentity()
-        startButton?.visibility = if (currentPreview) View.GONE else View.VISIBLE
+        startButton?.visibility = if (classificationActive || currentPreview) View.GONE else View.VISIBLE
         confirmPreviewButton?.visibility = if (currentPreview) View.VISIBLE else View.GONE
         confirmPreviewButton?.isEnabled = currentPreview && !savingPreview
         if (pendingPreview != null && !currentPreview && !savingPreview) {
@@ -446,6 +474,8 @@ class AIFrameView(
         activePreviewIdentity = identity
         pendingPreview = null
         results.removeAllViews()
+        submittingPreview = true
+        status.text = words("正在准备分类…", "Preparing classification…")
         scope.launch {
             try {
                 val draft = draftState()
@@ -455,7 +485,14 @@ class AIFrameView(
                 }
                 shownTaskGeneration = null
                 refreshProgress()
-            } catch (failure: Exception) { status.text = errorText(failure) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                status.text = errorText(failure)
+            } finally {
+                submittingPreview = false
+                updateActions()
+            }
         }
         updateActions()
     }
@@ -626,8 +663,11 @@ class AIFrameView(
         }
         if (task != null && task.rules == rules() && task.modelId == selectedModel().id && task.collections.toSet() == collectionChecks.filterValues { it.isChecked }.keys && task.recursive == recursive.isChecked) {
             if (environment.aiFrames.tasks.running(draftId)) {
-                status.text = if (task.status == "queued") words("等待模型或其他分类任务…", "Waiting for the model or another classification task…")
-                    else words("分类中 ${task.done} / ${task.total}", "Classifying ${task.done} / ${task.total}")
+                status.text = when {
+                    task.status == "queued" -> words("等待模型可用…", "Waiting for the model…")
+                    task.total == 0L -> words("正在加载模型并准备照片…", "Loading the model and preparing photos…")
+                    else -> words("分类中 ${task.done} / ${task.total}", "Classifying ${task.done} / ${task.total}")
+                }
             }
             else if (shownTaskGeneration != task.generation && task.status != "saved") {
                 val requestedDraft = draftId
@@ -659,7 +699,7 @@ class AIFrameView(
         val configurations = withContext(Dispatchers.IO) { trackedFrames.mapNotNull { environment.aiFrames.state.get(it) } }
         if (configurations.isEmpty()) return
         status.text = configurations.joinToString("\n") { c ->
-            val state = if (environment.aiFrames.models.models.none { it.id == c.modelId && it.revision == c.modelRevision }) words("旧模型已替换，请选择新模型并重新预览", "The previous model was replaced. Select a model and preview again") else if (c.userPaused) words("手动暂停，待继续", "Paused by you, ready to continue") else when (c.status) { "running" -> words("分类中", "Classifying"); "complete" -> words("已完成", "Complete"); "cancelled" -> words("已取消，可继续", "Cancelled, resumable"); "paused" -> words("已暂停", "Paused"); "model_missing" -> words("请下载模型以继续分类", "Download the model to continue classification"); "runtime_unavailable" -> words("此设备无法运行标准模型，请选择紧凑版模型。", "This device cannot run the standard model. Choose the compact model."); "failed" -> words("失败，请重试", "Failed, retry available"); else -> words("待开始", "Ready") }
+            val state = if (environment.aiFrames.models.models.none { it.id == c.modelId && it.revision == c.modelRevision }) words("旧模型已替换，请选择新模型并重新预览", "The previous model was replaced. Select a model and preview again") else if (c.userPaused) words("手动暂停，待继续", "Paused by you, ready to continue") else when (c.status) { "queued" -> words("等待模型", "Waiting for the model"); "running" -> words("分类中", "Classifying"); "complete" -> words("已完成", "Complete"); "cancelled" -> words("已取消，可继续", "Cancelled, resumable"); "paused" -> words("已暂停", "Paused"); "model_missing" -> words("请下载模型以继续分类", "Download the model to continue classification"); "runtime_unavailable" -> words("此设备无法运行标准模型，请选择紧凑版模型。", "This device cannot run the standard model. Choose the compact model."); "failed" -> words("失败，请重试", "Failed, retry available"); else -> words("待开始", "Ready") }
             "${c.rule.description} · $state · " + (c.pauseReason?.let { aiPauseExplanation(it, chinese) + " " }.orEmpty()) + words("已处理 ${c.completed}，入选 ${c.members.size}，待确认 ${c.reviews.size}，失败 ${c.failed}", "${c.completed} processed, ${c.members.size} matched, ${c.reviews.size} to review, ${c.failed} failed")
         }
         if (configurations.any { it.status == "running" }) return

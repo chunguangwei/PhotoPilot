@@ -203,7 +203,14 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                     }
                 })
             }
-            aiSettings.visibility = if (frame?.let { withContext(Dispatchers.IO) { env.aiFrames.state.get(it.id) } } != null) View.VISIBLE else View.GONE
+            val aiConfiguration = frame?.let { withContext(Dispatchers.IO) { env.aiFrames.state.get(it.id) } }
+            aiSettings.visibility = if (aiConfiguration != null) View.VISIBLE else View.GONE
+            if (aiConfiguration != null && selected.isEmpty()) {
+                feedback.text = text(
+                    "This frame has no selected photos yet. Open AI classification rules to check progress or choose photos manually.",
+                    "这个相框还没有选中的照片。可在「AI 分类规则」查看进度，也可从来源手动选片。",
+                )
+            }
             loaded = true
             updateStatus()
             reloadSources()
@@ -281,7 +288,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
             val sources = withContext(Dispatchers.IO) { env.database.sourceDao().getAll().filter { env.remoteMedia.isMetadataSource(it) && it.status == SourceStatus.ACTIVE } }
             if (request != sourceRequest) return@launch
             availableSources = sources
-            if (sourceId == null) sourceId = sources.firstOrNull()?.id
+            if (sources.none { it.id == sourceId }) { sourceId = sources.firstOrNull()?.id; folder = ""; page = 0 }
             sourceSelector.text = if (firstUse) text("Add photos", "添加照片") else sources.firstOrNull { it.id == sourceId }?.displayName ?: text("Choose photo source", "选择照片来源")
             if (sources.isEmpty()) feedback.text = text("Connect a photo source to choose photos.", "请连接照片来源后选片。")
             loadPhotos()

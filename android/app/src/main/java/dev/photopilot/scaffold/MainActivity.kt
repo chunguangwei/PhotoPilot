@@ -1833,7 +1833,9 @@ class MainActivity : Activity() {
                                 else if (configuration.status == "running") { if (zh) "分类中" else "Classifying" }
                                 else if (configuration.status == "complete") { if (zh) "分类完成" else "Classification complete" }
                                 else { if (zh) "分类待继续" else "Classification pending" }
-                            val reason = configuration.pauseReason?.let { dev.photopilot.scaffold.data.aiframes.aiPauseExplanation(it, zh) }.orEmpty()
+                            val reason = configuration.pauseReason
+                                ?.takeUnless { it == "low_battery" && env.aiFrames.pauseReason() != "low_battery" }
+                                ?.let { dev.photopilot.scaffold.data.aiframes.aiPauseExplanation(it, zh) }.orEmpty()
                             "$state · ${configuration.completed} / ${configuration.total}" + if (reason.isEmpty()) "" else System.lineSeparator() + reason
                         }
                         FramesView.CardModel(frame, cover, items.size, pending, coverItem?.takeIf { it.remote != null }, hasNas, hasDeviceReferences, aiPaused = aiPaused, aiProgress = aiProgress)

@@ -1,6 +1,8 @@
 package dev.photopilot.scaffold
 
+import android.os.PowerManager
 import dev.photopilot.scaffold.data.aiframes.AIInferencePacer
+import dev.photopilot.scaffold.data.aiframes.shouldPauseForThermalStatus
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineStart
@@ -9,6 +11,19 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AIInferencePacerTest {
+    @Test fun severeThrottlingSlowsInferenceWhileCriticalStillPauses() = runBlocking {
+        var status = PowerManager.THERMAL_STATUS_MODERATE
+        val waits = mutableListOf<Long>()
+        val pacer = AIInferencePacer({ status }, { 0L }, { waits.add(it) })
+        pacer.run { Unit }
+        status = PowerManager.THERMAL_STATUS_SEVERE
+        pacer.run { Unit }
+        assertTrue(waits[1] > waits[0])
+        assertFalse(shouldPauseForThermalStatus(status))
+        assertTrue(shouldPauseForThermalStatus(PowerManager.THERMAL_STATUS_CRITICAL))
+        assertTrue(shouldPauseForThermalStatus(PowerManager.THERMAL_STATUS_SHUTDOWN))
+    }
+
     @Test fun warmDeviceGetsMoreRecoveryTimeBetweenInferences() = runBlocking {
         var clock = 0L
         var thermal = 0

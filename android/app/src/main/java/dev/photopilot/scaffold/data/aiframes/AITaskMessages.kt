@@ -3,7 +3,7 @@ package dev.photopilot.scaffold.data.aiframes
 fun aiPauseExplanation(reason: String?, chinese: Boolean): String = when (reason) {
     "user" -> if (chinese) "已手动暂停，明确继续后才会恢复。" else "Paused by you. Choose Continue to resume."
     "low_battery" -> if (chinese) "电量不足 15%，连接电源或提高电量后可继续。" else "Battery is at or below 15%. Connect power or recharge to continue."
-    "temperature" -> if (chinese) "系统报告过热，AI 已暂停，进度已保存。降温后可继续。" else "AI paused because Android reports overheating. Progress is saved; continue after cooling."
+    "temperature" -> if (chinese) "系统温控达到临界级别，分类已暂停并保留进度。" else "Android reports a critical thermal state. Classification is paused and progress is saved."
     "timeout" -> if (chinese) "Android 后台运行时间已到，回到应用后可继续。" else "Android's background time limit was reached. Reopen the app to continue."
     "memory" -> if (chinese) "设备内存紧张，释放内存后可继续。" else "The device is low on memory. Free memory before continuing."
     "background" -> if (chinese) "系统已停止后台运行，回到应用后可继续。" else "Background execution stopped. Reopen the app to continue."
