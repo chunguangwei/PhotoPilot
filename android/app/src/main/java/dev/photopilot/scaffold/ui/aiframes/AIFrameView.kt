@@ -681,6 +681,7 @@ class AIFrameView(
             .setView(body).setNegativeButton(words("取消", "Cancel"), null)
             .setPositiveButton(words("确认保存", "Save selection"), null).create()
         val checks = linkedMapOf<String, CheckBox>()
+        val stars = linkedMapOf<String, ImageButton>()
         fun refreshSummary() {
             summary.text = words("已选 ${selected.size} / ${ids.size} 张 · 第 ${page + 1} / $pageCount 页",
                 "${selected.size} / ${ids.size} selected · Page ${page + 1} / $pageCount")
@@ -690,6 +691,7 @@ class AIFrameView(
             loading?.cancel()
             grid.removeAllViews()
             checks.clear()
+            stars.clear()
             refreshSummary()
             previous.isEnabled = page > 0
             next.isEnabled = page + 1 < pageCount
@@ -719,16 +721,35 @@ class AIFrameView(
                         }
                         tile.addView(image, LayoutParams(-1, dp(80)))
                         tile.addView(check)
-                        if (allowCover) tile.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, dev.photopilot.scaffold.R.string.frames_set_cover).apply {
-                            text = words("设封面", "Set cover")
-                            setOnClickListener {
-                                if (!saving && check.isEnabled) {
-                                    coverId = photo.id
-                                    check.isChecked = true
-                                    refreshSummary()
+                        if (allowCover) {
+                            val star = ImageButton(context).apply {
+                                background = android.util.TypedValue().let { value ->
+                                    context.theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, value, true)
+                                    context.getDrawable(value.resourceId)
+                                }
+                                imageTintList = android.content.res.ColorStateList.valueOf(context.getColor(dev.photopilot.scaffold.R.color.pp_accent_action))
+                                contentDescription = words("设为封面", "Set as cover")
+                                setImageResource(if (coverId == photo.id) dev.photopilot.scaffold.R.drawable.ic_star_filled_24
+                                    else dev.photopilot.scaffold.R.drawable.ic_star_outline_24)
+                                setOnClickListener {
+                                    if (!saving && check.isEnabled) {
+                                        coverId = photo.id
+                                        check.isChecked = true
+                                        stars.forEach { (id, button) ->
+                                            button.setImageResource(if (id == coverId) dev.photopilot.scaffold.R.drawable.ic_star_filled_24
+                                                else dev.photopilot.scaffold.R.drawable.ic_star_outline_24)
+                                        }
+                                        refreshSummary()
+                                    }
                                 }
                             }
-                        })
+                            stars[photo.id] = star
+                            val controls = LinearLayout(context).apply { gravity = android.view.Gravity.CENTER_VERTICAL }
+                            tile.removeView(check)
+                            controls.addView(check, LayoutParams(0, dp(48), 1f))
+                            controls.addView(star, LayoutParams(dp(48), dp(48)))
+                            tile.addView(controls)
+                        }
                         row.addView(tile, LayoutParams(0, -2, 1f).apply { marginEnd = dp(4) })
                         checks[photo.id] = check
                     }

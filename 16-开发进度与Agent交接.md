@@ -1,5 +1,10 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## Android 封面星标与首页刷新
+
+- AI 小图封面入口改为无换行的星标。已保存的本机、引用或 AI 相框封面统一走 FrameManager，事务内更新封面和资料版本，驱动首页重新加载。
+- make check、Release 构建、lint、JVM 单测及验签通过。候选包 .build/android-frame-cover/PhotoPilot-1.4.17-78-frame-cover.apk，华为真机交互待复测。
+
 ## Android 1.4.17（78）已发布
 
 - 首页使用活跃任务呈现分类状态。已有 AI 相框提供规则入口；结果选片从持久化 INCLUDE 记录恢复勾选，保存选片时可同时更新本地或引用照片封面。

@@ -525,17 +525,15 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                         val latest = requireNotNull(env.database.frameDao().getById(current.id))
                         val settings = JsonMini.parseObject(latest.settingsJson).toMutableMap()
                         if (localMode != initialMode || frame == null || settings["mediaStorageMode"] !in setOf("local", "remote")) settings["mediaStorageMode"] = if (localMode) "local" else "remote"
-                        coverSourceAssetId?.takeIf { it != initialCover }?.let { ref ->
-                            if (env.remoteMedia.item(ref) == null) throw java.io.IOException("REMOTE_REVOKED")
-                            settings["remoteCoverRef"] = ref
-                        }
+                        val newCover = coverSourceAssetId?.takeIf { it != initialCover }
+                        if (newCover != null && env.remoteMedia.item(newCover) == null) throw java.io.IOException("REMOTE_REVOKED")
                         env.database.frameDao().update(latest.copy(
                             name = if (savedName != initialName) savedName.ifEmpty { latest.name } else latest.name,
-                            coverAssetId = latest.coverAssetId.takeUnless { coverSourceAssetId != null && coverSourceAssetId != initialCover },
                             settingsJson = JsonMini.toJson(settings),
                             orderMode = if (order != null) FrameOrderMode.MANUAL else latest.orderMode,
                             updatedAt = System.currentTimeMillis(),
                         ))
+                        if (newCover != null) env.frameManager.setCover(current.id, null, newCover)
                         val result = env.frames.save(current.id, latest.selectionVersion,
                             addIncludes = (selectedIds - initial).map { if (it in privateAssets) SelectionRefEdit(it, null) else SelectionRefEdit(null, it) },
                             removeRefs = (initial - selectedIds).map { if (it in privateAssets) SelectionRefEdit(it, null) else SelectionRefEdit(null, it) },

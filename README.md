@@ -58,6 +58,10 @@ Android 1.4.17 起，已有 AI 相框的卡片提供「AI 分类规则」。打�
 
 On Android 1.4.17 and later, open AI classification rules directly from the frame card. The results picker restores saved photo selections and saves a chosen cover with the selection.
 
+Android 1.4.18 起，AI 选片页用星标设置封面。点「确认保存」后，普通照片编辑、来源选片与 AI 选片设置的封面都会刷新到相框首页。
+
+On Android 1.4.18 and later, use the star in the AI results picker to choose a cover. Saving a cover from any frame editor refreshes the frame card.
+
 - **EmbeddingGemma 2 文本＋图像版 / standard** 约387.7 MB，使用分类所需的文本和图像部分。Android 标准模型需要64位进程。
 - **多语 CLIP 轻量版 / Multilingual CLIP Lite** 约201.5 MB，包含文本编码器、图像编码器、投影和词表。完整下载比标准版小约48%，支持中英文零样本图像分类。
 - 模型按需下载，国内源优先 ModelScope，国际源使用 Hugging Face，另提供 hf-mirror 回退。安装前校验固定版本及 SHA-256。备用镜像可能跳转海外 CDN，可用性取决于网络。下载完成后照片、提示词和分类都留在本机。
