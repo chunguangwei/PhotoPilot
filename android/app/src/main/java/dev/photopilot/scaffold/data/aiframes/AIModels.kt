@@ -10,7 +10,6 @@ import java.security.MessageDigest
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
 
 data class AIModelFile(val name: String, val size: Long, val sha256: String, val international: List<String>, val domestic: List<String>, val role: String = "model", val revision: String? = null)
@@ -31,11 +30,56 @@ class AIModelManager(
     private val inferenceLock = Mutex()
     private val modelLocks = java.util.concurrent.ConcurrentHashMap<String, Mutex>()
     private fun modelLock(model: AIModel) = modelLocks.getOrPut(model.id) { Mutex() }
-    suspend fun <T> withModelFiles(model: AIModel, action: suspend () -> T): T = modelLock(model).withLock {
-        action()
+    private suspend fun <T> tracedLock(
+        lock: Mutex, name: String, task: String, timeoutMs: Long? = null, action: suspend () -> T,
+    ): T {
+        val owner = Any()
+        var acquiredAt: Long? = null
+        AIModelDiagnostics.waiting(context, name, task, "waiting")
+        try {
+            suspend fun acquire(): Boolean {
+                lock.lock(owner)
+                acquiredAt = android.os.SystemClock.elapsedRealtime()
+                AIModelDiagnostics.acquired(context, name, task)
+                return true
+            }
+            val acquired = if (timeoutMs == null) acquire() else kotlinx.coroutines.withTimeoutOrNull(timeoutMs) { acquire() }
+            if (acquired != true) {
+                AIModelDiagnostics.waiting(context, name, task, "timeout")
+                throw IOException("model_queue_timeout")
+            }
+            return action()
+        } finally {
+            if (lock.holdsLock(owner)) {
+                AIModelDiagnostics.released(context, name, task, android.os.SystemClock.elapsedRealtime() - (acquiredAt ?: android.os.SystemClock.elapsedRealtime()))
+                lock.unlock(owner)
+            }
+        }
     }
-    suspend fun <T> lease(model: AIModel, action: suspend () -> T): T = withModelFiles(model) {
-        inferenceLock.withLock { action() }
+
+    private fun taskLabel(kind: String, model: AIModel) =
+        "$kind/${java.util.UUID.randomUUID().toString().take(8)} model=${model.id}"
+
+    suspend fun <T> withModelFiles(model: AIModel, action: suspend () -> T): T =
+        withModelFiles(model, "maintenance", action)
+
+    private suspend fun <T> withModelFiles(model: AIModel, kind: String, action: suspend () -> T): T =
+        tracedLock(modelLock(model), "files:${model.id}", taskLabel(kind, model), action = action)
+
+    suspend fun <T> lease(model: AIModel, action: suspend () -> T): T {
+        val task = taskLabel("frame", model)
+        return tracedLock(modelLock(model), "files:${model.id}", task) {
+            tracedLock(inferenceLock, "inference", task, action = action)
+        }
+    }
+
+    suspend fun <T> previewLease(model: AIModel, action: suspend () -> T): T {
+        val task = taskLabel("preview", model)
+        val deadline = android.os.SystemClock.elapsedRealtime() + 30_000L
+        return tracedLock(modelLock(model), "files:${model.id}", task, 30_000L) {
+            val remaining = (deadline - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(1L)
+            tracedLock(inferenceLock, "inference", task, remaining, action)
+        }
     }
     fun downloadedBytes(model: AIModel): Long = model.files.sumOf { file ->
         val folder = directory(model)
@@ -73,14 +117,14 @@ class AIModelManager(
         if (!valid) File(directory(model), file.name + ".verified").delete()
         valid
     }
-    suspend fun delete(model: AIModel) = withModelFiles(model) {
+    suspend fun delete(model: AIModel) = withModelFiles(model, "delete") {
         val folder = directory(model)
         folder.deleteRecursively()
         File(context.codeCacheDir, "ai-runtime/${folder.name}").deleteRecursively()
         Unit
     }
 
-    suspend fun download(model: AIModel, source: String, allowMetered: Boolean = false, shouldStop: () -> Boolean = { false }, progress: (Long, Long) -> Unit) = withModelFiles(model) {
+    suspend fun download(model: AIModel, source: String, allowMetered: Boolean = false, shouldStop: () -> Boolean = { false }, progress: (Long, Long) -> Unit) = withModelFiles(model, "download") {
         require(supported(model)) { "runtime_unavailable" }
         var installed = 0L
         for (file in model.files) {

@@ -16,6 +16,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
     val tasks = AITaskCoordinator(this)
     private val userPauseRequests = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    internal val classification = AIClassificationScheduler()
     internal val previewJobs = java.util.concurrent.ConcurrentHashMap<Job, String>()
     @Volatile internal var closed = false
     private val jobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
@@ -74,6 +75,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
     fun resume(frameId: String) {
         scope.launch {
             if (foreground) tasks.allowForegroundExecution()
+            tasks.pausePreviewsForFrame(frameId)
             jobs[frameId]?.join()
             db.withTransaction {
                 state.get(frameId)?.let { state.put(it.copy(userPaused = false, status = "queued", pauseReason = null)) }
@@ -105,9 +107,9 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                 if (configuration.userPaused) return@launch
                 val model = models.models.firstOrNull { it.id == configuration.modelId }
                 if (model != null) tasks.begin("frame:$frameId", model)
-                try { runScan(configuration) }
+                try { classification.runFrame { runScan(configuration) } }
                 catch (cancelled: CancellationException) { withContext(NonCancellable) { status(frameId, "cancelled", configuration.revision) }; throw cancelled }
-                catch (failure: Exception) { status(frameId, when (failure.message) { "runtime_unavailable" -> "runtime_unavailable"; "model_missing" -> "model_missing"; "preview_paused" -> "paused"; else -> "failed" }, configuration.revision, (failure as? AIProtectionPause)?.reason) }
+                catch (failure: Exception) { status(frameId, when (failure.message) { "runtime_unavailable" -> "runtime_unavailable"; "runtime_interrupted" -> "failed"; "model_missing", "model_integrity" -> "model_missing"; "preview_paused" -> "paused"; else -> "failed" }, configuration.revision, (failure as? AIProtectionPause)?.reason ?: failure.message?.takeIf { it == "runtime_interrupted" }) }
                 catch (_: LinkageError) { status(frameId, "runtime_unavailable", configuration.revision) }
                 finally {
                     tasks.end("frame:$frameId")
@@ -115,7 +117,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                     val currentJob = currentCoroutineContext()[Job]
                     jobs.remove(frameId, currentJob)
                     val latest = state.get(frameId)
-                    if (!closed && previewJobs.isEmpty() && !shouldPause() && latest?.resumeAutomatically == true && latest.status in listOf("running", "paused", "system_paused") && (tasks.executionEpoch != runEpoch || latest.status != "running")) {
+                    if (!closed && !classification.previewPending && !shouldPause() && latest?.resumeAutomatically == true && latest.status in listOf("running", "paused", "system_paused") && (tasks.executionEpoch != runEpoch || latest.status != "running")) {
                         scope.launch { scan(frameId) }
                     }
                 }
@@ -151,34 +153,37 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
         return capacity in 1..15 && plugged == 0 && !battery.isCharging
     }
     private suspend fun status(frameId: String, status: String, revision: Long, protectionReason: String? = null) = db.withTransaction {
-        state.get(frameId)?.let { if (it.revision == revision && db.frameDao().getById(frameId) != null) state.put(it.copy(status = status, pauseReason = if (status in listOf("paused", "system_paused")) protectionReason ?: pauseReason() else null)) }
+        state.get(frameId)?.let { if (it.revision == revision && db.frameDao().getById(frameId) != null) state.put(it.copy(status = status, pauseReason = if (status in listOf("paused", "system_paused")) protectionReason ?: pauseReason() else protectionReason)) }
     }
     private suspend fun runScan(initial: AIConfiguration) {
         val frameId = initial.frameId
         val epoch = tasks.executionEpoch
-        if (shouldPause()) { status(frameId, "paused", initial.revision); return }
+        pauseReason()?.let { status(frameId, "paused", initial.revision, it); return }
         if (initial.userPaused) return
         val model = models.models.firstOrNull { it.id == initial.modelId && it.revision == initial.modelRevision } ?: throw java.io.IOException("model_missing")
         if (!models.supported(model)) throw java.io.IOException("runtime_unavailable")
         require(models.ready(model)) { "model_missing" }
-        if (previewJobs.isNotEmpty()) { status(frameId, "paused", initial.revision); return }
+        if (classification.previewPending) { status(frameId, "paused", initial.revision, "preview_priority"); return }
         models.lease(model) {
-            if (previewJobs.isNotEmpty()) { status(frameId, "paused", initial.revision); return@lease }
-            if (shouldPause()) { status(frameId, "paused", initial.revision); return@lease }
+            if (classification.previewPending) { status(frameId, "paused", initial.revision, "preview_priority"); return@lease }
+            pauseReason()?.let { status(frameId, "paused", initial.revision, it); return@lease }
             require(models.verify(model)) { "model_integrity" }
-            if (previewJobs.isNotEmpty()) { status(frameId, "paused", initial.revision); return@lease }
+            if (classification.previewPending) { status(frameId, "paused", initial.revision, "preview_priority"); return@lease }
             val directory = models.directory(model)
             val embedder = createAIEmbedder(context, model, directory)
             embedder.use { engine ->
                 suspend fun encodeRule(text: String): FloatArray {
-                    if (previewJobs.isNotEmpty()) throw java.io.IOException("preview_paused")
+                    if (classification.previewPending) throw AIProtectionPause("preview_priority")
                     return textVector(engine, text)
                 }
                 val description = encodeRule(initial.rule.description)
                 val includes = initial.rule.includes.map { encodeRule(it) }
                 val excludes = initial.rule.excludes.map { encodeRule(it) }
                 val themes = AINameSuggestions.themes.mapValues { encodeRule(it.value.first + " " + it.value.second) }
-                val candidates = mediaCandidates(initial.collections, initial.recursive)
+                fun yieldToPreview() {
+                    if (classification.previewPending) throw AIProtectionPause("preview_priority")
+                }
+                val candidates = mediaCandidates(initial.collections, initial.recursive, checkYield = ::yieldToPreview)
                 db.withTransaction {
                     state.get(frameId)?.let { current ->
                         if (current.revision == initial.revision && !current.userPaused) {
@@ -191,9 +196,9 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                 }
                 for (id in candidates.keys + initial.members) {
                     currentCoroutineContext().ensureActive()
-                    if (shouldPause()) { status(frameId, "paused", initial.revision); return@lease }
-                    if (previewJobs.isNotEmpty()) {
-                        status(frameId, "paused", initial.revision)
+                    pauseReason()?.let { status(frameId, "paused", initial.revision, it); return@lease }
+                    if (classification.previewPending) {
+                        status(frameId, "paused", initial.revision, "preview_priority")
                         return@lease
                     }
                     if (db.frameDao().getById(frameId) == null) return@lease
@@ -214,14 +219,19 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                         score = AIEmbedding.cosine(vector, description)
                         themeScores = themes.mapValues { AIEmbedding.cosine(vector, it.value).toDouble() }
                         initial.rule.evaluate(score, includes.map { AIEmbedding.cosine(vector, it) }, excludes.map { AIEmbedding.cosine(vector, it) })
-                    } catch (cancelled: CancellationException) { throw cancelled } catch (_: Exception) { failed = true; AIMatch.REJECT }
+                    } catch (cancelled: CancellationException) { throw cancelled } catch (interrupted: AIRuntimeInterrupted) { throw interrupted } catch (_: Exception) { failed = true; AIMatch.REJECT }
                     currentCoroutineContext().ensureActive()
                     db.withTransaction {
                         if (epoch != tasks.executionEpoch) return@withTransaction
                         val latest = state.get(frameId) ?: return@withTransaction
                         if (!AIJobGuard.canCommit(initial.revision, latest.revision, initial.modelRevision, latest.modelRevision, false)) return@withTransaction
                         val frame = db.frameDao().getById(frameId) ?: return@withTransaction
-                        val freshCandidate = mediaCandidates(initial.collections, initial.recursive)[id]
+                        val freshCandidate = mediaCandidates(
+                            initial.collections,
+                            initial.recursive,
+                            onlyRemoteId = id.takeIf { it.startsWith("remote:") }?.removePrefix("remote:"),
+                            checkYield = ::yieldToPreview,
+                        )[id]
                         val stillAllowed = freshCandidate != null && candidate?.fingerprint == freshCandidate.fingerprint && !excluded(freshCandidate, frameId)
                         val aliases = freshCandidate?.let { selectionAliases(it) }.orEmpty() + id.removePrefix("remote:")
                         val existing = db.frameSelectionDao().getByFrame(frameId).firstOrNull { it.refKey in aliases }

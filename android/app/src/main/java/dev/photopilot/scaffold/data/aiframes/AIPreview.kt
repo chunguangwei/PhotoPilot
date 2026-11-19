@@ -47,85 +47,88 @@ suspend fun AIFrameService.preview(
     val job = requireNotNull(currentCoroutineContext()[kotlinx.coroutines.Job])
     previewJobs[job] = model.id
     try {
-        return models.lease(model) {
-            onLeaseAcquired()
-            if (!models.supported(model)) throw java.io.IOException("runtime_unavailable")
-            val checkpoint = AIPreviewCheckpoint.open(db, model, collections, recursive, rules, frameId, checkpointId)
-            var dirty = false
-            try {
-                if (shouldPause() || stopRequested()) {
-                    if (!allowPartial) throw java.io.IOException("preview_paused")
-                    val candidates = mediaCandidates(collections, recursive)
-                    val count = checkpoint.assets.size + checkpoint.failures.size
-                    return@lease previewSnapshot(model, collections, recursive, rules, frameId, checkpoint, candidates, count, candidates.size, false, checkpoint.assets.size)
-                }
-                require(models.verify(model)) { "model_integrity" }
-                val folder = models.directory(model)
-                val adapter = createAIEmbedder(context, model, folder)
-                adapter.use { engine ->
-                    val descriptions = rules.map { textVector(engine, it.description) }
-                    val includes = rules.map { rule -> rule.includes.map { textVector(engine, it) } }
-                    val excludes = rules.map { rule -> rule.excludes.map { textVector(engine, it) } }
-                    val themeVectors = AINameSuggestions.themes.mapValues { textVector(engine, it.value.first + " " + it.value.second) }
-                    val candidates = mediaCandidates(collections, recursive)
-                    val assetIds = candidates.keys.toSet()
-                    checkpoint.prune(candidates.mapValues { it.value.fingerprint })
-                    val reused = checkpoint.assets.size
-                    val visited = (checkpoint.assets.keys + checkpoint.failures.keys).toMutableSet()
-                    progress(visited.size, assetIds.size)
-                    var completedAll = true
-                    for ((id, candidate) in candidates) {
-                        currentCoroutineContext().ensureActive()
-                        checkpoint.ensureCurrent()
-                        if (frameId != null && db.frameDao().getById(frameId) == null) throw java.io.IOException("frame_removed")
-                        if (shouldPause() || stopRequested()) {
-                            if (!allowPartial) throw java.io.IOException("preview_paused")
-                            completedAll = visited.containsAll(assetIds)
-                            break
-                        }
-                        if (excluded(candidate, frameId)) {
-                            dirty = checkpoint.assets.remove(id) != null || dirty
-                            dirty = checkpoint.failures.remove(id) != null || dirty
-                        } else if (checkpoint.assets[id]?.contentHash != candidate.fingerprint) {
-                            checkpoint.assets.remove(id)
-                            checkpoint.failures.remove(id)
-                            try {
-                                val vector = mediaVector(candidate, engine, model)
-                                val categories = rules.indices.map { index ->
-                                    val score = AIEmbedding.cosine(vector, descriptions[index])
-                                    AICachedCategory(rules[index].evaluate(score, includes[index].map { AIEmbedding.cosine(vector, it) }, excludes[index].map { AIEmbedding.cosine(vector, it) }), score)
-                                }
-                                val themeScores = themeVectors.mapValues { AIEmbedding.cosine(vector, it.value).toDouble() }
-                                if (candidate.item.remote != null && remoteMedia?.valid(candidate.item) != true) throw java.io.IOException("REMOTE_REVOKED")
-                                if (!commitAllowed()) throw java.io.IOException("preview_interrupted")
-                                checkpoint.assets[id] = AICachedAsset(candidate.fingerprint, categories, themeScores)
-                            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                                throw cancelled
-                            } catch (_: Exception) {
-                                checkpoint.failures[id] = candidate.fingerprint
-                            }
-                            dirty = true
-                        }
-                        if (dirty) {
-                            checkpoint.saveAsset(id)
-                            dirty = false
-                        }
-                        visited.add(id)
-                        progress(visited.size, assetIds.size)
+        return classification.runPreview {
+            val candidates = mediaCandidates(collections, recursive)
+            models.previewLease(model) {
+                onLeaseAcquired()
+                if (!models.supported(model)) throw java.io.IOException("runtime_unavailable")
+                val checkpoint = AIPreviewCheckpoint.open(db, model, collections, recursive, rules, frameId, checkpointId)
+                var dirty = false
+                try {
+                    if (shouldPause() || stopRequested()) {
+                        if (!allowPartial) throw java.io.IOException("preview_paused")
+                        val count = checkpoint.assets.size + checkpoint.failures.size
+                        return@previewLease previewSnapshot(model, collections, recursive, rules, frameId, checkpoint, candidates, count, candidates.size, false, checkpoint.assets.size)
                     }
-                    previewSnapshot(model, collections, recursive, rules, frameId, checkpoint, candidates, visited.size, assetIds.size, completedAll, reused)
-                }
-            } finally {
-                if (dirty && !closed) {
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
-                        try { checkpoint.save() } catch (_: java.io.IOException) { }
+                    require(models.verify(model)) { "model_integrity" }
+                    val folder = models.directory(model)
+                    val adapter = createAIEmbedder(context, model, folder)
+                    adapter.use { engine ->
+                        val descriptions = rules.map { textVector(engine, it.description) }
+                        val includes = rules.map { rule -> rule.includes.map { textVector(engine, it) } }
+                        val excludes = rules.map { rule -> rule.excludes.map { textVector(engine, it) } }
+                        val themeVectors = AINameSuggestions.themes.mapValues { textVector(engine, it.value.first + " " + it.value.second) }
+                        val assetIds = candidates.keys.toSet()
+                        checkpoint.prune(candidates.mapValues { it.value.fingerprint })
+                        val reused = checkpoint.assets.size
+                        val visited = (checkpoint.assets.keys + checkpoint.failures.keys).toMutableSet()
+                        progress(visited.size, assetIds.size)
+                        var completedAll = true
+                        for ((id, candidate) in candidates) {
+                            currentCoroutineContext().ensureActive()
+                            checkpoint.ensureCurrent()
+                            if (frameId != null && db.frameDao().getById(frameId) == null) throw java.io.IOException("frame_removed")
+                            if (shouldPause() || stopRequested()) {
+                                if (!allowPartial) throw java.io.IOException("preview_paused")
+                                completedAll = visited.containsAll(assetIds)
+                                break
+                            }
+                            if (excluded(candidate, frameId)) {
+                                dirty = checkpoint.assets.remove(id) != null || dirty
+                                dirty = checkpoint.failures.remove(id) != null || dirty
+                            } else if (checkpoint.assets[id]?.contentHash != candidate.fingerprint) {
+                                checkpoint.assets.remove(id)
+                                checkpoint.failures.remove(id)
+                                try {
+                                    val vector = mediaVector(candidate, engine, model)
+                                    val categories = rules.indices.map { index ->
+                                        val score = AIEmbedding.cosine(vector, descriptions[index])
+                                        AICachedCategory(rules[index].evaluate(score, includes[index].map { AIEmbedding.cosine(vector, it) }, excludes[index].map { AIEmbedding.cosine(vector, it) }), score)
+                                    }
+                                    val themeScores = themeVectors.mapValues { AIEmbedding.cosine(vector, it.value).toDouble() }
+                                    if (candidate.item.remote != null && remoteMedia?.valid(candidate.item) != true) throw java.io.IOException("REMOTE_REVOKED")
+                                    if (!commitAllowed()) throw java.io.IOException("preview_interrupted")
+                                    checkpoint.assets[id] = AICachedAsset(candidate.fingerprint, categories, themeScores)
+                                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                    throw cancelled
+                                } catch (interrupted: AIRuntimeInterrupted) {
+                                    throw interrupted
+                                } catch (_: Exception) {
+                                    checkpoint.failures[id] = candidate.fingerprint
+                                }
+                                dirty = true
+                            }
+                            if (dirty) {
+                                checkpoint.saveAsset(id)
+                                dirty = false
+                            }
+                            visited.add(id)
+                            progress(visited.size, assetIds.size)
+                        }
+                        previewSnapshot(model, collections, recursive, rules, frameId, checkpoint, candidates, visited.size, assetIds.size, completedAll, reused)
+                    }
+                } finally {
+                    if (dirty && !closed) {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                            try { checkpoint.save() } catch (_: java.io.IOException) { }
+                        }
                     }
                 }
             }
         }
     } finally {
         previewJobs.remove(job)
-        if (!closed && previewJobs.isEmpty() && !shouldPause()) resumeAutomatic(interruptedOnly = true)
+        if (!closed && !classification.previewPending && !shouldPause()) resumeAutomatic(interruptedOnly = true)
     }
 }
 

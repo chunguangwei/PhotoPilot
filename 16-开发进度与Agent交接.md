@@ -1,5 +1,40 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## Android 真机日志定位预览争用
+
+- 华为日志确认后台扫描约 0.3 秒让位，Gemma 约 2.3 秒加载成功；第一条预览一直持锁，第二条预览等待 30 秒超时。第一条在最后一条文本完成到首张图像调用间隔约 36 秒。现把候选枚举移出预览持锁阶段，显式启动或继续时暂停同一相框（或未保存创建流程）的其他活跃预览。
+- 模型管理标题改为 16sp，标题与状态由主次文字颜色区分。make check、Release、lint、JVM 单测和验签通过。候选包 .build/android-preview-contention/PhotoPilot-1.4.14-75-preview-contention.apk，修复效果仍待华为复测。
+
+## Android AI 模型诊断导出
+
+- 模型管理页底部新增诊断分享入口。模型文件锁和推理锁记录随机任务标识、等待、持有者、超时、释放及耗时；Gemma 客户端记录调用阶段与结果。日志限量滚动保存，无照片路径或分类描述。
+- make check、Release 构建、lint、JVM 单测、原生测试包编译及验签通过。候选包 .build/android-ai-diagnostics/PhotoPilot-1.4.14-75-ai-diagnostics.apk，华为导出流程待真机验证。
+
+## Android 同相框分类与预览协调
+
+- 用户截图确认相框继续后向预览让位。明确恢复相框分类时先暂停同一相框仍活跃的预览，保留检查点，并区分「继续预览」与「继续相框分类」。
+- Release 构建、lint、JVM 单测和验签通过，候选包 .build/android-resume-frame/PhotoPilot-1.4.14-75-resume-frame.apk。实际占锁任务尚无真机日志，未发版。
+
+## Android 模型进程卡死恢复
+
+- Gemma 独立进程对初始化、推理和关闭分别设定 120、45、20 秒上限。调用失去响应时由该进程自停；应用将连接中断作为可重试任务错误，保留检查点，避免将后续照片逐张记成失败。
+- make check、Release 构建、lint、JVM 单测、验签通过。候选包 .build/android-model-runtime/PhotoPilot-1.4.14-75-model-runtime.apk。华为运行日志及原生超时恢复尚未真机验证。
+
+## Android 分类持锁范围优化
+
+- 每张引用照片提交前只解析当前照片并核对目录成员、版本和访问权限，避免逐张重复解析所有候选照片。目录枚举和复核中增加预览让位检查。具体设备占锁栈仍待真机采集。
+- Release 构建、lint、JVM 单测和签名校验通过。候选包 .build/android-model-lock-scope/PhotoPilot-1.4.14-75-model-lock-scope.apk。
+
+## Android 分类恢复状态
+
+- 保留预览排队超时提示，手动恢复已保存相框后显示当前任务状态。后台分类让位时记录原因，并保留触发暂停时的保护状态，区分校验失败与普通失败。设备实际暂停原因仍需真机验证。
+- make check、Release 构建、lint、JVM 单测及验签通过。候选包 .build/android-resume-reason/PhotoPilot-1.4.14-75-resume-reason.apk。
+
+## Android 预览模型排队超时
+
+- 预览等待模型文件锁和推理锁共限 30 秒，超时释放已经取得的锁并提示重试。实际占锁任务尚无华为运行日志确认。
+- make check、Release 构建、lint、JVM 单测和签名校验通过。候选包 .build/android-model-wait/PhotoPilot-1.4.14-75-model-wait.apk，未发布。
+
 ## Android 1.4.14（75）已发布
 
 - 源码 8837f15 与 v1.4.14 标签已推送，GitHub 已公开设为 Latest。四份附件大小及 SHA256 与本地一致，公开 APK 请求返回 ZIP 文件头，签名与 1.4.13 一致。

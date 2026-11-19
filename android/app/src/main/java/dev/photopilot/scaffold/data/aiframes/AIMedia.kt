@@ -9,22 +9,31 @@ import kotlinx.coroutines.*
 
 internal data class AIMedia(val id: String, val fingerprint: String, val item: PlaybackItem)
 
-internal suspend fun AIFrameService.mediaCandidates(collections: List<String>, recursive: Boolean): Map<String, AIMedia> {
+internal suspend fun AIFrameService.mediaCandidates(
+    collections: List<String>,
+    recursive: Boolean,
+    onlyRemoteId: String? = null,
+    checkYield: () -> Unit = {},
+): Map<String, AIMedia> {
     val all = db.collectionDao().getAll()
     val ids = AISourceScope.expand(collections, recursive, all.associate { it.id to it.parentId })
-    val localIds = ids.toList().chunked(400).flatMap { db.collectionAssetDao().getByCollections(it) }.map { it.assetId }.distinct()
+    val localIds = if (onlyRemoteId != null) emptyList() else ids.toList().chunked(400).flatMap { db.collectionAssetDao().getByCollections(it) }.map { it.assetId }.distinct()
     val result = linkedMapOf<String, AIMedia>()
     val remoteLocals = mutableSetOf<String>()
     remoteMedia?.let { media ->
         for (collection in all.filter { it.id in ids && it.sourceId != null && it.relPath != null }) {
+            checkYield()
             for (sourceAsset in media.members(requireNotNull(collection.sourceId), collection.relPath.orEmpty(), false)) {
+                checkYield()
+                if (onlyRemoteId != null && sourceAsset.id != onlyRemoteId) continue
                 val item = media.item(sourceAsset.id) ?: continue
-                remoteLocals.addAll(db.assetOriginDao().getBySourceAssets(listOf(sourceAsset.id)).map { it.assetId })
+                if (onlyRemoteId == null) remoteLocals.addAll(db.assetOriginDao().getBySourceAssets(listOf(sourceAsset.id)).map { it.assetId })
                 result[item.id] = AIMedia(item.id, "${sourceAsset.sourceId}:${item.sourceEpoch}:${sourceAsset.revision}:${item.local?.contentHash.orEmpty()}", item)
             }
         }
     }
     for (batch in localIds.filter { it !in remoteLocals }.chunked(128)) {
+        checkYield()
         val allowed = db.assetOriginDao().allowedAssetIds(batch).toSet()
         for (asset in db.assetDao().getByIds(batch)) {
             if (AIEligibility.allowed(asset.readiness.wire, asset.privacyExcluded, asset.deletedAt != null, asset.mediaKind.wire, asset.id in allowed, false) && File(context.filesDir, "originals/${asset.originalRelPath}").isFile) {

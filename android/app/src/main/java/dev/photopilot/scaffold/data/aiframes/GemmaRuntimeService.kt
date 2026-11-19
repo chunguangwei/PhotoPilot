@@ -15,23 +15,48 @@ import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.atomic.AtomicBoolean
+
+internal class AIRuntimeInterrupted(cause: Throwable? = null) : IOException("runtime_interrupted", cause)
 
 /** Native runtime faults are confined to this private process. No library or frame state is mutated here. */
 class GemmaRuntimeService : Service() {
     private var embedder: GemmaEmbedder? = null
+    private val watchdog = ScheduledThreadPoolExecutor(1).apply { removeOnCancelPolicy = true }
+
+    private fun <T> boundedRuntimeCall(seconds: Long, action: () -> T): T {
+        val pending = AtomicBoolean(true)
+        val deadline = watchdog.schedule({
+            if (pending.compareAndSet(true, false)) android.os.Process.killProcess(android.os.Process.myPid())
+        }, seconds, TimeUnit.SECONDS)
+        try {
+            return action()
+        } finally {
+            pending.set(false)
+            deadline.cancel(false)
+        }
+    }
     private val binder = object : Binder() {
         override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
             if (code !in 1..4 || reply == null) return super.onTransact(code, data, reply, flags)
             synchronized(this@GemmaRuntimeService) {
                 try {
-                    val result = when (code) {
-                        1 -> { embedder?.close(); embedder = GemmaEmbedder(this@GemmaRuntimeService, File(requireNotNull(data.readString())), data.readInt() == 1); null }
-                        2 -> requireNotNull(embedder).text(requireNotNull(data.readString()))
-                        3 -> {
-                            val bitmap = requireNotNull(BitmapFactory.decodeFile(requireNotNull(data.readString())))
-                            try { requireNotNull(embedder).image(bitmap) } finally { bitmap.recycle() }
+                    val limit = when (code) {
+                        1 -> 120L
+                        4 -> 20L
+                        else -> 45L
+                    }
+                    val result = boundedRuntimeCall(limit) {
+                        when (code) {
+                                1 -> { embedder?.close(); embedder = GemmaEmbedder(this@GemmaRuntimeService, File(requireNotNull(data.readString())), data.readInt() == 1); null }
+                                2 -> requireNotNull(embedder).text(requireNotNull(data.readString()))
+                                3 -> {
+                                    val bitmap = requireNotNull(BitmapFactory.decodeFile(requireNotNull(data.readString())))
+                                    try { requireNotNull(embedder).image(bitmap) } finally { bitmap.recycle() }
+                                }
+                                else -> { embedder?.close(); embedder = null; null }
                         }
-                        else -> { embedder?.close(); embedder = null; null }
                     }
                     reply.writeNoException()
                     reply.writeFloatArray(result)
@@ -42,7 +67,14 @@ class GemmaRuntimeService : Service() {
         }
     }
     override fun onBind(intent: Intent): IBinder = binder
-    override fun onDestroy() { embedder?.close(); embedder = null; super.onDestroy() }
+    override fun onDestroy() {
+        try {
+            synchronized(this) { boundedRuntimeCall(20) { embedder?.close(); embedder = null } }
+        } finally {
+            watchdog.shutdownNow()
+            super.onDestroy()
+        }
+    }
 }
 
 class RemoteGemmaEmbedder(private val context: Context, model: File, private val useGpu: Boolean = false) : AIEmbedder {
@@ -62,17 +94,26 @@ class RemoteGemmaEmbedder(private val context: Context, model: File, private val
         } catch (failure: Throwable) { close(); throw failure }
     }
     private fun transact(code: Int, value: String? = null): FloatArray {
+        val stage = when (code) { 1 -> "load"; 2 -> "text"; 3 -> "image"; else -> "close" }
+        val started = android.os.SystemClock.elapsedRealtime()
+        AIModelDiagnostics.waiting(context, "inference", "gemma", "start:$stage")
+        var succeeded = false
         val request = Parcel.obtain()
         val response = Parcel.obtain()
         try {
             if (value != null) request.writeString(value)
             if (code == 1) request.writeInt(if (useGpu) 1 else 0)
-            val service = remote ?: throw IOException("runtime_unavailable")
+            val service = remote ?: throw AIRuntimeInterrupted()
             if (!service.transact(code, request, response, 0)) throw IOException("runtime_unavailable")
             response.readException()
-            return response.createFloatArray() ?: FloatArray(0)
-        } catch (failure: android.os.RemoteException) { throw IOException("runtime_unavailable", failure) }
-        finally { request.recycle(); response.recycle() }
+            return (response.createFloatArray() ?: FloatArray(0)).also { succeeded = true }
+        } catch (failure: android.os.RemoteException) { throw AIRuntimeInterrupted(failure) }
+        finally {
+            request.recycle()
+            response.recycle()
+            AIModelDiagnostics.waiting(context, "inference", "gemma",
+                "end:$stage success=$succeeded elapsed=${android.os.SystemClock.elapsedRealtime() - started}ms")
+        }
     }
     override fun text(text: String): FloatArray = transact(2, text)
     override fun image(bitmap: Bitmap): FloatArray {

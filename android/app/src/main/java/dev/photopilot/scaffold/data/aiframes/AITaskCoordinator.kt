@@ -175,6 +175,15 @@ class AITaskCoordinator(private val aiFrames: AIFrameService) {
         }
     }
 
+    private suspend fun pauseCompetingPreviews(frameId: String?, exceptId: String? = null) {
+        val competing = records.values.filter {
+            it.kind == "preview" && it.frameId == frameId && it.id != exceptId && running(it.id)
+        }
+        for (preview in competing) pause(preview.id).join()
+    }
+
+    internal suspend fun pausePreviewsForFrame(frameId: String) = pauseCompetingPreviews(frameId)
+
     suspend fun continueTask(id: String) {
         val observed = record(id) ?: return
         jobs[id]?.join()
@@ -198,6 +207,14 @@ class AITaskCoordinator(private val aiFrames: AIFrameService) {
 
     private fun launch(task: AITaskRecord, model: AIModel) = synchronized(jobs) {
         if (jobs[task.id]?.isActive == true) return@synchronized
+        if (task.kind == "preview" && jobs.any { (id, job) ->
+                job.isActive && records[id]?.kind == "preview"
+            }) {
+            scope.launch {
+                update(task.id, task.generation) { it.copy(status = "failed", reason = "preview_already_active") }
+            }
+            return@synchronized
+        }
         val job = scope.launch(start = CoroutineStart.LAZY) {
             val current = records[task.id]
             if (current?.generation != task.generation || current.userPaused || task.id in pauseRequests || current.status in listOf("deleted", "deleting")) return@launch
@@ -219,6 +236,9 @@ class AITaskCoordinator(private val aiFrames: AIFrameService) {
                 val protection = (failure as? AIProtectionPause)?.reason ?: aiFrames.pauseReason()
                 val reason = when {
                     protection != null -> protection
+                    failure.message == "preview_already_active" -> "preview_already_active"
+                    failure is AIRuntimeInterrupted -> "runtime_interrupted"
+                    failure.message == "model_queue_timeout" -> "model_queue_timeout"
                     failure.message == "metered" -> "wifi_required"
                     failure.message == "REMOTE_LOW_SPACE" -> "low_storage"
                     failure.message == "offline" || failure is java.net.SocketTimeoutException || failure is java.net.UnknownHostException || failure is java.net.ConnectException -> "network"

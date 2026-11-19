@@ -43,6 +43,7 @@ class AIFrameView(
     private var sourceReload: Job? = null
     private val modelPicker = Spinner(context)
     private val sourcePicker = Spinner(context)
+    private var acknowledgedPreviewTimeout: Pair<String, Long>? = null
     private var submittingPreview = false
     private val processing = ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal).apply {
         isIndeterminate = true
@@ -196,7 +197,9 @@ class AIFrameView(
             if (trackedFrames.isNotEmpty()) {
                 pendingPreview = null
                 previewIdentity = null
-                results.removeAllViews()
+                environment.aiFrames.tasks.cached(draftId)?.takeIf { it.reason == "model_queue_timeout" }?.let {
+                    acknowledgedPreviewTimeout = draftId to it.generation
+                }
                 trackedFrames.forEach(environment.aiFrames::resume)
             } else {
                 val task = environment.aiFrames.tasks.cached(draftId)
@@ -456,6 +459,8 @@ class AIFrameView(
             it.kind == "preview" && it.status != "saved" && it.collections.toSet() != collectionChecks.filterValues { check -> check.isChecked }.keys
         } == true
         resumeButton?.visibility = if (!scopeChanged && (trackedFrames.isNotEmpty() || environment.aiFrames.tasks.cached(draftId)?.status in listOf("user_paused", "system_paused", "failed", "waiting", "needs_resume")) && !scanning && !savedScanning) View.VISIBLE else View.GONE
+        resumeButton?.text = if (trackedFrames.isEmpty()) words("继续预览", "Continue preview")
+            else words("继续相框分类", "Resume frame classification")
         resumeButton?.isEnabled = !savingPreview
     }
     private fun lines(input: EditText) = input.text.toString().lines().map(String::trim).filter(String::isNotEmpty)
@@ -732,6 +737,9 @@ class AIFrameView(
         }
         updateActions()
         if (environment.aiFrames.tasks.running(draftId) || pendingPreview != null) return
+        if (task?.reason == "model_queue_timeout" && task.status == "failed" &&
+            acknowledgedPreviewTimeout != (draftId to task.generation) &&
+            trackedFrames.none(environment.aiFrames::isRunning)) return
         val configurations = withContext(Dispatchers.IO) { trackedFrames.mapNotNull { environment.aiFrames.state.get(it) } }
         if (configurations.isEmpty()) return
         status.text = configurations.joinToString("\n") { c ->

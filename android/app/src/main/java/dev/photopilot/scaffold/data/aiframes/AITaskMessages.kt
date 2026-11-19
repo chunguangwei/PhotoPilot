@@ -3,6 +3,10 @@ package dev.photopilot.scaffold.data.aiframes
 fun aiPauseExplanation(reason: String?, chinese: Boolean): String = when (reason) {
     "user" -> if (chinese) "已手动暂停，明确继续后才会恢复。" else "Paused by you. Choose Continue to resume."
     "low_battery" -> if (chinese) "电量不足 15%，连接电源或提高电量后可继续。" else "Battery is at or below 15%. Connect power or recharge to continue."
+    "runtime_interrupted" -> if (chinese) "模型进程已中断，扫描进度已保存。重试会重新加载模型。" else "The model process stopped. Progress is saved. Retry to reload the model."
+    "preview_already_active" -> if (chinese) "已有预览在运行。请等它结束，或暂停后重试。" else "A preview is already running. Wait for it to finish or pause it and retry."
+    "model_queue_timeout" -> if (chinese) "模型仍被其他任务占用。可暂停其他分类或下载后重试。" else "The model is still busy. Pause other classification or download tasks and retry."
+    "preview_priority" -> if (chinese) "正在给预览让出模型，预览结束后会继续。" else "The preview has priority. Classification will resume when it finishes."
     "temperature" -> if (chinese) "系统温控达到临界级别，分类已暂停并保留进度。" else "Android reports a critical thermal state. Classification is paused and progress is saved."
     "timeout" -> if (chinese) "Android 后台运行时间已到，回到应用后可继续。" else "Android's background time limit was reached. Reopen the app to continue."
     "memory" -> if (chinese) "设备内存紧张，释放内存后可继续。" else "The device is low on memory. Free memory before continuing."
