@@ -38,6 +38,7 @@ class AIFrameView(
     private val contentScroll = ScrollView(context)
     private val footer = LinearLayout(context).apply { orientation = VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(8)) }
     private val modelSection = dev.photopilot.scaffold.ui.widget.DisclosureSection(context, words("AI 模型", "AI model"))
+    private var editSelectedFolders: TextView? = null
     private val folderSummary = TextView(context)
     private var sourceReload: Job? = null
     private val modelPicker = Spinner(context)
@@ -119,7 +120,16 @@ class AIFrameView(
         folderSummary.maxLines = 3
         folderSummary.ellipsize = android.text.TextUtils.TruncateAt.END
         folderSummary.setTextColor(context.getColor(dev.photopilot.scaffold.R.color.pp_text_secondary))
-        column.addView(folderSummary)
+        column.addView(LinearLayout(context).apply {
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            addView(folderSummary, LayoutParams(0, -2, 1f))
+            editSelectedFolders = dev.photopilot.scaffold.ui.widget.secondaryButton(context, dev.photopilot.scaffold.R.string.common_done).apply {
+                text = words("编辑已选", "Edit selected")
+                visibility = View.GONE
+                setOnClickListener { showSelectedFolders() }
+            }
+            addView(editSelectedFolders, LayoutParams(-2, -2))
+        })
         button(words("选择已连接相册 / NAS", "Choose connected albums / NAS")) { chooseFolders() }
         column.addView(recursive)
         label(words("想展示什么照片？", "What photos would you like to show?"), true)
@@ -188,7 +198,12 @@ class AIFrameView(
                 previewIdentity = null
                 results.removeAllViews()
                 trackedFrames.forEach(environment.aiFrames::resume)
-            } else scope.launch { environment.aiFrames.tasks.continueTask(draftId) }
+            } else {
+                val task = environment.aiFrames.tasks.cached(draftId)
+                if (task != null && task.collections.toSet() != collectionChecks.filterValues { it.isChecked }.keys) {
+                    previewAndShow()
+                } else scope.launch { environment.aiFrames.tasks.continueTask(draftId) }
+            }
             updateActions()
         }
         for (action in listOfNotNull(cancelButton, resumeButton)) {
@@ -314,9 +329,27 @@ class AIFrameView(
     private fun updateFolderSummary() {
         val selected = collectionChecks.values.filter { it.isChecked }
         val count = selected.size
+        editSelectedFolders?.visibility = if (count > 0) View.VISIBLE else View.GONE
         folderSummary.text = if (count == 0) words("请选择本机相册或 NAS 目录", "Choose a device album or NAS folder")
             else words("已选 $count 个相册 / 目录", "$count albums / folders selected") + "\n" +
                 selected.takeLast(3).joinToString(" · ") { it.text.toString().substringBefore('\n') }
+    }
+
+    private fun showSelectedFolders() {
+        val selected = collectionChecks.values.filter { it.isChecked }
+        if (selected.isEmpty()) return
+        val keep = BooleanArray(selected.size) { true }
+        val names = selected.map { it.contentDescription ?: it.text }.toTypedArray()
+        AlertDialog.Builder(context)
+            .setTitle(words("编辑已选目录", "Edit selected folders"))
+            .setMultiChoiceItems(names, keep) { _, index, checked -> keep[index] = checked }
+            .setNegativeButton(words("取消", "Cancel"), null)
+            .setPositiveButton(words("完成", "Done")) { _, _ ->
+                selected.forEachIndexed { index, folder -> folder.isChecked = keep[index] }
+                updateFolderSummary()
+                updateActions()
+            }
+            .show()
     }
 
     private fun chooseFolders() {
@@ -419,7 +452,10 @@ class AIFrameView(
         cancelButton?.visibility = if (scanning || savedScanning) View.VISIBLE else View.GONE
         cancelButton?.isEnabled = !savingPreview
         listOfNotNull(downloadButton, deleteModelButton, startButton).forEach { it.alpha = if (it.isEnabled) 1f else .4f }
-        resumeButton?.visibility = if ((trackedFrames.isNotEmpty() || environment.aiFrames.tasks.cached(draftId)?.status in listOf("user_paused", "system_paused", "failed", "waiting", "needs_resume")) && !scanning && !savedScanning) View.VISIBLE else View.GONE
+        val scopeChanged = environment.aiFrames.tasks.cached(draftId)?.let {
+            it.kind == "preview" && it.status != "saved" && it.collections.toSet() != collectionChecks.filterValues { check -> check.isChecked }.keys
+        } == true
+        resumeButton?.visibility = if (!scopeChanged && (trackedFrames.isNotEmpty() || environment.aiFrames.tasks.cached(draftId)?.status in listOf("user_paused", "system_paused", "failed", "waiting", "needs_resume")) && !scanning && !savedScanning) View.VISIBLE else View.GONE
         resumeButton?.isEnabled = !savingPreview
     }
     private fun lines(input: EditText) = input.text.toString().lines().map(String::trim).filter(String::isNotEmpty)

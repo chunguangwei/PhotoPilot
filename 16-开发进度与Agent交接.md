@@ -1,5 +1,10 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## Android AI 已选目录快捷编辑
+
+- 摘要旁增加「编辑已选」，仅显示已勾选来源，支持取消勾选与确认。改变扫描范围后旧预览不可继续，使用新范围重新预览。
+- Release 构建、lint、JVM 单测和签名验证通过。候选包位于 .build/android-edit-selected/PhotoPilot-1.4.13-74-edit-selected.apk，真机待验证。
+
 ## Android 1.4.13（74）已发布
 
 - 源码 bc2737c 与 v1.4.13 标签已推送，GitHub 已公开设为 Latest。四份附件大小及 SHA256 与本地一致，公开 APK 请求返回 ZIP 文件头，签名与 1.4.12 一致。
