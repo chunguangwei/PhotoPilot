@@ -118,6 +118,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                 catch (cancelled: CancellationException) { withContext(NonCancellable) { status(frameId, "cancelled", configuration.revision) }; throw cancelled }
                 catch (failure: Exception) { status(frameId, when (failure.message) { "runtime_unavailable" -> "runtime_unavailable"; "runtime_interrupted" -> "failed"; "model_missing", "model_integrity" -> "model_missing"; "preview_paused" -> "paused"; else -> "failed" }, configuration.revision, (failure as? AIProtectionPause)?.reason ?: failure.message?.takeIf { it == "runtime_interrupted" }) }
                 catch (_: LinkageError) { status(frameId, "runtime_unavailable", configuration.revision) }
+                catch (_: OutOfMemoryError) { withContext(NonCancellable) { status(frameId, "runtime_unavailable", configuration.revision) } }
                 finally {
                     tasks.end("frame:$frameId")
                     onProgress?.invoke(frameId)
@@ -169,6 +170,10 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
         if (initial.userPaused) return
         val model = models.models.firstOrNull { it.id == initial.modelId && it.revision == initial.modelRevision } ?: throw java.io.IOException("model_missing")
         if (!models.supported(model)) throw java.io.IOException("runtime_unavailable")
+        if (!AIMemoryPolicy.canLoad(context, model.runtime)) {
+            status(frameId, "paused", initial.revision, "low_memory")
+            return
+        }
         require(models.ready(model)) { "model_missing" }
         if (classification.previewPending) { status(frameId, "paused", initial.revision, "preview_priority"); return }
         models.lease(model) {

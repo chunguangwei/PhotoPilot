@@ -45,12 +45,14 @@ class NasTlsPolicy(
         cause: Throwable,
     ) : SSLException("fingerprint changed", cause)
 
-    fun cleartextError(host: String, port: Int): String? =
-        if (privateEligible(host) && hostPortKey(host, port) in cleartextHosts()) {
-            null
-        } else {
-            ERR_CLEARTEXT_BLOCKED
+    fun cleartextError(host: String, port: Int): String? {
+        if (!privateEligible(host)) return ERR_CLEARTEXT_BLOCKED
+        val normalized = host.lowercase()
+        val permitted = cleartextHosts().any { entry ->
+            entry.substringBefore(':').lowercase() == normalized
         }
+        return if (permitted) null else ERR_CLEARTEXT_BLOCKED
+    }
 
     fun connectionContext(host: String, port: Int): ConnectionContext =
         ConnectionContext(host, port)

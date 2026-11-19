@@ -242,6 +242,9 @@ interface FrameDao {
 
     @Query("UPDATE frame SET selection_version = selection_version + 1, updated_at = :now WHERE id = :frameId")
     suspend fun bumpSelectionVersion(frameId: String, now: Long)
+
+    @Query("SELECT COUNT(*) FROM frame WHERE selection_version > 0")
+    suspend fun countWithSelection(): Int
 }
 
 @Dao

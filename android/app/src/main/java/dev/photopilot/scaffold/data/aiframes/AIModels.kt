@@ -108,14 +108,28 @@ class AIModelManager(
                 }, model.optDouble("defaultThreshold", .20).toFloat(), model.getInt("embeddingDimension"))
         }.also { require(it.map { model -> model.id }.distinct().size == it.size) }
     }
-    fun supported(model: AIModel): Boolean = model.runtime != "litertlm" || android.os.Process.is64Bit()
+    fun supported(model: AIModel): Boolean =
+        model.runtime != "litertlm" || (android.os.Process.is64Bit() && AIMemoryPolicy.supportsGeneration(context))
     fun directory(model: AIModel): File = File(root, "${model.id}-${model.revision}").apply { mkdirs() }
     fun ready(model: AIModel): Boolean = model.files.all { File(directory(model), it.name).let { file -> file.isFile && file.length() == it.size && File(directory(model), it.name + ".verified").readTextOrNull() == it.sha256 } }
     fun verify(model: AIModel): Boolean = model.files.all { file ->
         val artifact = File(directory(model), file.name)
-        val valid = artifact.isFile && artifact.length() == file.size && hash(artifact) == file.sha256
-        if (!valid) File(directory(model), file.name + ".verified").delete()
-        valid
+        val marker = File(directory(model), file.name + ".verified")
+        when {
+            !artifact.isFile || artifact.length() != file.size -> {
+                marker.delete()
+                false
+            }
+            marker.readTextOrNull() == file.sha256 -> true
+            hash(artifact) == file.sha256 -> {
+                runCatching { marker.writeText(file.sha256) }
+                true
+            }
+            else -> {
+                marker.delete()
+                false
+            }
+        }
     }
     suspend fun delete(model: AIModel) = withModelFiles(model, "delete") {
         val folder = directory(model)

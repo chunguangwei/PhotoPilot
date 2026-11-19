@@ -113,7 +113,7 @@ class PlayerEngine(
         dispatch(
             PlaybackEvent(
                 type = "hold_elapsed",
-                nextReady = queue.size > 1 && (decodedNext != null || decodedCurrent != null),
+                nextReady = queue.size > 1 && decodedNext != null,
             ),
         )
     }

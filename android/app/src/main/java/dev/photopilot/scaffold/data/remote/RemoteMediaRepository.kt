@@ -58,6 +58,9 @@ class RemoteMediaRepository(
         return bitmap
     }
     fun close() { authorityScope.cancel(); db.invalidationTracker.removeObserver(observer); cache.clear(force = true); decoded.evictAll() }
+    fun trimMemory(level: Int) {
+        decoded.evictAll()
+    }
     private val originals = File(context.filesDir, "originals")
     suspend fun item(sourceAssetId: String, allowRetainedCopy: Boolean = true): PlaybackItem? {
         val remote = db.sourceAssetDao().getById(sourceAssetId) ?: return null

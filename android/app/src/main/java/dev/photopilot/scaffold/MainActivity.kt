@@ -409,6 +409,14 @@ class MainActivity : Activity() {
         super.onPause()
     }
 
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+            dev.photopilot.scaffold.ui.library.ThumbnailLoader.clearMemoryCaches()
+            environment?.remoteMedia?.trimMemory(level)
+        }
+    }
+
     private fun startInitialization() {
         val launchView = LaunchView(this, launchPresentation)
         setBaseTracked(launchView)

@@ -1,5 +1,16 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## Android 1.4.19（80）内存与稳定性优化
+
+- 新增 AIMemoryPolicy，按可用堆与设备内存分级：ONNX 模型加载前先做闸门，内存不足时置 deviceUnsupported 并跳过运行时创建，不再等 OOM 崩溃。
+- AIFrameService 捕获 OutOfMemoryError 并按 low_memory 暂停，runScan 前置内存门；AIPreview 在创建 embedder 前做同一判断。
+- AIModels.supported(context) 改为内存感知；verify() 复用 .verified 标记，避免每次启动重复全量哈希。
+- NasTlsPolicy 明文例外按主机名匹配（contracts/error-codes.yaml:85-89），兼容旧 host:port 键；RemoteLocalCopies 磁盘上限改为可用空间一半、双倍预留，与 iOS 对齐。
+- PlayerEngine hold 事件 nextReady 收紧为实际有待播解码帧，预取完成路径补重试，避免解码慢时停摆。
+- AppSettingsRepository.isOnboardingCompleted 增加 FrameDao 回退（selection_version > 0 视为已完成），与 iOS AppSettingsRepository.swift:22-32 一致。
+- MainActivity.onTrimMemory 清空缩略图与远端解码 LruCache。
+- make check 58 通过；Debug/Release 构建、lint、JVM 单测 452 通过；APK 验签 9cd985f1…。
+
 ## Android 1.4.18（79）已发布
 
 - AI 选片改用星标设封面；普通照片编辑、来源选片与 AI 选片共用封面保存和首页刷新路径。README 与发布说明已更新。

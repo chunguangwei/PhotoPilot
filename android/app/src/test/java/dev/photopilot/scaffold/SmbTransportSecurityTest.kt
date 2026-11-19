@@ -21,13 +21,21 @@ class SmbTransportSecurityTest {
     }
 
     @Test
-    fun privatePlainSessionUsesOnlyMatchingHostPortOptIn() {
-        var allowed = setOf("192.168.1.10:1445")
+    fun privatePlainSessionOptInIsScopedToHost() {
+        var allowed = setOf("192.168.1.10")
         val policy = NasTlsPolicy(pinLookup = { null }, cleartextHosts = { allowed })
-        val client = negotiatedClient("192.168.1.10", 1445, false, policy)
-        assertEquals(false, client.security().encrypted)
-        allowed = setOf("192.168.1.10:445", "192.168.1.11:1445")
-        assertBlocked { client.security() }
+        assertEquals(false, negotiatedClient("192.168.1.10", 1445, false, policy).security().encrypted)
+        assertEquals(false, negotiatedClient("192.168.1.10", 445, false, policy).security().encrypted)
+        allowed = setOf("192.168.1.11")
+        assertBlocked { negotiatedClient("192.168.1.10", 1445, false, policy).security() }
+    }
+
+    @Test
+    fun legacyHostPortOptInStillMatchesItsHost() {
+        val policy = NasTlsPolicy(pinLookup = { null }, cleartextHosts = { setOf("192.168.1.10:1445") })
+        assertEquals(false, negotiatedClient("192.168.1.10", 1445, false, policy).security().encrypted)
+        assertEquals(false, negotiatedClient("192.168.1.10", 445, false, policy).security().encrypted)
+        assertBlocked { negotiatedClient("192.168.1.11", 1445, false, policy).security() }
     }
 
     @Test

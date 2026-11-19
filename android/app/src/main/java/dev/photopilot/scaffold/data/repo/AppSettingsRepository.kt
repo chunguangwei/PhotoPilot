@@ -1,15 +1,22 @@
 package dev.photopilot.scaffold.data.repo
 
+import dev.photopilot.scaffold.data.db.FrameDao
 import dev.photopilot.scaffold.data.db.SettingsKvDao
 import dev.photopilot.scaffold.data.db.SettingsKvEntity
 
 class AppSettingsRepository(
     private val dao: SettingsKvDao,
+    private val frameDao: FrameDao? = null,
     private val nowMillis: () -> Long = { System.currentTimeMillis() },
 ) {
 
-    suspend fun isOnboardingCompleted(): Boolean =
-        dao.get(KEY_ONBOARDING_COMPLETED)?.valueJson == VALUE_TRUE
+    suspend fun isOnboardingCompleted(): Boolean {
+        if (dao.get(KEY_ONBOARDING_COMPLETED)?.valueJson == VALUE_TRUE) return true
+        val hasSavedFrame = frameDao?.countWithSelection()?.let { it > 0 } ?: return false
+        if (!hasSavedFrame) return false
+        setOnboardingCompleted(true)
+        return true
+    }
 
     suspend fun hasPlayedOnce(): Boolean =
         dao.get(KEY_PLAYED_ONCE)?.valueJson == VALUE_TRUE

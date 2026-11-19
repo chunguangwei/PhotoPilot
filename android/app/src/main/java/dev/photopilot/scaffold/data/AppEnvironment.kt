@@ -222,7 +222,7 @@ class AppEnvironment private constructor(
                 putValue = { key, value -> AppSettingsRepository(database.settingsKvDao()).putRaw(key, value) },
             )
             val credentialStore = CredentialStore(appContext)
-            val appSettings = AppSettingsRepository(database.settingsKvDao())
+            val appSettings = AppSettingsRepository(database.settingsKvDao(), database.frameDao())
             val weatherProvider: WeatherProvider = FallbackWeatherProvider(
                 forecast = listOf(OpenMeteoProvider()),
                 search = listOf(OpenMeteoProvider(), NativeGeocoderProvider(appContext)),
@@ -239,7 +239,7 @@ class AppEnvironment private constructor(
             val aiFrames = dev.photopilot.scaffold.data.aiframes.AIFrameService(appContext, database)
             return AppEnvironment(
                 database = database,
-                settings = AppSettingsRepository(database.settingsKvDao()),
+                settings = AppSettingsRepository(database.settingsKvDao(), database.frameDao()),
                 assets = AssetRepository(
                     database,
                     LibraryVersionRepository(database.settingsKvDao()),

@@ -52,6 +52,7 @@ suspend fun AIFrameService.preview(
             models.previewLease(model) {
                 onLeaseAcquired()
                 if (!models.supported(model)) throw java.io.IOException("runtime_unavailable")
+                if (!AIMemoryPolicy.canLoad(context, model.runtime)) throw java.io.IOException("runtime_unavailable")
                 val checkpoint = AIPreviewCheckpoint.open(db, model, collections, recursive, rules, frameId, checkpointId)
                 var dirty = false
                 try {

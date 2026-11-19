@@ -119,11 +119,14 @@ class RemoteLocalCopies(private val context: Context, private val env: AppEnviro
                 if (!RoomCommitScope(db).frameScopeValid(scopeJson)) throw IOException("REMOTE_SYNC_STALE")
                 val remote = db.sourceAssetDao().getById(importItem.sourceAssetId) ?: throw IOException("REMOTE_REVOKED")
                 val syncJob = currentCoroutineContext()[Job]
+                val expectedBytes = ((remote.byteSize ?: 0L).coerceAtLeast(1L))
+                val reserveBytes = expectedBytes * 2
+                if (expectedBytes > originals.usableSpace / 2 || reserveBytes > originals.usableSpace) throw IOException("REMOTE_LOW_SPACE")
                 val guarded = object : SourceAdapter by adapter {
                     override fun openAsset(remoteKey: String) = object : java.io.FilterInputStream(adapter.openAsset(remoteKey)) {
                         private fun check(bytesToWrite: Int = 0) {
                             if (syncJob?.isActive == false) throw CancellationException("paused")
-                            if (originals.usableSpace - bytesToWrite < 67108864) throw IOException("REMOTE_LOW_SPACE")
+                            if (originals.usableSpace - bytesToWrite < expectedBytes) throw IOException("REMOTE_LOW_SPACE")
                             if (!env.remoteMedia.allowsNetwork()) throw NasNetworkBlockedException()
                             if (!runBlocking { RoomCommitScope(db).frameScopeValid(scopeJson) && env.remoteMedia.item(remote.id)?.sourceEpoch == source.epoch }) throw IOException("REMOTE_SYNC_STALE")
                         }
@@ -131,7 +134,7 @@ class RemoteLocalCopies(private val context: Context, private val env: AppEnviro
                         override fun read(buffer: ByteArray, offset: Int, length: Int): Int { check(); return `in`.read(buffer, offset, length).also { check(it.coerceAtLeast(0)) } }
                     }
                 }
-                if ((remote.byteSize ?: 0) + 67108864 > originals.usableSpace) throw IOException("REMOTE_LOW_SPACE")
+                if (expectedBytes + reserveBytes > originals.usableSpace) throw IOException("REMOTE_LOW_SPACE")
                 val outcome = try { env.coordinator.stage(importItem.id, guarded) } catch (failure: Throwable) {
                     File(context.cacheDir, "import-tmp/item-${importItem.id}.part").delete()
                     throw failure
