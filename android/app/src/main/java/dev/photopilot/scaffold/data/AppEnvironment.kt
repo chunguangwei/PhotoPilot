@@ -274,7 +274,7 @@ class AppEnvironment private constructor(
                             dev.photopilot.scaffold.data.imports.ImportKeepAliveService.start(appContext)
                         } else {
                             dev.photopilot.scaffold.data.imports.ImportKeepAliveService.stop(appContext)
-                            aiFrames.resumeAutomatic()
+                            aiFrames.resumeAutomatic(catalogChanged = true)
                         }
                     }
                 },
@@ -319,7 +319,7 @@ class AppEnvironment private constructor(
                 env.frames.remoteMedia = env.remoteMedia
                 env.aiFrames.remoteMedia = env.remoteMedia
                 env.remoteCopies = dev.photopilot.scaffold.data.remote.RemoteLocalCopies(appContext, env)
-                env.remoteMedia.onCatalogUpdated = { sourceId -> env.remoteCopies.metadataUpdated(sourceId); env.aiFrames.resumeAutomatic() }
+                env.remoteMedia.onCatalogUpdated = { sourceId -> env.remoteCopies.metadataUpdated(sourceId); env.aiFrames.resumeAutomatic(catalogChanged = true) }
 
             }
         }

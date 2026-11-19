@@ -14,6 +14,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
     var remoteMedia: dev.photopilot.scaffold.data.remote.RemoteMediaRepository? = null
     val state = AIStateStore(db)
     val tasks = AITaskCoordinator(this)
+    private val sessionScans = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     private val userPauseRequests = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     internal val classification = AIClassificationScheduler()
@@ -66,6 +67,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
     fun isRunning(frameId: String): Boolean = jobs[frameId]?.isActive == true
     fun cancel(frameId: String) { pause(frameId) }
     fun pause(frameId: String) {
+        sessionScans.remove(frameId)
         userPauseRequests.add(frameId)
         scope.launch {
             db.withTransaction { state.get(frameId)?.let { state.put(it.copy(userPaused = true, status = "user_paused", pauseReason = "user")) } }
@@ -93,14 +95,19 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
         scope.coroutineContext[Job]?.cancelAndJoin()
         previews.forEach { it.join() }
     }
-    fun resumeAutomatic(interruptedOnly: Boolean = false): Job = scope.launch {
+    fun resumeAutomatic(interruptedOnly: Boolean = false, catalogChanged: Boolean = false): Job = scope.launch {
         for (configuration in state.all()) {
-            if (configuration.resumeAutomatically && (!interruptedOnly || configuration.status == "paused")) scan(configuration.frameId)
+            val continuing = configuration.frameId in sessionScans &&
+                (!interruptedOnly || configuration.status == "paused")
+            val automaticUpdate = catalogChanged && !interruptedOnly && configuration.autoUpdate &&
+                configuration.status in listOf("idle", "complete")
+            if (configuration.resumeAutomatically && (continuing || automaticUpdate)) scan(configuration.frameId)
         }
     }
     fun scan(frameId: String) {
         synchronized(jobs) {
             if (jobs[frameId]?.isActive == true || frameId in userPauseRequests) return
+            sessionScans.add(frameId)
             jobs[frameId] = scope.launch {
                 val configuration = state.get(frameId) ?: return@launch
                 val runEpoch = tasks.executionEpoch

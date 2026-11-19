@@ -21,6 +21,7 @@ class AITaskCoordinator(private val aiFrames: AIFrameService) {
     private val jobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
     private val results = java.util.concurrent.ConcurrentHashMap<String, List<AIPreview>>()
     private val resultVersions = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private val sessionPreviews = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     private val pauseRequests = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     private val executingPreviews = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     private val active = java.util.concurrent.ConcurrentHashMap<String, String>()
@@ -276,6 +277,7 @@ class AITaskCoordinator(private val aiFrames: AIFrameService) {
             }
         }
         jobs[task.id] = job
+        if (task.kind == "preview") sessionPreviews.add(task.id)
         job.start()
     }
 
@@ -475,6 +477,7 @@ class AITaskCoordinator(private val aiFrames: AIFrameService) {
         for (row in aiFrames.db.settingsKvDao().getByPrefix("ai.task.")) {
             val snapshot = runCatching { AITaskRecord.parse(JSONObject(row.valueJson)) }.getOrNull() ?: continue
             records.putIfAbsent(snapshot.id, snapshot)
+            if (snapshot.kind == "preview" && snapshot.id !in sessionPreviews) continue
             val model = aiFrames.models.models.firstOrNull { it.id == snapshot.modelId && it.revision == snapshot.modelRevision } ?: continue
             modelOperation(model.id).withLock {
                 val current = record(snapshot.id) ?: return@withLock

@@ -50,6 +50,10 @@ Enable local sync per frame for offline access. Storage-mode changes preserve se
 
 Choose **Create AI frames**, select local albums/folders or remote folders from1.3.0, and enter English or Chinese categories, one per line. Optional include/exclude descriptions narrow the matches. Review photos and editable name suggestions before saving. Automatic classification of newly discovered eligible photos within the selected scope is optional, initially off and editable later. Manual additions and exclusions remain under your control.
 
+Android 1.4.16 起，已保存规则可直接「继续相框分类」，新建或修改规则时可「扫描并预览」。分类结果使用分页缩略图，支持单选、全选本页、选取全部和确认保存。完全退出后重新打开应用，未完成的旧扫描保留进度，等待手动继续。AI 日志可在「设置 → 诊断信息」导出。
+
+On Android 1.4.16 and later, resume classification with saved rules or scan and preview when creating or changing rules. The results picker supports individual selection, page selection, and selecting all results. Unfinished scans retain their progress after a cold start and wait for manual resume. Export AI diagnostics from Settings.
+
 - **EmbeddingGemma 2 文本＋图像版 / standard** 约387.7 MB，使用分类所需的文本和图像部分。Android 标准模型需要64位进程。
 - **多语 CLIP 轻量版 / Multilingual CLIP Lite** 约201.5 MB，包含文本编码器、图像编码器、投影和词表。完整下载比标准版小约48%，支持中英文零样本图像分类。
 - 模型按需下载，国内源优先 ModelScope，国际源使用 Hugging Face，另提供 hf-mirror 回退。安装前校验固定版本及 SHA-256。备用镜像可能跳转海外 CDN，可用性取决于网络。下载完成后照片、提示词和分类都留在本机。

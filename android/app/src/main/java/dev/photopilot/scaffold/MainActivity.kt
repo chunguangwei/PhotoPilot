@@ -587,7 +587,16 @@ class MainActivity : Activity() {
         view.onClearCache = { confirmClearCache(view) }
         view.onRestoreDeleted = { confirmRestoreDeleted() }
         view.onClearAll = { confirmClearAll() }
-        view.onExportDiagnostics = { shareDiagnostics(null) }
+        view.onExportDiagnostics = {
+            scope.launch {
+                val exporter = DiagnosticsExporter(this@MainActivity)
+                val json = withContext(Dispatchers.IO) {
+                    val log = runCatching { dev.photopilot.scaffold.data.aiframes.AIModelDiagnostics.snapshot(applicationContext) }.getOrNull()
+                    exporter.exportJson(null, null, aiLog = log)
+                }
+                startActivity(Intent.createChooser(exporter.buildShareIntent(json), null))
+            }
+        }
         view.onOpenAccessibilitySettings = {
             startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }

@@ -2,7 +2,6 @@ package dev.photopilot.scaffold.ui.aiframes
 
 import android.app.AlertDialog
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.text.InputType
 import android.text.Editable
 import android.text.TextWatcher
@@ -12,7 +11,6 @@ import dev.photopilot.scaffold.data.AppEnvironment
 import dev.photopilot.scaffold.data.aiframes.*
 import dev.photopilot.scaffold.data.db.FrameEntity
 import dev.photopilot.scaffold.data.repo.SelectionRefEdit
-import java.io.File
 import kotlinx.coroutines.*
 
 class AIFrameView(
@@ -81,6 +79,8 @@ class AIFrameView(
     private var previewRevision = 0L
     private var restoredPreviewIdentity: String? = null
     private var restoredPreviewNames: List<String>? = null
+    private var savedRuleIdentity: String? = null
+    private var restoredPreviewMatches: List<Set<String>>? = null
     private var restoredPreviewChoices: List<Set<String>>? = null
     private var previewNames = emptyList<EditText>()
     private var previewChosen = emptyList<MutableSet<String>>()
@@ -235,6 +235,7 @@ class AIFrameView(
                 recursive.isChecked = configuration.recursive
                 automatic.isChecked = configuration.autoUpdate
                 trackedFrames.add(configuration.frameId)
+                savedRuleIdentity = formIdentity()
             }
             if (configuration == null) threshold.setText(selectedModel().defaultThreshold.toString())
             val lastDraft = restoredDraft ?: if (existingFrame == null) withContext(Dispatchers.IO) { environment.aiFrames.lastPreviewDraft() } else null
@@ -262,6 +263,10 @@ class AIFrameView(
                 restoredPreviewNames = org.json.JSONArray(pendingDraft["previewNames"] ?: "[]").let(AIConfiguration::strings)
                 val choices = org.json.JSONArray(pendingDraft["previewChoices"] ?: "[]")
                 restoredPreviewChoices = (0 until choices.length()).map { AIConfiguration.strings(choices.getJSONArray(it)).toSet() }
+                restoredPreviewMatches = pendingDraft["previewMatches"]?.let { raw ->
+                    val matches = org.json.JSONArray(raw)
+                    (0 until matches.length()).map { AIConfiguration.strings(matches.getJSONArray(it)).toSet() }
+                }
                 restoredPreviewIdentity = formIdentity()
             }
             refreshProgress()
@@ -382,6 +387,7 @@ class AIFrameView(
         val scanningCurrent = environment.aiFrames.tasks.running(draftId) && activePreviewIdentity == identity
         val names = if (currentRestore) restoredPreviewNames.orEmpty() else if (currentPreview) previewNames.map { it.text.toString() } else emptyList()
         val choices = if (currentRestore) restoredPreviewChoices.orEmpty() else if (currentPreview) previewChosen else emptyList()
+        val matches = if (currentRestore) restoredPreviewMatches else if (currentPreview) pendingPreview?.map { it.matches.keys } else null
         return mapOf(
         "draftId" to draftId, "descriptions" to descriptions.text.toString(), "includes" to includes.text.toString(),
         "excludes" to excludes.text.toString(), "names" to nameOverrides.joinToString("\n"), "threshold" to threshold.text.toString(),
@@ -391,6 +397,7 @@ class AIFrameView(
         "previewReady" to (currentPreview || currentRestore || scanningCurrent).toString(),
         "previewNames" to org.json.JSONArray(names).toString(),
         "previewChoices" to org.json.JSONArray(choices.map { org.json.JSONArray(it.toList()) }).toString(),
+        "previewMatches" to org.json.JSONArray(matches.orEmpty().map { org.json.JSONArray(it.toList()) }).toString(),
         )
     }
     private fun restoreModelSelection(modelId: String?, savedThreshold: String?) {
@@ -440,14 +447,17 @@ class AIFrameView(
             val message = words("规则已修改，请重新预览", "Rules changed. Run preview again")
             if (status.text.toString() != message) status.text = message
         }
+        val useSavedRules = trackedFrames.isNotEmpty() && savedRuleIdentity == formIdentity()
         startButton?.text = when {
             !supported -> words("选择兼容模型", "Choose compatible model")
+            ready && useSavedRules -> words("继续相框分类", "Resume frame classification")
             ready -> words("扫描并预览", "Scan and preview")
             else -> words("前往下载模型", "Manage model download")
         }
         startButton?.setOnClickListener {
             when {
                 !supported -> modelSection.setExpanded(true)
+                ready && useSavedRules -> resumeButton?.performClick()
                 ready -> previewAndShow()
                 else -> onManageModels?.invoke(selectedModel().id)
             }
@@ -458,7 +468,7 @@ class AIFrameView(
         val scopeChanged = environment.aiFrames.tasks.cached(draftId)?.let {
             it.kind == "preview" && it.status != "saved" && it.collections.toSet() != collectionChecks.filterValues { check -> check.isChecked }.keys
         } == true
-        resumeButton?.visibility = if (!scopeChanged && (trackedFrames.isNotEmpty() || environment.aiFrames.tasks.cached(draftId)?.status in listOf("user_paused", "system_paused", "failed", "waiting", "needs_resume")) && !scanning && !savedScanning) View.VISIBLE else View.GONE
+        resumeButton?.visibility = if (trackedFrames.isEmpty() && !scopeChanged && environment.aiFrames.tasks.cached(draftId)?.status in listOf("queued", "running", "user_paused", "system_paused", "failed", "waiting", "needs_resume") && !scanning && !savedScanning) View.VISIBLE else View.GONE
         resumeButton?.text = if (trackedFrames.isEmpty()) words("继续预览", "Continue preview")
             else words("继续相框分类", "Resume frame classification")
         resumeButton?.isEnabled = !savingPreview
@@ -487,6 +497,7 @@ class AIFrameView(
             retiredModelNotice = false
             updateModelStatus()
             if (frame.id !in trackedFrames) trackedFrames.add(frame.id)
+            savedRuleIdentity = formIdentity()
             status.text = words("设置已保存", "Settings saved")
             onChanged()
             updateActions()
@@ -508,6 +519,7 @@ class AIFrameView(
         if (restoredPreviewIdentity != identity) {
             restoredPreviewNames = null
             restoredPreviewChoices = null
+            restoredPreviewMatches = null
         }
         previewNames = emptyList()
         previewChosen = emptyList()
@@ -551,7 +563,7 @@ class AIFrameView(
         val progress = previews.first()
         status.text = if (progress.isComplete) words("预览完成 · ${progress.scannedCount} / ${progress.totalCount}，确认后保存相框。", "Preview complete · ${progress.scannedCount} / ${progress.totalCount}. Confirm to save frames.")
             else words("已暂停 · 已扫描 ${progress.scannedCount} / ${progress.totalCount}。可保存所有类别相框（含 0 张照片），后续明确继续分类。", "Paused · ${progress.scannedCount} / ${progress.totalCount} scanned. Save all category frames, including empty ones, then explicitly continue later.")
-        results.addView(TextView(context).apply { text = words("待确认照片默认不勾选。失败与未扫描照片保留旧结果。", "Review photos are unchecked. Failed and unscanned photos keep their previous results.") })
+        results.addView(TextView(context).apply { text = words("匹配照片默认选中，待确认照片可手动加入。失败与未扫描照片保留旧结果。", "Matches are selected by default. You can add review photos manually. Failed and unscanned photos keep their previous results.") })
         environment.aiFrames.tasks.cached(draftId)?.reason?.let { reason ->
             results.addView(TextView(context).apply { text = aiPauseExplanation(reason, chinese) })
         }
@@ -568,7 +580,13 @@ class AIFrameView(
         }
         previewChosen = previews.mapIndexed { index, preview ->
             val available = preview.matches.keys + preview.reviews.keys
-            (restoredPreviewChoices?.getOrNull(index)?.intersect(available) ?: preview.matches.keys).toMutableSet()
+            val previousChoices = restoredPreviewChoices?.getOrNull(index)
+            val previousMatches = restoredPreviewMatches?.getOrNull(index)
+            when {
+                previousChoices == null -> preview.matches.keys.toMutableSet()
+                previousMatches == null -> previousChoices.intersect(available).toMutableSet()
+                else -> (previousChoices.intersect(available) + (preview.matches.keys - previousMatches)).toMutableSet()
+            }
         }
         val draftWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -578,6 +596,7 @@ class AIFrameView(
         previewNames.forEach { it.addTextChangedListener(draftWatcher) }
         restoredPreviewNames = null
         restoredPreviewChoices = null
+        restoredPreviewMatches = null
         restoredPreviewIdentity = null
         confirmPreviewButton?.let(footer::removeView)
         confirmPreviewButton = dev.photopilot.scaffold.ui.widget.primaryButton(context, dev.photopilot.scaffold.R.string.common_done).apply {
@@ -598,6 +617,7 @@ class AIFrameView(
                     try {
                         val saved = withContext(Dispatchers.IO) { environment.aiFrames.tasks.confirm(draftId, confirmedNames, confirmedChoices, automaticSelection) }
                         trackedFrames.addAll(saved.filter { it !in trackedFrames })
+                        savedRuleIdentity = formIdentity()
                         pendingPreview = null
                         retiredModelNotice = false
                         status.text = words("结果已保存", "Results saved")
@@ -618,61 +638,134 @@ class AIFrameView(
     }
     private fun selectPreviewPhotos(preview: AIPreview, index: Int) {
         val ids = (preview.matches.keys + preview.reviews.keys).toList()
-        scope.launch {
-            val entities = withContext(Dispatchers.IO) { ids.chunked(400).flatMap { environment.database.assetDao().getByIds(it) }.associateBy { it.id } }
-            val displayNames = withContext(Dispatchers.IO) {
-                ids.mapIndexed { index, id ->
-                    if (id.startsWith("remote:")) {
-                        environment.database.sourceAssetDao().getById(id.removePrefix("remote:"))?.let { environment.remoteMedia.displayName(it) }
-                            ?: words("照片 ${index + 1}", "Photo ${index + 1}")
-                    } else entities[id]?.originalFileName ?: words("照片 ${index + 1}", "Photo ${index + 1}")
-                }
-            }
-            val labels = ids.mapIndexed { index, id -> (if (id in preview.matches) words("匹配", "Match") else words("待确认", "Review")) + " · %.3f".format(preview.matches[id] ?: preview.reviews[id]) + " · " + displayNames[index] }.toTypedArray()
-            AlertDialog.Builder(context).setTitle(words("选择照片（显示相似度）", "Select photos (similarity scores)"))
-                .setMultiChoiceItems(labels, ids.map { it in previewChosen[index] }.toBooleanArray()) { _, which, checked ->
-                    if (checked) previewChosen[index].add(ids[which]) else previewChosen[index].remove(ids[which])
-                    updateActions()
-                }
-                .setNeutralButton(words("查看图片", "View images")) { _, _ -> previewImages(preview, ids, index) }
-                .setPositiveButton(words("完成", "Done"), null).show()
+        openResultPicker(ids, previewChosen[index]) { selected ->
+            check(pendingPreview?.getOrNull(index) === preview) { "preview_superseded" }
+            previewChosen[index].apply { clear(); addAll(selected) }
+            environment.aiFrames.tasks.rememberDraft(draftId, draftState(), immediate = true)
+            updateActions()
         }
     }
-    private fun previewImages(preview: AIPreview, ids: List<String>, category: Int, page: Int = 0) {
-        scope.launch {
-            val assets = withContext(Dispatchers.IO) { ids.drop(page * 12).take(12).mapNotNull { id ->
-                if (id.startsWith("remote:")) environment.remoteMedia.item(id.removePrefix("remote:"))
-                else environment.database.assetDao().getById(id)?.let { dev.photopilot.scaffold.data.remote.PlaybackItem(local = it) }
-            } }
-            val list = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
-            for (asset in assets) {
-                if (!environment.remoteMedia.valid(asset)) continue
-                val check = CheckBox(context).apply {
-                    text = "%.3f".format(preview.matches[asset.id] ?: preview.reviews[asset.id])
-                    isChecked = asset.id in previewChosen[category]
-                    setOnCheckedChangeListener { _, checked ->
-                        if (checked) previewChosen[category].add(asset.id) else previewChosen[category].remove(asset.id)
-                        updateActions()
-                    }
-                }
-                val image = dev.photopilot.scaffold.ui.remote.RemoteThumbnailView(context, environment.remoteMedia, asset, 256).apply {
-                    adjustViewBounds = true
-                    minimumHeight = dp(160)
-                    maxHeight = dp(240)
-                    scaleType = ImageView.ScaleType.FIT_CENTER
-                    onUnavailable = {
-                        check.isChecked = false
-                        check.isEnabled = false
-                    }
-                }
-                list.addView(image)
-                list.addView(check)
+
+    private suspend fun resultPhoto(id: String): dev.photopilot.scaffold.data.remote.PlaybackItem? =
+        if (id.startsWith("remote:")) environment.remoteMedia.item(id.removePrefix("remote:"))
+        else environment.database.assetDao().getById(id)?.let { dev.photopilot.scaffold.data.remote.PlaybackItem(local = it) }
+
+    private fun openResultPicker(ids: List<String>, initial: Set<String>, save: suspend (Set<String>) -> Unit) {
+        val selected = initial.intersect(ids.toSet()).toMutableSet()
+        val pageSize = 24
+        val pageCount = ((ids.size + pageSize - 1) / pageSize).coerceAtLeast(1)
+        var page = 0
+        var loading: Job? = null
+        var saving = false
+        val body = LinearLayout(context).apply { orientation = VERTICAL; setPadding(dp(12), 0, dp(12), 0) }
+        val summary = TextView(context)
+        val grid = LinearLayout(context).apply { orientation = VERTICAL }
+        val scroll = ScrollView(context).apply { addView(grid) }
+        body.addView(summary)
+        val selectionActions = LinearLayout(context)
+        val pageActions = LinearLayout(context)
+        fun action(row: LinearLayout, title: String): TextView =
+            dev.photopilot.scaffold.ui.widget.secondaryButton(context, dev.photopilot.scaffold.R.string.common_done).apply {
+                text = title
+                row.addView(this, LayoutParams(0, -2, 1f))
             }
-            if (!isAttachedToWindow) return@launch
-            val builder = AlertDialog.Builder(context).setTitle(words("预览图片", "Preview photos")).setView(ScrollView(context).apply { addView(list) }).setPositiveButton(words("完成", "Done"), null)
-            if ((page + 1) * 12 < ids.size) builder.setNeutralButton(words("下一页", "Next page")) { _, _ -> previewImages(preview, ids, category, page + 1) }
-            builder.show()
+        val selectPage = action(selectionActions, words("全选本页", "Select page"))
+        val selectAll = action(selectionActions, words("选取全部", "Select all"))
+        val previous = action(pageActions, words("上一页", "Previous"))
+        val next = action(pageActions, words("下一页", "Next"))
+        body.addView(selectionActions)
+        body.addView(scroll, LayoutParams(-1, dp(290)))
+        body.addView(pageActions)
+        val dialog = AlertDialog.Builder(context).setTitle(words("选择分类照片", "Select classified photos"))
+            .setView(body).setNegativeButton(words("取消", "Cancel"), null)
+            .setPositiveButton(words("确认保存", "Save selection"), null).create()
+        val checks = linkedMapOf<String, CheckBox>()
+        fun refreshSummary() {
+            summary.text = words("已选 ${selected.size} / ${ids.size} 张 · 第 ${page + 1} / $pageCount 页",
+                "${selected.size} / ${ids.size} selected · Page ${page + 1} / $pageCount")
         }
+        fun loadPage() {
+            loading?.cancel()
+            grid.removeAllViews()
+            checks.clear()
+            refreshSummary()
+            previous.isEnabled = page > 0
+            next.isEnabled = page + 1 < pageCount
+            selectPage.isEnabled = false
+            val pageIds = ids.drop(page * pageSize).take(pageSize)
+            loading = scope.launch {
+                val photos = withContext(Dispatchers.IO) { pageIds.mapNotNull { resultPhoto(it) } }
+                if (!dialog.isShowing) return@launch
+                if (photos.isEmpty()) grid.addView(TextView(context).apply {
+                    text = words("本页没有可查看的照片", "No available photos on this page")
+                })
+                for (batch in photos.chunked(3)) {
+                    val row = LinearLayout(context)
+                    for (photo in batch) {
+                        val tile = LinearLayout(context).apply { orientation = VERTICAL }
+                        val check = CheckBox(context).apply {
+                            contentDescription = photo.filename
+                            isChecked = photo.id in selected
+                            setOnCheckedChangeListener { _, checked ->
+                                if (checked) selected.add(photo.id) else selected.remove(photo.id)
+                                refreshSummary()
+                            }
+                        }
+                        val image = dev.photopilot.scaffold.ui.remote.RemoteThumbnailView(context, environment.remoteMedia, photo).apply {
+                            setOnClickListener { if (check.isEnabled && !saving) check.toggle() }
+                            onUnavailable = { check.isEnabled = false }
+                        }
+                        tile.addView(image, LayoutParams(-1, dp(80)))
+                        tile.addView(check)
+                        row.addView(tile, LayoutParams(0, -2, 1f).apply { marginEnd = dp(4) })
+                        checks[photo.id] = check
+                    }
+                    repeat(3 - batch.size) { row.addView(View(context), LayoutParams(0, 1, 1f)) }
+                    grid.addView(row)
+                }
+                selectPage.isEnabled = checks.isNotEmpty()
+                scroll.scrollTo(0, 0)
+            }
+        }
+        selectPage.setOnClickListener { if (!saving) checks.values.filter { it.isEnabled }.forEach { it.isChecked = true } }
+        selectAll.isEnabled = ids.isNotEmpty()
+        selectAll.setOnClickListener {
+            if (!saving) {
+                selected.addAll(ids)
+                checks.values.forEach { check ->
+                    if (check.isEnabled) check.isChecked = true
+                }
+                refreshSummary()
+            }
+        }
+        previous.setOnClickListener { if (!saving && page > 0) { page--; loadPage() } }
+        next.setOnClickListener { if (!saving && page + 1 < pageCount) { page++; loadPage() } }
+        dialog.setOnDismissListener { loading?.cancel() }
+        dialog.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener { button ->
+            if (saving) return@setOnClickListener
+            saving = true
+            button.isEnabled = false
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = false
+            dialog.setCancelable(false)
+            val snapshot = selected.toSet()
+            scope.launch {
+                try {
+                    save(snapshot)
+                    dialog.dismiss()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    summary.text = errorText(failure)
+                } finally {
+                    saving = false
+                    button.isEnabled = true
+                    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = true
+                    dialog.setCancelable(true)
+                }
+            }
+        }
+        loadPage()
     }
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -690,6 +783,7 @@ class AIFrameView(
         if (pendingPreview != null && shownLibraryVersion != libraryVersion) {
             restoredPreviewNames = previewNames.map { it.text.toString() }
             restoredPreviewChoices = previewChosen.map { it.toSet() }
+            restoredPreviewMatches = pendingPreview?.map { it.matches.keys.toSet() }
             restoredPreviewIdentity = formIdentity()
             shownTaskGeneration = null
         }
@@ -743,10 +837,10 @@ class AIFrameView(
         val configurations = withContext(Dispatchers.IO) { trackedFrames.mapNotNull { environment.aiFrames.state.get(it) } }
         if (configurations.isEmpty()) return
         status.text = configurations.joinToString("\n") { c ->
-            val state = if (environment.aiFrames.models.models.none { it.id == c.modelId && it.revision == c.modelRevision }) words("旧模型已替换，请选择新模型并重新预览", "The previous model was replaced. Select a model and preview again") else if (c.userPaused) words("手动暂停，待继续", "Paused by you, ready to continue") else when (c.status) { "queued" -> words("等待模型", "Waiting for the model"); "running" -> words("分类中", "Classifying"); "complete" -> words("已完成", "Complete"); "cancelled" -> words("已取消，可继续", "Cancelled, resumable"); "paused" -> words("已暂停", "Paused"); "model_missing" -> words("请下载模型以继续分类", "Download the model to continue classification"); "runtime_unavailable" -> words("此设备无法运行标准模型，请选择紧凑版模型。", "This device cannot run the standard model. Choose the compact model."); "failed" -> words("失败，请重试", "Failed, retry available"); else -> words("待开始", "Ready") }
+            val state = if (environment.aiFrames.models.models.none { it.id == c.modelId && it.revision == c.modelRevision }) words("旧模型已替换，请选择新模型并重新预览", "The previous model was replaced. Select a model and preview again") else if (c.userPaused) words("手动暂停，待继续", "Paused by you, ready to continue") else when (c.status) { "queued", "running" -> if (!environment.aiFrames.isRunning(c.frameId)) words("待手动继续", "Ready to resume") else if (c.status == "queued") words("等待模型", "Waiting for the model") else words("分类中", "Classifying"); "complete" -> words("已完成", "Complete"); "cancelled" -> words("已取消，可继续", "Cancelled, resumable"); "paused" -> words("已暂停", "Paused"); "model_missing" -> words("请下载模型以继续分类", "Download the model to continue classification"); "runtime_unavailable" -> words("此设备无法运行标准模型，请选择紧凑版模型。", "This device cannot run the standard model. Choose the compact model."); "failed" -> words("失败，请重试", "Failed, retry available"); else -> words("待开始", "Ready") }
             "${c.rule.description} · $state · " + (c.pauseReason?.let { aiPauseExplanation(it, chinese) + " " }.orEmpty()) + words("已处理 ${c.completed}，入选 ${c.members.size}，待确认 ${c.reviews.size}，失败 ${c.failed}", "${c.completed} processed, ${c.members.size} matched, ${c.reviews.size} to review, ${c.failed} failed")
         }
-        if (configurations.any { it.status == "running" }) return
+        if (configurations.any { environment.aiFrames.isRunning(it.frameId) }) return
         results.removeAllViews()
         for (configuration in configurations) {
             val row = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
@@ -765,33 +859,24 @@ class AIFrameView(
         }
     }
     private fun preview(configuration: AIConfiguration) {
-        scope.launch {
-            val ids = (configuration.members + configuration.reviews.keys).take(100)
-            val assets = withContext(Dispatchers.IO) { environment.database.assetDao().getByIds(ids) }
-            val list = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
-            for (asset in assets) {
-                val row = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
-                val image = ImageView(context).apply { adjustViewBounds = true; maxHeight = (240 * resources.displayMetrics.density).toInt() }
-                row.addView(image)
-                scope.launch {
-                    val bitmap = withContext(Dispatchers.IO) { runCatching { AIImageDecoder.decode(File(context.filesDir, "originals/${asset.originalRelPath}"), asset.exifOrientation.toInt(), 256) }.getOrNull() }
-                    image.setImageBitmap(bitmap)
+        val initial = configuration.members
+        val ids = (initial + configuration.reviews.keys).toList()
+        openResultPicker(ids, initial) { selected ->
+            withContext(Dispatchers.IO) {
+                val frame = requireNotNull(environment.database.frameDao().getById(configuration.frameId))
+                fun ref(id: String) = if (id.startsWith("remote:")) SelectionRefEdit(null, id.removePrefix("remote:"))
+                    else SelectionRefEdit(id, null)
+                val additions = (selected - initial).mapNotNull { id ->
+                    resultPhoto(id)?.takeIf { environment.remoteMedia.valid(it) }?.let { ref(id) }
                 }
-                row.addView(TextView(context).apply { text = configuration.rule.description + (configuration.reviews[asset.id]?.let { " · " + words("相似度", "Similarity") + " %.3f".format(it) } ?: "") })
-                row.addView(dev.photopilot.scaffold.ui.widget.secondaryButton(context, dev.photopilot.scaffold.R.string.common_done).apply {
-                    val review = asset.id in configuration.reviews
-                    text = if (review) words("确认加入", "Confirm inclusion") else words("移除此照片", "Remove photo")
-                    setOnClickListener { scope.launch {
-                        val frame = withContext(Dispatchers.IO) { environment.database.frameDao().getById(configuration.frameId) } ?: return@launch
-                        val edit = SelectionRefEdit(asset.id, null)
-                        environment.frames.save(frame.id, frame.selectionVersion, addIncludes = if (review) listOf(edit) else emptyList(), addExcludes = if (review) emptyList() else listOf(edit))
-                        isEnabled = false
-                        onChanged()
-                    } }
-                })
-                list.addView(row)
+                val removals = (initial - selected).map(::ref)
+                if (additions.isNotEmpty() || removals.isNotEmpty()) {
+                    val result = environment.frames.save(frame.id, frame.selectionVersion, addIncludes = additions, addExcludes = removals)
+                    check(result is dev.photopilot.scaffold.data.logic.SelectionSaveResult.Ok)
+                }
             }
-            AlertDialog.Builder(context).setTitle(words("预览（最多100张）", "Preview (up to 100 photos)")).setView(ScrollView(context).apply { addView(list) }).setPositiveButton(words("完成", "Done"), null).show()
+            onChanged()
+            status.text = words("选片已保存", "Selection saved")
         }
     }
 }

@@ -23,18 +23,6 @@ class AIModelsView(context: Context, private val environment: AppEnvironment) : 
         orientation = VERTICAL
         addView(TextView(context).apply { text = words("Downloads continue when leaving this page. Pause them explicitly to stop. Photos are processed on this device.", "离开页面后下载仍会继续，可手动暂停。照片仅在此设备处理。") })
         for (model in environment.aiFrames.models.models) addModel(model)
-        addView(secondaryButton(context, R.string.common_done).apply {
-            text = words("Export AI diagnostics", "导出 AI 诊断日志")
-            setOnClickListener {
-                scope.launch {
-                    val exporter = dev.photopilot.scaffold.data.diagnostics.DiagnosticsExporter(context)
-                    val report = withContext(Dispatchers.IO) {
-                        exporter.exportJson(null, null) + "\n" + AIModelDiagnostics.snapshot(context)
-                    }
-                    context.startActivity(android.content.Intent.createChooser(exporter.buildShareIntent(report), text))
-                }
-            }
-        })
     }
     private fun addModel(model: AIModel) {
         val card = LinearLayout(context).apply { orientation = VERTICAL; setPadding(0, dp(16), 0, dp(16)) }

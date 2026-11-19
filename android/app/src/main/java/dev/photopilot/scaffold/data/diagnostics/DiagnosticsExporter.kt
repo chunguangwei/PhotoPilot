@@ -16,7 +16,7 @@ class DiagnosticsExporter(context: Context) {
 
     private val appContext = context.applicationContext
 
-    fun exportJson(errorCode: String?, errorClass: String?): String {
+    fun exportJson(errorCode: String?, errorClass: String?, aiLog: String? = null): String {
         val info = packageInfo()
         return buildString {
             append("{\n")
@@ -26,6 +26,7 @@ class DiagnosticsExporter(context: Context) {
             append("  \"schema_version\": ").append(PhotoPilotDatabase.SCHEMA_VERSION).append(",\n")
             append("  \"error_code\": ").append(jsonString(errorCode)).append(",\n")
             append("  \"error_type\": ").append(jsonString(errorClass)).append(",\n")
+            if (aiLog != null) append("  \"ai_model_log\": ").append(jsonString(aiLog)).append(",\n")
             append("  \"timestamp\": ").append(jsonString(timestamp())).append('\n')
             append("}\n")
         }
