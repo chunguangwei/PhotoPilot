@@ -79,6 +79,9 @@ final class SmbSourceAdapter: RemoteReadableSource, @unchecked Sendable {
         guard let posix = error as? POSIXError else {
             return .unavailable
         }
+        if posix.code.rawValue == EOPNOTSUPP || posix.code.rawValue == ENOTSUP {
+            return .protocolUnsupported
+        }
         switch posix.code {
         case .EACCES:
             return phase == .connect ? .shareNotFound : .permissionDenied
@@ -92,8 +95,6 @@ final class SmbSourceAdapter: RemoteReadableSource, @unchecked Sendable {
             return .unreachable
         case .ETIMEDOUT:
             return .timeout
-        case .EOPNOTSUPP:
-            return .protocolUnsupported
         default:
             return .unavailable
         }
@@ -188,7 +189,7 @@ final class SmbSourceAdapter: RemoteReadableSource, @unchecked Sendable {
             sessionEncrypted = false
             smbLog.error("connectShare encrypted failed code=\((error as NSError).code)")
             guard let posix = error as? POSIXError,
-                  posix.code == .EOPNOTSUPP || (
+                  posix.code.rawValue == EOPNOTSUPP || posix.code.rawValue == ENOTSUP || (
                     posix.code == .ENOMEM && posix.userInfo[NSLocalizedDescriptionKey] as? String
                         == "Error code 12: Encryption requested but server does not support encryption."
                   ) else {
