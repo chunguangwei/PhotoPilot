@@ -1,9 +1,9 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
-## Android 1.4.17（78）相框入口、恢复选片与封面
+## Android 1.4.17（78）已发布
 
 - 首页使用活跃任务呈现分类状态。已有 AI 相框提供规则入口；结果选片从持久化 INCLUDE 记录恢复勾选，保存选片时可同时更新本地或引用照片封面。
-- make check、Release、lint、JVM 单测、原生测试包编译与 APK 验签通过。华为真机待复测。
+- make check、Release、lint、JVM 单测、原生测试包编译与 APK 验签通过。源码 ce3e389 和 v1.4.17 标签已推送，GitHub Latest 已核对，四份附件大小与 SHA256 一致，匿名 APK 响应已验证。华为真机待复测。
 
 ## Android 1.4.16（77）已发布
 
