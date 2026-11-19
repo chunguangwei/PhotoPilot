@@ -1,5 +1,10 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## Android 1.4.18（79）已发布
+
+- AI 选片改用星标设封面；普通照片编辑、来源选片与 AI 选片共用封面保存和首页刷新路径。README 与发布说明已更新。
+- make check、Release 构建、lint、JVM 单测和验签通过。源码 691d77b 与 v1.4.18 标签已推送，GitHub Latest 已核对，四份附件大小及 SHA256 一致，公开 APK 可访问。华为真机待复测。
+
 ## Android 封面星标与首页刷新
 
 - AI 小图封面入口改为无换行的星标。已保存的本机、引用或 AI 相框封面统一走 FrameManager，事务内更新封面和资料版本，驱动首页重新加载。
