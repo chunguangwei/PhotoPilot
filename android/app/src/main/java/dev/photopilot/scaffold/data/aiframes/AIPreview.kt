@@ -125,6 +125,7 @@ suspend fun AIFrameService.preview(
         }
     } finally {
         previewJobs.remove(job)
+        if (!closed && previewJobs.isEmpty() && !shouldPause()) resumeAutomatic(interruptedOnly = true)
     }
 }
 

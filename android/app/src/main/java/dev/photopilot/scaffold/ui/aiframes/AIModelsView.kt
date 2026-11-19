@@ -34,8 +34,6 @@ class AIModelsView(context: Context, private val environment: AppEnvironment) : 
         val source = Spinner(context).apply { adapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, listOf(words("Automatic source", "自动下载源"), words("Domestic source", "国内下载源"), words("International source", "国际下载源"))) }
         card.addView(TextView(context).apply { text = words("Download source", "下载源") })
         card.addView(source)
-        val metered = Switch(context).apply { text = words("Allow mobile / metered network", "允许移动网络或按流量计费网络") }
-        card.addView(metered)
         val action = primaryButton(context, R.string.common_continue)
         val pause = secondaryButton(context, R.string.common_cancel).apply { text = words("Pause download", "暂停下载") }
         val delete = secondaryButton(context, R.string.common_delete).apply { text = words("Delete model", "删除模型") }
@@ -47,26 +45,35 @@ class AIModelsView(context: Context, private val environment: AppEnvironment) : 
         scope.launch {
             val record = withContext(Dispatchers.IO) { environment.aiFrames.tasks.record(taskId) }
             source.setSelection(when (record?.source) { "domestic" -> 1; "international" -> 2; else -> 0 })
-            metered.isChecked = record?.allowMetered == true
             preferencesLoaded = true
         }
         fun savePreferences() {
             if (!preferencesLoaded) return
             val chosenSource = listOf("auto", "domestic", "international")[source.selectedItemPosition.coerceAtLeast(0)]
-            val allowMetered = metered.isChecked
-            scope.launch { withContext(Dispatchers.IO) { environment.aiFrames.tasks.saveDownloadPreferences(model, chosenSource, allowMetered) } }
+            scope.launch { withContext(Dispatchers.IO) { environment.aiFrames.tasks.saveDownloadPreferences(model, chosenSource, false) } }
         }
         source.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: AdapterView<*>?) = Unit
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) { savePreferences() }
         }
-        metered.setOnCheckedChangeListener { _, _ -> savePreferences() }
         action.setOnClickListener {
-            scope.launch {
-                val chosenSource = listOf("auto", "domestic", "international")[source.selectedItemPosition]
-                val allowMetered = metered.isChecked
-                withContext(Dispatchers.IO) { environment.aiFrames.tasks.startDownload(model, chosenSource, allowMetered) }
+            val chosenSource = listOf("auto", "domestic", "international")[source.selectedItemPosition.coerceAtLeast(0)]
+            fun download(allowMetered: Boolean) {
+                scope.launch {
+                    withContext(Dispatchers.IO) { environment.aiFrames.tasks.startDownload(model, chosenSource, allowMetered) }
+                }
             }
+            val manager = context.getSystemService(android.net.ConnectivityManager::class.java)
+            val capabilities = manager.getNetworkCapabilities(manager.activeNetwork)
+            if (capabilities != null && !capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED)) {
+                val remaining = (model.bytes - environment.aiFrames.models.downloadedBytes(model)).coerceAtLeast(0) / 1e6
+                AlertDialog.Builder(context)
+                    .setTitle(words("Download on this network?", "使用当前网络下载？"))
+                    .setMessage(words("This network may charge for data. About %.1f MB remains.", "当前网络可能按流量计费，预计还需下载 %.1f MB。").format(remaining))
+                    .setNegativeButton(R.string.common_cancel, null)
+                    .setPositiveButton(R.string.common_continue) { _, _ -> download(true) }
+                    .show()
+            } else download(false)
         }
         pause.setOnClickListener { environment.aiFrames.tasks.pause(taskId) }
         delete.setOnClickListener {
@@ -96,7 +103,6 @@ class AIModelsView(context: Context, private val environment: AppEnvironment) : 
             delete.visibility = if (ready || bytes > 0 || deleting || task?.status in listOf("failed", "user_paused", "system_paused")) View.VISIBLE else View.GONE
             delete.isEnabled = !deleting
             source.isEnabled = !running && !deleting
-            metered.isEnabled = !running && !deleting
         }
         addView(card, LayoutParams(-1, -2))
         modelTitles[model.id] = title

@@ -8,7 +8,7 @@ fun aiPauseExplanation(reason: String?, chinese: Boolean): String = when (reason
     "memory" -> if (chinese) "设备内存紧张，释放内存后可继续。" else "The device is low on memory. Free memory before continuing."
     "background" -> if (chinese) "系统已停止后台运行，回到应用后可继续。" else "Background execution stopped. Reopen the app to continue."
     "network" -> if (chinese) "等待网络连接，联网后可继续。" else "Waiting for a network connection. Continue when connected."
-    "wifi_required" -> if (chinese) "等待非计费网络，也可在模型管理中允许移动网络。" else "Waiting for an unmetered network. You can allow metered use in model management."
+    "wifi_required" -> if (chinese) "等待非计费网络。也可点继续下载，确认使用当前网络。" else "Waiting for an unmetered network. To use this network, tap Continue download and confirm."
     "description_too_long" -> if (chinese) "描述过长，请缩短描述或选择标准模型。" else "The description is too long. Shorten it or choose the standard model."
     "content_changed" -> if (chinese) "照片或配置已更新，请继续或重新预览。" else "Photos or configuration changed. Continue or preview again."
     "device_unsupported" -> if (chinese) "设备无法运行此模型，请选择兼容模型。" else "This device cannot run this model. Choose a compatible model."

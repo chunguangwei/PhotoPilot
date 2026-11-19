@@ -91,9 +91,9 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
         scope.coroutineContext[Job]?.cancelAndJoin()
         previews.forEach { it.join() }
     }
-    fun resumeAutomatic(): Job = scope.launch {
+    fun resumeAutomatic(interruptedOnly: Boolean = false): Job = scope.launch {
         for (configuration in state.all()) {
-            if (configuration.resumeAutomatically) scan(configuration.frameId)
+            if (configuration.resumeAutomatically && (!interruptedOnly || configuration.status == "paused")) scan(configuration.frameId)
         }
     }
     fun scan(frameId: String) {
@@ -115,7 +115,7 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                     val currentJob = currentCoroutineContext()[Job]
                     jobs.remove(frameId, currentJob)
                     val latest = state.get(frameId)
-                    if (!closed && !shouldPause() && latest?.resumeAutomatically == true && latest.status in listOf("running", "paused", "system_paused") && (tasks.executionEpoch != runEpoch || latest.status != "running")) {
+                    if (!closed && previewJobs.isEmpty() && !shouldPause() && latest?.resumeAutomatically == true && latest.status in listOf("running", "paused", "system_paused") && (tasks.executionEpoch != runEpoch || latest.status != "running")) {
                         scope.launch { scan(frameId) }
                     }
                 }
@@ -161,16 +161,23 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
         val model = models.models.firstOrNull { it.id == initial.modelId && it.revision == initial.modelRevision } ?: throw java.io.IOException("model_missing")
         if (!models.supported(model)) throw java.io.IOException("runtime_unavailable")
         require(models.ready(model)) { "model_missing" }
+        if (previewJobs.isNotEmpty()) { status(frameId, "paused", initial.revision); return }
         models.lease(model) {
+            if (previewJobs.isNotEmpty()) { status(frameId, "paused", initial.revision); return@lease }
             if (shouldPause()) { status(frameId, "paused", initial.revision); return@lease }
             require(models.verify(model)) { "model_integrity" }
+            if (previewJobs.isNotEmpty()) { status(frameId, "paused", initial.revision); return@lease }
             val directory = models.directory(model)
             val embedder = createAIEmbedder(context, model, directory)
             embedder.use { engine ->
-                val description = textVector(engine, initial.rule.description)
-                val includes = initial.rule.includes.map { textVector(engine, it) }
-                val excludes = initial.rule.excludes.map { textVector(engine, it) }
-                val themes = AINameSuggestions.themes.mapValues { textVector(engine, it.value.first + " " + it.value.second) }
+                suspend fun encodeRule(text: String): FloatArray {
+                    if (previewJobs.isNotEmpty()) throw java.io.IOException("preview_paused")
+                    return textVector(engine, text)
+                }
+                val description = encodeRule(initial.rule.description)
+                val includes = initial.rule.includes.map { encodeRule(it) }
+                val excludes = initial.rule.excludes.map { encodeRule(it) }
+                val themes = AINameSuggestions.themes.mapValues { encodeRule(it.value.first + " " + it.value.second) }
                 val candidates = mediaCandidates(initial.collections, initial.recursive)
                 db.withTransaction {
                     state.get(frameId)?.let { current ->
@@ -192,7 +199,9 @@ class AIFrameService(internal val context: Context, internal val db: PhotoPilotD
                     if (db.frameDao().getById(frameId) == null) return@lease
                     val configuration = state.get(frameId) ?: return@lease
                     if (configuration.userPaused || frameId in userPauseRequests || epoch != tasks.executionEpoch) return@lease
-                    if (!AIJobGuard.canCommit(initial.revision, configuration.revision, initial.modelRevision, configuration.modelRevision, false)) return@lease
+                    if (!AIJobGuard.canCommit(initial.revision, configuration.revision, initial.modelRevision, configuration.modelRevision, false)) {
+                        return@lease
+                    }
                     val candidate = candidates[id]
                     val fingerprint = "${candidate?.fingerprint}:${model.revision}:${model.preprocessingVersion}"
                     val eligible = candidate != null && !excluded(candidate, frameId)
