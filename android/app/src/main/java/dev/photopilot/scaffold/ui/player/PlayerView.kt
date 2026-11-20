@@ -439,6 +439,7 @@ class PlayerView(
         stopVideo()
         safeOverlay.visibility = View.GONE
         currentAssetIndex = position
+        noticeLine.visibility = View.GONE
         applyFitBackground(decoded)
         val incoming = if (showingA) foregroundB else foregroundA
         val outgoing = if (showingA) foregroundA else foregroundB

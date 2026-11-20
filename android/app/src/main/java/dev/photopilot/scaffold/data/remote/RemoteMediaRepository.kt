@@ -32,6 +32,10 @@ class RemoteMediaRepository(
     private val decoded = object : android.util.LruCache<String, android.graphics.Bitmap>(33554432) {
         override fun sizeOf(key: String, value: android.graphics.Bitmap) = value.allocationByteCount
     }
+    private fun decodedKey(item: PlaybackItem, width: Int, height: Int): String =
+        "${item.id}:${item.sourceEpoch}:${item.remote?.revision}:${item.local?.contentHash}:$width:$height"
+    fun peekDecoded(item: PlaybackItem, width: Int, height: Int): android.graphics.Bitmap? =
+        if (item.referenceCacheable) decoded.get(decodedKey(item, width, height)) else null
     private val readGate = RemoteRequestGate(2)
     private val authorityScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val authorities = java.util.concurrent.ConcurrentHashMap<String, PlaybackItem>()
@@ -46,7 +50,7 @@ class RemoteMediaRepository(
     suspend fun bitmap(item: PlaybackItem, width: Int, height: Int, priority: Int = 0): android.graphics.Bitmap? {
         if (!valid(item)) return null
         authorities[item.id] = item
-        val key = "${item.id}:${item.sourceEpoch}:${item.remote?.revision}:${item.local?.contentHash}:$width:$height"
+        val key = decodedKey(item, width, height)
         if (item.referenceCacheable) decoded.get(key)?.let { return it }
         val bitmap = if (isLocalReference(item)) {
             readGate.acquire(priority)

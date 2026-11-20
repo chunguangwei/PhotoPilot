@@ -85,8 +85,10 @@ class FramesView(
     }
 
     fun showLoading() {
-        contentState = ContentState.LOADING
-        renderContent()
+        if (contentState != ContentState.READY) {
+            contentState = ContentState.LOADING
+            renderContent()
+        }
     }
 
     fun showLoadingFrames(frames: List<FrameEntity>) {
@@ -431,11 +433,18 @@ class FramesView(
             super.onLayout(changed, left, top, right, bottom)
             if (width <= 0) return
             if (asset == null && remote != null && media != null) {
+                val remoteWidth = width.coerceAtMost(640)
+                val cached = media.peekDecoded(remote, remoteWidth, remoteWidth)
+                if (cached != null) {
+                    image.setImageBitmap(cached)
+                    placeholder.visibility = GONE
+                    return
+                }
                 if (requestedPixels > 0) return
                 requestedPixels = width
                 val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main)
                 remoteJob = scope.launch {
-                    val bitmap = runCatching { media.bitmap(remote, width.coerceAtMost(640), width.coerceAtMost(640)) }.getOrNull()
+                    val bitmap = runCatching { media.bitmap(remote, remoteWidth, remoteWidth) }.getOrNull()
                     if (media.valid(remote) && isAttachedToWindow) { image.setImageBitmap(bitmap); placeholder.visibility = if (bitmap == null) VISIBLE else GONE }
                     while (isAttachedToWindow) {
                         kotlinx.coroutines.delay(250)
@@ -446,6 +455,13 @@ class FramesView(
             }
             val cover = asset ?: return
             val pixels = (((width + 127) / 128) * 128).coerceAtMost(1600)
+            val cached = loader.peek(ThumbnailLoader.cacheKey(cover.id, pixels))
+            if (cached != null) {
+                image.setImageBitmap(cached)
+                placeholder.visibility = GONE
+            } else {
+                placeholder.visibility = VISIBLE
+            }
             if (pixels <= requestedPixels) return
             requestedPixels = pixels
             val target = WeakReference(this)

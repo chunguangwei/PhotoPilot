@@ -603,6 +603,10 @@ private final class FrameCoverView: UIView {
         placeholder.frame = CGRect(x: (bounds.width - side) / 2, y: (bounds.height - side) / 2, width: side, height: side)
         guard bounds.width > 0, let relPath else { return }
         let pixels = min(1600, Int(ceil(bounds.width * max(1, traitCollection.displayScale) / 128)) * 128)
+        if let cached = loader.peekThumbnail(relPath: relPath, pointSize: CGFloat(pixels), scale: 1), cached.size.width > 0 {
+            imageView.image = cached
+            placeholder.isHidden = true
+        }
         guard pixels > requestedPixels else { return }
         requestedPixels = pixels
         loadTask?.cancel()

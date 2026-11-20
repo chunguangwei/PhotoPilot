@@ -948,6 +948,7 @@ final class PlayerViewController: UIViewController {
     }
 
     private func show(image: UIImage, assetID: String, animated: Bool, direction: Int = 1) {
+        noticeLabel.isHidden = true
         let generation = imageGeneration
         updateBackdrop(for: image, assetID: assetID)
         let reduced = UIAccessibility.isReduceMotionEnabled
@@ -2215,11 +2216,24 @@ final class PlayerViewController: UIViewController {
         let assetID = queue[index]
         Task { [weak self] in
             guard let self else { return }
-            let result = try? await environment.frames.save(
+            let baseVersion = (try? await environment.frames.latestSelectionVersion(frameID: frameID)) ?? selectionVersion
+            let addExclude = MediaReference(runtimeID: assetID).selection
+            var result = try? await environment.frames.save(
                 frameID: frameID,
-                baseVersion: selectionVersion,
-                addExcludes: [SelectionRefEdit(assetId: assetID, sourceAssetId: nil)]
+                baseVersion: baseVersion,
+                addExcludes: [addExclude]
             )
+            if case .conflict = result {
+                let refresh = try? await environment.frames.latestSelectionVersion(frameID: frameID)
+                if let refreshed = refresh {
+                    selectionVersion = refreshed
+                    result = try? await environment.frames.save(
+                        frameID: frameID,
+                        baseVersion: refreshed,
+                        addExcludes: [addExclude]
+                    )
+                }
+            }
             if case .ok(let newVersion, _, _, _) = result {
                 selectionVersion = newVersion
             }

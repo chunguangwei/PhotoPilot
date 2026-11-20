@@ -29,6 +29,12 @@ final class ThumbnailLoader: @unchecked Sendable {
         )
     }
 
+    func peekThumbnail(relPath: String, pointSize: CGFloat, scale: CGFloat) -> UIImage? {
+        let pixels = max(1, Int((pointSize * scale).rounded(.up)))
+        let key = "thumbnail:\(relPath)#\(pixels)"
+        return RemoteDecodedImages.shared.image(key: key)
+    }
+
     func thumbnail(relPath: String, pointSize: CGFloat, scale: CGFloat, mode: FrameStorageMode = .remote) async -> UIImage? {
         try? await image(relPath: relPath, pointSize: pointSize, scale: scale, mode: mode)
     }

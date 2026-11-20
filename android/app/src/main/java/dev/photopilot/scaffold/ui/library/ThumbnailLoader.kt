@@ -22,6 +22,8 @@ class ThumbnailLoader(
     private val cache = LruCache<String, Bitmap>(cacheEntries.coerceAtLeast(1))
     private val main = Handler(Looper.getMainLooper())
 
+    fun peek(key: String): Bitmap? = cache.get(key)
+
     init {
         synchronized(liveCaches) {
             liveCaches.removeAll { it.get() == null }

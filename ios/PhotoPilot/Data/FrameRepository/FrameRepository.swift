@@ -38,6 +38,13 @@ actor FrameRepository {
         }
     }
 
+    func latestSelectionVersion(frameID: String) async throws -> Int64 {
+        let context = makeContext()
+        return try await context.perform {
+            try Int64(Self.fetchFrame(context: context, frameID: frameID).value(forKey: "selection_version") as? Int ?? 0)
+        }
+    }
+
     private func resolveInContext(context: NSManagedObjectContext, frameID: String) throws -> SelectionResolution {
         let frame = try Self.fetchFrame(context: context, frameID: frameID)
         let selectionVersion = Int64(frame.value(forKey: "selection_version") as? Int ?? 0)
