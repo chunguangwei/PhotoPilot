@@ -1,5 +1,20 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## 2026-11-20 第二轮三项修复与 v1.4.21 / iOS 1.4.13 发布
+
+- 用户报告三项问题：①iOS 编辑相框→AI 分类设置必崩；②相框封面加载缓慢、需优先当前页；③Android 应用内更新提示失败。
+- **iOS AI 设置崩溃（已修复、真机复测确认）**：根因是 `AIFrameViewController.viewDidAppear` 的 700ms stateMonitor 用 `reloadSections` 刷新表格，与 `previews` 数组更新竞争，触发 UIKit 断言 `Invalid_Number_Of_Rows_In_Section`（3 份 `.ips` 同根因，崩溃帧为 closure #1 in viewDidAppear）。修复：改为 `reloadData()`；`numberOfRowsInSection`/header/footer、`configurePreviewCell`、`didSelectRowAt` 均对 `previews[index]` 加 `indices.contains` 越界 guard。v1.4.12(73) 已覆盖安装 iPhone 13（UDID 00008110-001C359E2E52801E），用户复测「不崩溃了」。
+- **封面加载优化（双端落地，真机复测待补）**：
+  - iOS `FramesListViewController`：scrollView 委托可见性门控——`FrameCoverView` 先 `peekThumbnail` 同步缓存命中，仅当封面进入可见区域才发起解码（layoutSubviews / scrollViewDidScroll / viewDidLayoutSubviews 触发），当前页封面优先加载。
+  - Android `FramesView`：`cardEntries` 复用卡片视图避免重建；`CoverView` 用 `getLocalVisibleRect` 视口门控、`onScrollChanged` 触发加载、解码像素上限 1024；`ThumbnailLoader` 改共享 LruCache 字节预算 + inFlight 去重；MainActivity 对 AI 进度回调去抖，避免每秒全量重建。
+- **Android 应用内更新修复**：`UpdateChecker` 资产正则兼容 `PhotoPilot-1.4.20.apk`（实际发布命名；旧正则只匹配 `PhotoPilot-vX.Y.Z-N.apk`，导致「最新 release」始终解析不到 APK → 检查失败）；支持无版本号后缀资产、语义版本比较兜底、按 versionKey 取最高，识别 `SHA256SUMS.txt` 资产，fetch 失败重试 2 次。`UpdateDownloadService` 下载完成后校验 SHA-256 再交安装。`MainActivity` 将本地 versionName 传入 compare、下载前拉取 sha256 行、权限授权后 onResume 自动续装 `pendingApkFile`。单测 `UpdateCheckerTest` 重写适配（正则/语义版本/无 code 资产/SHA256 资产）。
+- 版本：Android 1.4.21（82）、iOS 1.4.13（74）。
+- 校验：Android Debug/Release 构建、`lintDebug`、JVM 单测、`ios-build`、`ios-analyze`（ANALYZE SUCCEEDED）均通过；`make check` 通过（见下）。Release APK 签名指纹 `9cd985f1…` 与历史一致。
+- 发布：commit `939b830` 已推送 `feat/source-storage-local-references`；tag `v1.4.21` 已推送；GitHub Release v1.4.21 已创建（`PhotoPilot-1.4.21.apk` + `SHA256SUMS.txt`），APK 公开下载 HTTP 200，SHA256 `115a99d4…`。
+- iOS App Store 包 `.build/release-1.4.13/PhotoPilot.ipa`（v1.4.13/74，Apple Distribution: jing chang CCTFP9X3SW，Store profile，23.7MB）已导出并归档到 `~/Library/Developer/Xcode/Archives/2026-11-20/PhotoPilot-1.4.13-74.xcarchive`；本机无 App Store Connect CLI 凭据，上传需用户在 Xcode Organizer/Transporter 操作（与上一轮 Build 72 相同流程）。
+- 残留：iPhone 13 当前离线（devicectl unavailable），新安装与封面门控真机复测待用户连接后执行；Android 应用内更新全链路（检查→下载→SHA256→安装）真机验证待补；华为真机待复测（历史遗留）。
+- 上一轮（v1.4.20 /1.4.12）三项修复也已随本轮一并进入版本基线：Android FramesView 封面闪烁、Android RemoteMediaRepository 缓存小字清除、iOS ThumbnailLoader `peekThumbnail` 同步缓存读 + FramesList 封面闪烁、iOS PlayerViewController removeCurrent 的 baseVersion 冲突重试与 refKey 修复。
+
 ## 2026-11-19 iOS 1.4.11（72）崩溃修复与上传
 
 - 真机 `.ips`（iPad 9，iPadOS 15.6）确认启动崩溃根因：`SmbSourceAdapter` 比较 `POSIXErrorCode.EOPNOTSUPP` 会引用仅 iOS 18+ 提供的 `libswift_DarwinFoundation1` 符号，iOS 15.6 dyld 直接终止（Symbol not found），旧「iPad Air 2 OOM」推断排除。
