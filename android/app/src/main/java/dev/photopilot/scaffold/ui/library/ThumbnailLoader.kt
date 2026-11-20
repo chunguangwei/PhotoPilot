@@ -4,10 +4,11 @@ import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import android.util.LruCache
-import android.widget.ImageView
 import dev.photopilot.scaffold.data.db.AssetEntity
 import dev.photopilot.scaffold.data.render.BitmapRenderer
 import java.io.File
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
 class ThumbnailLoader(
@@ -19,17 +20,10 @@ class ThumbnailLoader(
         fun onLoaded(key: String, bitmap: Bitmap?)
     }
 
-    private val cache = LruCache<String, Bitmap>(cacheEntries.coerceAtLeast(1))
+    private val cache = sharedCache
     private val main = Handler(Looper.getMainLooper())
 
     fun peek(key: String): Bitmap? = cache.get(key)
-
-    init {
-        synchronized(liveCaches) {
-            liveCaches.removeAll { it.get() == null }
-            liveCaches.add(java.lang.ref.WeakReference(cache))
-        }
-    }
 
     fun load(asset: AssetEntity, sizePx: Int, key: String, callback: Callback) {
         val cached = cache.get(key)
@@ -37,61 +31,61 @@ class ThumbnailLoader(
             callback.onLoaded(key, cached)
             return
         }
-        sharedExecutor.execute {
-            val file = File(originalsDir, asset.originalRelPath)
-            val bitmap = if (file.isFile) {
-                runCatching {
-                    if (asset.mediaKind == dev.photopilot.scaffold.data.db.MediaKind.VIDEO) {
-                        val retriever = android.media.MediaMetadataRetriever()
-                        try {
-                            retriever.setDataSource(file.absolutePath)
-                            val frame = retriever.getFrameAtTime(FIRST_FRAME_TIME_US)
-                            if (frame == null) {
-                                null
-                            } else {
-                                val scale = maxOf(frame.width, frame.height).toFloat() / sizePx
-                                if (scale > 1f) {
-                                    android.graphics.Bitmap.createScaledBitmap(
-                                        frame,
-                                        (frame.width / scale).toInt().coerceAtLeast(1),
-                                        (frame.height / scale).toInt().coerceAtLeast(1),
-                                        true,
-                                    )
-                                } else {
-                                    frame
-                                }
-                            }
-                        } finally {
-                            retriever.release()
-                        }
-                    } else {
-                        BitmapRenderer.decodeToTarget(file, sizePx, sizePx, asset.exifOrientation.toInt())
-                    }
-                }.getOrNull()
-            } else {
-                null
+        val pending = inFlight.putIfAbsent(key, CompletableFuture())
+        if (pending == null) {
+            sharedExecutor.execute {
+                val bitmap = decode(asset, sizePx)
+                if (bitmap != null) cache.put(key, bitmap)
+                inFlight.remove(key)?.complete(bitmap)
+                main.post { callback.onLoaded(key, bitmap) }
             }
-            if (bitmap != null) {
-                cache.put(key, bitmap)
-            }
-            main.post { callback.onLoaded(key, bitmap) }
+        } else {
+            pending.whenComplete { bitmap, _ -> main.post { callback.onLoaded(key, bitmap) } }
         }
+    }
+
+    private fun decode(asset: AssetEntity, sizePx: Int): Bitmap? {
+        val file = File(originalsDir, asset.originalRelPath)
+        if (!file.isFile) return null
+        return runCatching {
+            if (asset.mediaKind == dev.photopilot.scaffold.data.db.MediaKind.VIDEO) {
+                val retriever = android.media.MediaMetadataRetriever()
+                try {
+                    retriever.setDataSource(file.absolutePath)
+                    val frame = retriever.getFrameAtTime(FIRST_FRAME_TIME_US)
+                    if (frame == null) null else fit(frame, sizePx)
+                } finally {
+                    retriever.release()
+                }
+            } else {
+                BitmapRenderer.decodeToTarget(file, sizePx, sizePx, asset.exifOrientation.toInt())?.let { fit(it, sizePx) }
+            }
+        }.getOrNull()
+    }
+
+    private fun fit(bitmap: Bitmap, sizePx: Int): Bitmap {
+        val scale = maxOf(bitmap.width, bitmap.height).toFloat() / sizePx
+        if (scale <= 1f) return bitmap
+        return Bitmap.createScaledBitmap(
+            bitmap,
+            (bitmap.width / scale).toInt().coerceAtLeast(1),
+            (bitmap.height / scale).toInt().coerceAtLeast(1),
+            true,
+        )
     }
 
     companion object {
         const val DECODE_THREADS = 2
         const val FIRST_FRAME_TIME_US = 500_000L
+        const val CACHE_BYTES = 24 * 1024 * 1024
 
-        private val liveCaches = mutableListOf<java.lang.ref.WeakReference<LruCache<String, Bitmap>>>()
+        private val sharedCache = object : LruCache<String, Bitmap>(CACHE_BYTES) {
+            override fun sizeOf(key: String, value: Bitmap): Int = value.allocationByteCount.coerceAtLeast(1)
+        }
+        private val inFlight = ConcurrentHashMap<String, CompletableFuture<Bitmap?>>()
 
         fun clearMemoryCaches() {
-            synchronized(liveCaches) {
-                liveCaches.removeAll { reference ->
-                    val cache = reference.get()
-                    cache?.evictAll()
-                    cache == null
-                }
-            }
+            sharedCache.evictAll()
         }
 
         private val sharedExecutor = Executors.newFixedThreadPool(DECODE_THREADS)

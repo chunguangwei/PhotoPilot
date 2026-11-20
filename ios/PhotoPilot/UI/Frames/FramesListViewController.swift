@@ -1,6 +1,6 @@
 import UIKit
 
-final class FramesListViewController: UIViewController {
+final class FramesListViewController: UIViewController, UIScrollViewDelegate {
     private let environment: AppEnvironment
     private let loader: ThumbnailLoader
     private let cardsStack = UIStackView()
@@ -12,6 +12,7 @@ final class FramesListViewController: UIViewController {
     private let aiButton = UIButton(type: .system)
     private let onlineButton = UIButton(type: .system)
     private var cardViews: [UIControl] = []
+    private var covers: [FrameCoverView] = []
     private var columnCount = 0
     private var pageWidthConstraint: NSLayoutConstraint?
     private var cards: [FrameCardDTO] = []
@@ -97,6 +98,7 @@ final class FramesListViewController: UIViewController {
         pageStack.addArrangedSubview(cardsStack)
         pageStack.addArrangedSubview(emptyStack)
         scrollView.addSubview(pageStack)
+        scrollView.delegate = self
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scrollView)
 
@@ -127,6 +129,11 @@ final class FramesListViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         updateLayout()
+        covers.forEach { $0.resolveIfVisible(in: scrollView) }
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        covers.forEach { $0.resolveIfVisible(in: scrollView) }
     }
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -279,8 +286,22 @@ final class FramesListViewController: UIViewController {
         }
 
         cardViews = cards.enumerated().map { makeCard($0.element, index: $0.offset) }
+        covers = collectCovers(views: cardViews)
         updateLayout()
         arrangeCards()
+    }
+
+    private func collectCovers(views: [UIView]) -> [FrameCoverView] {
+        var result: [FrameCoverView] = []
+        func visit(_ view: UIView) {
+            if let cover = view as? FrameCoverView {
+                result.append(cover)
+                return
+            }
+            for child in view.subviews { visit(child) }
+        }
+        views.forEach(visit)
+        return result
     }
 
     private func makeLabel(key: String, font: UIFont, color: UIColor, header: Bool) -> UILabel {
@@ -607,6 +628,30 @@ private final class FrameCoverView: UIView {
             imageView.image = cached
             placeholder.isHidden = true
         }
+        resolveIfVisible(in: enclosingScrollView)
+    }
+
+    private var enclosingScrollView: UIScrollView? {
+        var current = superview
+        while let view = current {
+            if let scroll = view as? UIScrollView { return scroll }
+            current = view.superview
+        }
+        return nil
+    }
+
+    func resolveIfVisible(in scrollView: UIScrollView?) {
+        if let scrollView {
+            let visibleRect = scrollView.bounds
+            guard !visibleRect.isEmpty else { return }
+            if !visibleRect.intersects(convert(bounds, to: scrollView)) { return }
+        }
+        requestLoad()
+    }
+
+    private func requestLoad() {
+        guard bounds.width > 0, let relPath else { return }
+        let pixels = min(1600, Int(ceil(bounds.width * max(1, traitCollection.displayScale) / 128)) * 128)
         guard pixels > requestedPixels else { return }
         requestedPixels = pixels
         loadTask?.cancel()

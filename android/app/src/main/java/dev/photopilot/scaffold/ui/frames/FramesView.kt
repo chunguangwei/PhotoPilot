@@ -63,6 +63,8 @@ class FramesView(
     private val cardsColumn = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
     private val headerRow = LinearLayout(context)
     private val loader = ThumbnailLoader(originalsDir, COVER_CACHE_ENTRIES)
+    private data class CardEntry(val model: CardModel, val view: View, val cover: CoverView?)
+    private var cardEntries = emptyList<CardEntry>()
     private var cardViews = emptyList<View>()
     private var columnCount = 0
     private var currentCards = emptyList<CardModel>()
@@ -148,11 +150,46 @@ class FramesView(
             )
         }
         cardsColumn.removeAllViews()
-        cardViews = cards.map { cardView(it) }
+        cardEntries = rebuildCardEntries(cards)
+        cardViews = cardEntries.map { it.view }
         contentColumn.addView(cardsColumn, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         columnCount = 0
         updateLayout(width)
         requestLayout()
+    }
+
+    private fun cardKey(model: CardModel): String =
+        "${model.frame.id}|${model.frame.name}|${model.cover?.id}|${model.remoteCover?.id}|${model.playable}|${model.pending}|${model.aiProgress}|${model.aiPaused}|${model.loading}"
+
+    private fun rebuildCardEntries(cards: List<CardModel>): List<CardEntry> {
+        val previous = cardEntries.associateBy { cardKey(it.model) }
+        return cards.map { model ->
+            previous[cardKey(model)]?.let { CardEntry(model, it.view, it.cover) }
+                ?: run {
+                    val built = cardView(model)
+                    val found = findCover(built)
+                    CardEntry(model, built, found)
+                }
+        }
+    }
+
+    private fun findCover(card: View): CoverView? {
+        val layout = card as? LinearLayout
+        if (layout == null) return null
+        var found: CoverView? = null
+        for (index in 0 until layout.childCount) {
+            val child = layout.getChildAt(index)
+            if (child is CoverView) {
+                found = child
+                break
+            }
+        }
+        return found
+    }
+
+    override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
+        super.onScrollChanged(l, t, oldl, oldt)
+        cardEntries.forEach { entry -> entry.cover?.checkVisibleOnScroll() }
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -409,6 +446,7 @@ class FramesView(
     private class CoverView(context: Context, private val asset: AssetEntity?, private val loader: ThumbnailLoader, private val remote: dev.photopilot.scaffold.data.remote.PlaybackItem?, private val media: dev.photopilot.scaffold.data.remote.RemoteMediaRepository?) : FrameLayout(context) {
         private val image = ImageView(context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
         private val placeholder = BrandMarkView(context)
+        private val viewportRect = android.graphics.Rect()
         private var requestedPixels = 0
         private var remoteJob: kotlinx.coroutines.Job? = null
         override fun onDetachedFromWindow() { remoteJob?.cancel(); image.setImageDrawable(null); super.onDetachedFromWindow() }
@@ -432,38 +470,31 @@ class FramesView(
         override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
             super.onLayout(changed, left, top, right, bottom)
             if (width <= 0) return
+            resolveOnLayout()
+        }
+
+        fun checkVisibleOnScroll() {
+            if (width <= 0) return
+            resolveOnLayout()
+        }
+
+        private fun resolveOnLayout() {
             if (asset == null && remote != null && media != null) {
-                val remoteWidth = width.coerceAtMost(640)
-                val cached = media.peekDecoded(remote, remoteWidth, remoteWidth)
-                if (cached != null) {
-                    image.setImageBitmap(cached)
-                    placeholder.visibility = GONE
-                    return
-                }
-                if (requestedPixels > 0) return
-                requestedPixels = width
-                val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main)
-                remoteJob = scope.launch {
-                    val bitmap = runCatching { media.bitmap(remote, remoteWidth, remoteWidth) }.getOrNull()
-                    if (media.valid(remote) && isAttachedToWindow) { image.setImageBitmap(bitmap); placeholder.visibility = if (bitmap == null) VISIBLE else GONE }
-                    while (isAttachedToWindow) {
-                        kotlinx.coroutines.delay(250)
-                        if (!media.valid(remote)) { image.setImageDrawable(null); placeholder.visibility = VISIBLE; break }
-                    }
-                }
+                resolveRemoteCover()
                 return
             }
             val cover = asset ?: return
-            val pixels = (((width + 127) / 128) * 128).coerceAtMost(1600)
+            val pixels = (((width + 127) / 128) * 128).coerceAtMost(COVER_MAX_PIXELS)
             val cached = loader.peek(ThumbnailLoader.cacheKey(cover.id, pixels))
             if (cached != null) {
                 image.setImageBitmap(cached)
                 placeholder.visibility = GONE
-            } else {
-                placeholder.visibility = VISIBLE
+                return
             }
             if (pixels <= requestedPixels) return
+            if (!isInViewport()) return
             requestedPixels = pixels
+            placeholder.visibility = VISIBLE
             val target = WeakReference(this)
             loader.load(cover, pixels, ThumbnailLoader.cacheKey(cover.id, pixels), object : ThumbnailLoader.Callback {
                 override fun onLoaded(key: String, bitmap: android.graphics.Bitmap?) {
@@ -474,6 +505,33 @@ class FramesView(
                 }
             })
         }
+
+        private fun resolveRemoteCover() {
+            val repo = media
+            val item = remote
+            if (repo == null || item == null) return
+            val remoteWidth = width.coerceAtMost(640)
+            val cached = repo.peekDecoded(item, remoteWidth, remoteWidth)
+            if (cached != null) {
+                image.setImageBitmap(cached)
+                placeholder.visibility = GONE
+                return
+            }
+            if (requestedPixels > 0) return
+            if (!isInViewport()) return
+            requestedPixels = width
+            val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main)
+            remoteJob = scope.launch {
+                val bitmap = runCatching { repo.bitmap(item, remoteWidth, remoteWidth) }.getOrNull()
+                if (repo.valid(item) && isAttachedToWindow) { image.setImageBitmap(bitmap); placeholder.visibility = if (bitmap == null) VISIBLE else GONE }
+                while (isAttachedToWindow) {
+                    kotlinx.coroutines.delay(250)
+                    if (!repo.valid(item)) { image.setImageDrawable(null); placeholder.visibility = VISIBLE; break }
+                }
+            }
+        }
+
+        private fun isInViewport(): Boolean = getLocalVisibleRect(viewportRect)
     }
 
     private companion object {
@@ -483,6 +541,7 @@ class FramesView(
         const val MENU_DELETE = 3
         const val MENU_SETTINGS = 4
         const val COVER_CACHE_ENTRIES = 8
+        const val COVER_MAX_PIXELS = 1024
         const val DISABLED_ALPHA = 0.5f
         const val LARGE_TEXT_SCALE = 1.5f
     }

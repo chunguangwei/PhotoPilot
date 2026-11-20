@@ -280,10 +280,12 @@ class MainActivity : Activity() {
     private var sectionBackHandler: (() -> Boolean)? = null
     private var lastLibraryVersionJson: String? = null
     private var framesDirty = false
+    private var lastAiProgressDirtyAt = 0L
     private var lastRetryDriveMs = 0L
     private var updateCheckInFlight = false
     private var updateProgressDialog: AlertDialog? = null
     private var pendingUpdateRelease: UpdateChecker.ReleaseInfo? = null
+    private var pendingApkFile: java.io.File? = null
 
     private val updatePollRunnable = object : Runnable {
         override fun run() {
@@ -367,6 +369,11 @@ class MainActivity : Activity() {
         activityResumed = true
         pollHandler.removeCallbacks(pollRunnable)
         pollHandler.post(pollRunnable)
+        val awaitingInstall = pendingApkFile
+        if (awaitingInstall != null && UpdateInstaller.canInstall(this)) {
+            pendingApkFile = null
+            runCatching { UpdateInstaller.install(this, awaitingInstall) }
+        }
         environment?.let { env ->
             val referenceEditor = remoteFrameView
             scope.launch {
@@ -425,7 +432,13 @@ class MainActivity : Activity() {
                 val env = AppEnvironment.shared(applicationContext)
                 database = env.database
                 environment = env
-                env.aiFrames.onProgress = { pollHandler.post { framesDirty = true } }
+                env.aiFrames.onProgress = {
+                    val now = System.currentTimeMillis()
+                    if (now - lastAiProgressDirtyAt >= AI_PROGRESS_DEBOUNCE_MS) {
+                        lastAiProgressDirtyAt = now
+                        pollHandler.post { framesDirty = true }
+                    }
+                }
                 env.aiFrames.foreground = activityResumed
                 if (activityResumed) {
                     env.aiFrames.tasks.foregroundEntered()
@@ -875,7 +888,7 @@ class MainActivity : Activity() {
             updateCheckInFlight = false
             val result = outcome.getOrNull()
             val release = result?.first
-            when (UpdateChecker.compare(result?.second ?: 0L, release)) {
+            when (UpdateChecker.compare(result?.second ?: 0L, appVersionName(), release)) {
                 UpdateChecker.CheckResult.UPDATE_AVAILABLE ->
                     release?.let { showUpdateAvailable(it) }
                 UpdateChecker.CheckResult.UP_TO_DATE ->
@@ -919,24 +932,32 @@ class MainActivity : Activity() {
 
     private fun startUpdateDownload(release: UpdateChecker.ReleaseInfo) {
         pendingUpdateRelease = release
-        UpdateDownloadService.resetState()
-        startForegroundService(
-            UpdateDownloadService.startIntent(this, release.apkUrl, release.versionName, release.apkSize),
-        )
-        updateProgressDialog?.dismiss()
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.update_downloading)
-            .setMessage(getString(R.string.update_progress, 0))
-            .setNegativeButton(R.string.common_cancel, null)
-            .create()
-        dialog.setOnDismissListener {
-            updateHandler.removeCallbacks(updatePollRunnable)
-            if (updateProgressDialog === dialog) updateProgressDialog = null
+        if (UpdateDownloadService.latestState is UpdateState.Downloading) {
+            stopService(Intent(this, UpdateDownloadService::class.java))
         }
-        updateProgressDialog = dialog
-        dialog.show()
-        updateHandler.removeCallbacks(updatePollRunnable)
-        updateHandler.post(updatePollRunnable)
+        scope.launch {
+            val sha256Line = release.sha256Url?.let { url ->
+                withContext(Dispatchers.IO) { runCatching { UpdateChecker.fetchSha256(url) }.getOrNull() }
+            }?.orEmpty() ?: ""
+            UpdateDownloadService.resetState()
+            startForegroundService(
+                UpdateDownloadService.startIntent(this@MainActivity, release.apkUrl, release.versionName, release.apkSize, sha256Line),
+            )
+            updateProgressDialog?.dismiss()
+            val dialog = AlertDialog.Builder(this@MainActivity)
+                .setTitle(R.string.update_downloading)
+                .setMessage(getString(R.string.update_progress, 0))
+                .setNegativeButton(R.string.common_cancel, null)
+                .create()
+            dialog.setOnDismissListener {
+                updateHandler.removeCallbacks(updatePollRunnable)
+                if (updateProgressDialog === dialog) updateProgressDialog = null
+            }
+            updateProgressDialog = dialog
+            dialog.show()
+            updateHandler.removeCallbacks(updatePollRunnable)
+            updateHandler.post(updatePollRunnable)
+        }
     }
 
     private fun showUpdateReady(apkFile: File) {
@@ -944,6 +965,7 @@ class MainActivity : Activity() {
             .setMessage(R.string.update_ready)
             .setPositiveButton(R.string.update_install) { _, _ ->
                 if (!UpdateInstaller.install(this@MainActivity, apkFile)) {
+                    pendingApkFile = apkFile
                     Toast.makeText(this@MainActivity, R.string.update_install_permission, Toast.LENGTH_LONG).show()
                 }
             }
@@ -3827,6 +3849,7 @@ class MainActivity : Activity() {
         const val GEOCODE_TIMEOUT_MS = 5_000L
         const val REQUEST_PICK_MUSIC = 44
         const val POLL_INTERVAL_MS = 1_000L
+        const val AI_PROGRESS_DEBOUNCE_MS = 5_000L
         const val UPDATE_POLL_INTERVAL_MS = 500L
         const val RETRY_DRIVE_INTERVAL_MS = 15_000L
         const val AUTO_SYNC_INTERVAL_MS = 60_000L

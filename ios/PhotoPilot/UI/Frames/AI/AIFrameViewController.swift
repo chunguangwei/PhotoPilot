@@ -135,12 +135,12 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
                         : AIText.value("Processed \(state.succeeded + state.skipped)/\(state.total) · Failed \(state.failed)", "已处理 \(state.succeeded + state.skipped)/\(state.total) · 失败 \(state.failed)")
                     if self.renderedSavedStatus != state.status {
                         self.renderedSavedStatus = state.status
-                        self.tableView.reloadSections(IndexSet(integer: 3), with: .none)
+                        self.tableView.reloadData()
                     }
                 }
                 let oldInstalled = self.installed
                 try? await self.refreshInstalled()
-                if oldInstalled != self.installed { self.tableView.reloadSections(IndexSet(integer: 0), with: .none) }
+                if oldInstalled != self.installed { self.tableView.reloadData() }
                 try? await Task.sleep(nanoseconds: 700_000_000)
             }
         }
@@ -245,7 +245,10 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         case 1: return folderRows.count + 2
         case 2: return filtersExpanded ? 7 : 2
         case 3: return 3
-        default: return 1 + previews[section - 4].matches.filter { $0.decision != .rejected }.count
+        default:
+            let index = section - 4
+            guard previews.indices.contains(index) else { return 0 }
+            return 1 + previews[index].matches.filter { $0.decision != .rejected }.count
         }
     }
 
@@ -255,7 +258,10 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         case 1: return AIText.value("Source folders", "来源目录")
         case 2: return AIText.value("Classification rules", "分类规则")
         case 3: return AIText.value("Scan", "扫描")
-        default: return previews[section - 4].configuration.rule.category
+        default:
+            let index = section - 4
+            guard previews.indices.contains(index) else { return nil }
+            return previews[index].configuration.rule.category
         }
     }
 
@@ -266,7 +272,9 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         case 2: return AIText.value("For example: family, pets or the beach. Enter one category per line. Each category creates a frame, with a name you can edit in the preview.", "例如：家人、宠物、海边。每行填写一个类别，每个类别会生成一个相框；预览结果后可修改名称。")
         case 3: return AIText.value("Only selected folders are scanned. Continuous classification processes new photos. Pausing takes priority until you explicitly continue. Background work depends on iOS permission.", "仅扫描选定目录。持续分类处理新增照片。手动暂停后需明确继续；后台处理受 iOS 运行许可约束。")
         default:
-            let preview = previews[section - 4]
+            let index = section - 4
+            guard previews.indices.contains(index) else { return nil }
+            let preview = previews[index]
             if !preview.complete {
                 return AIText.value("Partial results · \(preview.selected.count) selected. Unscanned photos remain pending. Save now or continue scanning.", "部分结果 · 已选 \(preview.selected.count) 张。未扫描照片待继续，可先保存相框。")
             }
@@ -359,6 +367,7 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
 
     private func configurePreviewCell(_ cell: UITableViewCell, indexPath: IndexPath) {
         let index = indexPath.section - 4
+        guard previews.indices.contains(index) else { return }
         let preview = previews[index]
         if indexPath.row == 0 {
             let name = UITextField()
@@ -446,7 +455,10 @@ final class AIFrameViewController: UITableViewController, UITextViewDelegate {
         case 4...:
             guard indexPath.row > 0 else { return }
             let index = indexPath.section - 4
-            let id = visibleMatches(index)[indexPath.row - 1].assetID
+            guard previews.indices.contains(index) else { return }
+            let matches = visibleMatches(index)
+            guard indexPath.row <= matches.count else { return }
+            let id = matches[indexPath.row - 1].assetID
             if previews[index].selected.contains(id) { previews[index].selected.remove(id) } else { previews[index].selected.insert(id) }
             persistPresentation(index)
         default: break

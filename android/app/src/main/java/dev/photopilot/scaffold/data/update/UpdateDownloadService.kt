@@ -40,6 +40,7 @@ class UpdateDownloadService : Service() {
         }
         val versionName = intent.getStringExtra(EXTRA_VERSION_NAME).orEmpty()
         val totalSize = intent.getLongExtra(EXTRA_TOTAL_SIZE, 0L)
+        val expectedSha256 = intent.getStringExtra(EXTRA_SHA256).orEmpty()
         if (wakeLock != null) {
             return START_NOT_STICKY
         }
@@ -61,7 +62,7 @@ class UpdateDownloadService : Service() {
         wakeLock = lock
         thread(name = "update-download") {
             try {
-                runDownload(url, versionName, totalSize)
+                runDownload(url, versionName, totalSize, expectedSha256)
             } catch (cancelled: InterruptedException) {
                 publish(UpdateState.Failed)
             } catch (failure: Throwable) {
@@ -75,7 +76,7 @@ class UpdateDownloadService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun runDownload(url: String, versionName: String, totalSize: Long) {
+    private fun runDownload(url: String, versionName: String, totalSize: Long, expectedSha256: String) {
         val dir = File(cacheDir, UPDATES_DIR)
         val partFile = File(dir, PART_FILE_NAME)
         val delays = RETRY_DELAYS_MS
@@ -112,8 +113,30 @@ class UpdateDownloadService : Service() {
             publish(UpdateState.Failed)
             return
         }
+        if (!verifySha256(apkFile, expectedSha256)) {
+            apkFile.delete()
+            publish(UpdateState.Failed)
+            return
+        }
         publish(UpdateState.Completed(apkFile.absolutePath, versionName))
         notifyCompleted(apkFile)
+    }
+
+    private fun verifySha256(file: File, expectedLine: String): Boolean {
+        if (expectedLine.isBlank()) return true
+        val expected = expectedLine.trim().substringBefore(' ').substringBefore('\t').trim()
+        if (expected.length != 64) return false
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val n = input.read(buffer)
+                if (n < 0) break
+                digest.update(buffer, 0, n)
+            }
+        }
+        val actual = digest.digest().joinToString("") { "%02x".format(it) }
+        return actual.equals(expected, ignoreCase = true)
     }
 
     private fun progressNotification(downloaded: Long, total: Long): Notification {
@@ -162,6 +185,7 @@ class UpdateDownloadService : Service() {
         const val EXTRA_URL = "url"
         const val EXTRA_VERSION_NAME = "versionName"
         const val EXTRA_TOTAL_SIZE = "totalSize"
+        const val EXTRA_SHA256 = "sha256"
         const val UPDATES_DIR = "updates"
         const val PART_FILE_NAME = "update.apk.part"
         const val APK_FILE_NAME = "update.apk"
@@ -182,11 +206,12 @@ class UpdateDownloadService : Service() {
             latestState = UpdateState.Idle
         }
 
-        fun startIntent(context: Context, url: String, versionName: String, totalSize: Long): Intent =
+        fun startIntent(context: Context, url: String, versionName: String, totalSize: Long, sha256Line: String = ""): Intent =
             Intent(context, UpdateDownloadService::class.java)
                 .putExtra(EXTRA_URL, url)
                 .putExtra(EXTRA_VERSION_NAME, versionName)
                 .putExtra(EXTRA_TOTAL_SIZE, totalSize)
+                .putExtra(EXTRA_SHA256, sha256Line)
 
         internal fun publish(state: UpdateState) {
             latestState = state

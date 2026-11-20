@@ -11,39 +11,56 @@ class UpdateCheckerTest {
         tagName = "v1.0.0",
         versionName = "1.0.0",
         versionCode = code,
+        semVer = Triple(1, 0, 0),
         apkUrl = "https://example.com/app.apk",
         apkSize = 1024L,
+        sha256Url = "https://example.com/SHA256SUMS.txt",
     )
 
     @Test
     fun newerRemoteVersionCodeMeansUpdate() {
         assertEquals(
             UpdateChecker.CheckResult.UPDATE_AVAILABLE,
-            UpdateChecker.compare(1L, release(2L)),
+            UpdateChecker.compare(1L, "1.0.0", release(2L)),
         )
     }
 
     @Test
     fun equalOrOlderRemoteVersionCodeMeansUpToDate() {
-        assertEquals(UpdateChecker.CheckResult.UP_TO_DATE, UpdateChecker.compare(2L, release(2L)))
-        assertEquals(UpdateChecker.CheckResult.UP_TO_DATE, UpdateChecker.compare(3L, release(2L)))
+        assertEquals(UpdateChecker.CheckResult.UP_TO_DATE, UpdateChecker.compare(2L, "1.0.0", release(2L)))
+        assertEquals(UpdateChecker.CheckResult.UP_TO_DATE, UpdateChecker.compare(3L, "1.0.0", release(2L)))
     }
 
     @Test
     fun unparsableReleaseMeansFailed() {
-        assertEquals(UpdateChecker.CheckResult.FAILED, UpdateChecker.compare(1L, null))
+        assertEquals(UpdateChecker.CheckResult.FAILED, UpdateChecker.compare(1L, "1.0.0", null))
+    }
+
+    @Test
+    fun semVerFallbackComparesWhenVersionCodeMissing() {
+        val withoutCode = UpdateChecker.ReleaseInfo(
+            tagName = "v1.5.0",
+            versionName = "1.5.0",
+            versionCode = null,
+            semVer = Triple(1, 5, 0),
+            apkUrl = "https://example.com/app.apk",
+            apkSize = 1024L,
+            sha256Url = null,
+        )
+        assertEquals(UpdateChecker.CheckResult.UPDATE_AVAILABLE, UpdateChecker.compare(0L, "1.4.20", withoutCode))
+        assertEquals(UpdateChecker.CheckResult.UP_TO_DATE, UpdateChecker.compare(0L, "1.6.0", withoutCode))
     }
 
     @Test
     fun assetNameParsesVersionNameAndCode() {
-        assertEquals("1.0.0" to 2L, UpdateChecker.parseAssetName("PhotoPilot-v1.0.0-2.apk"))
-        assertEquals("0.1.0" to 1L, UpdateChecker.parseAssetName("PhotoPilot-v0.1.0-1.apk"))
+        assertEquals(Triple(1, 0, 0) to 2L, UpdateChecker.parseAssetName("PhotoPilot-v1.0.0-2.apk"))
+        assertEquals(Triple(0, 1, 0) to 1L, UpdateChecker.parseAssetName("PhotoPilot-v0.1.0-1.apk"))
+        assertEquals(Triple(1, 4, 20) to null, UpdateChecker.parseAssetName("PhotoPilot-1.4.20.apk"))
     }
 
     @Test
     fun assetNameRejectsNonConformingNames() {
         assertNull(UpdateChecker.parseAssetName("PhotoPilot.apk"))
-        assertNull(UpdateChecker.parseAssetName("PhotoPilot-v1.0.0.apk"))
         assertNull(UpdateChecker.parseAssetName("photopilot-v1.0.0-2.apk"))
         assertNull(UpdateChecker.parseAssetName("PhotoPilot-v1.0.0-beta.apk"))
         assertNull(UpdateChecker.parseAssetName(""))
@@ -57,6 +74,7 @@ class UpdateCheckerTest {
               "tag_name": "v1.0.0",
               "assets": [
                 {"name": "checksums.txt", "browser_download_url": "https://example.com/sums.txt", "size": 128},
+                {"name": "SHA256SUMS.txt", "browser_download_url": "https://example.com/SHA256SUMS.txt", "size": 64},
                 {"name": "PhotoPilot-v1.0.0-2.apk", "browser_download_url": "https://example.com/PhotoPilot-v1.0.0-2.apk", "size": 52428800}
               ]
             }
@@ -67,6 +85,7 @@ class UpdateCheckerTest {
         assertEquals(2L, info?.versionCode)
         assertEquals("https://example.com/PhotoPilot-v1.0.0-2.apk", info?.apkUrl)
         assertEquals(52_428_800L, info?.apkSize)
+        assertEquals("https://example.com/SHA256SUMS.txt", info?.sha256Url)
     }
 
     @Test
