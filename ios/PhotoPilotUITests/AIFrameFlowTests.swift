@@ -176,7 +176,7 @@ final class AIFrameFlowTests: XCTestCase {
         let save = app.navigationBars.buttons[chinese ? "保存" : "Save"]
         XCTAssertTrue(save.exists)
         save.tap()
-        XCTAssertTrue(create.waitForExistence(timeout: 30))
+        XCTAssertTrue(app.buttons["frames.createOptions"].firstMatch.waitForExistence(timeout: 30))
         capture("05-saved", chinese: chinese)
         XCUIDevice.shared.orientation = .landscapeLeft
         capture("06-landscape", chinese: chinese)
