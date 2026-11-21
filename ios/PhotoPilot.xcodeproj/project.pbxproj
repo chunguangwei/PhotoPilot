@@ -387,6 +387,7 @@
 		82952DE4201F254F07269E48 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		8358D690BD5A1A6215976018 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		852B14374DD1562480B54C58 /* ScopedRemoteImportAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScopedRemoteImportAdapter.swift; sourceTree = "<group>"; };
+		883DF6640FB6828E57457B8D /* ONNXRuntime */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ONNXRuntime; path = Packages/ONNXRuntime; sourceTree = SOURCE_ROOT; };
 		88B923A35C148322BC1B81EA /* LaunchPresentationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchPresentationState.swift; sourceTree = "<group>"; };
 		89C10ECCB47F9DDA7E17CA52 /* demo_lake.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = demo_lake.jpg; sourceTree = "<group>"; };
 		8A41FEDA638CB65C9C5615FF /* AIBackgroundDownloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIBackgroundDownloadTests.swift; sourceTree = "<group>"; };
@@ -517,6 +518,7 @@
 			isa = PBXGroup;
 			children = (
 				46D0771B2FBCC28CC0BA5C86 /* MediaPipeTasks */,
+				883DF6640FB6828E57457B8D /* ONNXRuntime */,
 			);
 			path = Packages;
 			sourceTree = "<group>";
@@ -1342,8 +1344,8 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				022C29940967EF9441D35C51 /* XCRemoteSwiftPackageReference "AMSMB2" */,
-				C7DC9FC137779D2857103181 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
 				78BBAEFDC8ED771B142C842F /* XCLocalSwiftPackageReference "Packages/MediaPipeTasks" */,
+				43B057AB09FA0F9F1B1DD028 /* XCLocalSwiftPackageReference "Packages/ONNXRuntime" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A1D0E64D517BF30DF70D8A55 /* Products */;
@@ -1972,6 +1974,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		43B057AB09FA0F9F1B1DD028 /* XCLocalSwiftPackageReference "Packages/ONNXRuntime" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/ONNXRuntime;
+		};
 		78BBAEFDC8ED771B142C842F /* XCLocalSwiftPackageReference "Packages/MediaPipeTasks" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/MediaPipeTasks;
@@ -1987,14 +1993,6 @@
 				minimumVersion = 4.0.3;
 			};
 		};
-		C7DC9FC137779D2857103181 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/microsoft/onnxruntime-swift-package-manager";
-			requirement = {
-				kind = exactVersion;
-				version = 1.20.0;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -2005,7 +2003,6 @@
 		};
 		C4B9BCCD193F76B40A040538 /* onnxruntime */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = C7DC9FC137779D2857103181 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
 			productName = onnxruntime;
 		};
 		D2ABEE04BB66E700938E6D39 /* MediaPipeTasksRetrieval */ = {

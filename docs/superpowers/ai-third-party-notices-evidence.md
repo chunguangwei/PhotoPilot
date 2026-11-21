@@ -2,6 +2,10 @@
 
 2026-11-14。输出 `docs/superpowers/ai-third-party-notices.txt` 共2878133字节，SHA-256 `edc8e4cf9fc789df613fc002bca7531de93033745a297e80f7359566a146f4b3`。15段原始正文逐字保留，通过 `original_bytes in output_bytes` 检查，外围新增来源标题。可由主任务原样追加到双端许可文本。现有根 LICENSE、平台许可资源和生产代码由本任务保持原状。
 
+## 2026-11-21 更正：iOS ONNX Runtime 1.20.0 → 本地 vendored 1.30.0
+
+上游 `microsoft/onnxruntime` 与 `microsoft/onnxruntime-swift-package-manager` 两仓库已于 2026 年前后从 GitHub 删除（HTTP 404），SPM 依赖 1.20.0 无法再解析，更新期 `make ios-build` 因此失败。本轮将官方 CocoaPods `onnxruntime-c`/`onnxruntime-objc` 1.30.0（本地真实产物）本地化 vendoring 为 `ios/Packages/ONNXRuntime`（UPSTREAM.txt 记录出处；Package.swift 还原被删 SPM 包的产品形态 `onnxruntime`→模块 `OnnxRuntimeBindings`）。该包的 LICENSE 为 MIT、版权 Microsoft Corporation，未随 1.30.0 变更。App 的 `ios/PhotoPilot/Resources/AIThirdPartyNotices.txt` 已追加 vendored 1.30.0 artifact 的 MIT 全文。文档内保留的官方 v1.20.0/v1.23.2 ThirdPartyNotices 汇总仍适用于 1.30.0 二进制的大部分依赖族；1.30.0 专属汇总通知因上游仓库删除暂缺，若后续取得需补入。
+
 ## 精确版本与来源
 
 - Android最终依赖声明为 `com.google.ai.edge.litertlm:litertlm-android:0.17.1`。实际缓存AAR为 `/Users/weichunguang/.gradle/caches/modules-2/files-2.1/com.google.ai.edge.litertlm/litertlm-android/0.17.1/9c8ab948b4a010ccd783dfbf82affc541246d3e6/litertlm-android-0.17.1.aar`。从中直接提取 LICENSE 和 THIRD_PARTY_NOTICE.txt。LICENSE与官方下载的v0.17.1原文逐字相同。官方tag树SHA为 `5e58e9a0aef7abf7091207a8b1d1063a1c800f08`。AAR的2146747字节第三方NOTICE完整收入增量，含Abseil、Gson、Kotlin、protobuf、sentencepiece等原始许可/版权。[官方准确版本](https://github.com/google-ai-edge/LiteRT-LM/tree/v0.17.1) · [官方准确LICENSE](https://raw.githubusercontent.com/google-ai-edge/LiteRT-LM/v0.17.1/LICENSE)

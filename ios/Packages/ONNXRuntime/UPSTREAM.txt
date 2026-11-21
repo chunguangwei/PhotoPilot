@@ -1,0 +1,26 @@
+ONNX Runtime iOS 1.30.0 binary + Objective-C wrapper, vendored locally.
+
+Upstream source: https://github.com/microsoft/onnxruntime (MIT)
+However, that repository and the Swift Package Manager distribution repo
+https://github.com/microsoft/onnxruntime-swift-package-manager returned 404
+in 2026, so SPM dependency resolution is no longer possible online. This
+snapshot is taken verbatim from the reference, unchanged:
+
+  onnxruntime-c pod 1.30.0  (onnxruntime.xcframework, C/C++ API headers, LICENSE)
+  onnxruntime-objc pod 1.30.0 (objectivec/ wrapper sources and public headers)
+
+Origins (local CocoaPods checkout, CocoaPods CDN 1.30.0):
+  ios/Pods/onnxruntime-c/Headering  -> Sources/OnnxRuntimeBindings/onnxruntime
+  ios/Pods/onnxruntime-objc/objectivec -> Sources/OnnxRuntimeBindings
+  ios/Pods/onnxruntime-c/onnxruntime.xcframework/ios-arm64, ios-arm64_x86_64-simulator
+    -> onnxruntime-ios.xcframework (macOS slice dropped; this app targets iOS only)
+
+Package.swift reproduces the deleted official SPM package's shape: product
+"onnxruntime" exposing Swift module "OnnxRuntimeBindings" (Objective-C wrapper
+around the ORT C++ API), with the official SPM_BUILD header path convention
+(cxx_api.h includes "onnxruntime/<header>"). Wrapper sources are unchanged.
+
+ORT 1.20.0 -> 1.30.0 version bump: the deleted SPM package pinned 1.20.0; only
+1.30.0 binaries exist locally. The Objective-C API surface used by PhotoPilot
+(ORTEnv, ORTSession, ORTSessionOptions, ORTValue) is unchanged across these
+releases. License is MIT, see LICENSE (Copyright (c) Microsoft Corporation).

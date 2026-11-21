@@ -13,8 +13,7 @@ packages:
   MediaPipeTasks:
     path: Packages/MediaPipeTasks
   ONNXRuntime:
-    url: https://github.com/microsoft/onnxruntime-swift-package-manager
-    exactVersion: 1.20.0
+    path: Packages/ONNXRuntime
   AMSMB2:
     url: https://github.com/amosavian/AMSMB2
     from: 4.0.3
