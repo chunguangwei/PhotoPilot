@@ -27,22 +27,6 @@ final class WalkthroughTests: XCTestCase {
         expect(welcomeTitle.waitForExistence(timeout: 30), "w-02 welcome")
         capture("w-02-welcome")
 
-        let demoButton = app.buttons["先看看"]
-        if demoButton.waitForExistence(timeout: 5) {
-            demoButton.tap()
-            sleep(4)
-            capture("w-03-demo")
-            let demoExit = app.buttons["退出示例"]
-            if demoExit.waitForExistence(timeout: 8) {
-                demoExit.tap()
-            } else {
-                app.tap()
-                sleep(1)
-                if demoExit.waitForExistence(timeout: 5) { demoExit.tap() }
-            }
-            _ = welcomeTitle.waitForExistence(timeout: 10)
-        }
-
         let choosePhotos = app.buttons["选择照片"]
         if choosePhotos.waitForExistence(timeout: 15) {
             choosePhotos.tap()

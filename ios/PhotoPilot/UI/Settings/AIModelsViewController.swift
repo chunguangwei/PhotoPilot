@@ -1,3 +1,4 @@
+import Network
 import UIKit
 
 final class AIModelsViewController: UIViewController {
@@ -15,7 +16,6 @@ final class AIModelsViewController: UIViewController {
     var onFocus: ((UIView) -> Void)?
     var isPolling: Bool { polling != nil }
     private let sourceControl = UISegmentedControl(items: [AIText.value("Auto", "自动"), AIText.value("China", "国内"), AIText.value("Global", "国际")])
-    private let cellularSwitch = UISwitch()
 
     init(environment: AppEnvironment) {
         self.environment = environment
@@ -41,22 +41,12 @@ final class AIModelsViewController: UIViewController {
             bottom
         ])
         sourceControl.selectedSegmentIndex = Int((try? environment.settings.value(forKey: "ai.models.source")) ?? "0") ?? 0
-        cellularSwitch.isOn = (try? environment.settings.value(forKey: "ai.models.cellular")) == "true"
         sourceControl.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
         sourceControl.accessibilityIdentifier = "models.source"
         sourceControl.accessibilityLabel = AIText.value("Download source", "下载来源")
-        cellularSwitch.accessibilityIdentifier = "models.cellular"
-        cellularSwitch.accessibilityLabel = AIText.value("Allow cellular downloads", "允许蜂窝网络下载")
-        cellularSwitch.onTintColor = ThemeColor.accentAction
         sourceControl.addTarget(self, action: #selector(preferencesChanged), for: .valueChanged)
-        cellularSwitch.addTarget(self, action: #selector(preferencesChanged), for: .valueChanged)
-        let cellularRow = UIStackView(arrangedSubviews: [label(AIText.value("Allow cellular downloads", "允许蜂窝网络下载")), cellularSwitch])
-        cellularRow.axis = .vertical
-        cellularRow.alignment = .leading
-        cellularRow.spacing = ThemeMetrics.space8
         contentStack.addArrangedSubview(label(AIText.value("Download source", "下载来源")))
         contentStack.addArrangedSubview(sourceControl)
-        contentStack.addArrangedSubview(cellularRow)
         contentStack.addArrangedSubview(label(AIText.value("Completed files are retained. Background downloads depend on the system. If iOS cannot resume the current file, that file is downloaded again.", "已完成文件会保留。后台下载受系统调度；若 iOS 无法续传当前文件，将重新下载该文件。"), secondary: true))
     }
 
@@ -70,7 +60,6 @@ final class AIModelsViewController: UIViewController {
         }
         guard polling == nil else { return }
         sourceControl.selectedSegmentIndex = Int((try? environment.settings.value(forKey: "ai.models.source")) ?? "0") ?? 0
-        cellularSwitch.isOn = (try? environment.settings.value(forKey: "ai.models.cellular")) == "true"
         polling = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refresh()
@@ -167,14 +156,36 @@ final class AIModelsViewController: UIViewController {
             Task { await environment.aiFrames.models?.cancel(id: model.id); await refresh() }
         } else if !installed.contains(model.id) {
             let source = AIModelDownloadSource(rawValue: sourceControl.selectedSegmentIndex) ?? .automatic
-            let cellular = cellularSwitch.isOn
-            Task { [weak self, environment] in
-                do { try await environment.aiFrames.models?.download(id: model.id, source: source, allowCellular: cellular, progress: { _ in }) }
-                catch is CancellationError { }
-                catch { self?.show(error) }
-                if self?.isPolling == true { await self?.refresh() }
+            let start = { [weak self, environment, source] in
+                Task { [weak self, environment] in
+                    do { try await environment.aiFrames.models?.download(id: model.id, source: source, allowCellular: true, progress: { _ in }) }
+                    catch is CancellationError { }
+                    catch { self?.show(error) }
+                    if self?.isPolling == true { await self?.refresh() }
+                }
+            }
+            if Self.isCellularNetwork() {
+                let alert = UIAlertController(
+                    title: AIText.value("Download over cellular?", "使用蜂窝网络下载？"),
+                    message: AIText.value("This model is large. Downloading over cellular uses mobile data.", "模型较大，蜂窝网络下载会消耗移动数据流量。"),
+                    preferredStyle: .alert
+                )
+                alert.addAction(UIAlertAction(title: AIText.value("Cancel", "取消"), style: .cancel))
+                alert.addAction(UIAlertAction(title: AIText.value("Download", "下载"), style: .default) { _ in start() })
+                present(alert, animated: true)
+            } else {
+                start()
             }
         }
+    }
+
+    private static func isCellularNetwork() -> Bool {
+        let monitor = NWPathMonitor()
+        monitor.start(queue: DispatchQueue(label: "photopilot.models.network"))
+        Thread.sleep(forTimeInterval: 0.05)
+        let expensive = monitor.currentPath.isExpensive
+        monitor.cancel()
+        return expensive
     }
 
     private func status(_ value: String) -> String {
@@ -198,6 +209,5 @@ final class AIModelsViewController: UIViewController {
     }
     @objc private func preferencesChanged() {
         try? environment.settings.setValue(String(sourceControl.selectedSegmentIndex), forKey: "ai.models.source")
-        try? environment.settings.setValue(cellularSwitch.isOn ? "true" : "false", forKey: "ai.models.cellular")
     }
 }

@@ -209,7 +209,7 @@ final class WebDavClient: @unchecked Sendable {
             try writer.synchronize()
         } catch {
             try? FileManager.default.removeItem(at: destination)
-            if let error = error as? URLError, error.code != .cancelled { throw map(urlError: error, url: request.url) }
+            if let error = error as? URLError { throw map(urlError: error, url: request.url) }
             throw error
         }
     }
@@ -261,7 +261,6 @@ final class WebDavClient: @unchecked Sendable {
             }
             return (data, http)
         } catch let error as URLError {
-            if error.code == .cancelled { throw error }
             throw map(urlError: error, url: request.url)
         }
     }
@@ -274,7 +273,6 @@ final class WebDavClient: @unchecked Sendable {
             }
             return (tempURL, http)
         } catch let error as URLError {
-            if error.code == .cancelled { throw error }
             throw map(urlError: error, url: request.url)
         }
     }
@@ -283,6 +281,10 @@ final class WebDavClient: @unchecked Sendable {
         var policyError: NasTransportError?
         if let url, let host = url.host {
             policyError = tlsPolicy?.lastError(host: host, port: url.port ?? Self.defaultPort(url))
+        }
+        if urlError.code == .cancelled {
+            if let policyError, !Task.isCancelled { return policyError }
+            return urlError
         }
         return Self.map(urlError: urlError, policyError: policyError)
     }

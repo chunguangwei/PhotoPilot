@@ -377,8 +377,8 @@
       "key": "welcome.secondary_action",
       "section": "2. 启动与欢迎（S00–S02）",
       "platform": "all",
-      "zh": "先看看",
-      "en": "Take a look first"
+      "zh": "跳过创建，直接开始",
+      "en": "Skip setup and start"
     },
     {
       "key": "welcome.demo_notice",

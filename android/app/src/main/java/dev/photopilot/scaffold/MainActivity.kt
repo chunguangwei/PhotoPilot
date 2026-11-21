@@ -466,6 +466,15 @@ class MainActivity : Activity() {
                     }
                 }
                 launchView.initializationReady()
+                scope.launch {
+                    try {
+                        env.runStartupMaintenance()
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        throw cancelled
+                    } catch (error: Throwable) {
+                        android.util.Log.w("PhotoPilot", "startup maintenance failed: ${error.message}")
+                    }
+                }
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
@@ -496,7 +505,13 @@ class MainActivity : Activity() {
     private fun showWelcome() {
         val view = WelcomeView(this).apply {
             onPrimary = { root.pushOverlay(buildSourcesView()) }
-            onSecondary = { showDemoPlayer() }
+            onSecondary = {
+                scope.launch {
+                    environment?.settings?.setOnboardingCompleted(true)
+                    while (root.topOverlay() != null) popOverlayTracked()
+                    showMainContainer()
+                }
+            }
         }
         setBaseTracked(view)
     }
@@ -1043,8 +1058,9 @@ class MainActivity : Activity() {
             environment?.database?.frameDao()?.getAll().orEmpty().isEmpty()
         }
         if (firstUse) {
-            draft["firstUse"] = "true"
-            openRemoteFrame(null, draft)
+            withContext(Dispatchers.IO) { environment?.settings?.setOnboardingCompleted(true) }
+            while (root.topOverlay() != null) popOverlayTracked()
+            showMainContainer()
         } else {
             activeSourcesView?.let { refreshNasSources(it) }
             Toast.makeText(this, if (resources.configuration.locales[0].language == "zh") "来源已连接" else "Source connected", Toast.LENGTH_SHORT).show()
@@ -2237,12 +2253,24 @@ class MainActivity : Activity() {
             } catch (failure: CancellationException) {
                 throw failure
             } catch (failure: Exception) {
-                AlertDialog.Builder(this@MainActivity).setMessage(R.string.error_store_write_failed_body).setPositiveButton(R.string.common_close, null).show()
+                if (failure.message?.contains("SELECTION_CONFLICT") == true) {
+                    showSelectionConflict(view, frame, state, continuation)
+                } else {
+                    AlertDialog.Builder(this@MainActivity).setMessage(R.string.error_store_write_failed_body).setPositiveButton(R.string.common_close, null).show()
+                }
             } finally {
                 frameSaveInFlight = false
                 view.setSaving(false)
             }
         }
+    }
+
+    private fun showSelectionConflict(view: FrameEditView, frame: FrameEntity?, state: FrameEditView.State, continuation: ((FrameEntity?) -> Unit)? = null) {
+        AlertDialog.Builder(this@MainActivity)
+            .setMessage(R.string.error_selection_conflict_body)
+            .setPositiveButton(R.string.common_retry) { _, _ -> saveFrameEdit(view, frame, state, continuation) }
+            .setNegativeButton(R.string.common_cancel, null)
+            .show()
     }
 
     private suspend fun saveFrameEditInternal(

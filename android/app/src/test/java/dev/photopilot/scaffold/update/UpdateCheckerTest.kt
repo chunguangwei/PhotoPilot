@@ -132,4 +132,51 @@ class UpdateCheckerTest {
             ),
         )
     }
+
+    @Test
+    fun parseLatestReleaseHandlesRealPublishedPayload() {
+        val resource = requireNotNull(javaClass.classLoader!!.getResourceAsStream("update/latest-v1.4.21-github.json"))
+        val json = resource.readBytes().toString(Charsets.UTF_8)
+        val info = UpdateChecker.parseLatestRelease(json)
+        assertEquals("v1.4.21", info?.tagName)
+        assertEquals("1.4.21", info?.versionName)
+        assertNull(info?.versionCode)
+        assertEquals(Triple(1, 4, 21), info?.semVer)
+        assertEquals(
+            "https://github.com/chunguangwei/PhotoPilot/releases/download/v1.4.21/PhotoPilot-1.4.21.apk",
+            info?.apkUrl,
+        )
+        assertEquals(154_513_021L, info?.apkSize)
+        assertEquals(
+            "https://github.com/chunguangwei/PhotoPilot/releases/download/v1.4.21/SHA256SUMS.txt",
+            info?.sha256Url,
+        )
+
+        assertEquals(UpdateChecker.CheckResult.UP_TO_DATE, UpdateChecker.compare(82L, "1.4.21", info))
+        assertEquals(UpdateChecker.CheckResult.UPDATE_AVAILABLE, UpdateChecker.compare(81L, "1.4.20", info))
+        assertEquals(UpdateChecker.CheckResult.UPDATE_AVAILABLE, UpdateChecker.compare(0L, "1.4.20", info))
+    }
+
+    @Test
+    fun updatedDeviceRecognizesItselfAsUpToDate() {
+        val info = UpdateChecker.ReleaseInfo(
+            tagName = "v1.4.21",
+            versionName = "1.4.21",
+            versionCode = null,
+            semVer = Triple(1, 4, 21),
+            apkUrl = "https://github.com/chunguangwei/PhotoPilot/releases/download/v1.4.21/PhotoPilot-1.4.21.apk",
+            apkSize = 154_513_021L,
+            sha256Url = null,
+        )
+        assertEquals(UpdateChecker.CheckResult.UP_TO_DATE, UpdateChecker.compare(82L, "1.4.21", info))
+        assertEquals(UpdateChecker.CheckResult.UPDATE_AVAILABLE, UpdateChecker.compare(81L, "1.4.20", info))
+    }
+
+    @Test
+    fun sha256SumsLineParsesWithTwoSpaceSeparator() {
+        val fullLine = "115a99d42c07dd833c6ee3944f8c0123e82278e5b7b3920089123900402f2f0d  PhotoPilot-1.4.21.apk"
+        val expected = fullLine.trim().substringBefore(' ').substringBefore('\t').trim()
+        assertEquals("115a99d42c07dd833c6ee3944f8c0123e82278e5b7b3920089123900402f2f0d", expected)
+        assertEquals(64, expected.length)
+    }
 }

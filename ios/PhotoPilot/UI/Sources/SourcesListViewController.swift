@@ -740,27 +740,26 @@ final class SourcesListViewController: UIViewController, UIDocumentPickerDelegat
         Task { [weak self] in
             guard let self else { return }
             do {
-                let cards = try await environment.frameManager.frameCards()
-                if !managementOnly, onboarding, cards.isEmpty {
-                    let editor = FrameEditViewController(environment: environment, frameID: nil, routeToMainAfterSave: true, sourceIDs: Set(sourceIDs), initialSelection: initialSelection)
-                    if presentedViewController != nil {
-                        dismiss(animated: true) { self.show(editor) }
-                    } else { show(editor) }
-                } else {
-                    let showResult = { [weak self] in
-                        guard let self else { return }
-                        let alert = UIAlertController(title: AIText.value("Source connected", "来源已连接"), message: AIText.value("Choose photos in a frame to display them.", "请在相框中确认要展示的照片。"), preferredStyle: .alert)
-                        alert.addAction(UIAlertAction(title: L10n.string("frames.choose_content"), style: .default) { [weak self] _ in self?.chooseContent(sourceIDs: sourceIDs, initialSelection: initialSelection) })
-                        alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .cancel))
-                        present(alert, animated: true)
+                if !managementOnly, onboarding {
+                    try? environment.settings.setOnboardingCompleted(true)
+                    if let window = view.window {
+                        RootTransition.setRoot(MainContainerViewController(environment: environment), in: window)
                     }
-                    if let navigationController {
-                        navigationController.popToViewController(self, animated: false)
-                        showResult()
-                    } else if presentedViewController != nil {
-                        dismiss(animated: true, completion: showResult)
-                    } else { showResult() }
+                    return
                 }
+                let showResult = { [weak self] in
+                    guard let self else { return }
+                    let alert = UIAlertController(title: AIText.value("Source connected", "来源已连接"), message: AIText.value("Choose photos in a frame to display them.", "请在相框中确认要展示的照片。"), preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: L10n.string("frames.choose_content"), style: .default) { [weak self] _ in self?.chooseContent(sourceIDs: sourceIDs, initialSelection: initialSelection) })
+                    alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .cancel))
+                    present(alert, animated: true)
+                }
+                if let navigationController {
+                    navigationController.popToViewController(self, animated: false)
+                    showResult()
+                } else if presentedViewController != nil {
+                    dismiss(animated: true, completion: showResult)
+                } else { showResult() }
             } catch {
                 let alert = UIAlertController(title: AIText.value("Unable to continue", "暂时无法继续"), message: AIText.value("Your source is connected. Please try again from Sources.", "来源已连接，请从来源页重试。"), preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: L10n.string("common.done"), style: .default))

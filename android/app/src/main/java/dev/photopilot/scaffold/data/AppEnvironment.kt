@@ -88,6 +88,21 @@ class AppEnvironment private constructor(
             weatherProvider.search(query, language)
         }
 
+    suspend fun runStartupMaintenance() = withContext(Dispatchers.IO) {
+        runCatching { localReferences.refreshAll() }
+        runCatching {
+            for (source in database.sourceDao().getAll().filter { JsonMini.parseObject(it.settingsJson)["referenceOnly"] == true }) {
+                database.importJobDao().getBySource(source.id).forEach { runner.cancel(it.id) }
+            }
+        }
+        runCatching { remoteCopies.recover() }
+        runCatching { runner.markInterruptedJobsRecoverable() }
+        runCatching { deletedSweeper.sweepExpired(System.currentTimeMillis()) }
+        runCatching { runner.resumeInterruptedJobs() }
+        runCatching { remoteCopies.resumeInterrupted() }
+        runCatching { aiFrames.resumeAutomatic() }
+    }
+
     private suspend fun rebuildNasAdapter(jobId: String): SourceAdapter? {
         val job = database.importJobDao().getById(jobId) ?: return null
         val source = database.sourceDao().getById(job.sourceId) ?: return null
@@ -108,26 +123,7 @@ class AppEnvironment private constructor(
                     ProcessResourceOwner(processScope) {
                         val db = database ?: dev.photopilot.scaffold.data.db.DatabaseFactory.builder(appContext).build()
                             .also { database = it }
-                        val environment = create(appContext, db)
-                        try {
-                            environment.localReferences.refreshAll()
-                            for (source in environment.database.sourceDao().getAll().filter { JsonMini.parseObject(it.settingsJson)["referenceOnly"] == true }) {
-                                environment.database.importJobDao().getBySource(source.id).forEach { environment.runner.cancel(it.id) }
-                            }
-                            environment.remoteCopies.recover()
-                            environment.runner.markInterruptedJobsRecoverable()
-                            environment.deletedSweeper.sweepExpired(System.currentTimeMillis())
-                            environment.runner.resumeInterruptedJobs()
-                            environment.remoteCopies.resumeInterrupted()
-                            environment.aiFrames.resumeAutomatic()
-                            environment
-                        } catch (failure: Throwable) {
-                            environment.aiFrames.shutdown()
-                            environment.remoteCopies.shutdown()
-                            environment.remoteMedia.close()
-                            environment.runner.shutdownAndJoin()
-                            throw failure
-                        }
+                        create(appContext, db)
                     }.also { processOwner = it }
                 }
             }

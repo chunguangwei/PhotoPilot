@@ -47,7 +47,7 @@ final class AIPauseFlowTests: XCTestCase {
         XCTAssertEqual(category.value as? String, "draft before downloading")
     }
 
-    func testCentralModelManagementPersistsDownloadPreferences() throws {
+    func testCentralModelManagementPersistsDownloadSource() throws {
         let app = try launch(chinese: false)
         app.buttons["Settings"].firstMatch.tap()
         let entry = app.buttons["settings.aiModels"]
@@ -60,10 +60,6 @@ final class AIPauseFlowTests: XCTestCase {
         let global = source.buttons["Global"]
         scroll(global, app)
         global.tap()
-        let cellular = app.switches["models.cellular"]
-        scroll(cellular, app)
-        if cellular.value as? String != "1" { cellular.tap() }
-        XCTAssertEqual(cellular.value as? String, "1")
         capture("en-inline-model-preferences")
         scroll(entry, app)
         entry.tap()
@@ -72,8 +68,6 @@ final class AIPauseFlowTests: XCTestCase {
         entry.tap()
         scroll(source, app)
         XCTAssertTrue(source.buttons["Global"].isSelected)
-        scroll(cellular, app)
-        XCTAssertEqual(cellular.value as? String, "1")
         let status = app.staticTexts["models.item.multilingual-clip-vitb32-lite"]
         scroll(status, app)
         XCTAssertTrue(status.isHittable)

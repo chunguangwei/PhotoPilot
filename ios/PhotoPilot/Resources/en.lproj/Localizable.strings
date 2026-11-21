@@ -50,7 +50,7 @@
 "welcome.title" = "Keep your memories in view.";
 "welcome.body" = "Choose your favorite photos, then confirm to start the slideshow.";
 "welcome.primary_action" = "Choose photos";
-"welcome.secondary_action" = "Take a look first";
+"welcome.secondary_action" = "Skip setup and start";
 "welcome.demo_notice" = "These are sample photos. They won’t be added to your library.";
 "welcome.demo_exit" = "Exit sample";
 "nav.frames" = "Frames";

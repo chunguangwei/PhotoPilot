@@ -901,27 +901,32 @@ class AIFrameView(
             if (!isAttachedToWindow) return@launch
             val ids = (initial + configuration.members + configuration.reviews.keys).toList()
             openResultPicker(ids, initial, allowCover = true) { selected, cover ->
-                withContext(Dispatchers.IO) {
-                    val frame = requireNotNull(environment.database.frameDao().getById(configuration.frameId))
-                    fun ref(id: String) = if (id.startsWith("remote:")) SelectionRefEdit(null, id.removePrefix("remote:"))
-                        else SelectionRefEdit(id, null)
-                    val additions = (selected - initial).mapNotNull { id ->
-                        resultPhoto(id)?.takeIf { environment.remoteMedia.valid(it) }?.let { ref(id) }
-                    }
-                    val removals = (initial - selected).map(::ref)
-                    if (additions.isNotEmpty() || removals.isNotEmpty()) {
-                        val result = environment.frames.save(frame.id, frame.selectionVersion, addIncludes = additions, addExcludes = removals)
-                        check(result is dev.photopilot.scaffold.data.logic.SelectionSaveResult.Ok)
-                    }
-                    if (cover != null) {
-                        val item = resultPhoto(cover)
-                        if (item != null && environment.remoteMedia.valid(item)) {
-                            environment.frameManager.setCover(frame.id, item.local?.id.takeUnless { item.remote != null }, item.sourceAssetId)
+                runCatching {
+                    withContext(Dispatchers.IO) {
+                        val frame = requireNotNull(environment.database.frameDao().getById(configuration.frameId))
+                        fun ref(id: String) = if (id.startsWith("remote:")) SelectionRefEdit(null, id.removePrefix("remote:"))
+                            else SelectionRefEdit(id, null)
+                        val additions = (selected - initial).mapNotNull { id ->
+                            resultPhoto(id)?.takeIf { environment.remoteMedia.valid(it) }?.let { ref(id) }
+                        }
+                        val removals = (initial - selected).map(::ref)
+                        if (additions.isNotEmpty() || removals.isNotEmpty()) {
+                            val result = environment.frames.save(frame.id, frame.selectionVersion, addIncludes = additions, addExcludes = removals)
+                            if (result !is dev.photopilot.scaffold.data.logic.SelectionSaveResult.Ok) throw java.io.IOException("SELECTION_CONFLICT")
+                        }
+                        if (cover != null) {
+                            val item = resultPhoto(cover)
+                            if (item != null && environment.remoteMedia.valid(item)) {
+                                environment.frameManager.setCover(frame.id, item.local?.id.takeUnless { item.remote != null }, item.sourceAssetId)
+                            }
                         }
                     }
+                    onChanged()
+                    status.text = words("选片已保存", "Selection saved")
+                }.onFailure { failure ->
+                    status.text = if (failure.message?.contains("SELECTION_CONFLICT") == true) words("选片已变更，请重新打开预览后重试。", "Selection changed. Reopen the preview and retry.")
+                        else words("保存失败，请重试。", "Could not save. Please retry.")
                 }
-                onChanged()
-                status.text = words("选片已保存", "Selection saved")
             }
         }
     }

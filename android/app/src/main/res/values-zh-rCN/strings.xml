@@ -52,7 +52,7 @@
     <string name="welcome.title">让回忆，留在眼前。</string>
     <string name="welcome.body">选择喜欢的照片，确认后即可开始播放。</string>
     <string name="welcome.primary_action">选择照片</string>
-    <string name="welcome.secondary_action">先看看</string>
+    <string name="welcome.secondary_action">跳过创建，直接开始</string>
     <string name="welcome.demo_notice">这是示例照片，不会加入你的照片库。</string>
     <string name="welcome.demo_exit">退出示例</string>
     <string name="nav.frames">相框</string>

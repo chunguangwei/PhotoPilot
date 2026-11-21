@@ -105,8 +105,9 @@ final class WelcomeViewController: UIViewController {
     }
 
     @objc private func handleSecondary() {
-        let demo = DemoPlaceholderViewController()
-        demo.modalPresentationStyle = .fullScreen
-        present(demo, animated: true)
+        try? environment.settings.setOnboardingCompleted(true)
+        if let window = view.window {
+            RootTransition.setRoot(MainContainerViewController(environment: environment), in: window)
+        }
     }
 }

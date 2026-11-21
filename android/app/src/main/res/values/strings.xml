@@ -52,7 +52,7 @@
     <string name="welcome.title">Keep your memories in view.</string>
     <string name="welcome.body">Choose your favorite photos, then confirm to start the slideshow.</string>
     <string name="welcome.primary_action">Choose photos</string>
-    <string name="welcome.secondary_action">Take a look first</string>
+    <string name="welcome.secondary_action">Skip setup and start</string>
     <string name="welcome.demo_notice">These are sample photos. They won’t be added to your library.</string>
     <string name="welcome.demo_exit">Exit sample</string>
     <string name="nav.frames">Frames</string>

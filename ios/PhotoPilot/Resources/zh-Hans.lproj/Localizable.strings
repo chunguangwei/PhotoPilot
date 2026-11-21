@@ -50,7 +50,7 @@
 "welcome.title" = "让回忆，留在眼前。";
 "welcome.body" = "选择喜欢的照片，确认后即可开始播放。";
 "welcome.primary_action" = "选择照片";
-"welcome.secondary_action" = "先看看";
+"welcome.secondary_action" = "跳过创建，直接开始";
 "welcome.demo_notice" = "这是示例照片，不会加入你的照片库。";
 "welcome.demo_exit" = "退出示例";
 "nav.frames" = "相框";
