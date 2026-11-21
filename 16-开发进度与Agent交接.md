@@ -1,5 +1,18 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## 2026-11-21 双端修复合并、Android 冷启动优化与 v1.4.22 / iOS 1.4.14 准备发版
+
+- 用户指令：一并完成双端修复并合并版本、按最佳实践优化、去掉 Android 冷启动「正在整理照片库」卡顿、更新所有文档；iOS 备 App Store 更新、Android 走 Git 发版。
+- **「保存照片时出错。」根因与修复（Android）**：`saveFrameEdit` 把一切异常都弹 `error.store_write_failed.body`；`saveFrameEditInternal` 对非 `Ok` 的 `SelectionSaveResult` 统一抛 `SELECTION_CONFLICT`，版本冲突被误报为「保存照片时出错」且无法重试。修复：异常含 `SELECTION_CONFLICT` 时改为 `showSelectionConflict()` 对话框（`error.selection_conflict.body`，重试保留草稿 / 取消）；`AIFrameView.preview` 由原 `check(result is Ok)`（异常被 `CoroutineExceptionHandler` 静默吞掉、用户无反应）改为 `runCatching`+状态栏文案（冲突/保存失败中英对照）。其余异常仍走 `store_write_failed`。
+- **Android 冷启动优化（关键）**：`AppEnvironment.shared()` 旧逻辑在启动门控里做全量 `localReferences.refreshAll()`（整库 MediaStore 索引 + NAS 引用目录重扫）、`remoteCopies.recover()`、`resumeInterruptedJobs()`、`aiFrames.resumeAutomatic()`，造成冷启动超过 6 秒品牌展示后仍显示「正在整理照片库」。修复：`AppEnvironment.runStartupMaintenance()` 抽出这些步骤（逐项 `runCatching`，整体 `withContext(IO)`），`owner()` 只返回 DB+env；`MainActivity` 在 `initializationReady()` 后即刻后台 `scope.launch` 执行，不再阻塞路由。与 iOS `runStartupMaintenance()` 后台执行保持一致。
+- **iOS 上一轮 4 项修复并入本版**：AI 模型下载无反应（蜂窝开关改为默认允许+蜂窝确认弹窗，`AIModelsViewController` 用 `NWPathMonitor` 探测）；首用强制相框编辑（来源连接完成后 `RootTransition` 直进主容器）；WebDAV HTTPS TOFU 错误映射（cancelled 分支修正）；欢迎页「先看看」改为「跳过创建，直接开始」并完成 onboarding 进主容器。同步修订 `SourcesListViewController`（补回被误删的 `show(_:)` helper，其 5 处调用仍在）、`WelcomeViewController`、`AIModelsViewController` 及 3 个 iOS 测试文件。
+- **版本合并**：以 worktree `feat/source-storage-local-references`（HEAD `3c9feba`+本轮修复）为权威，本机 `main` 陈旧分支与其 31 个未提交中间态（iOS 1.4.3 时代，无 `AITaskCoordinator` 等最新代码）经全量比对后删除并备份 `/tmp/photopilot-main-wip-backup-*`，`main` fast-forward 到 `1d88eb8`。
+- 版本：Android 1.4.22（83）、iOS 1.4.14（75）。`make ios-generate` 后 pbxproj 仅版本行变化。
+- 校验：Android `testDebugUnitTest` 与 `lintDebug` 通过；`make check` 除 `check_design_assets.py`「design sources 摘要过期」预先失败（需 `make design-freeze`，本轮不断言设计验收）外全部通过；strings freshness 通过（617 条）。
+- 发布：commit `1d88eb8` 已推到 `main`（origin/main fast-forward）；tag `v1.4.22` 与 GitHub Release v1.4.22（`PhotoPilot-1.4.22.apk` + `SHA256SUMS.txt`）已创建；APK 签名指纹 `9cd985f1…`（与历史一致），SHA256 `696393a3…`。
+- **iOS App Store 构建受阻（外部依赖消失，需用户裁决）**：`onnxruntime-swift-package-manager`（GitHub）仓库已 404，`Package.resolved` 锁定的 v1.20.0 校验摘要在缓存可见但无 checkout；11-20 归档（v1.4.13/74）构建当时仓库仍存在。现在 `make ios-build` 在 SPM 解析阶段失败（`Failed to clone… Repository not found`），同时二进制目标 `MediaPipeTasksCommonBinary` 无法映射到 artifact（MediaPipe 各 zip 在 Google CDN 仍 200，可下载）。本地有可替代资产：`PhotoID/ios/Pods/onnxruntime-c/onnxruntime.xcframework`（iOS arm64 47MB / simulator 95MB）与 `onnxruntime-objc` 源码，可按 MediaPipe 本地 path package 模式 vendoring `ios/Packages/ONNXRuntime` 解阻；这是新工程增量并涉及 242MB 二进制，需要用户授权后再实施。未做。
+- 残留：iPhone 13 当前离线、iOS 新构建需解除 SPM 依赖阻断后才能恢复 ios-build/ios-analyze 验证与归档导出；华为真机待复测（历史遗留）；Android 应用内更新全链路真机验证待补。
+
 ## 2026-11-20 第二轮三项修复与 v1.4.21 / iOS 1.4.13 发布
 
 - 用户报告三项问题：①iOS 编辑相框→AI 分类设置必崩；②相框封面加载缓慢、需优先当前页；③Android 应用内更新提示失败。
