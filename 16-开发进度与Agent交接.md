@@ -15,7 +15,9 @@
 - **iOS Store IPA 导出与本机核验（本轮完成）**：`xcodebuild -exportArchive`（method `app-store-connect`，复用上轮 teamID）产出 `.build/store-1.4.14/PhotoPilot.ipa`（27,208,544 B ≈ 27.2MB），归档同步存 `~/Library/Developer/Xcode/Archives/2026-11-21/PhotoPilot-1.4.14.xcarchive`。`DistributionSummary.plist` 核验：PhotoPilot.app 1.4.14/75、arm64；Apple Distribution 证书（CCTFP9X3SW，exp 2027/11/11）、iOS Team Store Provisioning Profile、`beta-reports-active`；embedded binaries 含 `onnxruntime.framework` 1.30.0（vendored ORT）、MediaPipeTasksCommon/Retrieval 1.2.3、AMSMB2；`Symbols/` dSYM 与 `Signatures/` 切片签名就位。IPA 内 app 二进制 36.9MB、`AIThirdPartyNotices.txt`（2.8MB）随包。
 - **iOS 上传与商店文案（续）**：用户已登录 Xcode 账号并自行上传 1.4.14（本会话曾尝试 GUI 自动化驱动 Organizer，确认用户接管后立即停止，不改用户会话）。商店更新文案（What's New / 宣传文本 / 描述，英中繁）交付 `store/appstore/review/Store1414Update.md`。
 - **Android 复核（用户裁决）**：用户确认「复核现状即可，不发新版」。复核结果：GitHub `releases/latest` = v1.4.22（`PhotoPilot-1.4.22.apk` 154,499,342 B + `SHA256SUMS.txt`），远端 tag `v1.4.22` → `434cacf`（发布时 main 顶端），与本地记录一致；冷启动优化、保存冲突修复均已随 v1.4.22 发布。
-- 残留：iPhone 13 当前离线，iOS 1.4.14 真机覆盖安装与推理实测待用户连接后执行（App Store 上传由用户在 Xcode 完成，本机无 App Store Connect 凭据）；华为真机待复测（历史遗留）；Android 应用内更新全链路真机验证待补。
+- **App Store 提交（用户操作）**：用户已在 Xcode 登录账号并上传 iOS 1.4.14（75），随后**已提交审核**。本会话未执行上传/提交（无 ASC 凭据）；商店文案草稿见 `store/appstore/review/Store1414Update.md`。
+- **本地构建产物清理（用户授权，本轮执行）**：用户报告存储不足，清理全部可再生构建产物约 3GB：`~/Library/Developer/Xcode/DerivedData`（953M）、`Archives`（含 2026-11-21 的 1.4.14 xcarchive，156M）、`CoreSimulator/Devices`（模拟器设备数据，runtime 已缺失本就不可用，262M）、`~/Library/Caches/org.swift.swiftpm`（142M）、仓库 `.build`（iOS 归档副本 + store IPA，67M）、`android/app/build`+`android/.gradle`（约 1.25G）、会话 `/tmp` 临时文件（约 120M）。保留：`ios/Packages/ONNXRuntime`（vendored 143M，构建必需源依赖）、`~/.gradle/caches`（依赖缓存 1.1G，未动；如需再释放可清，代价是下次 Android 构建需联网重新下载）。git 工作区与远端 main 不受影响（`f44b4f3`）。
+- 残留：iPhone 13 当前离线，iOS 1.4.14 真机覆盖安装与推理实测待用户连接后执行；华为真机待复测（历史遗留）；Android 应用内更新全链路真机验证待补；App Store 审核等待 Apple 结果。
 
 ## 2026-11-20 第二轮三项修复与 v1.4.21 / iOS 1.4.13 发布
 
