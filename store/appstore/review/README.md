@@ -1,5 +1,7 @@
 # PhotoPilot — App Review preparation
 
+2026-11-21 状态更新。iOS 1.4.14(75) 已由用户上传 App Store Connect，本轮商店更新文案（What's New/宣传文本/描述，英中繁三套）见 [Store1414Update.md](Store1414Update.md)。Android 1.4.22 复核为 GitHub 最新发布，不发新版。下方保留各轮历史记录。
+
 2026-11-14 更新准备。用户已确认 PhotoPilot 成功上架。本轮1.2.0(59)新增本地 AI 分类相框，中英更新说明、审核步骤、模型和截图说明见 [AIFramesUpdate.md](AIFramesUpdate.md)。下方保留1.1.58历史记录。
 
 最新状态（2026-10-23）：正式1.1.58(58)已签名上传并关联版本，隐私标签已按用户确认发布，加密问卷已保存，手动发布已重载核实；[DistributionEvidence58.json](DistributionEvidence58.json)。最终审核提交仍由用户确认。
