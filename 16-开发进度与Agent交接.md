@@ -12,7 +12,7 @@
 
 ### B. 双端优化改动
 
-- **iOS 缩略图 bucket 持久化**：`RemoteMediaService.image` 任意请求 ≤2048px 先按 `previewBucket = min(128×⌈max(w,h)/128⌉, 2048)` 从磁盘预览缓存命中；读取原图生成请求尺寸图后按同 bucket JPEG 落盘（`RemoteMediaCache.cachedPreview/storePreview` 增加 bucket 参数，512 复用旧 `preview-512-v1` 键，其余 `preview-<bucket>-v2`）。修复「iPad 网格请求 >512px 完全跳过预览重下整图」；AIFrameService 预处理下载也生成 512 预览（传参适配）。
+- **iOS 缩略图 bucket 持久化**：`RemoteMediaService.image` 任意请求 ≤2048px 先按 `previewBucket = min(128×⌈max(w,h)/128⌉, 2048)` 从磁盘预览缓存命中；读取原图生成请求尺寸图后按同 bucket JPEG 落盘（`RemoteMediaCache.cachedPreview/storePreview` 增加 bucket 参数，512 复用旧 `preview-512-v1` 键，其余 `preview-<bucket>-v2`；预览字节上限由 1MiB 放宽至 2.5MiB 兜住 2048px 桶）。修复「iPad 网格请求 >512px 完全跳过预览重下整图」；AIFrameService 预处理下载也生成 512 预览（传参适配）。
 - **iOS 并发提升**：`RemoteTransferGate(limit:3)`；`RemoteMediaCache` 调度非 playback 并发 1→2（background 保持单并发，`testOnlyOneBackgroundTransferRunsAtATime` 契约测试不破坏）。
 - **Android 缩略图持久层**：`RemoteFileCache` 新增 `readIfPresent`/`storeBytes`；`RemoteMediaRepository.bitmap` 请求 ≤2048px 先查 `thumb:` 前缀磁盘文件（与原图同实例、共享 128MiB 预算、LRU 同淘汰、授权失效 `clear(force)` 一并清除），未命中则下载原图采样解码、JPEG(80) 落盘并回填内存 LRU。新增单测 2 条（LRU 淘汰共享预算、不同 key 独立文件）。
 - 契约/文档同步：04 规格书 §2.1 补「NAS 按需缩略图缓存」实现说明；store 审查证据 `store/appstore/review/Release1424.json`。
@@ -23,7 +23,7 @@
 - iOS：`make ios-build` BUILD SUCCEEDED；`make ios-analyze` ANALYZE SUCCEEDED。无模拟器 runtime，XCTest 本轮 NO-RUNTIME 未执行。
 - Android（JDK = Android Studio JBR 21，`JAVA_HOME` 指向 `/Applications/Android Studio.app/Contents/jbr/Contents/Home`，因本机默认 JVM 11 不满足 Gradle 9）：`:app:assembleDebug`、`:app:lintDebug`、`:app:testDebugUnitTest` 全部 BUILD SUCCESSFUL（含新增 RemoteCacheTest 2 条）。
 - **Android v1.4.24（85）**：`assembleRelease` 通过；APK `PhotoPilot-1.4.24.apk` 154,599,258 B，SHA-256 `91421b472306ca4b1d5967e4d9746c530e1ec49ad0cb9c0410711d5438f5f96e`；`apksigner verify` V2 通过（`CN=PhotoPilot`，证书 SHA-256 `9cd985f1…4f37c`，与历史一致）。GitHub Release `v1.4.24`（Latest）附 APK + `SHA256SUMS.txt`。
-- **iOS 1.4.16（77）准备**：`xcodebuild archive` ARCHIVE SUCCEEDED → `.build/appstore-submit/PhotoPilot-1.4.16-77.xcarchive`；`-exportArchive`（`method=app-store-connect`、ExportOptions.plist：teamID CCTFP9X3SW、automatic、manageAppVersionAndBuildNumber=false、stripSwiftSymbols=true）**EXPORT SUCCEEDED** → `.build/store-1.4.16/PhotoPilot.ipa` 27,221,836 B，SHA-256 `3e77faf13e9565055f1d68dbdd4248dadf4dd41058cf66fc709a97c2cc61245a`；`DistributionSummary.plist`：PhotoPilot.app 1.4.16/77、arm64、Apple Distribution（`66038D01…4FFDC`，2027/11/11 到期）、内含 AMSMB2 1.0 / MediaPipeTasksCommon+Retrieval 1.2.3 / onnxruntime 1.30.0。**未上传 App Store Connect、未提交审核**（本机无 ASC 凭据，由用户在 Xcode Organizer/Transporter 完成）。
+- **iOS 1.4.16（77）准备**：`xcodebuild archive` ARCHIVE SUCCEEDED → `.build/appstore-submit/PhotoPilot-1.4.16-77.xcarchive`；`-exportArchive`（`method=app-store-connect`、ExportOptions.plist：teamID CCTFP9X3SW、automatic、manageAppVersionAndBuildNumber=false、stripSwiftSymbols=true）**EXPORT SUCCEEDED** → `.build/store-1.4.16/PhotoPilot.ipa` 27,221,835 B，SHA-256 `4e1dd139df4cfbd4df3933bfc54ec4c78ded6b3f2cd0253e0b6a8360f2e7edab`；`DistributionSummary.plist`：PhotoPilot.app 1.4.16/77、arm64、Apple Distribution（`66038D01…4FFDC`，2027/11/11 到期）、内含 AMSMB2 1.0 / MediaPipeTasksCommon+Retrieval 1.2.3 / onnxruntime 1.30.0。**未上传 App Store Connect、未提交审核**（本机无 ASC 凭据，由用户在 Xcode Organizer/Transporter 完成）。
 - 版本：`android/app/build.gradle.kts` 85 / 1.4.24；`ios/project.yml` 77 / 1.4.16（已 `make ios-generate`，pbxproj 仅版本行变化）。
 
 ### D. 未完成 / 下一步

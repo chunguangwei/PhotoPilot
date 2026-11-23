@@ -234,7 +234,7 @@ actor RemoteMediaCache {
 
     func storePreview(_ data: Data, descriptor: RemoteMediaDescriptor, bucket: Int = 512, contentHash: String, authorized: @escaping Authority) async throws {
         try Task.checkCancellation()
-        guard !data.isEmpty, data.count <= 1_048_576, !contentHash.isEmpty else { throw RemoteMediaError.tooLarge }
+        guard !data.isEmpty, data.count <= 2_621_440, !contentHash.isEmpty else { throw RemoteMediaError.tooLarge }
         guard await authorized(descriptor) else { throw RemoteMediaError.revoked }
         try Task.checkCancellation()
         try restore()

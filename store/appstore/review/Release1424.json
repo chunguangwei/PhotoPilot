@@ -31,8 +31,8 @@
   "ios": {
     "archive": ".build/appstore-submit/PhotoPilot-1.4.16-77.xcarchive",
     "ipa": ".build/store-1.4.16/PhotoPilot.ipa",
-    "ipaBytes": 27221836,
-    "ipaSha256": "3e77faf13e9565055f1d68dbdd4248dadf4dd41058cf66fc709a97c2cc61245a",
+    "ipaBytes": 27221835,
+    "ipaSha256": "4e1dd139df4cfbd4df3933bfc54ec4c78ded6b3f2cd0253e0b6a8360f2e7edab",
     "marketingVersion": "1.4.16",
     "currentProjectVersion": "77",
     "architectures": ["arm64"],
