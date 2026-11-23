@@ -7,6 +7,8 @@
 - **iOS 1.4.19（80）已导出待上传**：`make ios-generate` 后 pbxproj 已核对 1.4.19/80；build/analyze SUCCEEDED；archive `.build/appstore-submit/PhotoPilot-1.4.19-80.xcarchive`（Info.plist 1.4.19/80，Team CCTFP9X3SW）；`-exportArchive`（exportOptions 复用，teamID CCTFP9X3SW、app-store-connect）EXPORT SUCCEEDED → `.build/store-1.4.19/PhotoPilot.ipa` 27,240,581 B，SHA-256 `fec25f8b…8b8a`；DistributionSummary：Apple Distribution `66038D01…4FFDC`（2027/11/11）、Store profile、arm64、AMSMB2 1.0 / MediaPipeTasks 1.2.3 / onnxruntime 1.30.0。
 - `make check` 仅 design-assets 摘要过期项失败（预置 design-freeze），其余全绿。**上传由用户在 Xcode Organizer / Transporter 完成**（本机无 ASC CLI 凭据）。
 - 证据 `store/appstore/review/Release1427.json`；`.build/releases/v1.4.27/` 存 APK 与校验表。
+- **用户已上传 1.4.19 并提交审核（2026-11-23）**。
+- **构建产物全量清理（用户授权）**：用户存储受限，全量清理一次性执行——`/Users/…/Xcode/DerivedData`（PhotoPilot 1.2G、WebDriverAgent 895M、ModuleCache/SymbolCache/SDKExplicitPrecompiledModules 约 200M）、仓库 `.build/ios`（1.2G）、四个未上传旧 xcarchive `PhotoPilot-1.4.15~1.4.18`（各 83M，证据已落档 Release142x）、四个旧 store-IPA 目录（1.4.15~1.4.18，各 26M）、Xcode Archives 内 1.4.19 重复副本（83M）、`~/Library/Android/sdk/ndk/27.2.12479018`（2.4G，Android 无 native build）、`~/.gradle/caches`+`wrapper`（1.7G）、`.build/releases/v1.4.23~v1.4.26` 旧 APK（各 147M，均已发布在 GitHub）。合计释放约 **7.7G**。保留：`store-1.4.19/`（当前上传副本）、`appstore-submit/PhotoPilot-1.4.19-80.xcarchive`（提交证据）、`.build/releases/v1.4.27/`（当前 APK）；Gradle 依赖下次 Android 构建须联网重下。
 
 ## 2026-11-23 远程选片网格化与全浏览模块加载修复、v1.4.26 / iOS 1.4.18
 
