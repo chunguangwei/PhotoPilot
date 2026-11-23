@@ -1,5 +1,13 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## 2026-11-23 相框封面重挂重试落地发布 · v1.4.27 / iOS 1.4.19
+
+- 继 1.4.26 网格改版后，本轮只落地之前 commit `a19a36e` 的双端相框封面重挂修复（视图回收后重新 attach 时自动重新加载，不再永久空白）。
+- **Android v1.4.27（88）已发布**：`assembleRelease`/`lintDebug`/`testDebugUnitTest` 通过；APK `PhotoPilot-1.4.27.apk` 154,599,258 B，SHA-256 `2f9c64a1…32e2`；aapt 确认 88/1.4.27；`apksigner` V2 `CN=PhotoPilot` 指纹与历史一致；GitHub Release `v1.4.27` 已设为 Latest（含 APK + SHA256SUMS）。
+- **iOS 1.4.19（80）已导出待上传**：`make ios-generate` 后 pbxproj 已核对 1.4.19/80；build/analyze SUCCEEDED；archive `.build/appstore-submit/PhotoPilot-1.4.19-80.xcarchive`（Info.plist 1.4.19/80，Team CCTFP9X3SW）；`-exportArchive`（exportOptions 复用，teamID CCTFP9X3SW、app-store-connect）EXPORT SUCCEEDED → `.build/store-1.4.19/PhotoPilot.ipa` 27,240,581 B，SHA-256 `fec25f8b…8b8a`；DistributionSummary：Apple Distribution `66038D01…4FFDC`（2027/11/11）、Store profile、arm64、AMSMB2 1.0 / MediaPipeTasks 1.2.3 / onnxruntime 1.30.0。
+- `make check` 仅 design-assets 摘要过期项失败（预置 design-freeze），其余全绿。**上传由用户在 Xcode Organizer / Transporter 完成**（本机无 ASC CLI 凭据）。
+- 证据 `store/appstore/review/Release1427.json`；`.build/releases/v1.4.27/` 存 APK 与校验表。
+
 ## 2026-11-23 远程选片网格化与全浏览模块加载修复、v1.4.26 / iOS 1.4.18
 
 用户反馈（v1.4.25 后）：Android 远程选片「预览」弹窗图片空白、列表缩略图全空白；要求检查所有浏览模块并修复；希望选片改成像 iOS 那样的缩略图网格，而不是文件名列表。

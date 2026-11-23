@@ -1,0 +1,51 @@
+{
+  "version": "1.4.27",
+  "build": 88,
+  "iosVersion": "1.4.19",
+  "iosBuild": 80,
+  "date": "2026-11-23",
+  "status": "android-published-ios-exported-upload-pending",
+  "changes": [
+    "android+ios: frame cover reloads after the card is re-attached (was permanently blank after list recycling)",
+    "android: versionCode 88 / 1.4.27",
+    "ios: 1.4.19 / 80"
+  ],
+  "android": {
+    "apk": "PhotoPilot-1.4.27.apk",
+    "apkBytes": 154599258,
+    "apkSha256": "2f9c64a10056eae5910969bdfc4997099e1fd7f55683d28157aea0d7411932e2",
+    "signature": { "scheme": "V2", "certificateDn": "CN=PhotoPilot", "certificateSha256": "9cd985f16aec8a0e492ff834aa7a07de6b426f224b2fd6d788a5965cc1b4f37c" },
+    "assembleRelease": "passed",
+    "lintDebug": "passed",
+    "testDebugUnitTest": "passed",
+    "githubRelease": "v1.4.27"
+  },
+  "ios": {
+    "archive": ".build/appstore-submit/PhotoPilot-1.4.19-80.xcarchive",
+    "ipa": ".build/store-1.4.19/PhotoPilot.ipa",
+    "ipaBytes": 27240581,
+    "ipaSha256": "fec25f8bd150708c67211bc7045b09f8a4c9db33b8b1411708293fa122708b8a",
+    "signing": {
+      "certificateSha1": "66038D01ED4BE91A2C320445C8E89FA7C314FFDC",
+      "type": "Apple Distribution",
+      "expires": "2027/11/11",
+      "teamId": "CCTFP9X3SW",
+      "profile": "iOS Team Store Provisioning Profile: dev.photopilot.scaffold"
+    },
+    "uploadedToAppStoreConnect": false,
+    "submittedForReview": false
+  },
+  "checks": {
+    "makeCheck": "passed except design-assets freshness (requires design-freeze)",
+    "iosBuild": "passed",
+    "iosAnalyze": "passed",
+    "iosXCTest": "not run: no simulator runtime",
+    "androidUiOnDevice": "not run: no emulator installed and no device attached to adb"
+  },
+  "openIssues": [
+    "grid UI and preview not verified on a device this round",
+    "Android manual-order screen does not list remote-mode frame members (iOS has a remote: path)",
+    "Android FrameEditView local preview/select cells and both platforms' playback-settings preview still fail silently",
+    "iOS 1.4.19 upload pending: user drives Xcode Organizer / Transporter after signing into App Store Connect"
+  ]
+}
