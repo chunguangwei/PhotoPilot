@@ -25,6 +25,12 @@
 - **iOS 1.4.18（79）**：ARCHIVE + EXPORT SUCCEEDED，`.build/store-1.4.18/PhotoPilot.ipa` 27,238,816 B，SHA-256 `9a891969…d036`，DistributionSummary 1.4.18/79；**未上传、未提审**。
 - 证据 `store/appstore/review/Release1426.json`。
 
+### D. 发版后补充（在 1.4.26 之后，未随发版验证）
+
+- 相框封面在视图被回收后重新 attach 时不再永久空白：Android `FramesView` 封面控件在 `onDetachedFromWindow` 重置 `requestedPixels`/失败计数并恢复占位，`onAttachedToWindow` 重新触发 `resolveOnLayout`；iOS `FrameCoverView.didMoveToWindow` 在重新入窗且无图时清空失败计数并重新布局。两者只重置计数，加载中任务仍由原 cancel 逻辑处理。
+- 验证：Android `assembleDebug`/`lintDebug`/`testDebugUnitTest` 通过（另以 `--rerun-tasks` 强制重编 `compileDebugKotlin`）；iOS `make ios-build` BUILD SUCCEEDED、`make ios-analyze` ANALYZE SUCCEEDED。**仍未做设备验证**。
+- 放弃项：曾尝试用 EXIF 内嵌缩略图做首屏快速出图（需 WebDAV 分段 GET + 双端适配器改造），因无设备与 NAS 可验证、且属新增网络路径，当轮删除未接入代码，留作后续切片评估。
+
 ## 2026-11-23 v1.4.24 回归修复、子目录选片与封面加载、v1.4.25 / iOS 1.4.17
 
 用户反馈（v1.4.24 之后）：Android 播放报「照片加载失败，请检查网络和来源后重试」，并出现「有照片无法显示，已跳过」；进入 WebDAV 目录大量照片加载不出、转圈；iOS 选了「包含子目录」却一张没选中、必须手点目录行才生效（找不到入口）；设置封面时也加载不出图。

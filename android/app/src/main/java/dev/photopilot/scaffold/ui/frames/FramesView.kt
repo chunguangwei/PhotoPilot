@@ -449,7 +449,20 @@ class FramesView(
         private val viewportRect = android.graphics.Rect()
         private var requestedPixels = 0
         private var remoteJob: kotlinx.coroutines.Job? = null
-        override fun onDetachedFromWindow() { remoteJob?.cancel(); image.setImageDrawable(null); super.onDetachedFromWindow() }
+        override fun onDetachedFromWindow() {
+            remoteJob?.cancel()
+            remoteJob = null
+            requestedPixels = 0
+            remoteFailures = 0
+            image.setImageDrawable(null)
+            placeholder.visibility = VISIBLE
+            super.onDetachedFromWindow()
+        }
+
+        override fun onAttachedToWindow() {
+            super.onAttachedToWindow()
+            post { if (width > 0) resolveOnLayout() }
+        }
 
         init {
             setBackgroundColor(context.getColor(R.color.pp_surface_canvas))

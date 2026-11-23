@@ -676,6 +676,15 @@ private final class FrameCoverView: UIView {
         }
     }
 
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        guard window != nil, imageView.image == nil else { return }
+        loadTask?.cancel()
+        requestedPixels = 0
+        failedAttempts = 0
+        setNeedsLayout()
+    }
+
     deinit {
         loadTask?.cancel()
     }
