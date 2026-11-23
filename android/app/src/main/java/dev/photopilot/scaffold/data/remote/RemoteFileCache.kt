@@ -50,10 +50,21 @@ class RemoteFileCache(
         }
     }
 
-    fun readIfPresent(key: String): File? = File(directory, filename(key)).takeIf { it.isFile }
+    fun readIfPresent(key: String): File? = File(directory, thumbName(key)).takeIf { it.isFile }
+
+    fun openThumb(key: String): Lease? = synchronized(lock) {
+        val name = thumbName(key)
+        val file = File(directory, name)
+        if (!file.isFile) return@synchronized null
+        file.setLastModified(System.currentTimeMillis())
+        held[name] = held.getOrDefault(name, 0) + 1
+        Lease(file) { release(name) }
+    }
+
+    private fun thumbName(key: String): String = filename(key) + ".thumb"
 
     fun storeBytes(key: String, data: ByteArray): Boolean = synchronized(lock) {
-        val name = filename(key)
+        val name = thumbName(key)
         val target = File(directory, name)
         try {
             if (target.isFile) {
@@ -61,12 +72,14 @@ class RemoteFileCache(
                 return true
             }
             if (!directory.isDirectory && !directory.mkdirs()) return false
-            room(name, "store:$name", data.size.toLong())
+            val bytes = data.size.toLong()
+            if (bytes > budget) return false
+            val used = unreservedFiles().filter { it.name != name }.sumOf { it.length() } + reservations.values.sum()
+            if (used + bytes > budget) return false
             target.writeBytes(data)
-            reservations.remove("store:$name")
+            target.setLastModified(System.currentTimeMillis())
             true
         } catch (_: Throwable) {
-            reservations.remove("store:$name")
             false
         }
     }
@@ -116,7 +129,7 @@ class RemoteFileCache(
     private fun room(name: String, token: String, bytes: Long) {
         if (bytes > budget) throw IOException("REMOTE_FILE_TOO_LARGE")
         val otherReservations = reservations.filterKeys { it != token }.values.sum()
-        val files = unreservedFiles().sortedBy { it.lastModified() }
+        val files = unreservedFiles().sortedWith(compareBy({ !it.name.endsWith(".thumb") }, { it.lastModified() }))
         var used = files.sumOf { it.length() }
         for (file in files) {
             if (used + otherReservations + bytes <= budget) break

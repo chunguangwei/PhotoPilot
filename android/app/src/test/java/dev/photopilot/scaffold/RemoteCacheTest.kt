@@ -75,14 +75,14 @@ class RemoteCacheTest {
         dir.deleteRecursively()
         Unit
     }
-    @Test fun storedThumbnailIsLruEvictedUnderSharedBudget() {
+    @Test fun storedThumbnailNeverEvictsExistingCache() {
         val dir = Files.createTempDirectory("remote-cache").toFile()
         val cache = RemoteFileCache(dir, 10, 0, { 1000 })
         assertTrue(cache.storeBytes("thumb:one", ByteArray(6)))
         assertEquals(6L, cache.readIfPresent("thumb:one")?.length() ?: -1L)
-        assertTrue(cache.storeBytes("thumb:two", ByteArray(6)))
-        assertFalse(cache.readIfPresent("thumb:one") != null)
-        assertEquals(6L, cache.readIfPresent("thumb:two")?.length() ?: -1L)
+        assertFalse(cache.storeBytes("thumb:two", ByteArray(6)))
+        assertEquals(6L, cache.readIfPresent("thumb:one")?.length() ?: -1L)
+        assertNull(cache.readIfPresent("thumb:two"))
         assertTrue(cache.bytesUsed() <= 10)
         dir.deleteRecursively()
     }

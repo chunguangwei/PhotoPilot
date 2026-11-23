@@ -129,7 +129,17 @@ final class PlayerImageLoader: @unchecked Sendable {
         if assetID.hasPrefix("remote:"), let media {
             let target = RenderGeometry.decodeTarget(viewW: Int64(max(pointSize.width, 1)), viewH: Int64(max(pointSize.height, 1)),
                 scale: Int64(max(scale, 1)), cap: Self.maxDecodePixels)
-            return try? await media.image(runtimeID: assetID, width: Int(target.0), height: Int(target.1), priority: .playback)
+            var attempt = 0
+            while true {
+                do {
+                    return try await media.image(runtimeID: assetID, width: Int(target.0), height: Int(target.1), priority: .playback)
+                } catch RemoteMediaError.busy where attempt < 2 {
+                    attempt += 1
+                    try? await Task.sleep(nanoseconds: UInt64(attempt) * 250_000_000)
+                } catch {
+                    return nil
+                }
+            }
         }
         let key = "\(assetID)#\(quality)" as NSString
         let entry = Self.cacheEntry(for: key)

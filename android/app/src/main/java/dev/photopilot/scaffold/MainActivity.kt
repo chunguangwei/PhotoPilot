@@ -2092,7 +2092,7 @@ class MainActivity : Activity() {
                         val metadataSources = env.database.sourceDao().getAll().filter { env.remoteMedia.isMetadataSource(it) }.map { it.id }.toSet()
                         env.database.collectionDao().getAll().map { collection ->
                             val count = if (collection.sourceId in metadataSources && collection.relPath != null) {
-                                env.remoteMedia.members(requireNotNull(collection.sourceId), collection.relPath, false).size.toLong()
+                                env.remoteMedia.members(requireNotNull(collection.sourceId), collection.relPath, true).size.toLong()
                             } else env.database.collectionAssetDao().getByCollection(collection.id).size.toLong()
                             collection to count
                         }.filter { dev.photopilot.scaffold.data.logic.CollectionListing.visibleInFolderList(it.first.type, it.second) } to metadataSources

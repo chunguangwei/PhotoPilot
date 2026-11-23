@@ -692,7 +692,7 @@ actor AssetRepository {
         tombstone.setValue(now, forKey: "updated_at")
     }
 
-    func libraryItems(collectionID: String? = nil, readiness: String = Readiness.ready.rawValue, includeRemote: Bool = false, remoteSourceID: String? = nil) async throws -> [LibraryItemDTO] {
+    func libraryItems(collectionID: String? = nil, readiness: String = Readiness.ready.rawValue, includeRemote: Bool = false, remoteSourceID: String? = nil, recursive: Bool = false) async throws -> [LibraryItemDTO] {
         let context = makeContext()
         return try await context.perform {
             let request = NSFetchRequest<NSManagedObject>(entityName: "Asset")
@@ -724,7 +724,7 @@ actor AssetRepository {
             if readiness == Readiness.ready.rawValue {
                 let remote = try RemoteMediaRepository.records(context: context,
                     originals: self.controller.storeURL.deletingLastPathComponent().appendingPathComponent("originals"),
-                    sourceID: remoteSourceID, collectionID: collectionID, recursive: false).filter { (includeRemote || $0.referenceOnly) && ($0.remoteAllowed || $0.localReady) }
+                    sourceID: remoteSourceID, collectionID: collectionID, recursive: recursive).filter { (includeRemote || $0.referenceOnly) && ($0.remoteAllowed || $0.localReady) }
                 if remoteSourceID != nil { items.removeAll() }
                 let localIDs = Set(remote.compactMap(\.localAssetID))
                 items.removeAll { localIDs.contains($0.id) }

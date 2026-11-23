@@ -241,13 +241,19 @@ actor RemoteMediaCache {
         let key = previewKey(descriptor, bucket: bucket)
         if let entry = entries[key], fileSize(root.appendingPathComponent(entry.filename)) == entry.bytes { return }
         let bytes = Int64(data.count)
-        try makeRoom(bytes)
+        while usage() + bytes > budget {
+            let previews = entries.filter { readers[$0.key]?.isEmpty != false && Self.isPreviewKey($0.key) }
+            guard let victim = previews.min(by: { $0.value.accessed < $1.value.accessed })?.key else { return }
+            removeEntry(victim)
+        }
         guard freeSpace() >= bytes + freeReserve else { throw RemoteMediaError.lowSpace }
         let filename = SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined() + ".media"
         try data.write(to: root.appendingPathComponent(filename), options: .atomic)
         entries[key] = Entry(descriptor: descriptor, filename: filename, bytes: bytes, accessed: Date(), contentHash: contentHash)
         saveIndex()
     }
+
+    private static func isPreviewKey(_ key: String) -> Bool { key.contains("\u{0}preview-") }
 
     private func previewKey(_ descriptor: RemoteMediaDescriptor, bucket: Int) -> String {
         descriptor.identity + "\u{0}preview-" + (bucket == 512 ? "512-v1" : "\\(bucket)-v2")
@@ -322,7 +328,10 @@ actor RemoteMediaCache {
 
     private func makeRoom(_ bytes: Int64) throws {
         while usage() + bytes > budget {
-            guard let victim = entries.filter({ readers[$0.key]?.isEmpty != false }).min(by: { $0.value.accessed < $1.value.accessed })?.key else { throw RemoteMediaError.busy }
+            let evictable = entries.filter { readers[$0.key]?.isEmpty != false }
+            let previews = evictable.filter { Self.isPreviewKey($0.key) }
+            let pool = previews.isEmpty ? evictable : previews
+            guard let victim = pool.min(by: { $0.value.accessed < $1.value.accessed })?.key else { throw RemoteMediaError.busy }
             removeEntry(victim)
         }
     }

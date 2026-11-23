@@ -365,6 +365,8 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
                 recursive.setOnCheckedChangeListener { _, checked ->
                     folderRecursion[recursionKey] = checked
                     directoryRules[collection.id]?.let { directoryRules[collection.id] = it.copy(recursive = checked) }
+                    page = 0
+                    loadPhotos()
                 }
                 folderOptions?.body?.addView(future)
                 folderOptions?.body?.addView(recursive)

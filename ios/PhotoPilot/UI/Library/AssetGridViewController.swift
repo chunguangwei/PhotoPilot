@@ -26,6 +26,7 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
     private(set) var selectedAssetIDs: Set<String> = []
     var includesRemoteMedia = false
     var remoteSourceID: String?
+    var recursiveMembers = false
 
     var onSelectionChange: ((Set<String>) -> Void)?
     var onLongPressAsset: ((String, UICollectionViewCell) -> Void)?
@@ -264,10 +265,10 @@ final class AssetGridViewController: UIViewController, UICollectionViewDataSourc
             var fetched: [LibraryItemDTO] = []
             if let sourceScope {
                 for sourceID in sourceScope.sorted() {
-                    fetched += (try? await environment.assets.libraryItems(collectionID: collectionID, includeRemote: true, remoteSourceID: sourceID)) ?? []
+                    fetched += (try? await environment.assets.libraryItems(collectionID: collectionID, includeRemote: true, remoteSourceID: sourceID, recursive: recursiveMembers)) ?? []
                 }
             } else {
-                fetched = (try? await environment.assets.libraryItems(collectionID: collectionID, includeRemote: includesRemoteMedia, remoteSourceID: remoteSourceID)) ?? []
+                fetched = (try? await environment.assets.libraryItems(collectionID: collectionID, includeRemote: includesRemoteMedia, remoteSourceID: remoteSourceID, recursive: recursiveMembers)) ?? []
             }
             guard scopedSourceIDs == sourceScope, scopedAssetIDs == assetScope else { return }
             if let assetScope { fetched = fetched.filter { assetScope.contains($0.id) } }

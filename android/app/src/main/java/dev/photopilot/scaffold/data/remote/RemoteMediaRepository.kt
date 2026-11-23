@@ -36,7 +36,7 @@ class RemoteMediaRepository(
         "${item.id}:${item.sourceEpoch}:${item.remote?.revision}:${item.local?.contentHash}:$width:$height"
     fun peekDecoded(item: PlaybackItem, width: Int, height: Int): android.graphics.Bitmap? =
         if (item.referenceCacheable) decoded.get(decodedKey(item, width, height)) else null
-    private val readGate = RemoteRequestGate(2)
+    private val readGate = RemoteRequestGate(4)
     private val authorityScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val authorities = java.util.concurrent.ConcurrentHashMap<String, PlaybackItem>()
     private val observer = object : androidx.room.InvalidationTracker.Observer("source", "source_asset", "asset", "asset_origin", "local_tombstone") {
@@ -56,12 +56,9 @@ class RemoteMediaRepository(
             readGate.acquire(priority)
             try { localReferences?.bitmap(requireNotNull(item.remote), width, height) }
             finally { readGate.release() }
-        } else {
-            if (item.referenceCacheable && maxOf(width, height) in 1..2048) {
-                thumbnailFromDisk(item, key, width, height, priority)?.let { return it }
-            }
-            read(item, priority) { file, orientation -> dev.photopilot.scaffold.data.render.BitmapRenderer.decodeToTarget(file, width, height, orientation) }
-        }
+        } else if (item.referenceCacheable && maxOf(width, height) in 1..2048) {
+            thumbnailFromDisk(item, key, width, height, priority)
+        } else read(item, priority) { file, orientation -> dev.photopilot.scaffold.data.render.BitmapRenderer.decodeToTarget(file, width, height, orientation) }
         if (!valid(item)) return null
         if (item.referenceCacheable && bitmap != null && bitmap.allocationByteCount <= 33554432) decoded.put(key, bitmap)
         return bitmap
@@ -69,13 +66,14 @@ class RemoteMediaRepository(
 
     private suspend fun thumbnailFromDisk(item: PlaybackItem, key: String, width: Int, height: Int, priority: Int): android.graphics.Bitmap? {
         val thumbKey = "thumb:$key"
-        val file = withContext(Dispatchers.IO) { cache.readIfPresent(thumbKey) }
-        if (file != null) {
-            val bitmap = runCatching { android.graphics.BitmapFactory.decodeFile(file.absolutePath) }.getOrNull()
-            if (bitmap != null && valid(item) && bitmap.allocationByteCount <= 33554432) {
-                decoded.put(key, bitmap)
-                return bitmap
+        val stored = withContext(Dispatchers.IO) {
+            cache.openThumb(thumbKey)?.use { lease ->
+                runCatching { android.graphics.BitmapFactory.decodeFile(lease.file.absolutePath) }.getOrNull()
             }
+        }
+        if (stored != null && valid(item) && stored.allocationByteCount <= 33554432) {
+            decoded.put(key, stored)
+            return stored
         }
         val generated = read(item, priority) { source, orientation -> dev.photopilot.scaffold.data.render.BitmapRenderer.decodeToTarget(source, width, height, orientation) }
         if (generated != null && valid(item)) {
@@ -86,9 +84,11 @@ class RemoteMediaRepository(
     }
 
     private suspend fun storeThumbnail(thumbKey: String, bitmap: android.graphics.Bitmap) = withContext(Dispatchers.IO) {
-        val out = java.io.ByteArrayOutputStream(81920)
-        if (bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)) {
-            cache.storeBytes(thumbKey, out.toByteArray())
+        runCatching {
+            val out = java.io.ByteArrayOutputStream(81920)
+            if (bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)) {
+                cache.storeBytes(thumbKey, out.toByteArray())
+            }
         }
     }
     fun close() { authorityScope.cancel(); db.invalidationTracker.removeObserver(observer); cache.clear(force = true); decoded.evictAll() }

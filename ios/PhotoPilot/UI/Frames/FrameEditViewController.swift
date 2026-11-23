@@ -401,7 +401,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
         present(alert, animated: true)
     }
 
-    private func presentCoverPreview(assetID: String) {
+    private func presentCoverPreview(assetID: String, relPath: String? = nil) {
         let trimmed = nameField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         Task { [weak self] in
             guard let self else { return }
@@ -409,7 +409,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             let playable = selectedAssetIDs.intersection(readyIDs).count
             let preview = CoverPreviewViewController(
                 environment: environment,
-                relPath: gridChild?.relPath(for: assetID),
+                relPath: relPath ?? gridChild?.relPath(for: assetID),
                 frameName: trimmed.isEmpty ? L10n.string("frames.name_default") : trimmed,
                 photoCount: playable
             ) { [weak self] in
@@ -902,12 +902,21 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             headerTitle: CollectionDisplayName.display(name: collection.name, type: collection.type), showsCloseButton: true)
         grid.selectionEnabled = true
         grid.enableRemoteMedia(sourceID: collection.sourceID)
+        grid.recursiveMembers = recursiveFlags[collection.id] ?? dynamicRules[collection.id]?.recursive ?? false
         grid.applySelection(selectedAssetIDs)
+        grid.coverAssetID = pendingCoverAssetID ?? gridChild?.coverAssetID
         grid.onSelectionChange = { [weak self] ids in
             self?.selectedAssetIDs = ids
             self?.dirty = true
+            if let cover = self?.pendingCoverAssetID, !ids.contains(cover) {
+                self?.pendingCoverAssetID = nil
+                self?.gridChild?.coverAssetID = nil
+            }
             self?.gridChild?.applySelection(ids)
             self?.updateSummary()
+        }
+        grid.onCoverStarTap = { [weak self, weak grid] assetID in
+            self?.presentCoverPreview(assetID: assetID, relPath: grid?.relPath(for: assetID))
         }
         grid.modalPresentationStyle = .fullScreen
         present(grid, animated: true)
@@ -938,6 +947,7 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
 
     @objc private func handleRecursiveSwitch(_ sender: UISwitch) {
         guard case .recursiveToggle(let collection) = directoryRows[sender.tag] else { return }
+        let wasRecursive = dynamicRules[collection.id]?.recursive ?? recursiveFlags[collection.id] ?? false
         recursiveFlags[collection.id] = sender.isOn
         memberCache[collection.id] = nil
         if let rule = dynamicRules[collection.id] {
@@ -948,6 +958,32 @@ final class FrameEditViewController: UIViewController, UITextFieldDelegate, UITa
             )
         }
         dirty = true
+        Task { [weak self] in
+            guard let self else { return }
+            let previous = (try? await self.environment.assets.collectionAssetIDs(
+                collectionID: collection.id,
+                includeRemote: self.includesRemoteMedia,
+                recursive: wasRecursive
+            )) ?? []
+            let updated = (try? await self.environment.assets.collectionAssetIDs(
+                collectionID: collection.id,
+                includeRemote: self.includesRemoteMedia,
+                recursive: sender.isOn
+            )) ?? []
+            guard !updated.isEmpty else {
+                self.directoriesTable.reloadData()
+                self.updateSummary()
+                return
+            }
+            if !previous.isEmpty {
+                self.selectedAssetIDs.subtract(previous)
+            }
+            self.selectedAssetIDs.formUnion(updated)
+            self.memberCache[collection.id] = updated
+            self.gridChild?.applySelection(self.selectedAssetIDs)
+            self.updateSummary()
+            self.directoriesTable.reloadData()
+        }
     }
 
     @objc private func handleDynamicSwitch(_ sender: UISwitch) {

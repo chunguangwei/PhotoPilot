@@ -1,0 +1,67 @@
+{
+  "version": "1.4.25",
+  "build": 86,
+  "iosVersion": "1.4.17",
+  "iosBuild": 78,
+  "date": "2026-11-23",
+  "status": "android-published-ios-prepared-not-uploaded",
+  "changes": [
+    "cache: thumbnails no longer evict originals; preview writes reclaim only other previews and originals reclaim previews first",
+    "cache: thumbnail reads take a reference lease so a concurrent sweep cannot delete the file mid-decode",
+    "cache: Android read gate raised to 4 to reduce long first-screen waits on WebDAV folders",
+    "frames: recursive toggle immediately re-syncs the selection on iOS and refreshes the Android remote list",
+    "frames: Android folder counts now include subfolders, matching iOS",
+    "ios: collection grid honours the folder recursion flag and can set the cover directly",
+    "ios: cover preview and player remote loads retry once before giving up",
+    "android: version 1.4.25 (86)",
+    "ios: version 1.4.17 (78)"
+  ],
+  "android": {
+    "buildType": "release",
+    "apk": "PhotoPilot-1.4.25.apk",
+    "apkBytes": 154599258,
+    "apkSha256": "19644db7bbf6db16b7215d95e03f2f9af33f6d372f37419e937339b176b7c52f",
+    "signature": {
+      "scheme": "V2",
+      "certificateDn": "CN=PhotoPilot",
+      "certificateSha256": "9cd985f16aec8a0e492ff834aa7a07de6b426f224b2fd6d788a5965cc1b4f37c"
+    },
+    "assembleDebug": "passed",
+    "lintDebug": "passed",
+    "testDebugUnitTest": "passed",
+    "jdk": "Android Studio JBR 21.0.10",
+    "githubRelease": "v1.4.25"
+  },
+  "ios": {
+    "archive": ".build/appstore-submit/PhotoPilot-1.4.17-78.xcarchive",
+    "ipa": ".build/store-1.4.17/PhotoPilot.ipa",
+    "ipaBytes": 27232956,
+    "ipaSha256": "e69ab20662e8dc35f200e21a1d9e73b004582bf7883142af41a1d35889ffa708",
+    "marketingVersion": "1.4.17",
+    "currentProjectVersion": "78",
+    "architectures": ["arm64"],
+    "certificate": {
+      "type": "Apple Distribution",
+      "sha1": "66038D01ED4BE91A2C320445C8E89FA7C314FFDC",
+      "expires": "2027-11-11"
+    },
+    "exportMethod": "app-store-connect",
+    "uploadedToAppStoreConnect": false,
+    "submittedForReview": false
+  },
+  "checks": {
+    "makeCheck": "passed except design-assets freshness (requires design-freeze; design acceptance not claimed)",
+    "iosBuild": "passed",
+    "iosAnalyze": "passed",
+    "iosXCTest": "not run: no simulator runtime installed on this machine",
+    "androidBuild": "passed",
+    "androidLint": "passed",
+    "androidUnitTest": "passed"
+  },
+  "openIssues": [
+    "root cause of the on-device 'loading failed / photos skipped' notice is addressed by the cache-eviction and read-race fixes, but no on-device retest has been performed this round",
+    "first browse of a directory still downloads the original once to build a thumbnail; no server-side thumbnail API is used",
+    "no iOS simulator runtime, so native XCTest could not run locally",
+    "iOS upload requires the user in Xcode Organizer or Transporter"
+  ]
+}

@@ -1,5 +1,45 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## 2026-11-23 v1.4.24 回归修复、子目录选片与封面加载、v1.4.25 / iOS 1.4.17
+
+用户反馈（v1.4.24 之后）：Android 播放报「照片加载失败，请检查网络和来源后重试」，并出现「有照片无法显示，已跳过」；进入 WebDAV 目录大量照片加载不出、转圈；iOS 选了「包含子目录」却一张没选中、必须手点目录行才生效（找不到入口）；设置封面时也加载不出图。
+
+### A. v1.4.24 引入的回归（已确认并修复）
+
+- **缩略图写入淘汰原图**：`RemoteFileCache.storeBytes` 走 `room()`，而缩略图文件 `held` 恒为 0，缓存写满时会删除正在被播放/浏览依赖的原图 → 反复重下、解码失败。修复：`storeBytes` 不再调用 `room()`，仅在预算允许时写入；缩略图带 `.thumb` 后缀，`room()` 优先回收 `.thumb`（可重建），绝不优先淘汰原图。
+- **并发读缩略图竞态**：`readIfPresent` 不登记引用，原图下载触发的 `room()` 会删掉网格正在解码的缩略图文件 → `decodeFile` 返回 null → 照片「加载不出」。修复：新增 `openThumb()` 返回带引用计数的 `Lease`，读取期间受保护。
+- **二次下载**：`thumbnailFromDisk` 返回 null 时外层又走 `read()`，重复下载。修复：缩略图分支直接返回结果，不再 fallthrough。
+- iOS 同类缺陷：`storePreview` 曾调用 `makeRoom()` 会淘汰原图。修复：预览写入只回收其他预览；`makeRoom` 优先淘汰预览。
+- Android 读并发 2 → 4，缓解目录首屏长转圈。
+
+### B. 子目录选片（双端）
+
+- **iOS 根因**：`libraryItems` 硬编码 `recursive: false`（目录网格与封面选择都受影响，子目录照片直接不出现）；`handleRecursiveSwitch` 只写标志、不重算 `selectedAssetIDs`，所以必须再点一次目录行。修复：
+  - `AssetRepository.libraryItems(..., recursive:)` 透传到 `RemoteMediaRepository.records`；`AssetGridViewController.recursiveMembers` 由目录当前递归态设置。
+  - `handleRecursiveSwitch` 立即按新开关重算成员并同步选中（先移除旧集合、再并入新集合）。
+  - 目录网格补齐 `onCoverStarTap`/`coverAssetID`（此前只有主网格可设封面），并复用 `presentCoverPreview(assetID:relPath:)`。
+- **Android**：目录计数 `members(..., recursive = true)` 与 iOS 对齐（原先 false，子目录照片多的目录显示 0 张）；远程浏览切换「包含子目录」后 `page = 0; loadPhotos()` 立即刷新。`selectCurrentFolder()` 原本已按实时开关取值，无需改。
+
+### C. 加载稳健性
+
+- iOS `PlayerImageLoader.image`（远程）对 `RemoteMediaError.busy` 重试 2 次（250/500ms），不再一次失败就跳过整张照片。
+- iOS 封面预览失败后降级重试一次（420 → 260pt）。
+
+### D. 验证与发版
+
+- `make check`：全部通过（仅预置 `check_design_assets.py` 需 `make design-freeze`）。
+- iOS：`make ios-build` BUILD SUCCEEDED；`make ios-analyze` ANALYZE SUCCEEDED；无模拟器 runtime，XCTest NO-RUNTIME 未执行。
+- Android：`:app:assembleDebug`、`:app:lintDebug`、`:app:testDebugUnitTest` 全部通过（`RemoteCacheTest` 新增/更新 2 条：缩略图写入不淘汰既有缓存、不同 key 独立文件）。
+- **Android v1.4.25（86）**：APK `PhotoPilot-1.4.25.apk` 154,599,258 B，SHA-256 `19644db7…c52f`；`apksigner` V2 通过（`CN=PhotoPilot`，指纹与历史一致）；GitHub Release `v1.4.25`（Latest）含 APK + SHA256SUMS。
+- **iOS 1.4.17（78）准备**：ARCHIVE + EXPORT SUCCEEDED → `.build/store-1.4.17/PhotoPilot.ipa` 27,232,956 B，SHA-256 `e69ab206…a708`。**未上传、未提审**。
+- 计数与读取口径、淘汰规则已同步 `04-工程规格书.md` §2.1；发布证据 `store/appstore/review/Release1425.json`。
+
+### E. 未完成 / 下一步
+
+- **真机复验（关键）**：需用户更新 v1.4.25 后确认 ①WebDAV 目录不再大量转圈/报错 ②iOS 开关「包含子目录」立即选中、目录网格可设封面。未取得真机证据前不宣称问题已闭合。
+- iOS 上传 App Store Connect 与提审需用户在 Xcode Organizer/Transporter 完成。
+- iOS XCTest 因无模拟器 runtime 未跑，不宣称测试通过。
+
 ## 2026-11-23 加载性能优化（NAS 缩略图持久缓存与并发）、v1.4.24 / iOS 1.4.16
 
 用户反馈：HTTPS WebDAV 已可用，但「加载照片特别慢，冷启动后还要重新加载，包括缩略图」。

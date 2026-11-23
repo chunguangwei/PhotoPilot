@@ -129,7 +129,11 @@ final class CoverPreviewViewController: UIViewController {
         guard let relPath else { return }
         let scale = traitCollection.displayScale
         loadTask = Task { [weak self, loader, weak coverView] in
-            let image = await loader.thumbnail(relPath: relPath, pointSize: 420, scale: scale)
+            var image = await loader.thumbnail(relPath: relPath, pointSize: 420, scale: scale)
+            if image == nil, !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                image = await loader.thumbnail(relPath: relPath, pointSize: 260, scale: scale)
+            }
             guard !Task.isCancelled, let self, let coverView else { return }
             coverView.image = image
         }
