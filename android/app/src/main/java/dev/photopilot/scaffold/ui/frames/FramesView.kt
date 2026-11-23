@@ -159,7 +159,7 @@ class FramesView(
     }
 
     private fun cardKey(model: CardModel): String =
-        "${model.frame.id}|${model.frame.name}|${model.cover?.id}|${model.remoteCover?.id}|${model.playable}|${model.pending}|${model.aiProgress}|${model.aiPaused}|${model.loading}"
+        "${model.frame.id}|${model.frame.name}|${model.cover?.id}|${model.remoteCover?.id}|${model.remoteCover?.remote?.revision}|${model.remoteCover?.sourceEpoch}|${model.playable}|${model.pending}|${model.aiProgress}|${model.aiPaused}|${model.loading}"
 
     private fun rebuildCardEntries(cards: List<CardModel>): List<CardEntry> {
         val previous = cardEntries.associateBy { cardKey(it.model) }
@@ -523,13 +523,26 @@ class FramesView(
             val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main)
             remoteJob = scope.launch {
                 val bitmap = runCatching { repo.bitmap(item, remoteWidth, remoteWidth) }.getOrNull()
-                if (repo.valid(item) && isAttachedToWindow) { image.setImageBitmap(bitmap); placeholder.visibility = if (bitmap == null) VISIBLE else GONE }
+                if (!isAttachedToWindow) return@launch
+                if (bitmap == null) {
+                    placeholder.visibility = if (image.drawable == null) VISIBLE else GONE
+                    remoteFailures++
+                    if (remoteFailures <= 5) {
+                        kotlinx.coroutines.delay((2000L shl (remoteFailures - 1)).coerceAtMost(30000L))
+                        if (isAttachedToWindow) { requestedPixels = 0; resolveRemoteCover() }
+                    }
+                    return@launch
+                }
+                remoteFailures = 0
+                if (repo.valid(item)) { image.setImageBitmap(bitmap); placeholder.visibility = GONE }
                 while (isAttachedToWindow) {
-                    kotlinx.coroutines.delay(250)
+                    kotlinx.coroutines.delay(1000)
                     if (!repo.valid(item)) { image.setImageDrawable(null); placeholder.visibility = VISIBLE; break }
                 }
             }
         }
+
+        private var remoteFailures = 0
 
         private fun isInViewport(): Boolean = getLocalVisibleRect(viewportRect)
     }

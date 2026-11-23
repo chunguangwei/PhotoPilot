@@ -52,8 +52,8 @@ android {
         applicationId = "dev.photopilot.scaffold"
         minSdk = 29
         targetSdk = 36
-        versionCode = 86
-        versionName = "1.4.25"
+        versionCode = 87
+        versionName = "1.4.26"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

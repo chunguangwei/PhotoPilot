@@ -88,7 +88,7 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
     private var coverSourceAssetId: String? = restoredDraft?.get("coverRef")?.takeIf { it.isNotEmpty() }
         ?: (JsonMini.parseObject(frame?.settingsJson)["remoteCoverRef"] as? String)
     private var previewDialog: AlertDialog? = null
-    private val pageSize = 20
+    private val pageSize = 60
     init {
         orientation = VERTICAL
         setBackgroundColor(context.getColor(dev.photopilot.scaffold.R.color.pp_surface_canvas))
@@ -374,58 +374,131 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
             loaded.children.filter { scopeIds == null }.forEach { child ->
                 photos.addView(secondaryButton(context, child.name).apply { setOnClickListener { folder = child.relPath.orEmpty(); page = 0; loadPhotos() } })
             }
-            for (asset in loaded.assets) {
-                val displayName = withContext(Dispatchers.IO) { env.remoteMedia.displayName(asset) }
-                if (!current()) return@launch
-                val row = LinearLayout(context).apply {
-                    isBaselineAligned = false
-                    gravity = android.view.Gravity.CENTER_VERTICAL
-                    minimumHeight = dp(56)
+            val entries = withContext(Dispatchers.IO) {
+                loaded.assets.map { asset -> Triple(asset, env.remoteMedia.displayName(asset), env.remoteMedia.item(asset.id, allowRetainedCopy = false)) }
+            }
+            if (!current()) return@launch
+            val metrics = resources.displayMetrics
+            val spacing = dp(4)
+            val availableWidth = (photos.width.takeIf { it > 0 } ?: metrics.widthPixels) - photos.paddingLeft - photos.paddingRight
+            val columns = (availableWidth / dp(110)).coerceIn(3, 8)
+            val cellSize = (availableWidth - spacing * (columns - 1)) / columns
+            val thumbPixels = (((cellSize + 127) / 128) * 128).coerceIn(192, 512)
+            entries.chunked(columns).forEach { chunk ->
+                val gridRow = LinearLayout(context).apply { orientation = HORIZONTAL }
+                chunk.forEachIndexed { index, (asset, displayName, item) ->
+                    gridRow.addView(photoCell(asset, displayName, item, thumbPixels), LayoutParams(cellSize, cellSize).apply {
+                        if (index > 0) marginStart = spacing
+                    })
                 }
-                val check = CheckBox(context).apply {
-                    text = displayName; isChecked = asset.id in selected
-                    minimumHeight = dp(48)
-                    setSingleLine(true)
-                    ellipsize = android.text.TextUtils.TruncateAt.END
-                    contentDescription = text
-                    setOnLongClickListener {
-                        AlertDialog.Builder(context).setMessage(text).setPositiveButton(this@RemoteFrameView.text("Close", "关闭"), null).show()
-                        true
-                    }
-                    setOnCheckedChangeListener { _, enabled -> if (enabled) selected.add(asset.id) else selected.remove(asset.id); updateStatus() }
-                }
-                val item = withContext(Dispatchers.IO) { env.remoteMedia.item(asset.id, allowRetainedCopy = false) }
-                if (!current()) return@launch
-                if (item != null) row.addView(RemoteThumbnailView(context, env.remoteMedia, item), LayoutParams(dp(56), dp(56)))
-                check.isEnabled = item != null
-                row.addView(check, LayoutParams(0, -2, 1f))
-                row.addView(secondaryButton(context, text("Preview", "预览")).apply { setOnClickListener {
-                    scope.launch {
-                        runCatching {
-                            val item = env.remoteMedia.item(asset.id, allowRetainedCopy = false) ?: error("REMOTE_REVOKED")
-                            if (!env.remoteMedia.valid(item) || !isAttachedToWindow) error("REMOTE_REVOKED")
-                            previewDialog?.dismiss()
-                            val image = RemoteThumbnailView(context, env.remoteMedia, item, 640).apply {
-                                scaleType = ImageView.ScaleType.FIT_CENTER
-                                minimumHeight = dp(240)
-                                onUnavailable = { previewDialog?.setMessage(context.getString(dev.photopilot.scaffold.R.string.source_local_reference_unavailable)) }
-                            }
-                            val reference = env.remoteMedia.isLocalReference(item)
-                            previewDialog = AlertDialog.Builder(context).setTitle(displayName).setView(image).setNeutralButton(if (browseOnly) null else context.getString(dev.photopilot.scaffold.R.string.frames_set_cover)) { _, _ ->
-                                coverSourceAssetId = asset.id
-                                feedback.text = context.getString(dev.photopilot.scaffold.R.string.frames_cover_set)
-                            }.setPositiveButton(text("Close", "关闭"), null).apply {
-                                if (reference) setNegativeButton(context.getString(dev.photopilot.scaffold.R.string.delete_hide_globally)) { _, _ -> confirmHideReference(asset.id) }
-                            }.create().also { dialog ->
-                                dialog.setOnDismissListener { if (previewDialog === dialog) previewDialog = null }
-                                dialog.show()
-                            }
-                        }.onFailure { showError(it) }
-                    }
-                } }, LayoutParams(-2, -2))
-                photos.addView(row)
+                photos.addView(gridRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = spacing })
             }
             updateStatus()
+        }
+    }
+
+    private fun photoCell(asset: SourceAssetEntity, displayName: String, item: dev.photopilot.scaffold.data.remote.PlaybackItem?, thumbPixels: Int): View {
+        val cell = FrameLayout(context)
+        if (item != null) {
+            cell.addView(RemoteThumbnailView(context, env.remoteMedia, item, thumbPixels), FrameLayout.LayoutParams(-1, -1))
+        } else {
+            cell.setBackgroundColor(context.getColor(dev.photopilot.scaffold.R.color.pp_surface_panel))
+            cell.alpha = .4f
+        }
+        val badgeSize = dp(26)
+        val badge = TextView(context).apply {
+            gravity = android.view.Gravity.CENTER
+            setTextColor(context.getColor(dev.photopilot.scaffold.R.color.pp_text_on_photo))
+            textSize = 14f
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+        val dim = View(context).apply { setBackgroundColor(0x33000000) }
+        cell.addView(dim, FrameLayout.LayoutParams(-1, -1))
+        cell.addView(badge, FrameLayout.LayoutParams(badgeSize, badgeSize, android.view.Gravity.TOP or android.view.Gravity.END).apply {
+            topMargin = dp(6); marginEnd = dp(6)
+        })
+        val previewButton = ImageButton(context).apply {
+            setImageResource(android.R.drawable.ic_menu_zoom)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(0x88000000.toInt())
+            }
+            contentDescription = this@RemoteFrameView.text("Preview $displayName", "预览 $displayName")
+            setOnClickListener { showPreview(asset, displayName) }
+        }
+        cell.addView(previewButton, FrameLayout.LayoutParams(dp(32), dp(32), android.view.Gravity.BOTTOM or android.view.Gravity.END).apply {
+            bottomMargin = dp(6); marginEnd = dp(6)
+        })
+        fun render() {
+            val on = asset.id in selected
+            dim.visibility = if (on) View.VISIBLE else View.GONE
+            badge.text = if (on) "✓" else ""
+            badge.background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                if (on) setColor(context.getColor(dev.photopilot.scaffold.R.color.pp_accent_action))
+                else { setColor(0x33000000); setStroke(dp(2), context.getColor(dev.photopilot.scaffold.R.color.pp_text_on_photo)) }
+            }
+            cell.contentDescription = displayName + "，" + if (on) this@RemoteFrameView.text("selected", "已选") else this@RemoteFrameView.text("not selected", "未选")
+        }
+        render()
+        cell.isClickable = item != null
+        cell.isEnabled = item != null
+        badge.visibility = if (item != null && !browseOnly) View.VISIBLE else View.GONE
+        cell.setOnClickListener {
+            if (browseOnly) { showPreview(asset, displayName); return@setOnClickListener }
+            if (asset.id in selected) selected.remove(asset.id) else selected.add(asset.id)
+            render()
+            updateStatus()
+        }
+        cell.setOnLongClickListener { showPreview(asset, displayName); true }
+        return cell
+    }
+
+    private fun showPreview(asset: SourceAssetEntity, displayName: String) {
+        scope.launch {
+            runCatching {
+                val item = env.remoteMedia.item(asset.id, allowRetainedCopy = false) ?: error("REMOTE_REVOKED")
+                if (!env.remoteMedia.valid(item) || !isAttachedToWindow) error("REMOTE_REVOKED")
+                previewDialog?.dismiss()
+                val previewSize = minOf(resources.displayMetrics.widthPixels, 1600)
+                val status = TextView(context).apply {
+                    text = this@RemoteFrameView.text("Loading the photo…", "正在加载照片…")
+                    setTextColor(context.getColor(dev.photopilot.scaffold.R.color.pp_text_secondary))
+                    gravity = android.view.Gravity.CENTER
+                    val pad = dp(12)
+                    setPadding(pad, pad, pad, 0)
+                }
+                val image = RemoteThumbnailView(context, env.remoteMedia, item, previewSize, priority = 2).apply {
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    minimumHeight = dp(240)
+                    listOf(512, 384, 256, 192).firstNotNullOfOrNull { env.remoteMedia.peekDecoded(item, it, it) }?.let { showPlaceholder(it) }
+                    onLoaded = { status.visibility = View.GONE }
+                    onFailed = { code ->
+                        status.visibility = View.VISIBLE
+                        status.text = previewFailureText(code)
+                    }
+                    onUnavailable = {
+                        status.visibility = View.VISIBLE
+                        status.text = context.getString(dev.photopilot.scaffold.R.string.source_local_reference_unavailable)
+                    }
+                }
+                val body = LinearLayout(context).apply {
+                    orientation = VERTICAL
+                    addView(image, LayoutParams(LayoutParams.MATCH_PARENT, dp(320)))
+                    addView(status, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+                    setOnClickListener { image.retryNow() }
+                }
+                val reference = env.remoteMedia.isLocalReference(item)
+                previewDialog = AlertDialog.Builder(context).setTitle(displayName).setView(body).setNeutralButton(if (browseOnly) null else context.getString(dev.photopilot.scaffold.R.string.frames_set_cover)) { _, _ ->
+                    coverSourceAssetId = asset.id
+                    feedback.text = context.getString(dev.photopilot.scaffold.R.string.frames_cover_set)
+                }.setPositiveButton(text("Close", "关闭"), null).apply {
+                    if (reference) setNegativeButton(context.getString(dev.photopilot.scaffold.R.string.delete_hide_globally)) { _, _ -> confirmHideReference(asset.id) }
+                }.create().also { dialog ->
+                    dialog.setOnDismissListener { if (previewDialog === dialog) previewDialog = null }
+                    dialog.show()
+                }
+            }.onFailure { showError(it) }
         }
     }
     private fun confirmHideReference(sourceAssetId: String) {
@@ -571,6 +644,15 @@ class RemoteFrameView(context: Context, private val env: AppEnvironment, private
             for (index in 0 until view.childCount) setEditingEnabled(view.getChildAt(index), enabled)
         }
     }
+    private fun previewFailureText(code: String): String = when {
+        code.contains("AUTH") -> text("Sign-in to the source failed. Check the account in source settings. Tap to retry.", "来源登录失败，请在来源设置中检查账号。点按重试。")
+        code.contains("REVOKED") || code.contains("UNAVAILABLE") -> text("This photo is no longer available.", "这张照片已不可用。")
+        code.contains("TOO_LARGE") -> text("This photo exceeds the temporary cache budget. Enable local sync.", "照片超过临时缓存限额，请开启本地同步。")
+        code.contains("CACHE_BUSY") -> text("Other photos are still loading. Retrying shortly…", "其他照片仍在加载，稍后自动重试…")
+        code.contains("LOW_SPACE") -> text("Not enough free space. Keep 64 MiB available.", "可用空间不足，请保留 64 MiB。")
+        else -> text("Couldn’t load the photo. Check the network and source. Tap to retry.", "照片加载失败，请检查网络和来源。点按重试。")
+    }
+
     private fun showError(error: Throwable) {
         feedback.text = when {
             error.message?.contains("SELECTION_CONFLICT") == true -> text("Frame selection changed. Reopen its settings and try again.", "相框选片已变更，请重新打开设置后重试。")

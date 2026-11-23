@@ -7,6 +7,7 @@ final class CoverPreviewViewController: UIViewController {
     private let photoCount: Int
     private let onConfirm: () -> Void
     private let coverView = UIImageView()
+    private let statusLabel = UILabel()
     private var revoked = false
     private var loadTask: Task<Void, Never>?
 
@@ -56,6 +57,21 @@ final class CoverPreviewViewController: UIViewController {
             equalTo: coverView.widthAnchor,
             multiplier: 10.0 / 16.0
         ).isActive = true
+        statusLabel.font = ThemeFont.meta()
+        statusLabel.adjustsFontForContentSizeCategory = true
+        statusLabel.textColor = ThemeColor.textSecondary
+        statusLabel.textAlignment = .center
+        statusLabel.numberOfLines = 0
+        statusLabel.text = AIText.value("Loading the photo…", "正在加载照片…")
+        statusLabel.translatesAutoresizingMaskIntoConstraints = false
+        coverView.addSubview(statusLabel)
+        NSLayoutConstraint.activate([
+            statusLabel.centerYAnchor.constraint(equalTo: coverView.centerYAnchor),
+            statusLabel.leadingAnchor.constraint(equalTo: coverView.leadingAnchor, constant: ThemeMetrics.contentInsetCompact),
+            statusLabel.trailingAnchor.constraint(equalTo: coverView.trailingAnchor, constant: -ThemeMetrics.contentInsetCompact),
+        ])
+        coverView.isUserInteractionEnabled = true
+        coverView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleRetryTap)))
 
         let nameLabel = UILabel()
         nameLabel.text = frameName
@@ -128,6 +144,9 @@ final class CoverPreviewViewController: UIViewController {
     private func loadCover(into coverView: UIImageView) {
         guard let relPath else { return }
         let scale = traitCollection.displayScale
+        statusLabel.isHidden = false
+        statusLabel.text = AIText.value("Loading the photo…", "正在加载照片…")
+        loadTask?.cancel()
         loadTask = Task { [weak self, loader, weak coverView] in
             var image = await loader.thumbnail(relPath: relPath, pointSize: 420, scale: scale)
             if image == nil, !Task.isCancelled {
@@ -136,7 +155,16 @@ final class CoverPreviewViewController: UIViewController {
             }
             guard !Task.isCancelled, let self, let coverView else { return }
             coverView.image = image
+            statusLabel.isHidden = image != nil
+            if image == nil {
+                statusLabel.text = AIText.value("Couldn’t load the photo. Tap to retry.", "照片加载失败，点按重试。")
+            }
         }
+    }
+
+    @objc private func handleRetryTap() {
+        guard !revoked, coverView.image == nil else { return }
+        loadCover(into: coverView)
     }
 
     @objc private func authorityChanged(_ notification: Notification) {

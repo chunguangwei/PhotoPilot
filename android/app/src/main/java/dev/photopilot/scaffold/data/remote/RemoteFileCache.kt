@@ -163,9 +163,14 @@ class RemoteFileCache(
                 partial.outputStream().use { output ->
                     val buffer = ByteArray(65536)
                     var written = 0L
+                    var lastAuthorityCheck = 0L
                     while (true) {
                         currentCoroutineContext().ensureActive()
-                        if (!valid()) throw IOException("REMOTE_REVOKED")
+                        val now = System.nanoTime()
+                        if (lastAuthorityCheck == 0L || now - lastAuthorityCheck >= 500_000_000L) {
+                            if (!valid()) throw IOException("REMOTE_REVOKED")
+                            lastAuthorityCheck = now
+                        }
                         val count = input.read(buffer)
                         if (count < 0) break
                         currentCoroutineContext().ensureActive()

@@ -598,6 +598,7 @@ private final class FrameCoverView: UIView {
     private let loader: ThumbnailLoader
     private let relPath: String?
     private var requestedPixels = 0
+    private var failedAttempts = 0
     private var loadTask: Task<Void, Never>?
 
     init(loader: ThumbnailLoader, relPath: String?) {
@@ -658,8 +659,20 @@ private final class FrameCoverView: UIView {
         loadTask = Task { [weak self, loader] in
             let image = await loader.thumbnail(relPath: relPath, pointSize: CGFloat(pixels), scale: 1)
             guard !Task.isCancelled, let self, requestedPixels == pixels else { return }
-            imageView.image = image
-            placeholder.isHidden = image != nil
+            if let image {
+                failedAttempts = 0
+                imageView.image = image
+                placeholder.isHidden = true
+                return
+            }
+            placeholder.isHidden = imageView.image != nil
+            guard failedAttempts < 5 else { return }
+            failedAttempts += 1
+            let delay = UInt64(min(30, 2 << failedAttempts)) * 1_000_000_000
+            try? await Task.sleep(nanoseconds: delay)
+            guard !Task.isCancelled, window != nil, requestedPixels == pixels else { return }
+            requestedPixels = 0
+            resolveIfVisible(in: enclosingScrollView)
         }
     }
 

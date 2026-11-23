@@ -1,5 +1,30 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## 2026-11-23 远程选片网格化与全浏览模块加载修复、v1.4.26 / iOS 1.4.18
+
+用户反馈（v1.4.25 后）：Android 远程选片「预览」弹窗图片空白、列表缩略图全空白；要求检查所有浏览模块并修复；希望选片改成像 iOS 那样的缩略图网格，而不是文件名列表。
+
+### A. 根因与修复（Android 远程选片）
+
+- 预览请求优先级 0，与整页缩略图同队列；每张缩略图需整图下载，预览排在最后 → 长时间空白。改为 priority 2，并先显示内存中已有的小图占位。
+- 加载中/失败均为空白、无任何提示（`onUnavailable` 调 `setMessage` 对无 message 的 AlertDialog 无效）。`RemoteThumbnailView` 重写：占位底色、失败图标、`onLoaded/onFailed(code)` 回调、2s→30s 退避重试（不再每次布局即重试）、`retryNow()`；失败仅记录错误码和异常类型（`PhotoPilotThumb`，不记录文件名或路径）。
+- 吞吐：`RemoteFileCache.download` 授权校验从每 64KB 同步 `valid()`（多表查询 + runBlocking）改为每 500ms 一次（安装前最终校验保留）；缩略图有效性轮询 250ms → 1s。
+- **网格化**：`RemoteFrameView` 照片区由「缩略图 + 复选框文件名 + 预览按钮」行改为正方形网格（列数按宽度 3–8，缩略图请求 192–512px），轻点切换选中（右上角勾选标记 + 暗化），长按或右下放大镜打开预览；每页 20 → 60；预览抽成 `showPreview()`，「设为封面」语义不变。
+
+### B. 全浏览模块审查（子 agent 报告逐条核实后处理）
+
+- 已修：iOS 资料库进入 NAS 文件夹必然空白（`LibraryViewController` 未 `enableRemoteMedia`）→ 启用远程并按子目录口径加载；Android 相框列表远程封面单次尝试失败即永久空白 → 退避重试 5 次、轮询 1s、`cardKey` 加入 revision/epoch；iOS 相框列表封面单次锁死 → 退避重试 5 次；iOS 设置封面预览失败空白 → 「正在加载/加载失败，点按重试」。
+- 核实无需修：iOS AssetGrid、Player、PhotoDetail、AIFrame；Android PlayerEngine、LibraryView、AIFrameView、PhotoDetail（均有失败/重试处理）。
+- **遗留**：Android 手动排序页不显示远程模式相框成员（iOS 已有 `remote:` 处理）；Android FrameEditView 本地预览/选片格、双端播放设置预览失败仍无提示；iOS ManualOrder 缩略图失败无反馈。
+
+### C. 验证与发版
+
+- Android `assembleDebug`/`lintDebug`/`testDebugUnitTest` 通过；iOS `make ios-build` BUILD SUCCEEDED、`make ios-analyze` ANALYZE SUCCEEDED；`make check` 仅预置设计摘要项失败。
+- **本机无 Android 模拟器且 adb 无设备，网格 UI 与预览未做设备验证**；iOS XCTest 无 runtime 未跑。
+- **Android v1.4.26（87）**：APK 154,599,262 B，SHA-256 `f0089169…dc13`，V2 签名 `CN=PhotoPilot` 指纹与历史一致，aapt 确认 87/1.4.26；GitHub Release `v1.4.26`（Latest）。
+- **iOS 1.4.18（79）**：ARCHIVE + EXPORT SUCCEEDED，`.build/store-1.4.18/PhotoPilot.ipa` 27,238,816 B，SHA-256 `9a891969…d036`，DistributionSummary 1.4.18/79；**未上传、未提审**。
+- 证据 `store/appstore/review/Release1426.json`。
+
 ## 2026-11-23 v1.4.24 回归修复、子目录选片与封面加载、v1.4.25 / iOS 1.4.17
 
 用户反馈（v1.4.24 之后）：Android 播放报「照片加载失败，请检查网络和来源后重试」，并出现「有照片无法显示，已跳过」；进入 WebDAV 目录大量照片加载不出、转圈；iOS 选了「包含子目录」却一张没选中、必须手点目录行才生效（找不到入口）；设置封面时也加载不出图。

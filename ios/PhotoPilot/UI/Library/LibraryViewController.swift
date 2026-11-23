@@ -601,6 +601,10 @@ final class LibraryViewController: UIViewController, UITableViewDataSource, UITa
             headerTitle: CollectionDisplayName.display(name: collection.name, type: collection.type),
             showsCloseButton: true
         )
+        if let sourceID = collection.sourceID {
+            grid.enableRemoteMedia(sourceID: sourceID)
+            grid.recursiveMembers = true
+        }
         grid.modalPresentationStyle = .fullScreen
         present(grid, animated: true)
     }

@@ -1,0 +1,48 @@
+{
+  "version": "1.4.26",
+  "build": 87,
+  "iosVersion": "1.4.18",
+  "iosBuild": 79,
+  "date": "2026-11-23",
+  "status": "android-published-ios-prepared-not-uploaded",
+  "changes": [
+    "android: remote photo picker is a thumbnail grid (tap to select, long-press or magnifier to preview, 60 per page)",
+    "android: preview dialog shows the cached small thumbnail first, loads the large image at priority 2, and shows loading/failure text with tap to retry",
+    "android: RemoteThumbnailView shows a failure icon and retries with 2s-30s backoff instead of staying blank or looping",
+    "android: download authority check every 500ms instead of every 64KB; validity polling 250ms -> 1s",
+    "android: frame list remote cover retries after failure; card key includes revision and epoch",
+    "ios: library folder from a NAS source enables remote media (was always empty)",
+    "ios: frame list cover retries with backoff; cover preview shows loading/failure state with tap to retry"
+  ],
+  "android": {
+    "apk": "PhotoPilot-1.4.26.apk",
+    "apkBytes": 154599262,
+    "apkSha256": "f0089169a3cfe68aca5aef87a7a84f37e91afe9e00ec69de4b847c61e145dc13",
+    "signature": { "scheme": "V2", "certificateDn": "CN=PhotoPilot", "certificateSha256": "9cd985f16aec8a0e492ff834aa7a07de6b426f224b2fd6d788a5965cc1b4f37c" },
+    "assembleDebug": "passed",
+    "lintDebug": "passed",
+    "testDebugUnitTest": "passed",
+    "githubRelease": "v1.4.26"
+  },
+  "ios": {
+    "archive": ".build/appstore-submit/PhotoPilot-1.4.18-79.xcarchive",
+    "ipa": ".build/store-1.4.18/PhotoPilot.ipa",
+    "ipaBytes": 27238816,
+    "ipaSha256": "9a8919693508e7b489ac001c12ae748be9b847886849483de792b0b81a0ad036",
+    "uploadedToAppStoreConnect": false,
+    "submittedForReview": false
+  },
+  "checks": {
+    "makeCheck": "passed except design-assets freshness (requires design-freeze)",
+    "iosBuild": "passed",
+    "iosAnalyze": "passed",
+    "iosXCTest": "not run: no simulator runtime",
+    "androidUiOnDevice": "not run: no emulator installed and no device attached to adb"
+  },
+  "openIssues": [
+    "grid UI and preview not verified on a device this round",
+    "Android manual-order screen does not list remote-mode frame members (iOS has a remote: path)",
+    "Android FrameEditView local preview/select cells and both platforms' playback-settings preview still fail silently",
+    "iOS upload requires the user in Xcode Organizer or Transporter"
+  ]
+}
