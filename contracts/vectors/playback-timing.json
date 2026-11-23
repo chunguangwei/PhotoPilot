@@ -9,7 +9,9 @@
       "slide",
       "wipe",
       "zoom",
-      "ripple"
+      "ripple",
+      "depth",
+      "diagonal"
     ],
     "hold_range_seconds": [
       3,

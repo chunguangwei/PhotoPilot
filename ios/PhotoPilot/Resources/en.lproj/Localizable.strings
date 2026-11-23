@@ -582,3 +582,7 @@
 "sources.refresh_index" = "Refresh photo list";
 "source.local.add" = "Add device source";
 "frames.load_failed" = "Unable to load frames. Please retry.";
+"playback.transition_depth" = "Depth";
+"playback.transition_diagonal" = "Diagonal";
+"cert.expired_title" = "The certificate has expired";
+"cert.expired_body" = "This server’s certificate has expired. If the fingerprint matches your NAS, you can continue; otherwise update the certificate on the NAS first.";

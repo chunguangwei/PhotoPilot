@@ -582,3 +582,7 @@
 "sources.refresh_index" = "刷新照片列表";
 "source.local.add" = "添加本机来源";
 "frames.load_failed" = "无法载入相框，请重试。";
+"playback.transition_depth" = "景深推进";
+"playback.transition_diagonal" = "对角轻扫";
+"cert.expired_title" = "证书已过期";
+"cert.expired_body" = "这台服务器的证书已过期。若你确认指纹与 NAS 一致，可继续使用；否则请先在 NAS 上更新证书。";

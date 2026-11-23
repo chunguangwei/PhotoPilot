@@ -455,10 +455,12 @@ class PlayerView(
             outgoing.animate().cancel()
             incoming.alpha = 1f
             incoming.translationX = 0f
+            incoming.translationY = 0f
             incoming.scaleX = 1f
             incoming.scaleY = 1f
             outgoing.alpha = 0f
             outgoing.translationX = 0f
+            outgoing.translationY = 0f
             outgoing.scaleX = 1f
             outgoing.scaleY = 1f
             showingA = !showingA
@@ -513,6 +515,42 @@ class PlayerView(
                     engine?.transitionFinished()
                 }.start()
             outgoing.animate().alpha(0f).setDuration(transitionMs).start()
+        } else if (transition == PlaybackTiming.TRANSITION_DEPTH) {
+            incoming.bringToFront()
+            raiseOverlays()
+            incoming.alpha = 0f
+            incoming.scaleX = 1.06f
+            incoming.scaleY = 1.06f
+            incoming.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(transitionMs)
+                .withEndAction {
+                    outgoing.alpha = 0f
+                    outgoing.scaleX = 1f
+                    outgoing.scaleY = 1f
+                    showingA = !showingA
+                    engine?.transitionFinished()
+                }.start()
+            outgoing.animate().alpha(0f).scaleX(0.94f).scaleY(0.94f)
+                .setDuration(transitionMs).start()
+        } else if (transition == PlaybackTiming.TRANSITION_DIAGONAL && direction != 0) {
+            val rise = height.coerceAtLeast(1) * 0.06f * direction
+            incoming.bringToFront()
+            raiseOverlays()
+            incoming.alpha = 0f
+            incoming.translationX = direction * distance * 0.45f
+            incoming.translationY = rise
+            incoming.animate().alpha(1f).translationX(0f).translationY(0f)
+                .setDuration(transitionMs)
+                .withEndAction {
+                    outgoing.alpha = 0f
+                    outgoing.translationX = 0f
+                    outgoing.translationY = 0f
+                    outgoing.scaleX = 1f
+                    outgoing.scaleY = 1f
+                    showingA = !showingA
+                    engine?.transitionFinished()
+                }.start()
+            outgoing.animate().alpha(0f).translationX(-direction * distance * 0.12f)
+                .setDuration(transitionMs).start()
         } else {
             incoming.alpha = 0f
             incoming.animate().alpha(1f).setDuration(transitionMs).start()

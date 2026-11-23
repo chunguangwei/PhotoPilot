@@ -9,6 +9,8 @@ object PlaybackTiming {
     const val TRANSITION_WIPE = "wipe"
     const val TRANSITION_ZOOM = "zoom"
     const val TRANSITION_RIPPLE = "ripple"
+    const val TRANSITION_DEPTH = "depth"
+    const val TRANSITION_DIAGONAL = "diagonal"
 
     const val HOLD_MIN_SECONDS = 3
     const val HOLD_MAX_SECONDS = 3600
@@ -17,12 +19,13 @@ object PlaybackTiming {
 
     val transitionTypes: Set<String> = setOf(
         TRANSITION_NONE, TRANSITION_RANDOM, TRANSITION_CROSSFADE, TRANSITION_SLIDE,
-        TRANSITION_WIPE, TRANSITION_ZOOM, TRANSITION_RIPPLE,
+        TRANSITION_WIPE, TRANSITION_ZOOM, TRANSITION_RIPPLE, TRANSITION_DEPTH,
+        TRANSITION_DIAGONAL,
     )
 
     val randomTransitionPool: List<String> = listOf(
         TRANSITION_CROSSFADE, TRANSITION_SLIDE, TRANSITION_WIPE,
-        TRANSITION_ZOOM, TRANSITION_RIPPLE,
+        TRANSITION_ZOOM, TRANSITION_RIPPLE, TRANSITION_DEPTH, TRANSITION_DIAGONAL,
     )
 
     fun transitionMillis(transition: String, transitionSeconds: Double): Long =

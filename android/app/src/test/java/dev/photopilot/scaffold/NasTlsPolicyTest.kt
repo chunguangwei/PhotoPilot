@@ -126,7 +126,7 @@ class NasTlsPolicyTest {
     }
 
     @Test
-    fun expiredCertificateNeverTofuEligible() {
+    fun expiredCertificateRejectedEvenWhenPinned() {
         val cert = fakeCertificate("leaf-der-4".toByteArray(), expired = true)
         val pins = mapOf(
             "nas.local:445" to TofuPinStore.Pin(fp("leaf-der-4".toByteArray()), 1L, 2L),
@@ -138,8 +138,24 @@ class NasTlsPolicyTest {
                 .checkServerTrusted(arrayOf(cert), "RSA")
         }.exceptionOrNull()
         assertTrue(thrown is CertificateExpiredException)
-        assertEquals(NasTlsPolicy.ERR_CERT_UNTRUSTED, context.lastError?.code)
+        assertEquals(NasTlsPolicy.ERR_CERT_EXPIRED, context.lastError?.code)
         assertFalse(context.lastError?.tofuEligible ?: true)
+    }
+
+    @Test
+    fun expiredCertificateErrorDiffersFromUntrusted() {
+        val cert = fakeCertificate("leaf-der-5".toByteArray(), expired = true)
+        val policy = policyWith(emptyMap())
+        val context = policy.connectionContext("nas.local", 445)
+        runCatching {
+            policy.TofuTrustManager("nas.local", 445, context)
+                .checkServerTrusted(arrayOf(cert), "RSA")
+        }
+        assertEquals(NasTlsPolicy.ERR_CERT_EXPIRED, context.lastError?.code)
+        assertFalse(context.lastError?.tofuEligible ?: true)
+        assertFalse(
+            NasTlsPolicy.ERR_CERT_EXPIRED == NasTlsPolicy.ERR_CERT_UNTRUSTED,
+        )
     }
 
     @Test

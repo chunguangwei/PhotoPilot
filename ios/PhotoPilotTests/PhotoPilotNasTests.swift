@@ -263,7 +263,7 @@ final class PhotoPilotNasTests: XCTestCase {
         )
         XCTAssertEqual(
             WebDavClient.map(urlError: URLError(.serverCertificateHasBadDate), policyError: nil),
-            .certificateExpired
+            .certificateExpired(fingerprint: "", subject: nil, validFrom: nil, validTo: nil)
         )
         XCTAssertEqual(
             WebDavClient.map(urlError: URLError(.networkConnectionLost), policyError: nil),

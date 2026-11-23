@@ -10,6 +10,8 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         PlaybackTiming.transitionWipe,
         PlaybackTiming.transitionZoom,
         PlaybackTiming.transitionRipple,
+        PlaybackTiming.transitionDepth,
+        PlaybackTiming.transitionDiagonal,
     ]
     private static let transitionTitleKeys = [
         "playback.transition_none",
@@ -19,6 +21,8 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         "playback.transition_wipe",
         "playback.transition_zoom",
         "playback.transition_ripple",
+        "playback.transition_depth",
+        "playback.transition_diagonal",
     ]
     private static let fitWireValues = ["fit_blur", "fit_color", "fill_crop"]
     private static let solidWireValues = ["", "black", "warm_white"]
@@ -850,6 +854,15 @@ final class PlaybackSettingsViewController: UIViewController, UITextFieldDelegat
         case PlaybackTiming.transitionRipple:
             demoImageView.alpha = 0
             demoImageView.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
+        case PlaybackTiming.transitionDepth:
+            demoImageView.alpha = 0
+            demoImageView.transform = CGAffineTransform(scaleX: 1.06, y: 1.06)
+        case PlaybackTiming.transitionDiagonal:
+            demoImageView.alpha = 0
+            demoImageView.transform = CGAffineTransform(
+                translationX: width * 0.45,
+                y: max(previewContainer.bounds.height, 1) * 0.06
+            )
         default:
             demoImageView.alpha = 0
         }

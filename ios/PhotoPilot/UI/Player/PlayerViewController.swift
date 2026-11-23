@@ -205,6 +205,7 @@ final class PlayerImageLoader: @unchecked Sendable {
 final class PlayerViewController: UIViewController {
     private let wakeOwner = "player." + UUID().uuidString
     static let blurDimOpacity: CGFloat = 0.4
+    private static let backdropFadeSeconds: TimeInterval = 0.35
     private static let controlsHideDelayNanos: UInt64 = 4_000_000_000
     private static let transitionWatchdogNanos: UInt64 = 12_000_000_000
     private(set) static weak var activePlayer: PlayerViewController?
@@ -238,6 +239,7 @@ final class PlayerViewController: UIViewController {
     private var remainingHoldMs: Int64?
     private var nextTransitionAtMs: Int64 = 0
     private var originalBrightness: CGFloat?
+    private var pendingTransitionFitMode: UIView.ContentMode?
 
     private var holdTask: Task<Void, Never>?
     private var transitionWatchdog: Task<Void, Never>?
@@ -950,28 +952,35 @@ final class PlayerViewController: UIViewController {
     private func show(image: UIImage, assetID: String, animated: Bool, direction: Int = 1) {
         noticeLabel.isHidden = true
         let generation = imageGeneration
-        updateBackdrop(for: image, assetID: assetID)
         let reduced = UIAccessibility.isReduceMotionEnabled
         let duration = animated && !reduced && settings.transition != PlaybackTiming.transitionNone
             ? settings.transitionSeconds
             : 0
+        let fitMode = fitContentMode(for: image)
         guard duration > 0 else {
             frontImageView.image = image
             frontImageView.alpha = 1
             frontImageView.transform = .identity
+            frontImageView.contentMode = fitMode
             backImageView.image = nil
             backImageView.alpha = 0
             backImageView.transform = .identity
+            updateBackdrop(for: image, assetID: assetID)
             dispatch(PlaybackEvent(type: "transition_finished"))
             return
         }
         let incoming = backImageView
         let outgoing = frontImageView
+        pendingTransitionFitMode = fitMode
         incoming.image = image
         incoming.alpha = 0
         incoming.transform = .identity
+        incoming.contentMode = fitMode
+        outgoing.alpha = 1
+        outgoing.transform = .identity
         let effect = resolveTransition()
         let edge = view.bounds.width * CGFloat(direction >= 0 ? 1 : -1)
+        let drift = view.bounds.height * 0.06
         switch effect {
         case PlaybackTiming.transitionSlide, PlaybackTiming.transitionWipe:
             incoming.alpha = 1
@@ -980,12 +989,18 @@ final class PlayerViewController: UIViewController {
             incoming.transform = CGAffineTransform(scaleX: 1.08, y: 1.08)
         case PlaybackTiming.transitionRipple:
             incoming.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
+        case PlaybackTiming.transitionDepth:
+            incoming.transform = CGAffineTransform(scaleX: 1.06, y: 1.06)
+        case PlaybackTiming.transitionDiagonal:
+            incoming.transform = CGAffineTransform(translationX: edge * 0.45, y: drift * CGFloat(direction))
         default:
             break
         }
         view.insertSubview(incoming, aboveSubview: outgoing)
         UIView.animate(
             withDuration: duration,
+            delay: 0,
+            options: [.curveEaseInOut, .beginFromCurrentState],
             animations: {
                 switch effect {
                 case PlaybackTiming.transitionSlide:
@@ -993,6 +1008,18 @@ final class PlayerViewController: UIViewController {
                     outgoing.transform = CGAffineTransform(translationX: -edge, y: 0)
                 case PlaybackTiming.transitionWipe:
                     incoming.transform = .identity
+                case PlaybackTiming.transitionDepth:
+                    incoming.alpha = 1
+                    incoming.transform = .identity
+                    outgoing.alpha = 0
+                    outgoing.transform = CGAffineTransform(scaleX: 0.94, y: 0.94)
+                case PlaybackTiming.transitionDiagonal:
+                    incoming.alpha = 1
+                    incoming.transform = .identity
+                    outgoing.alpha = 0
+                    outgoing.transform = CGAffineTransform(
+                        scaleX: 0.98, y: 0.98
+                    ).translatedBy(x: -edge * 0.12, y: 0)
                 default:
                     incoming.alpha = 1
                     incoming.transform = .identity
@@ -1002,11 +1029,14 @@ final class PlayerViewController: UIViewController {
             completion: { [weak self] _ in
                 guard let self, generation == imageGeneration else { return }
                 frontImageView.image = incoming.image
+                frontImageView.contentMode = fitMode
                 frontImageView.alpha = 1
                 frontImageView.transform = .identity
                 backImageView.image = nil
                 backImageView.alpha = 0
                 backImageView.transform = .identity
+                pendingTransitionFitMode = nil
+                updateBackdrop(for: image, assetID: assetID, crossfade: true)
                 dispatch(PlaybackEvent(type: "transition_finished"))
             }
         )
@@ -1020,8 +1050,7 @@ final class PlayerViewController: UIViewController {
         return picked
     }
 
-    private func updateBackdrop(for image: UIImage, assetID: String) {
-        let generation = imageGeneration
+    private func fitContentMode(for image: UIImage) -> UIView.ContentMode {
         let fillFallsBack = settings.fitMode == "fill_crop"
             && !RenderGeometry.fillCropKeepsEnough(
                 srcW: Int64(image.size.width),
@@ -1032,17 +1061,40 @@ final class PlayerViewController: UIViewController {
         let effectiveFitMode = fillFallsBack ? "fit_blur" : settings.fitMode
         switch effectiveFitMode {
         case "fill_crop":
-            frontImageView.contentMode = .scaleAspectFill
-            backImageView.contentMode = .scaleAspectFill
-            backgroundView.image = nil
-            dimView.isHidden = true
-            solidView.isHidden = true
+            return .scaleAspectFill
         case "fit_color":
-            frontImageView.contentMode = .scaleAspectFit
-            backImageView.contentMode = .scaleAspectFit
+            return .scaleAspectFit
+        default:
+            return adaptiveFitContentMode(for: image)
+        }
+    }
+
+    private func updateBackdrop(for image: UIImage, assetID: String, crossfade: Bool = false) {
+        let generation = imageGeneration
+        let fillFallsBack = settings.fitMode == "fill_crop"
+            && !RenderGeometry.fillCropKeepsEnough(
+                srcW: Int64(image.size.width),
+                srcH: Int64(image.size.height),
+                dstW: Int64(view.bounds.width),
+                dstH: Int64(view.bounds.height)
+            )
+        let effectiveFitMode = fillFallsBack ? "fit_blur" : settings.fitMode
+        let mode = fitContentMode(for: image)
+        frontImageView.contentMode = mode
+        backImageView.contentMode = mode
+        switch effectiveFitMode {
+        case "fill_crop":
             backgroundView.image = nil
-            dimView.isHidden = true
-            solidView.isHidden = false
+            crossfadeChrome(duration: crossfade ? Self.backdropFadeSeconds : 0) {
+                self.dimView.isHidden = true
+                self.solidView.isHidden = true
+            }
+        case "fit_color":
+            backgroundView.image = nil
+            crossfadeChrome(duration: crossfade ? Self.backdropFadeSeconds : 0) {
+                self.dimView.isHidden = true
+                self.solidView.isHidden = false
+            }
             if let solid = settings.solidColor {
                 solidView.backgroundColor = Self.solidBackgroundColor(for: solid)
             } else {
@@ -1053,22 +1105,38 @@ final class PlayerViewController: UIViewController {
                 }
             }
         default:
-            let mode = adaptiveFitContentMode(for: image)
-            frontImageView.contentMode = mode
-            backImageView.contentMode = mode
             if mode == .scaleAspectFill {
                 backgroundView.image = nil
-                dimView.isHidden = true
-                solidView.isHidden = true
+                crossfadeChrome(duration: crossfade ? Self.backdropFadeSeconds : 0) {
+                    self.dimView.isHidden = true
+                    self.solidView.isHidden = true
+                }
                 return
             }
-            dimView.isHidden = false
-            solidView.isHidden = true
+            crossfadeChrome(duration: crossfade ? Self.backdropFadeSeconds : 0) {
+                self.dimView.isHidden = false
+                self.solidView.isHidden = true
+            }
             Task { [weak self, loader] in
                 guard let blurred = await loader.blurred(assetID: assetID, image: image) else { return }
                 guard let self, generation == imageGeneration else { return }
-                backgroundView.image = blurred
+                self.backgroundView.image = blurred
+                if crossfade {
+                    self.backgroundView.alpha = 0
+                    UIView.animate(withDuration: Self.backdropFadeSeconds) {
+                        self.backgroundView.alpha = 1
+                    }
+                }
             }
+        }
+    }
+
+    private func crossfadeChrome(duration: TimeInterval, changes: () -> Void) {
+        changes()
+        guard duration > 0 else { return }
+        for layer in [backgroundView, dimView, solidView] where !layer.isHidden {
+            layer.alpha = 0
+            UIView.animate(withDuration: duration) { layer.alpha = 1 }
         }
     }
 
@@ -1159,6 +1227,10 @@ final class PlayerViewController: UIViewController {
         if backImageView.image != nil {
             frontImageView.image = backImageView.image
             backImageView.image = nil
+        }
+        if let pendingTransitionFitMode {
+            frontImageView.contentMode = pendingTransitionFitMode
+            self.pendingTransitionFitMode = nil
         }
         frontImageView.alpha = 1
         frontImageView.transform = .identity

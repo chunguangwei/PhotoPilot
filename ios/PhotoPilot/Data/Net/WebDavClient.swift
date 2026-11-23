@@ -317,7 +317,7 @@ final class WebDavClient: @unchecked Sendable {
         case .cannotConnectToHost:
             return .unreachable
         case .serverCertificateHasBadDate:
-            return .certificateExpired
+            return .certificateExpired(fingerprint: "", subject: nil, validFrom: nil, validTo: nil)
         case .secureConnectionFailed, .serverCertificateUntrusted,
              .serverCertificateHasUnknownRoot, .serverCertificateNotYetValid,
              .clientCertificateRejected, .clientCertificateRequired:

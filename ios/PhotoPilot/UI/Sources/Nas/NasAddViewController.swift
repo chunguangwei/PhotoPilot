@@ -650,7 +650,7 @@ final class NasAddViewController: UIViewController, UITextFieldDelegate {
                 self?.handleTest()
             }, animated: true)
         case .certificateExpired:
-            showError(key: "error.src_unavailable.body")
+            showError(key: "cert.expired_body")
         case .authFailed:
             showError(key: "error.src_auth_failed.body")
         case .pathNotFound:

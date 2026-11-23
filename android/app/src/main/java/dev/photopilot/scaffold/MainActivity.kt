@@ -1352,6 +1352,8 @@ class MainActivity : Activity() {
                         view.showTestError(R.string.error_src_unavailable_body)
                     }
                 }
+                NasTlsPolicy.ERR_CERT_EXPIRED ->
+                    view.showTestError(R.string.cert_expired_body)
                 NasTlsPolicy.ERR_CLEARTEXT_BLOCKED -> openNasCleartext(view, conn)
                 NasTlsPolicy.ERR_PROTOCOL_MISMATCH ->
                     view.showTestError(R.string.error_src_protocol_mismatch_body)

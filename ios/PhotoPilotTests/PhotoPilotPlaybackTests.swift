@@ -282,6 +282,30 @@ final class PhotoPilotPlaybackTests: XCTestCase {
         }
     }
 
+    func testTimingContractTransitionsAreSupported() throws {
+        let vector = try loadVector("playback-timing")
+        let meta = try XCTUnwrap(vector["meta"] as? [String: Any])
+        let declared = try XCTUnwrap(meta["transitions"] as? [String])
+        XCTAssertFalse(declared.isEmpty)
+        for transition in declared {
+            XCTAssertTrue(
+                PlaybackTiming.transitionTypes.contains(transition),
+                "contract declares unsupported transition: \(transition)"
+            )
+            XCTAssertTrue(
+                PlaybackTiming.isValidSettings(holdSeconds: 10, transition: transition, transitionSeconds: 0.8),
+                "transition rejected by validation: \(transition)"
+            )
+        }
+        XCTAssertFalse(PlaybackTiming.randomTransitionPool.contains(PlaybackTiming.transitionNone))
+        for transition in PlaybackTiming.randomTransitionPool {
+            XCTAssertTrue(PlaybackTiming.transitionTypes.contains(transition))
+            XCTAssertNotEqual(PlaybackTiming.transitionNone, transition)
+        }
+        XCTAssertTrue(PlaybackTiming.randomTransitionPool.contains(PlaybackTiming.transitionDepth))
+        XCTAssertTrue(PlaybackTiming.randomTransitionPool.contains(PlaybackTiming.transitionDiagonal))
+    }
+
     func testTimingContractVectors() throws {
         let cases = try XCTUnwrap((try loadVector("playback-timing"))["cases"] as? [[String: Any]])
         XCTAssertGreaterThanOrEqual(cases.count, 26)

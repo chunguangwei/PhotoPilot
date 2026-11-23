@@ -68,7 +68,7 @@ class NasTlsPolicy(
         causes.firstOrNull {
             it is CertificateExpiredException || it is CertificateNotYetValidException
         }?.let {
-            return TlsError(ERR_CERT_UNTRUSTED, null, null, tofuEligible = false)
+            return TlsError(ERR_CERT_EXPIRED, null, null, tofuEligible = false)
         }
         if (error is SSLPeerUnverifiedException || causes.any { it is SSLPeerUnverifiedException }) {
             return TlsError(ERR_HOSTNAME_MISMATCH, null, null, tofuEligible = true)
@@ -142,7 +142,7 @@ class NasTlsPolicy(
                 chain.forEach { it.checkValidity() }
             } catch (e: CertificateException) {
                 context.noteError(
-                    TlsError(ERR_CERT_UNTRUSTED, fingerprint, issuer, tofuEligible = false, validUntilMs = validUntil),
+                    TlsError(ERR_CERT_EXPIRED, fingerprint, issuer, tofuEligible = false, validUntilMs = validUntil),
                 )
                 throw e
             }
@@ -175,6 +175,7 @@ class NasTlsPolicy(
 
     companion object {
         const val ERR_CERT_UNTRUSTED = "SOURCE_CERT_UNTRUSTED"
+        const val ERR_CERT_EXPIRED = "SOURCE_CERT_EXPIRED"
         const val ERR_HOSTNAME_MISMATCH = "SOURCE_CERT_HOSTNAME_MISMATCH"
         const val ERR_FINGERPRINT_CHANGED = "TLS_FINGERPRINT_CHANGED"
         const val ERR_CLEARTEXT_BLOCKED = "TLS_CLEARTEXT_BLOCKED"

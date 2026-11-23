@@ -644,4 +644,8 @@
     <string name="sources.refresh_index">刷新照片列表</string>
     <string name="source.local.add">添加本机来源</string>
     <string name="frames.load_failed">无法载入相框，请重试。</string>
+    <string name="playback.transition_depth">景深推进</string>
+    <string name="playback.transition_diagonal">对角轻扫</string>
+    <string name="cert.expired_title">证书已过期</string>
+    <string name="cert.expired_body">这台服务器的证书已过期。若你确认指纹与 NAS 一致，可继续使用；否则请先在 NAS 上更新证书。</string>
 </resources>

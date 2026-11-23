@@ -846,13 +846,14 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         isDemoRunning = true
         incoming.bringToFront()
         incoming.setImageBitmap(demo)
-        incoming.translationX = if (
-            transition == PlaybackTiming.TRANSITION_SLIDE || transition == PlaybackTiming.TRANSITION_WIPE
-        ) {
-            width
-        } else {
-            0f
+        incoming.translationX = when (transition) {
+            PlaybackTiming.TRANSITION_SLIDE, PlaybackTiming.TRANSITION_WIPE -> width
+            PlaybackTiming.TRANSITION_DIAGONAL -> width * 0.45f
+            else -> 0f
         }
+        val demoHeight = (if (previewFrame.height > 0) previewFrame.height else 1).toFloat()
+        incoming.translationY =
+            if (transition == PlaybackTiming.TRANSITION_DIAGONAL) demoHeight * 0.06f else 0f
         incoming.alpha = if (
             transition == PlaybackTiming.TRANSITION_SLIDE || transition == PlaybackTiming.TRANSITION_WIPE
         ) {
@@ -869,6 +870,10 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
                 incoming.scaleX = 0.9f
                 incoming.scaleY = 0.9f
             }
+            PlaybackTiming.TRANSITION_DEPTH -> {
+                incoming.scaleX = 1.06f
+                incoming.scaleY = 1.06f
+            }
             else -> {
                 incoming.scaleX = 1f
                 incoming.scaleY = 1f
@@ -878,12 +883,14 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
         incoming.animate()
             .alpha(1f)
             .translationX(0f)
+            .translationY(0f)
             .scaleX(1f)
             .scaleY(1f)
             .setDuration(duration)
             .withEndAction {
                 incoming.alpha = 0f
                 incoming.translationX = 0f
+                incoming.translationY = 0f
                 incoming.scaleX = 1f
                 incoming.scaleY = 1f
                 isDemoRunning = false
@@ -1149,6 +1156,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             PlaybackTiming.TRANSITION_WIPE,
             PlaybackTiming.TRANSITION_ZOOM,
             PlaybackTiming.TRANSITION_RIPPLE,
+            PlaybackTiming.TRANSITION_DEPTH,
+            PlaybackTiming.TRANSITION_DIAGONAL,
         )
         val TRANSITION_LABELS = listOf(
             R.string.playback_transition_none,
@@ -1158,6 +1167,8 @@ class PlaybackSettingsView(context: Context) : LinearLayout(context) {
             R.string.playback_transition_wipe,
             R.string.playback_transition_zoom,
             R.string.playback_transition_ripple,
+            R.string.playback_transition_depth,
+            R.string.playback_transition_diagonal,
         )
         val POSITIONS = listOf(
             FramePlaybackSettings.POSITION_TOP_LEADING,

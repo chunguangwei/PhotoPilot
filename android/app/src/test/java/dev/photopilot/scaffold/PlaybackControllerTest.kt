@@ -52,6 +52,30 @@ class PlaybackControllerTest {
     }
 
     @Test
+    fun timingContractTransitionsAreSupported() {
+        val meta = Vectors.load("playback-timing.json").getJSONObject("meta")
+        val declared = stringList(meta.getJSONArray("transitions"))
+        assertTrue("contract declares no transitions", declared.isNotEmpty())
+        for (transition in declared) {
+            assertTrue(
+                "contract declares unsupported transition: $transition",
+                PlaybackTiming.transitionTypes.contains(transition),
+            )
+            assertTrue(
+                "transition rejected by validation: $transition",
+                PlaybackTiming.isValidSettings(10.0, transition, 0.8),
+            )
+        }
+        assertTrue(!PlaybackTiming.randomTransitionPool.contains(PlaybackTiming.TRANSITION_NONE))
+        for (transition in PlaybackTiming.randomTransitionPool) {
+            assertTrue(PlaybackTiming.transitionTypes.contains(transition))
+            assertTrue(transition != PlaybackTiming.TRANSITION_NONE)
+        }
+        assertTrue(PlaybackTiming.randomTransitionPool.contains(PlaybackTiming.TRANSITION_DEPTH))
+        assertTrue(PlaybackTiming.randomTransitionPool.contains(PlaybackTiming.TRANSITION_DIAGONAL))
+    }
+
+    @Test
     fun timingContractVectors() {
         val cases = Vectors.load("playback-timing.json").getJSONArray("cases")
         assertTrue("expected at least 26 vectors", cases.length() >= 26)

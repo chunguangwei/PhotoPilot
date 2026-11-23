@@ -1,5 +1,45 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## 2026-11-23 NAS（WebDAV/HTTPS）浏览失败排查、相框播放适配修复、v1.4.23 / iOS 1.4.15
+
+### A. NAS HTTPS「列表可见但照片全部失败」排查结论（未闭合，需要用户一步确认）
+
+- **用户证据**：HTTP 来源可用；**HTTPS 下双端全部失败**；用户已在新来源测试连接时点过「信任」；**用户 2026-11-23 明确证书为自签、未过期**。
+- **真实链路验证（关键，替换此前 AcceptAllDelegate 的无效验证）**：新增 harness `/tmp/tlsverify/session_main.swift`，直接编入真实 `WebDavClient.swift`+`NasTlsPolicy.swift`+`NasPath/NasAddress/RemoteMediaTypes`，对本地 HTTPS WebDAV 仿真器（自签 CN=127.0.0.1，port 18443，DER SHA-256 `f9ecc3e9…f3ca7`）跑真实 `URLSession` 委派链路：
+  - 无 pin → `NasTransportError.certUntrusted`（PROPFIND 被拒，文案「服务器证书未受信任…」）；
+  - **pin 匹配 → PROPFIND ok（5 条，3 个文件）+ 2/2 GET 下载成功**；
+  - pin 失配 → `fingerprintChanged`。
+  → **自签证书＋正确指纹在 iOS 真实链路上是通的**，问题只可能是「请求时用的 host:port 没有匹配的 pin」或「失败不在 TLS」。此前用 AcceptAllDelegate 且 `tlsPolicy:nil` 的 harness 绕过了策略，结论无效，已废弃。
+- **代码侧核查**：`savePin` 键 = `endpoint.host:endpoint.port`（小写化），请求时键 = `challenge.protectionSpace.host:port`，两端均小写，`NasEndpoint.port` 恒有默认值（webdav=443）；`AppSettingsRepository.setValue` 同步落库；`TofuPinStore` 读写 JSON map 正确；`RemoteMediaService.adapter` 与 `AppEnvironment` 均传入同一 `TofuPinStore`。未发现键不一致或 pin 丢失的确定性缺陷。
+- **规范冲突（重要）**：01 §208、02 S06b、03 §219、04 §492、07 N06 均冻结「**过期证书明确拒绝、不提供信任继续入口**」。本轮曾尝试「pin 指纹匹配即放行（过期也放行）」，与冻结规则和 Android 既有测试 `expiredCertificateNeverTofuEligible` 冲突，**已按规范回退**，未擅自放宽安全策略。
+- **本轮实际交付（规范内改进）**：
+  - iOS `NasTransportError` 实现 `LocalizedError`（双语），播放器/来源页不再显示 `error 4` 之类原文；`.certificateExpired` 由通用错误改为明确文案 `cert.expired_body`（无信任入口）。
+  - Android 新增 `NasTlsPolicy.ERR_CERT_EXPIRED`，`checkServerTrusted` 有效期失败映射到该码、`tofuEligible=false`，`MainActivity` 走 `cert_expired_body` 提示；**消除了「过期证书弹信任框→信任后重测仍失败」的死循环**（旧行为违反 S06b）。
+  - 新增契约/单测：Android `expiredCertificateRejectedEvenWhenPinned`、`expiredCertificateErrorDiffersFromUntrusted`（`NasTlsPolicyTest`）。
+- **未完成 / 下一步（阻塞事实）**：用户 NAS 证书自签未过期，需确认为何 pin 不匹配。建议按顺序：①来源页编辑该来源→测试连接→在证书确认框重新确认（显示指纹）后再播放；②若仍失败，读取本条改进后的具体文案（未受信任/指纹变化/主机名不匹配/无法连接），据此定位；③必要时在设置「已信任的服务器」撤销该主机指纹后重新添加。**在拿到具体错误前不得宣称 HTTPS 浏览问题已修复。**
+
+### B. 相框播放「当前照片突然放大后再切图」
+
+- **根因（iOS，已确认）**：`PlayerViewController.show(image:...)` 在过渡动画**开始前**调用 `updateBackdrop(for: 新图)`，该函数会同时改写 `frontImageView`/`backImageView` 的 `contentMode` 与模糊底色。当前图仍显示时被改成**新图**的适配方式（如 `fit_blur` 的 aspectFit → `fill_crop`/窄条判定的 aspectFill），视觉上就是「当前照片先被放大裁切，然后才切到下一张」；相邻照片比例差异越大越明显，符合「偶尔出现」。
+- **修复**：拆出纯计算 `fitContentMode(for:)`；过渡开始时只设置 `incoming` 的 `contentMode`，**不再触碰正在展示的 `frontImageView`**；过渡完成后再同步前景适配并以 0.35s 淡入模糊底色/纯色底（`crossfadeChrome`）；`completeTransition()` 兜底路径应用 `pendingTransitionFitMode`；同时清理上一轮的残留变换（`outgoing.transform = .identity`、`alpha = 1`）。
+- **Android**：`onShowAsset` 原本只改 incoming 的 `scaleType`，未触发同类跳变；本轮仅补齐各分支 `translationY` 复位，避免异常中断后的残留位移。
+
+### C. 新增转场（双端）
+
+- 新增 `depth`（景深推进：前图 1.0→0.94 淡出、后图 1.06→1.0 淡入）与 `diagonal`（对角轻扫：后图自 45% 宽 + 6% 高斜向位移淡入、前图 0.98 反向轻退）。
+- 同步点：`PlaybackTiming`（iOS/Android 常量 + `transitionTypes` + `randomTransitionPool`）、播放设置下拉与预览演示（双端）、`contracts/vectors/playback-timing.json` 的 `meta.transitions`、`contracts/strings/strings.json`（`playback.transition_depth`/`playback.transition_diagonal`，经 `tools/gen_strings.py` 生成 8 份产物）、`04-工程规格书.md` §11 枚举扩充记录（沿用 2026-10-12 同一授权/同步方式）。
+- 减少动态效果时仍只做短淡入或直接切换，不引入持续缩放。
+
+### D. 构建、测试与发版（本轮实际结果）
+
+- `make check`：单元/契约/词条/脚手架/schema/fixtures/文档链接通过（仅预置 `check_design_assets.py` 设计源摘要需 `make design-freeze`，本轮无权断言设计验收）。
+- iOS：`make ios-build` BUILD SUCCEEDED；`make ios-analyze` ANALYZE SUCCEEDED。**无模拟器 runtime，XCTest 本轮 NO-RUNTIME 未执行**（不宣称测试通过）。
+- Android：`./android/gradlew -p android :app:assembleDebug`、`:app:lintDebug`、`:app:testDebugUnitTest` 全部 BUILD SUCCESSFUL（JDK 21 = Android Studio JBR，`android/local.properties` 本机写入 sdk.dir，均未入库）。
+- **Android v1.4.23（84）**：`assembleRelease` 通过；APK `PhotoPilot-1.4.23.apk` 154,582,874 B，SHA-256 `a32912a9a2379285ccd55bc39ee3676d880226b613882debd485ab38e01d45df`；`apksigner verify` V2 通过（`CN=PhotoPilot`，证书 SHA-256 `9cd985f1…4f37c`）。GitHub Release `v1.4.23` 附 APK + `SHA256SUMS.txt`。
+- **iOS 1.4.15（76）准备**：`xcodebuild archive`（Release/generic iOS，team CCTFP9X3SW，automatic + allowProvisioningUpdates）ARCHIVE SUCCEEDED → `.build/appstore-submit/PhotoPilot-1.4.15-76.xcarchive`；`-exportArchive`（`method=app-store-connect`、`destination=export`）**EXPORT SUCCEEDED** → `.build/store-1.4.15/PhotoPilot.ipa` 27,220,450 B，SHA-256 `be2fc83d22e798b4ca4fe49a38e2b5f46d2026aa2de6fe752b9be6bd350d9466`；`Info.plist` 1.4.15/76，`DistributionSummary.plist` 为 Apple Distribution（`66038D01…4FFDC`，2027/11/11 到期）、arm64、内含 AMSMB2 1.0 / MediaPipe 1.2.3 / onnxruntime 1.30.0。**未上传 App Store Connect、未提交审核**（本机无 ASC CLI 凭据，由用户在 Xcode Organizer/Transporter 完成）。
+- 版本：`android/app/build.gradle.kts` 84 / 1.4.23；`ios/project.yml` 76 / 1.4.15（已 `make ios-generate`，pbxproj 仅版本行变化）。
+- 商店文案：`store/appstore/review/Store1415Update.md`（What's New / 宣传文本 / 本版变更；未发布、未提交）。
+
 ## 2026-11-21 双端修复合并、Android 冷启动优化与 v1.4.22 / iOS 1.4.14 准备发版
 
 - 用户指令：一并完成双端修复并合并版本、按最佳实践优化、去掉 Android 冷启动「正在整理照片库」卡顿、更新所有文档；iOS 备 App Store 更新、Android 走 Git 发版。

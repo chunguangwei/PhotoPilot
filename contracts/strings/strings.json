@@ -4618,6 +4618,34 @@
       "platform": "all",
       "zh": "无法载入相框，请重试。",
       "en": "Unable to load frames. Please retry."
+    },
+    {
+      "key": "playback.transition_depth",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "景深推进",
+      "en": "Depth"
+    },
+    {
+      "key": "playback.transition_diagonal",
+      "section": "7. 播放设置（S13）",
+      "platform": "all",
+      "zh": "对角轻扫",
+      "en": "Diagonal"
+    },
+    {
+      "key": "cert.expired_title",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "证书已过期",
+      "en": "The certificate has expired"
+    },
+    {
+      "key": "cert.expired_body",
+      "section": "4.5 本地网络与证书（S06a–S06c）",
+      "platform": "all",
+      "zh": "这台服务器的证书已过期。若你确认指纹与 NAS 一致，可继续使用；否则请先在 NAS 上更新证书。",
+      "en": "This server’s certificate has expired. If the fingerprint matches your NAS, you can continue; otherwise update the certificate on the NAS first."
     }
   ]
 }
