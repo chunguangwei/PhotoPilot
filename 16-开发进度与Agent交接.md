@@ -1,5 +1,37 @@
 # PhotoPilot · 光屿 — 开发进度与 Agent 交接
 
+## 2026-11-23 加载性能优化（NAS 缩略图持久缓存与并发）、v1.4.24 / iOS 1.4.16
+
+用户反馈：HTTPS WebDAV 已可用，但「加载照片特别慢，冷启动后还要重新加载，包括缩略图」。
+
+### A. 现状调研结论（双端共通根因）
+
+- **无持久缩略图层**：iOS 预览只在请求 ≤512px 时命中且与原图共享 128MiB LRU（iPad 大网格请求会绕过、播放原图下载会挤出预览）；Android 完全没有缩略图文件，冷启动内存 LRU 清空后每张 192px 缩略图都整图解码，原图不在缓存则整图重下载。
+- **并发受限**：iOS `RemoteMediaCache` 非 playback 传输并发恒为 1（网格近似串行逐张下载）；Android 全局 2 并发。
+- 列表数据本身有持久索引（不每启 PROPFIND），慢主要发生在缩略图层。契约允许：PRD §9.1「缩略图…可重建缓存，可按 LRU 回收」，04 §2.1 `<Caches>/thumbs/`。
+
+### B. 双端优化改动
+
+- **iOS 缩略图 bucket 持久化**：`RemoteMediaService.image` 任意请求 ≤2048px 先按 `previewBucket = min(128×⌈max(w,h)/128⌉, 2048)` 从磁盘预览缓存命中；读取原图生成请求尺寸图后按同 bucket JPEG 落盘（`RemoteMediaCache.cachedPreview/storePreview` 增加 bucket 参数，512 复用旧 `preview-512-v1` 键，其余 `preview-<bucket>-v2`）。修复「iPad 网格请求 >512px 完全跳过预览重下整图」；AIFrameService 预处理下载也生成 512 预览（传参适配）。
+- **iOS 并发提升**：`RemoteTransferGate(limit:3)`；`RemoteMediaCache` 调度非 playback 并发 1→2（background 保持单并发，`testOnlyOneBackgroundTransferRunsAtATime` 契约测试不破坏）。
+- **Android 缩略图持久层**：`RemoteFileCache` 新增 `readIfPresent`/`storeBytes`；`RemoteMediaRepository.bitmap` 请求 ≤2048px 先查 `thumb:` 前缀磁盘文件（与原图同实例、共享 128MiB 预算、LRU 同淘汰、授权失效 `clear(force)` 一并清除），未命中则下载原图采样解码、JPEG(80) 落盘并回填内存 LRU。新增单测 2 条（LRU 淘汰共享预算、不同 key 独立文件）。
+- 契约/文档同步：04 规格书 §2.1 补「NAS 按需缩略图缓存」实现说明；store 审查证据 `store/appstore/review/Release1424.json`。
+
+### C. 验证与发版（本轮实际结果）
+
+- `make check`：全部通过（仅预置 `check_design_assets.py` 设计源摘要需 `make design-freeze`，本轮无权断言设计验收）。
+- iOS：`make ios-build` BUILD SUCCEEDED；`make ios-analyze` ANALYZE SUCCEEDED。无模拟器 runtime，XCTest 本轮 NO-RUNTIME 未执行。
+- Android（JDK = Android Studio JBR 21，`JAVA_HOME` 指向 `/Applications/Android Studio.app/Contents/jbr/Contents/Home`，因本机默认 JVM 11 不满足 Gradle 9）：`:app:assembleDebug`、`:app:lintDebug`、`:app:testDebugUnitTest` 全部 BUILD SUCCESSFUL（含新增 RemoteCacheTest 2 条）。
+- **Android v1.4.24（85）**：`assembleRelease` 通过；APK `PhotoPilot-1.4.24.apk` 154,599,258 B，SHA-256 `91421b472306ca4b1d5967e4d9746c530e1ec49ad0cb9c0410711d5438f5f96e`；`apksigner verify` V2 通过（`CN=PhotoPilot`，证书 SHA-256 `9cd985f1…4f37c`，与历史一致）。GitHub Release `v1.4.24`（Latest）附 APK + `SHA256SUMS.txt`。
+- **iOS 1.4.16（77）准备**：`xcodebuild archive` ARCHIVE SUCCEEDED → `.build/appstore-submit/PhotoPilot-1.4.16-77.xcarchive`；`-exportArchive`（`method=app-store-connect`、ExportOptions.plist：teamID CCTFP9X3SW、automatic、manageAppVersionAndBuildNumber=false、stripSwiftSymbols=true）**EXPORT SUCCEEDED** → `.build/store-1.4.16/PhotoPilot.ipa` 27,221,836 B，SHA-256 `3e77faf13e9565055f1d68dbdd4248dadf4dd41058cf66fc709a97c2cc61245a`；`DistributionSummary.plist`：PhotoPilot.app 1.4.16/77、arm64、Apple Distribution（`66038D01…4FFDC`，2027/11/11 到期）、内含 AMSMB2 1.0 / MediaPipeTasksCommon+Retrieval 1.2.3 / onnxruntime 1.30.0。**未上传 App Store Connect、未提交审核**（本机无 ASC 凭据，由用户在 Xcode Organizer/Transporter 完成）。
+- 版本：`android/app/build.gradle.kts` 85 / 1.4.24；`ios/project.yml` 77 / 1.4.16（已 `make ios-generate`，pbxproj 仅版本行变化）。
+
+### D. 未完成 / 下一步
+
+- **真机闭环**：缩略图缓存收益需用户在真机确认——首次浏览某目录后退出再进（或冷启动）应明显加快；若仍有「重新加载」，请把具体表现反馈（iOS 预期是屏幕截图规模请求命中 bucket）。未获得真机证据前不宣称性能达标。
+- iOS 上传 App Store Connect 与提审：需用户在 Xcode Organizer/Transporter 完成（IPA 已导出）。
+- iOS XCTest 因无模拟器 runtime 未跑，不宣称测试通过。
+
 ## 2026-11-23 NAS（WebDAV/HTTPS）浏览失败排查、相框播放适配修复、v1.4.23 / iOS 1.4.15
 
 ### A. NAS HTTPS「列表可见但照片全部失败」排查结论（未闭合，需要用户一步确认）

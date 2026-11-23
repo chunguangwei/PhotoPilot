@@ -56,10 +56,40 @@ class RemoteMediaRepository(
             readGate.acquire(priority)
             try { localReferences?.bitmap(requireNotNull(item.remote), width, height) }
             finally { readGate.release() }
-        } else read(item, priority) { file, orientation -> dev.photopilot.scaffold.data.render.BitmapRenderer.decodeToTarget(file, width, height, orientation) }
+        } else {
+            if (item.referenceCacheable && maxOf(width, height) in 1..2048) {
+                thumbnailFromDisk(item, key, width, height, priority)?.let { return it }
+            }
+            read(item, priority) { file, orientation -> dev.photopilot.scaffold.data.render.BitmapRenderer.decodeToTarget(file, width, height, orientation) }
+        }
         if (!valid(item)) return null
         if (item.referenceCacheable && bitmap != null && bitmap.allocationByteCount <= 33554432) decoded.put(key, bitmap)
         return bitmap
+    }
+
+    private suspend fun thumbnailFromDisk(item: PlaybackItem, key: String, width: Int, height: Int, priority: Int): android.graphics.Bitmap? {
+        val thumbKey = "thumb:$key"
+        val file = withContext(Dispatchers.IO) { cache.readIfPresent(thumbKey) }
+        if (file != null) {
+            val bitmap = runCatching { android.graphics.BitmapFactory.decodeFile(file.absolutePath) }.getOrNull()
+            if (bitmap != null && valid(item) && bitmap.allocationByteCount <= 33554432) {
+                decoded.put(key, bitmap)
+                return bitmap
+            }
+        }
+        val generated = read(item, priority) { source, orientation -> dev.photopilot.scaffold.data.render.BitmapRenderer.decodeToTarget(source, width, height, orientation) }
+        if (generated != null && valid(item)) {
+            if (generated.allocationByteCount <= 33554432) decoded.put(key, generated)
+            storeThumbnail(thumbKey, generated)
+        }
+        return generated
+    }
+
+    private suspend fun storeThumbnail(thumbKey: String, bitmap: android.graphics.Bitmap) = withContext(Dispatchers.IO) {
+        val out = java.io.ByteArrayOutputStream(81920)
+        if (bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)) {
+            cache.storeBytes(thumbKey, out.toByteArray())
+        }
     }
     fun close() { authorityScope.cancel(); db.invalidationTracker.removeObserver(observer); cache.clear(force = true); decoded.evictAll() }
     fun trimMemory(level: Int) {

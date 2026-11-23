@@ -50,6 +50,27 @@ class RemoteFileCache(
         }
     }
 
+    fun readIfPresent(key: String): File? = File(directory, filename(key)).takeIf { it.isFile }
+
+    fun storeBytes(key: String, data: ByteArray): Boolean = synchronized(lock) {
+        val name = filename(key)
+        val target = File(directory, name)
+        try {
+            if (target.isFile) {
+                target.setLastModified(System.currentTimeMillis())
+                return true
+            }
+            if (!directory.isDirectory && !directory.mkdirs()) return false
+            room(name, "store:$name", data.size.toLong())
+            target.writeBytes(data)
+            reservations.remove("store:$name")
+            true
+        } catch (_: Throwable) {
+            reservations.remove("store:$name")
+            false
+        }
+    }
+
     suspend fun acquire(key: String, expectedSize: Long?, valid: () -> Boolean, open: () -> InputStream): Lease {
         val name = filename(key)
         val pending = synchronized(lock) {

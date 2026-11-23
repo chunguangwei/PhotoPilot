@@ -566,7 +566,7 @@ actor AIFrameService {
             do {
                 if let descriptor = candidate.remoteDescriptor, descriptor != lease.descriptor { throw AIFrameError.staleRun }
                 vector = try await engine.encode(imageURL: lease.fileURL)
-                await media.cachePreview(lease: lease)
+                await media.cachePreview(lease: lease, width: 512, height: 512)
                 await lease.release()
             } catch {
                 await lease.release()

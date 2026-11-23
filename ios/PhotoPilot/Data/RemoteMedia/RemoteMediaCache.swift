@@ -121,7 +121,9 @@ actor RemoteMediaCache {
             return
         }
         let reserved = descriptor.byteSize.flatMap { $0 > 0 ? $0 : nil } ?? budget
-        let transportBusy = work.count >= 2 || (priority != .playback && work.values.contains(where: { $0.priority != .playback }))
+        let nonPlayback = work.values.filter { $0.priority != .playback }
+        let slotLimit = priority == .background ? 1 : 2
+        let transportBusy = work.count >= 3 || (priority != .playback && nonPlayback.count >= slotLimit)
         if transportBusy && priority != .background {
             queued[token] = Queued(descriptor: descriptor, priority: priority, token: token, continuation: continuation, fetch: fetch, authorized: authorized)
             queueOrder.append(token)
@@ -129,7 +131,7 @@ actor RemoteMediaCache {
         }
         do {
             guard reserved <= budget else { throw RemoteMediaError.tooLarge }
-            guard work.count < 2, priority == .playback || !work.values.contains(where: { $0.priority != .playback }) else { throw RemoteMediaError.busy }
+            guard work.count < 3, priority == .playback || nonPlayback.count < slotLimit else { throw RemoteMediaError.busy }
             try makeRoom(reserved)
             while freeSpace() < reserved + freeReserve {
                 guard let victim = entries.filter({ readers[$0.key]?.isEmpty != false }).min(by: { $0.value.accessed < $1.value.accessed })?.key else { throw RemoteMediaError.lowSpace }
@@ -205,18 +207,20 @@ actor RemoteMediaCache {
     private func drainQueue() {
         queueOrder.sort { (queued[$0]?.priority.rawValue ?? 0) > (queued[$1]?.priority.rawValue ?? 0) }
         while let token = queueOrder.first, let request = queued[token] {
-            if work.count >= 2 || (request.priority != .playback && work.values.contains(where: { $0.priority != .playback })) { return }
+            let nonPlayback = work.values.filter { $0.priority != .playback }
+            let limit = request.priority == .background ? 1 : 2
+            if work.count >= 3 || (request.priority != .playback && nonPlayback.count >= limit) { return }
             queueOrder.removeFirst()
             queued[token] = nil
             enqueue(request.descriptor, priority: request.priority, token: token, continuation: request.continuation, fetch: request.fetch, authorized: request.authorized)
         }
     }
 
-    func cachedPreview(_ descriptor: RemoteMediaDescriptor, authorized: @escaping Authority) async throws -> RemoteMediaLease? {
+    func cachedPreview(_ descriptor: RemoteMediaDescriptor, bucket: Int = 512, authorized: @escaping Authority) async throws -> RemoteMediaLease? {
         try Task.checkCancellation()
         guard await authorized(descriptor) else { throw RemoteMediaError.revoked }
         try restore()
-        let key = descriptor.identity + "\u{0}preview-512-v1"
+        let key = previewKey(descriptor, bucket: bucket)
         guard var entry = entries[key], entry.descriptor == descriptor, entry.contentHash != nil else { return nil }
         let url = root.appendingPathComponent(entry.filename)
         guard fileSize(url) == entry.bytes else { removeEntry(key); return nil }
@@ -228,13 +232,13 @@ actor RemoteMediaCache {
         return RemoteMediaLease(fileURL: url, descriptor: descriptor, owner: self, token: token, cacheIdentity: key, contentHash: entry.contentHash)
     }
 
-    func storePreview(_ data: Data, descriptor: RemoteMediaDescriptor, contentHash: String, authorized: @escaping Authority) async throws {
+    func storePreview(_ data: Data, descriptor: RemoteMediaDescriptor, bucket: Int = 512, contentHash: String, authorized: @escaping Authority) async throws {
         try Task.checkCancellation()
         guard !data.isEmpty, data.count <= 1_048_576, !contentHash.isEmpty else { throw RemoteMediaError.tooLarge }
         guard await authorized(descriptor) else { throw RemoteMediaError.revoked }
         try Task.checkCancellation()
         try restore()
-        let key = descriptor.identity + "\u{0}preview-512-v1"
+        let key = previewKey(descriptor, bucket: bucket)
         if let entry = entries[key], fileSize(root.appendingPathComponent(entry.filename)) == entry.bytes { return }
         let bytes = Int64(data.count)
         try makeRoom(bytes)
@@ -243,6 +247,10 @@ actor RemoteMediaCache {
         try data.write(to: root.appendingPathComponent(filename), options: .atomic)
         entries[key] = Entry(descriptor: descriptor, filename: filename, bytes: bytes, accessed: Date(), contentHash: contentHash)
         saveIndex()
+    }
+
+    private func previewKey(_ descriptor: RemoteMediaDescriptor, bucket: Int) -> String {
+        descriptor.identity + "\u{0}preview-" + (bucket == 512 ? "512-v1" : "\\(bucket)-v2")
     }
 
     func release(identity: String, token: UUID) {

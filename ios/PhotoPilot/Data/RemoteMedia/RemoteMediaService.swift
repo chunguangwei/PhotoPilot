@@ -103,7 +103,7 @@ actor RemoteMediaService {
     let cache: RemoteMediaCache
     let controller: PersistenceController
     let diskReservations: RemoteDiskReservations
-    let transfers = RemoteTransferGate(limit: 2)
+    let transfers = RemoteTransferGate(limit: 3)
     let localTransfers = RemoteTransferGate(limit: 1)
     private let network: NasNetworkPolicy
     private let factory: AdapterFactory?
@@ -368,29 +368,30 @@ actor RemoteMediaService {
                 guard await authorized(runtimeID: runtimeID, mode: mode), await repository.authorized(record.descriptor, allowLocal: true), !erasing, generation == RemoteDecodedImages.shared.generation() else { throw RemoteMediaError.revoked }
                 return image
             }
-        }
-        if width <= 512, height <= 512,
-           case .sourceAsset(let id) = MediaReference(runtimeID: runtimeID),
-           let record = try await repository.record(id: id),
-           let preview = try await cache.cachedPreview(record.descriptor, authorized: { [repository] in await repository.authorized($0, allowLocal: true) }) {
-            do {
-                guard let hash = preview.contentHash, !(try await blockedHash(hash)) else { throw RemoteMediaError.revoked }
-                learnedHashes[record.descriptor.identity] = hash
-                let generation = RemoteDecodedImages.shared.generation()
-                let image = await Task.detached {
-                    ImageRenderer.thumbnail(fileURL: preview.fileURL, maxPixelWidth: width, maxPixelHeight: height).map { UIImage(cgImage: $0) }
-                }.value
-                await preview.release()
-                try Task.checkCancellation()
-                guard generation == RemoteDecodedImages.shared.generation(), await authorized(runtimeID: runtimeID, mode: mode), await repository.authorized(record.descriptor, allowLocal: true) else { throw RemoteMediaError.revoked }
-                if let image {
-                    let key = SHA256Hex.digest(data: Data(record.descriptor.identity.utf8)) + ":\(width)x\(height)"
-                    RemoteDecodedImages.shared.store(image, key: key, generation: generation)
-                    return image
+            let side = max(width, height)
+            if side > 0, side <= 2048,
+               case .sourceAsset(let id) = MediaReference(runtimeID: runtimeID),
+               let record = try await repository.record(id: id),
+               let preview = try await cache.cachedPreview(record.descriptor, bucket: Self.previewBucket(width: width, height: height), authorized: { [repository] in await repository.authorized($0, allowLocal: true) }) {
+                do {
+                    guard let hash = preview.contentHash, !(try await blockedHash(hash)) else { throw RemoteMediaError.revoked }
+                    learnedHashes[record.descriptor.identity] = hash
+                    let generation = RemoteDecodedImages.shared.generation()
+                    let image = await Task.detached {
+                        ImageRenderer.thumbnail(fileURL: preview.fileURL, maxPixelWidth: width, maxPixelHeight: height).map { UIImage(cgImage: $0) }
+                    }.value
+                    await preview.release()
+                    try Task.checkCancellation()
+                    guard generation == RemoteDecodedImages.shared.generation(), await authorized(runtimeID: runtimeID, mode: mode), await repository.authorized(record.descriptor, allowLocal: true) else { throw RemoteMediaError.revoked }
+                    if let image {
+                        let key = SHA256Hex.digest(data: Data(record.descriptor.identity.utf8)) + ":\(width)x\(height)"
+                        RemoteDecodedImages.shared.store(image, key: key, generation: generation)
+                        return image
+                    }
+                } catch {
+                    await preview.release()
+                    throw error
                 }
-            } catch {
-                await preview.release()
-                throw error
             }
         }
         return nil
@@ -425,7 +426,7 @@ actor RemoteMediaService {
             context.draw(thumbnail, in: CGRect(x: 0, y: 0, width: thumbnail.width, height: thumbnail.height))
             return context.makeImage().map { UIImage(cgImage: $0) }
         }.value
-        if image != nil { await cachePreview(lease: lease) }
+        if image != nil { await cachePreview(lease: lease, width: width, height: height) }
         await lease.release()
         try Task.checkCancellation()
         guard generation == RemoteDecodedImages.shared.generation(), await authorized(runtimeID: runtimeID, mode: mode), await repository.authorized(descriptor, allowLocal: true) else { throw RemoteMediaError.revoked }
@@ -434,14 +435,22 @@ actor RemoteMediaService {
         return image
     }
 
-    func cachePreview(lease: RemoteMediaLease) async {
+    static func previewBucket(width: Int, height: Int) -> Int {
+        let side = max(width, height)
+        guard side > 0 else { return 0 }
+        return min(((side + 127) / 128) * 128, 2048)
+    }
+
+    func cachePreview(lease: RemoteMediaLease, width: Int, height: Int) async {
         guard !erasing, !Task.isCancelled,
               let record = try? await repository.record(id: lease.descriptor.sourceAssetID),
               !record.referenceOnly, record.descriptor == lease.descriptor,
               await repository.authorized(lease.descriptor, allowLocal: true) else { return }
+        let bucket = Self.previewBucket(width: width, height: height)
+        guard bucket > 0 else { return }
         let generation = RemoteDecodedImages.shared.generation()
         let data = await Task.detached {
-            ImageRenderer.thumbnail(fileURL: lease.fileURL, maxPixelWidth: 512, maxPixelHeight: 512)
+            ImageRenderer.thumbnail(fileURL: lease.fileURL, maxPixelWidth: bucket, maxPixelHeight: bucket)
                 .flatMap { UIImage(cgImage: $0).jpegData(compressionQuality: 0.78) }
         }.value
         guard let data, !Task.isCancelled, generation == RemoteDecodedImages.shared.generation() else { return }
@@ -452,7 +461,7 @@ actor RemoteMediaService {
             hash = computed
         }
         guard generation == RemoteDecodedImages.shared.generation(), (try? await blockedHash(hash)) == false else { return }
-        try? await cache.storePreview(data, descriptor: lease.descriptor, contentHash: hash, authorized: { [weak self] descriptor in
+        try? await cache.storePreview(data, descriptor: lease.descriptor, bucket: bucket, contentHash: hash, authorized: { [weak self] descriptor in
             guard let self, await self.repository.authorized(descriptor, allowLocal: true), (try? await self.blockedHash(hash)) == false else { return false }
             return generation == RemoteDecodedImages.shared.generation()
         })
