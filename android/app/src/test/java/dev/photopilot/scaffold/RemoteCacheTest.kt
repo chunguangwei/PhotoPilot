@@ -86,6 +86,21 @@ class RemoteCacheTest {
         assertTrue(cache.bytesUsed() <= 10)
         dir.deleteRecursively()
     }
+    @Test fun dedicatedCoverCacheEvictsOnlyReleasedThumbnails() {
+        val dir = Files.createTempDirectory("frame-covers").toFile()
+        try {
+            val cache = RemoteFileCache(dir, 10, 0, { 1_000 })
+            assertTrue(cache.storeBytes("old", ByteArray(6), evictThumbnails = true))
+            requireNotNull(cache.openThumb("old")).use {
+                assertFalse(cache.storeBytes("new", ByteArray(6), evictThumbnails = true))
+            }
+            assertTrue(cache.storeBytes("new", ByteArray(6), evictThumbnails = true))
+            assertNull(cache.readIfPresent("old"))
+            assertEquals(6L, cache.readIfPresent("new")?.length())
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
     @Test fun storedThumbnailIsOneFilePerDistinctKey() {
         val dir = Files.createTempDirectory("remote-cache").toFile()
         val cache = RemoteFileCache(dir, 100, 0, { 1_000_000 })

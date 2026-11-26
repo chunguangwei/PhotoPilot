@@ -101,6 +101,7 @@ actor RemoteMediaService {
     let references: LocalReferenceService
     private let transientRoot: URL
     let cache: RemoteMediaCache
+    private let coverCache: RemoteMediaCache
     let controller: PersistenceController
     let diskReservations: RemoteDiskReservations
     let transfers = RemoteTransferGate(limit: 3)
@@ -128,6 +129,8 @@ actor RemoteMediaService {
         let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first ?? FileManager.default.temporaryDirectory
         let key = SHA256Hex.digest(data: Data(controller.storeURL.path.utf8))
         cache = RemoteMediaCache(root: cacheRoot ?? base.appendingPathComponent("PhotoPilot/remote-media/" + key), budget: budget)
+        coverCache = RemoteMediaCache(root: (cacheRoot?.deletingLastPathComponent() ?? controller.storeURL.deletingLastPathComponent())
+            .appendingPathComponent("frame-covers-" + key, isDirectory: true), budget: 24 * 1024 * 1024)
     }
 
     func startObserving() {
@@ -147,6 +150,7 @@ actor RemoteMediaService {
         guard !erasing else { return }
         if sensitive {
             await cache.clear()
+            await coverCache.clear()
             learnedHashes.removeAll()
             RemoteDecodedImages.shared.clear()
         } else {
@@ -357,6 +361,59 @@ actor RemoteMediaService {
         }
     }
 
+    func prefetchPlaybackOriginal(runtimeID: String, mode: FrameStorageMode) async throws -> Bool {
+        guard mode == .remote, case .sourceAsset(let id) = MediaReference(runtimeID: runtimeID),
+              let record = try await repository.record(id: id), !record.referenceOnly, !record.localReady else { return true }
+        guard await cache.hasRoomForPrefetch(bytes: record.descriptor.byteSize) else { return false }
+        let lease = try await acquire(runtimeID: runtimeID, mode: mode, priority: .background)
+        await lease.release()
+        return true
+    }
+
+    func coverImage(runtimeID: String, mode: FrameStorageMode, pixels: Int) async throws -> UIImage {
+        try Task.checkCancellation()
+        guard !erasing else { throw CancellationError() }
+        guard case .sourceAsset(let id) = MediaReference(runtimeID: runtimeID),
+              let record = try await repository.record(id: id), record.cacheable else {
+            return try await image(runtimeID: runtimeID, mode: mode, width: pixels, height: pixels)
+        }
+        let descriptor = record.descriptor
+        let revision = SHA256Hex.digest(data: Data((descriptor.revision + "\u{0}" + descriptor.remoteKey).utf8))
+        let cacheDescriptor = RemoteMediaDescriptor(sourceID: descriptor.sourceID, sourceEpoch: descriptor.sourceEpoch,
+            sourceAssetID: descriptor.sourceAssetID, revision: revision, remoteKey: "", byteSize: nil, takenAt: nil)
+        let authority: RemoteMediaCache.Authority = { [repository] _ in
+            await repository.authorized(descriptor, allowLocal: true)
+        }
+        let bucket = Self.previewBucket(width: pixels, height: pixels)
+        if let stored = try? await coverCache.cachedPreview(cacheDescriptor, bucket: bucket, authorized: authority) {
+            let image = await Task.detached {
+                ImageRenderer.thumbnail(fileURL: stored.fileURL, maxPixelWidth: pixels, maxPixelHeight: pixels)
+                    .map { UIImage(cgImage: $0) }
+            }.value
+            await stored.release()
+            try Task.checkCancellation()
+            guard let hash = stored.contentHash else { throw RemoteMediaError.revoked }
+            let blocked = record.referenceOnly ? false : try await blockedHash(hash)
+            guard !blocked,
+                  await authorized(runtimeID: runtimeID, mode: mode), await authority(cacheDescriptor) else {
+                throw RemoteMediaError.revoked
+            }
+            if let image { return image }
+        }
+        let preview = try await image(runtimeID: runtimeID, mode: mode, width: pixels, height: pixels)
+        let hash = record.referenceOnly
+            ? SHA256Hex.digest(data: Data(record.descriptor.identity.utf8))
+            : learnedHashes[record.descriptor.identity]
+        if let hash {
+            let data = await Task.detached { preview.jpegData(compressionQuality: 0.8) }.value
+            let allowed = record.referenceOnly ? true : (try? await blockedHash(hash)) == false
+            if let data, !Task.isCancelled, !erasing, allowed {
+                try? await coverCache.storePreview(data, descriptor: cacheDescriptor, bucket: bucket, contentHash: hash, authorized: authority)
+            }
+        }
+        return preview
+    }
+
     func cachedImage(runtimeID: String, mode: FrameStorageMode = .remote, width: Int, height: Int) async throws -> UIImage? {
         try Task.checkCancellation()
         guard !erasing else { throw CancellationError() }
@@ -487,6 +544,7 @@ actor RemoteMediaService {
         for task in indexTasks.values { _ = try? await task.value }
         indexTasks.removeAll()
         await cache.clear()
+        await coverCache.clear()
         learnedHashes.removeAll()
     }
 

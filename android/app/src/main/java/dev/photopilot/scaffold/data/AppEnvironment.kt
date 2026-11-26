@@ -137,6 +137,7 @@ class AppEnvironment private constructor(
                 environment.aiFrames.shutdown()
                 environment.remoteCopies.shutdown()
                 environment.remoteMedia.close()
+                environment.remoteMedia.clearCoverThumbnails()
                 LocalUserDataCleaner.clear(appContext.filesDir, appContext.cacheDir)
                 environment.database.clearAllTables()
                 environment.localReferences.releaseUnusedGrants()

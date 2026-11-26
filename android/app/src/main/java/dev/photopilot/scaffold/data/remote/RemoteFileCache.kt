@@ -39,6 +39,9 @@ class RemoteFileCache(
 
     private fun unreservedFiles(): List<File> = directory.listFiles().orEmpty().filter { it !in activeParts.values }
     fun bytesUsed(): Long = synchronized(lock) { unreservedFiles().sumOf { it.length() } + reservations.values.sum() }
+    fun hasRoomForPrefetch(bytes: Long?): Boolean =
+        bytes != null && bytes in 1..budget && bytesUsed() <= budget - bytes && freeSpace() >= reserve + bytes
+
     private fun filename(key: String): String = MessageDigest.getInstance("SHA-256").digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
 
     private fun release(name: String) = synchronized(lock) {
@@ -63,7 +66,7 @@ class RemoteFileCache(
 
     private fun thumbName(key: String): String = filename(key) + ".thumb"
 
-    fun storeBytes(key: String, data: ByteArray): Boolean = synchronized(lock) {
+    fun storeBytes(key: String, data: ByteArray, evictThumbnails: Boolean = false): Boolean = synchronized(lock) {
         val name = thumbName(key)
         val target = File(directory, name)
         try {
@@ -74,9 +77,23 @@ class RemoteFileCache(
             if (!directory.isDirectory && !directory.mkdirs()) return false
             val bytes = data.size.toLong()
             if (bytes > budget) return false
-            val used = unreservedFiles().filter { it.name != name }.sumOf { it.length() } + reservations.values.sum()
-            if (used + bytes > budget) return false
-            target.writeBytes(data)
+            val existing = unreservedFiles().filter { it.name != name }
+            var used = existing.sumOf { it.length() } + reservations.values.sum()
+            if (evictThumbnails && used + bytes > budget) {
+                for (victim in existing.filter { it.name.endsWith(".thumb") && it.name !in held }.sortedBy { it.lastModified() }) {
+                    val size = victim.length()
+                    if (victim.delete()) used -= size
+                    if (used + bytes <= budget) break
+                }
+            }
+            if (used + bytes > budget || (evictThumbnails && freeSpace() < reserve + bytes)) return false
+            val partial = File(directory, "$name.part")
+            try {
+                partial.writeBytes(data)
+                if (!partial.renameTo(target)) return false
+            } finally {
+                partial.delete()
+            }
             target.setLastModified(System.currentTimeMillis())
             true
         } catch (_: Throwable) {

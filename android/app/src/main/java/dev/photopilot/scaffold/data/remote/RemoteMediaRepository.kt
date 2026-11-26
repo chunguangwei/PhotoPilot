@@ -29,6 +29,7 @@ class RemoteMediaRepository(
     suspend fun displayName(asset: SourceAssetEntity): String = localReferences?.displayName(asset) ?: asset.remoteKey.substringAfterLast('/')
     fun allowsNetwork() = networkAllowed()
     val cache = RemoteFileCache(File(context.cacheDir, "remote-media"))
+    private val covers = RemoteFileCache(File(context.noBackupFilesDir, "frame-covers"), budget = 24L * 1024 * 1024)
     private val decoded = object : android.util.LruCache<String, android.graphics.Bitmap>(33554432) {
         override fun sizeOf(key: String, value: android.graphics.Bitmap) = value.allocationByteCount
     }
@@ -42,7 +43,7 @@ class RemoteMediaRepository(
     private val observer = object : androidx.room.InvalidationTracker.Observer("source", "source_asset", "asset", "asset_origin", "local_tombstone") {
         override fun onInvalidated(tables: Set<String>) {
             authorityScope.launch {
-                if (authorities.values.any { !valid(it) }) { cache.clear(force = true); decoded.evictAll(); authorities.clear() }
+                if (authorities.values.any { !valid(it) }) { cache.clear(force = true); covers.clear(force = true); decoded.evictAll(); authorities.clear() }
             }
         }
     }
@@ -63,6 +64,41 @@ class RemoteMediaRepository(
         if (item.referenceCacheable && bitmap != null && bitmap.allocationByteCount <= 33554432) decoded.put(key, bitmap)
         return bitmap
     }
+
+    suspend fun coverBitmap(item: PlaybackItem, pixels: Int): android.graphics.Bitmap? = withContext(Dispatchers.IO) {
+        if (!valid(item)) return@withContext null
+        if (!item.referenceCacheable) return@withContext bitmap(item, pixels, pixels)
+        val reference = isLocalReference(item)
+        authorities[item.id] = item
+        val key = decodedKey(item, pixels, pixels)
+        val stored = covers.openThumb(key)?.use { lease ->
+            runCatching {
+                java.io.DataInputStream(lease.file.inputStream().buffered()).use { input ->
+                    val hash = input.readUTF()
+                    if (reference || db.localTombstoneDao().getByContentHash(hash).isEmpty()) android.graphics.BitmapFactory.decodeStream(input) else null
+                }
+            }.getOrNull()
+        }
+        if (stored != null && valid(item)) return@withContext stored
+        val generated = if (reference) {
+            bitmap(item, pixels, pixels)?.let { it to "" }
+        } else readVerified(item, priority = 1) { file, orientation, hash ->
+            val preview = dev.photopilot.scaffold.data.render.BitmapRenderer.decodeToTarget(file, pixels, pixels, orientation)
+                ?: return@readVerified null
+            preview to hash
+        }
+        if (generated == null || !valid(item)) return@withContext null
+        if (!reference && db.localTombstoneDao().getByContentHash(generated.second).isNotEmpty()) return@withContext null
+        val bytes = java.io.ByteArrayOutputStream()
+        val output = java.io.DataOutputStream(bytes)
+        output.writeUTF(generated.second)
+        if (generated.first.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, output)) {
+            covers.storeBytes(key, bytes.toByteArray(), evictThumbnails = true)
+        }
+        if (valid(item)) generated.first else null
+    }
+
+    fun clearCoverThumbnails() { covers.clear(force = true) }
 
     private suspend fun thumbnailFromDisk(item: PlaybackItem, key: String, width: Int, height: Int, priority: Int): android.graphics.Bitmap? {
         val thumbKey = "thumb:$key"
@@ -134,13 +170,16 @@ class RemoteMediaRepository(
         return fresh.sourceEpoch == item.sourceEpoch && fresh.remote?.revision == remote.revision &&
             (item.local == null || fresh.local?.id == item.local.id && fresh.local.contentHash == item.local.contentHash)
     }
-    suspend fun <T> read(item: PlaybackItem, priority: Int = 1, block: (File, Int) -> T): T = withContext(Dispatchers.IO) {
+    suspend fun <T> read(item: PlaybackItem, priority: Int = 1, block: (File, Int) -> T): T =
+        readVerified(item, priority) { file, orientation, _ -> block(file, orientation) }
+
+    private suspend fun <T> readVerified(item: PlaybackItem, priority: Int, block: (File, Int, String) -> T): T = withContext(Dispatchers.IO) {
         readGate.acquire(priority)
         try {
             if (!valid(item)) throw IOException("REMOTE_REVOKED")
             val local = item.local
             if (local != null && File(originals, local.originalRelPath).isFile) {
-                val result = block(File(originals, local.originalRelPath), local.exifOrientation.toInt())
+                val result = block(File(originals, local.originalRelPath), local.exifOrientation.toInt(), local.contentHash)
                 if (!valid(item)) throw IOException("REMOTE_REVOKED")
                 return@withContext result
             }
@@ -161,7 +200,7 @@ class RemoteMediaRepository(
                     throw IOException("REMOTE_REVOKED")
                 }
                 val orientation = runCatching { android.media.ExifInterface(lease.file).getAttributeInt(android.media.ExifInterface.TAG_ORIENTATION, 1) }.getOrDefault(1).let(dev.photopilot.scaffold.data.logic.ExifOrientation::normalize)
-                val result = block(lease.file, orientation)
+                val result = block(lease.file, orientation, contentHash)
                 if (!valid(item)) throw IOException("REMOTE_REVOKED")
                 result
             }

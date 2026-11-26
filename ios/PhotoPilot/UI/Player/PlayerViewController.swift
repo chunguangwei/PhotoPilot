@@ -724,19 +724,32 @@ final class PlayerViewController: UIViewController {
         }
     }
 
-    private func loadImage(assetID: String) async -> UIImage? {
+    private func loadImage(assetID: String, waitingForNext: Bool = false) async -> UIImage? {
         if assetID.hasPrefix("remote:") {
             do {
                 let target = RenderGeometry.decodeTarget(viewW: Int64(max(view.bounds.width, 1)), viewH: Int64(max(view.bounds.height, 1)),
                     scale: Int64(max(view.traitCollection.displayScale, 1)), cap: PlayerImageLoader.maxDecodePixels)
-                let image = try await environment.remoteMedia.image(runtimeID: assetID, mode: settings.mediaStorageMode, width: Int(target.0), height: Int(target.1), priority: .playback)
+                var image: UIImage
+                var retries = 0
+                while true {
+                    do {
+                        image = try await environment.remoteMedia.image(runtimeID: assetID, mode: settings.mediaStorageMode,
+                            width: Int(target.0), height: Int(target.1), priority: .playback)
+                        break
+                    } catch RemoteMediaError.busy where waitingForNext || retries < 8 {
+                        retries = min(retries + 1, waitingForNext ? 4 : 8)
+                        try await Task.sleep(nanoseconds: UInt64(min(retries, 4)) * 250_000_000)
+                    }
+                }
                 guard await environment.remoteMedia.authorized(runtimeID: assetID, mode: settings.mediaStorageMode), !Task.isCancelled else { return nil }
                 relPaths[assetID] = assetID
                 noticeLabel.isHidden = true
                 return image
             } catch {
                 guard !Task.isCancelled else { return nil }
-                noticeLabel.text = error.localizedDescription
+                noticeLabel.text = (error as? RemoteMediaError) == .busy
+                    ? AIText.value("Photo loading timed out. Tap to retry.", "照片加载超时，点按重试。")
+                    : error.localizedDescription
                 noticeLabel.isHidden = false
                 return nil
             }
@@ -774,12 +787,21 @@ final class PlayerViewController: UIViewController {
             while queue.count > 1, !Task.isCancelled {
                 let nextIndex = (index + 1) % queue.count
                 let nextID = queue[nextIndex]
-                let image = await loadImage(assetID: nextID)
+                let image = await loadImage(assetID: nextID, waitingForNext: true)
                 guard !Task.isCancelled else { return }
                 if image != nil {
                     readyNextID = nextID
+                    let upcoming = (0..<min(2, queue.count - 2)).map { queue[(nextIndex + $0 + 1) % queue.count] }
                     if controllerState == PlaybackController.holding, nextTransitionAtMs <= Int64(Date().timeIntervalSince1970 * 1000) {
                         dispatch(PlaybackEvent(type: "hold_elapsed", nextReady: true))
+                    }
+                    for id in upcoming where id.hasPrefix("remote:") {
+                        guard !Task.isCancelled else { return }
+                        do {
+                            guard try await environment.remoteMedia.prefetchPlaybackOriginal(runtimeID: id, mode: settings.mediaStorageMode) else { break }
+                        } catch {
+                            break
+                        }
                     }
                     return
                 }

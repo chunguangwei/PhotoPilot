@@ -260,6 +260,31 @@ class FramesView(
         }
     }
 
+    private fun showCoverPreview(model: CardModel, image: android.graphics.Bitmap?) {
+        val chinese = resources.configuration.locales[0].language == "zh"
+        val onDemand = !dev.photopilot.scaffold.data.logic.FramePlaybackSettings.requiresLocalCopies(model.frame.settingsJson)
+        val mode = if (onDemand && model.hasNasSource) {
+            if (chinese) "按需播放" else "On-demand playback"
+        } else {
+            if (chinese) "本地播放" else "Local playback"
+        }
+        val content = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(CoverView(context, model.cover, loader, model.remoteCover, remoteMedia).apply { showPreviewImage(image) })
+            addView(TextView(context).apply {
+                val inset = resources.getDimensionPixelSize(R.dimen.pp_space_16)
+                setPadding(inset, inset, inset, inset)
+                text = "${remotePhotoCount(model.playable, chinese)} · $mode"
+            })
+        }
+        android.app.AlertDialog.Builder(context)
+            .setTitle(model.frame.name)
+            .setView(ScrollView(context).apply { addView(content) })
+            .setNegativeButton(R.string.common_close, null)
+            .setPositiveButton(R.string.common_edit) { _, _ -> onOpen?.invoke(model.frame) }
+            .show()
+    }
+
     private fun cardView(model: CardModel): View {
         val res = resources
         val radius = res.getDimension(R.dimen.pp_radius_group)
@@ -272,11 +297,14 @@ class FramesView(
             outlineProvider = ViewOutlineProvider.BACKGROUND
             clipToOutline = true
             importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
-            setOnClickListener { onOpen?.invoke(model.frame) }
             isFocusable = false
         }
         if (!model.loading && model.playable > 0 && (model.cover != null || model.remoteCover != null)) {
-            card.addView(CoverView(context, model.cover, loader, model.remoteCover, remoteMedia), LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+            card.addView(CoverView(context, model.cover, loader, model.remoteCover, remoteMedia).apply {
+                importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
+                contentDescription = if (resources.configuration.locales[0].language == "zh") "预览相框封面" else "Preview frame cover"
+                setOnClickListener { showCoverPreview(model, previewImage) }
+            }, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         }
         val details = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -445,6 +473,14 @@ class FramesView(
 
     private class CoverView(context: Context, private val asset: AssetEntity?, private val loader: ThumbnailLoader, private val remote: dev.photopilot.scaffold.data.remote.PlaybackItem?, private val media: dev.photopilot.scaffold.data.remote.RemoteMediaRepository?) : FrameLayout(context) {
         private val image = ImageView(context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
+        val previewImage: android.graphics.Bitmap?
+            get() = (image.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+
+        fun showPreviewImage(bitmap: android.graphics.Bitmap?) {
+            image.setImageBitmap(bitmap)
+            placeholder.visibility = if (bitmap == null) VISIBLE else GONE
+        }
+
         private val placeholder = BrandMarkView(context)
         private val viewportRect = android.graphics.Rect()
         private var requestedPixels = 0
@@ -492,7 +528,7 @@ class FramesView(
         }
 
         private fun resolveOnLayout() {
-            if (asset == null && remote != null && media != null) {
+            if ((asset != null || remote != null) && media != null) {
                 resolveRemoteCover()
                 return
             }
@@ -521,21 +557,15 @@ class FramesView(
 
         private fun resolveRemoteCover() {
             val repo = media
-            val item = remote
+            val item = remote ?: asset?.let { dev.photopilot.scaffold.data.remote.PlaybackItem(local = it) }
             if (repo == null || item == null) return
-            val remoteWidth = width.coerceAtMost(640)
-            val cached = repo.peekDecoded(item, remoteWidth, remoteWidth)
-            if (cached != null) {
-                image.setImageBitmap(cached)
-                placeholder.visibility = GONE
-                return
-            }
+            val remoteWidth = (((width + 127) / 128) * 128).coerceAtMost(1280)
             if (requestedPixels > 0) return
             if (!isInViewport()) return
             requestedPixels = width
             val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main)
             remoteJob = scope.launch {
-                val bitmap = runCatching { repo.bitmap(item, remoteWidth, remoteWidth) }.getOrNull()
+                val bitmap = runCatching { repo.coverBitmap(item, remoteWidth) }.getOrNull()
                 if (!isAttachedToWindow) return@launch
                 if (bitmap == null) {
                     placeholder.visibility = if (image.drawable == null) VISIBLE else GONE

@@ -5,6 +5,8 @@ final class CoverPreviewViewController: UIViewController {
     private let relPath: String?
     private let frameName: String
     private let photoCount: Int
+    private let storageMode: FrameStorageMode
+    private let playbackSummary: String?
     private let onConfirm: () -> Void
     private let coverView = UIImageView()
     private let statusLabel = UILabel()
@@ -16,14 +18,20 @@ final class CoverPreviewViewController: UIViewController {
         relPath: String?,
         frameName: String,
         photoCount: Int,
+        playbackSummary: String? = nil,
+        storageMode: FrameStorageMode = .remote,
+        initialImage: UIImage? = nil,
         onConfirm: @escaping () -> Void
     ) {
         self.loader = ThumbnailLoader(originalsRoot: environment.originalsRootURL, media: environment.remoteMedia)
         self.relPath = relPath
         self.frameName = frameName
         self.photoCount = photoCount
+        self.playbackSummary = playbackSummary
+        self.storageMode = storageMode
         self.onConfirm = onConfirm
         super.init(nibName: nil, bundle: nil)
+        coverView.image = initialImage
     }
 
     @available(*, unavailable)
@@ -36,7 +44,7 @@ final class CoverPreviewViewController: UIViewController {
         view.backgroundColor = ThemeColor.photoControl.withAlphaComponent(0.55)
 
         let titleLabel = UILabel()
-        titleLabel.text = L10n.string("frames.set_cover")
+        titleLabel.text = playbackSummary == nil ? L10n.string("frames.set_cover") : AIText.value("Frame preview", "相框预览")
         titleLabel.font = ThemeFont.heading()
         titleLabel.adjustsFontForContentSizeCategory = true
         titleLabel.textColor = ThemeColor.textOnPhoto
@@ -49,7 +57,7 @@ final class CoverPreviewViewController: UIViewController {
         card.layer.cornerRadius = ThemeMetrics.radiusGroup
         card.clipsToBounds = true
 
-        coverView.contentMode = .scaleAspectFill
+        coverView.contentMode = playbackSummary == nil ? .scaleAspectFill : .scaleAspectFit
         coverView.clipsToBounds = true
         coverView.backgroundColor = ThemeColor.canvas
         coverView.isAccessibilityElement = false
@@ -89,9 +97,11 @@ final class CoverPreviewViewController: UIViewController {
         countLabel.textColor = ThemeColor.textSecondary
         countLabel.numberOfLines = 0
 
-        let confirmButton = ActionButton(titleKey: "frames.set_cover", style: .primary)
+        if let playbackSummary { countLabel.text = AIText.value("\(photoCount) photos", "\(photoCount) 张照片") + " · " + playbackSummary }
+
+        let confirmButton = ActionButton(titleKey: playbackSummary == nil ? "frames.set_cover" : "common.edit", style: .primary)
         confirmButton.addTarget(self, action: #selector(handleConfirm), for: .touchUpInside)
-        let cancelButton = ActionButton(titleKey: "common.cancel", style: .secondary)
+        let cancelButton = ActionButton(titleKey: playbackSummary == nil ? "common.cancel" : "common.close", style: .secondary)
         cancelButton.addTarget(self, action: #selector(handleCancel), for: .touchUpInside)
         let buttons = UIStackView(arrangedSubviews: [cancelButton, confirmButton])
         buttons.axis = .horizontal
@@ -119,39 +129,66 @@ final class CoverPreviewViewController: UIViewController {
         stack.axis = .vertical
         stack.spacing = ThemeMetrics.space16
         stack.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(stack)
+        let scroll = UIScrollView()
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scroll)
+        let body = UIView()
+        body.translatesAutoresizingMaskIntoConstraints = false
+        scroll.addSubview(body)
+        body.addSubview(stack)
 
         let readable = stack.widthAnchor.constraint(equalToConstant: 420)
         readable.priority = .defaultHigh
+        let centered = stack.centerYAnchor.constraint(equalTo: body.centerYAnchor)
+        centered.priority = .defaultHigh
+        let viewportHeight = body.heightAnchor.constraint(equalTo: scroll.frameLayoutGuide.heightAnchor)
+        viewportHeight.priority = .defaultLow
+        let safeArea = view.safeAreaLayoutGuide
+        let contentGuide = scroll.contentLayoutGuide
         NSLayoutConstraint.activate([
-            stack.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
-            stack.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor),
-            stack.leadingAnchor.constraint(
-                greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor,
-                constant: ThemeMetrics.contentInsetCompact
-            ),
-            stack.trailingAnchor.constraint(
-                lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor,
-                constant: -ThemeMetrics.contentInsetCompact
-            ),
+            scroll.topAnchor.constraint(equalTo: safeArea.topAnchor),
+            scroll.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor),
+            scroll.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor),
+            body.topAnchor.constraint(equalTo: contentGuide.topAnchor),
+            body.bottomAnchor.constraint(equalTo: contentGuide.bottomAnchor),
+            body.leadingAnchor.constraint(equalTo: contentGuide.leadingAnchor),
+            body.trailingAnchor.constraint(equalTo: contentGuide.trailingAnchor),
+            body.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor),
+            body.heightAnchor.constraint(greaterThanOrEqualTo: scroll.frameLayoutGuide.heightAnchor),
+            viewportHeight,
+            stack.centerXAnchor.constraint(equalTo: body.centerXAnchor),
+            centered,
+            stack.topAnchor.constraint(greaterThanOrEqualTo: body.topAnchor, constant: ThemeMetrics.space16),
+            stack.bottomAnchor.constraint(lessThanOrEqualTo: body.bottomAnchor, constant: -ThemeMetrics.space16),
+            stack.leadingAnchor.constraint(greaterThanOrEqualTo: body.leadingAnchor, constant: ThemeMetrics.contentInsetCompact),
+            stack.trailingAnchor.constraint(lessThanOrEqualTo: body.trailingAnchor, constant: -ThemeMetrics.contentInsetCompact),
             readable,
         ])
 
         NotificationCenter.default.addObserver(self, selector: #selector(authorityChanged(_:)), name: .remoteMediaChanged, object: nil)
-        loadCover(into: coverView)
+        statusLabel.isHidden = coverView.image != nil
+        if coverView.image == nil { loadCover(into: coverView) }
     }
 
     private func loadCover(into coverView: UIImageView) {
-        guard let relPath else { return }
+        guard let relPath else {
+            statusLabel.text = AIText.value("No cover photo", "暂无封面照片")
+            return
+        }
         let scale = traitCollection.displayScale
         statusLabel.isHidden = false
         statusLabel.text = AIText.value("Loading the photo…", "正在加载照片…")
         loadTask?.cancel()
-        loadTask = Task { [weak self, loader, weak coverView] in
-            var image = await loader.thumbnail(relPath: relPath, pointSize: 420, scale: scale)
+        loadTask = Task { [weak self, loader, storageMode, playbackSummary, weak coverView] in
+            var image = if playbackSummary != nil {
+                await loader.coverThumbnail(relPath: relPath, pixels: min(1600, Int(ceil(420 * scale / 128)) * 128), mode: storageMode)
+            } else {
+                await loader.thumbnail(relPath: relPath, pointSize: 420, scale: scale)
+            }
             if image == nil, !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 300_000_000)
-                image = await loader.thumbnail(relPath: relPath, pointSize: 260, scale: scale)
+                image = await loader.thumbnail(relPath: relPath, pointSize: 260, scale: scale, mode: storageMode)
             }
             guard !Task.isCancelled, let self, let coverView else { return }
             coverView.image = image
@@ -175,9 +212,13 @@ final class CoverPreviewViewController: UIViewController {
     }
 
     @objc private func handleConfirm() {
-        guard !revoked else { dismiss(animated: true); return }
-        onConfirm()
-        dismiss(animated: true)
+        guard !revoked || playbackSummary != nil else { dismiss(animated: true); return }
+        if playbackSummary == nil {
+            onConfirm()
+            dismiss(animated: true)
+        } else {
+            dismiss(animated: true, completion: onConfirm)
+        }
     }
 
     @objc private func handleCancel() {

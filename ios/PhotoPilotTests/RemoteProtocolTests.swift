@@ -210,6 +210,82 @@ final class RemoteProtocolTests: XCTestCase {
         } catch { XCTAssertEqual(error as? RemoteMediaError, .revoked) }
     }
 
+    func testFrameCoverSurvivesTemporaryCacheClearAndRespectsRevocation() async throws {
+        let (controller, sourceID) = try library()
+        let fixture = RemoteIndexFixture(paths: ["cover.png"])
+        let root = controller.storeURL.deletingLastPathComponent().appendingPathComponent("cache")
+        let service = RemoteMediaService(controller: controller, cacheRoot: root, adapterFactory: { _ in fixture })
+        _ = try await service.index(sourceID: sourceID)
+        let records = try await service.repository.records(sourceID: sourceID)
+        let record = try XCTUnwrap(records.first)
+        let id = record.descriptor.runtimeID
+        _ = try await service.coverImage(runtimeID: id, mode: .remote, pixels: 128)
+        await service.clearCache()
+
+        let restarted = RemoteMediaService(controller: controller, cacheRoot: root, adapterFactory: { _ in fixture })
+        let image = try await restarted.coverImage(runtimeID: id, mode: .remote, pixels: 128)
+        XCTAssertEqual(image.cgImage?.width, 8)
+        let downloads = await fixture.downloads
+        XCTAssertEqual(downloads, 1)
+
+        let context = controller.container.viewContext
+        let source = try XCTUnwrap(context.fetch(NSFetchRequest<NSManagedObject>(entityName: "Source")).first)
+        source.setValue("disconnected", forKey: "status")
+        try context.save()
+        do {
+            _ = try await restarted.coverImage(runtimeID: id, mode: .remote, pixels: 128)
+            XCTFail("Persisted covers must honor disconnected sources")
+        } catch { XCTAssertEqual(error as? RemoteMediaError, .revoked) }
+    }
+
+    func testHomeCoverOpensReadOnlyPreviewBeforeEditing() async throws {
+        let (controller, sourceID) = try library()
+        let fixture = RemoteIndexFixture(paths: ["cover.png"])
+        let media = RemoteMediaService(controller: controller, adapterFactory: { _ in fixture })
+        _ = try await media.index(sourceID: sourceID)
+        let records = try await media.repository.records(sourceID: sourceID)
+        let record = try XCTUnwrap(records.first)
+        let manager = FrameManager(controller: controller)
+        let frameID = try await manager.createFrame(name: "Cover preview fixture", storageMode: .remote)
+        _ = try await FrameRepository(controller: controller).save(frameID: frameID, baseVersion: 0,
+            addIncludes: [MediaReference(runtimeID: record.descriptor.runtimeID).selection])
+
+        let frames = FramesListViewController(environment: AppEnvironment(persistence: controller, remoteMedia: media))
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let previousWindow = scene.keyWindow
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = frames
+        window.makeKeyAndVisible()
+        defer {
+            window.isHidden = true
+            previousWindow?.makeKey()
+        }
+
+        func descendants(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(descendants) }
+        let previewLabel = AIText.value("Preview frame cover", "预览相框封面")
+        var cover: UIButton?
+        for _ in 0..<200 {
+            frames.view.layoutIfNeeded()
+            cover = descendants(frames.view).compactMap { $0 as? UIButton }.first { $0.accessibilityLabel == previewLabel }
+            if cover != nil { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        let button = try XCTUnwrap(cover)
+        let point = button.convert(CGPoint(x: button.bounds.midX, y: button.bounds.midY), to: frames.view)
+        XCTAssertTrue(frames.view.hitTest(point, with: nil) === button)
+        button.sendActions(for: .touchUpInside)
+        let preview = try XCTUnwrap(frames.presentedViewController as? CoverPreviewViewController)
+        XCTAssertTrue(descendants(preview.view).compactMap { $0 as? UILabel }.contains { $0.text == "Cover preview fixture" })
+        let edit = try XCTUnwrap(descendants(preview.view).compactMap { $0 as? ActionButton }
+            .first { $0.accessibilityLabel == L10n.string("common.edit") })
+        for _ in 0..<100 where preview.isBeingPresented { try await Task.sleep(nanoseconds: 10_000_000) }
+        edit.sendActions(for: .touchUpInside)
+        for _ in 0..<200 where !(frames.presentedViewController is FrameEditViewController) {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertTrue(frames.presentedViewController is FrameEditViewController)
+    }
+
     func testGridCellShowsLoadingAndOffersRetryAfterFailure() {
         let cell = AssetGridCell(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
         cell.configure(assetID: "fixture", accessibilityText: "Photo")

@@ -605,7 +605,19 @@ class PlayerEngine(
             val targetW = QualityScale.scale(metrics.widthPixels, settings.qualityLevel)
             val targetH = QualityScale.scale(metrics.heightPixels, settings.qualityLevel)
             val decoded = try {
-                val bitmap = env.remoteMedia.bitmap(asset, targetW, targetH, priority = 2) ?: return@launch callback(null)
+                var retries = 0
+                var result: Bitmap?
+                while (true) {
+                    try {
+                        result = env.remoteMedia.bitmap(asset, targetW, targetH, priority = 2)
+                        break
+                    } catch (busy: java.io.IOException) {
+                        if (busy.message != "REMOTE_CACHE_BUSY" || (!prefetch && retries >= 8)) throw busy
+                        retries = (retries + 1).coerceAtMost(if (prefetch) 4 else 8)
+                        delay(retries.coerceAtMost(4) * 250L)
+                    }
+                }
+                val bitmap = result ?: return@launch callback(null)
                 withContext(Dispatchers.IO) {
                     ensureActive()
                     val blurred = if (settings.fitMode != FramePlaybackSettings.FIT_COLOR) BitmapRenderer.blurBackground(bitmap) else null
@@ -620,7 +632,26 @@ class PlayerEngine(
                 null
             }
             ensureActive()
-            if (!stopped && generation == queueGeneration) callback(if (env.remoteMedia.valid(asset)) decoded else null)
+            if (stopped || generation != queueGeneration) return@launch
+            val validDecode = if (env.remoteMedia.valid(asset)) decoded else null
+            val upcoming = if (prefetch && validDecode != null && queue.size > 2) {
+                val next = nextIndex()
+                (1..minOf(2, queue.size - 2)).mapNotNull { assetsById[queue[(next + it) % queue.size]] }
+            } else emptyList()
+            callback(validDecode)
+            for (item in upcoming) {
+                ensureActive()
+                val remote = item.remote ?: continue
+                if (item.local != null || env.remoteMedia.isLocalReference(item)) continue
+                if (!withContext(Dispatchers.IO) { env.remoteMedia.cache.hasRoomForPrefetch(remote.byteSize) }) break
+                try {
+                    env.remoteMedia.read(item, priority = 0) { _, _ -> Unit }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    break
+                }
+            }
         }
         if (prefetch) prefetchDecodeJob = job else currentDecodeJob = job
     }

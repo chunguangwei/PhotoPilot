@@ -598,7 +598,7 @@ class PlayerView(
         val message = when (code) {
             "REMOTE_LOW_SPACE" -> if (zh) "空间不足，请保留 64 MiB 可用空间后重试。" else "Low storage. Keep 64 MiB free and retry."
             "REMOTE_FILE_TOO_LARGE" -> if (zh) "照片超过临时缓存限额，请在相框设置开启本地同步。" else "This photo exceeds the temporary cache budget. Enable local sync in frame settings."
-            "REMOTE_CACHE_BUSY" -> if (zh) "临时缓存正忙，请稍后重试。" else "Temporary cache busy. Retry shortly."
+            "REMOTE_CACHE_BUSY" -> if (zh) "照片加载超时，请重试。" else "Photo loading timed out. Try again."
             else -> if (zh) "照片加载失败，请检查网络和来源后重试。" else "Unable to load the photo. Check the network and source, then retry."
         }
         showNotice(message)

@@ -326,7 +326,6 @@ final class FramesListViewController: UIViewController, UIScrollViewDelegate {
         control.isAccessibilityElement = false
         control.shouldGroupAccessibilityChildren = true
         control.tag = index
-        control.addTarget(self, action: #selector(handleOpenCard(_:for:)), for: .touchUpInside)
 
 
         let nameLabel = UILabel()
@@ -395,8 +394,20 @@ final class FramesListViewController: UIViewController, UIScrollViewDelegate {
 
         var sections: [UIView] = []
         if card.playableCount > 0 || card.coverRelPath != nil {
-            let cover = FrameCoverView(loader: loader, relPath: card.coverRelPath)
+            let cover = FrameCoverView(loader: loader, relPath: card.coverRelPath, mode: card.storageMode)
             cover.heightAnchor.constraint(equalTo: cover.widthAnchor, multiplier: 10.0 / 16.0).isActive = true
+            let previewButton = UIButton(type: .custom)
+            previewButton.tag = index
+            previewButton.accessibilityLabel = AIText.value("Preview frame cover", "预览相框封面")
+            previewButton.addTarget(self, action: #selector(handleCoverPreview(_:)), for: .touchUpInside)
+            cover.addSubview(previewButton)
+            previewButton.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                previewButton.topAnchor.constraint(equalTo: cover.topAnchor),
+                previewButton.bottomAnchor.constraint(equalTo: cover.bottomAnchor),
+                previewButton.leadingAnchor.constraint(equalTo: cover.leadingAnchor),
+                previewButton.trailingAnchor.constraint(equalTo: cover.trailingAnchor),
+            ])
             sections.append(cover)
         }
         sections.append(details)
@@ -417,12 +428,19 @@ final class FramesListViewController: UIViewController, UIScrollViewDelegate {
         openEditor(frameID: nil)
     }
 
-    @objc private func handleOpenCard(_ sender: UIControl, for event: UIEvent) {
-        if let touch = event.touches(for: sender)?.first, touch.view !== sender {
-            return
+    @objc private func handleCoverPreview(_ sender: UIButton) {
+        guard cards.indices.contains(sender.tag) else { return }
+        let card = cards[sender.tag]
+        let mode = card.storageMode == .remote
+            ? AIText.value("On-demand playback", "按需播放")
+            : AIText.value("Local playback", "本地播放")
+        let preview = CoverPreviewViewController(environment: environment, relPath: card.coverRelPath,
+            frameName: card.name, photoCount: card.playableCount, playbackSummary: mode, storageMode: card.storageMode,
+            initialImage: (sender.superview as? FrameCoverView)?.previewImage) { [weak self] in
+            self?.openEditor(frameID: card.id)
         }
-        guard sender.tag < cards.count else { return }
-        openEditor(frameID: cards[sender.tag].id)
+        preview.modalPresentationStyle = .overFullScreen
+        present(preview, animated: true)
     }
 
     @objc private func remoteMediaChanged() {
@@ -594,20 +612,23 @@ private final class FrameCardControl: UIControl {
 
 private final class FrameCoverView: UIView {
     private let imageView = UIImageView()
+    var previewImage: UIImage? { imageView.image }
     private let placeholder = BrandMarkView(frame: .zero)
     private let loader: ThumbnailLoader
     private let relPath: String?
+    private let mode: FrameStorageMode
     private var requestedPixels = 0
     private var failedAttempts = 0
     private var loadTask: Task<Void, Never>?
 
-    init(loader: ThumbnailLoader, relPath: String?) {
+    init(loader: ThumbnailLoader, relPath: String?, mode: FrameStorageMode) {
         self.loader = loader
         self.relPath = relPath
+        self.mode = mode
         super.init(frame: .zero)
         backgroundColor = ThemeColor.canvas
-        isUserInteractionEnabled = false
-        accessibilityElementsHidden = true
+        imageView.isUserInteractionEnabled = false
+        placeholder.isUserInteractionEnabled = false
         imageView.contentMode = .scaleAspectFit
         addSubview(placeholder)
         addSubview(imageView)
@@ -656,8 +677,8 @@ private final class FrameCoverView: UIView {
         guard pixels > requestedPixels else { return }
         requestedPixels = pixels
         loadTask?.cancel()
-        loadTask = Task { [weak self, loader] in
-            let image = await loader.thumbnail(relPath: relPath, pointSize: CGFloat(pixels), scale: 1)
+        loadTask = Task { [weak self, loader, mode] in
+            let image = await loader.coverThumbnail(relPath: relPath, pixels: pixels, mode: mode)
             guard !Task.isCancelled, let self, requestedPixels == pixels else { return }
             if let image {
                 failedAttempts = 0

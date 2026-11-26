@@ -1,0 +1,55 @@
+{
+  "date": "2026-11-26",
+  "changes": [
+    "Bounded NAS playback read-ahead and retry on temporary cache contention",
+    "Persistent frame cover thumbnails",
+    "Read-only home cover preview with explicit Edit action"
+  ],
+  "android": {
+    "version": "1.4.28",
+    "build": 89,
+    "githubTag": "v1.4.28",
+    "apk": {
+      "file": ".build/releases/v1.4.28/PhotoPilot-1.4.28.apk",
+      "bytes": 154532810,
+      "sha256": "3007fc4411289cca104aa5107ba00ae85b798120fda71eeffbe331cecf7430fe"
+    },
+    "signatureScheme": "V2",
+    "certificateSha256": "9cd985f16aec8a0e492ff834aa7a07de6b426f224b2fd6d788a5965cc1b4f37c",
+    "verification": {
+      "assembleRelease": "passed",
+      "lintDebug": "passed",
+      "testDebugUnitTest": {
+        "tests": 461,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 2
+      }
+    },
+    "deviceUiTest": "not run"
+  },
+  "ios": {
+    "version": "1.4.20",
+    "build": 81,
+    "archive": ".build/appstore-submit/PhotoPilot-1.4.20-81.xcarchive",
+    "ipa": {
+      "file": ".build/store-1.4.20/PhotoPilot.ipa",
+      "bytes": 27273605,
+      "sha256": "d8fdfef224458a82847c0196d81d9a8c584bad7e5a42ceeedc732b96f770392a"
+    },
+    "teamId": "CCTFP9X3SW",
+    "signingProfile": "iOS Team Store Provisioning Profile: dev.photopilot.scaffold",
+    "architecture": "arm64",
+    "minimumOSVersion": "15.0",
+    "verification": {
+      "archive": "passed",
+      "export": "passed",
+      "codesignDeepStrict": "passed",
+      "iPhone13FixtureTestsOnSameSourceBeforeVersionBump": 8
+    },
+    "uploaded": false,
+    "submitted": false
+  },
+  "repositoryChecks": "make check stopped at the pre-existing design asset digest check",
+  "remainingDeviceCoverage": "User NAS, prolonged playback under weak network conditions, and Android device UI"
+}

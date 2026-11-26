@@ -35,6 +35,15 @@ final class ThumbnailLoader: @unchecked Sendable {
         return RemoteDecodedImages.shared.image(key: key)
     }
 
+    func coverThumbnail(relPath: String, pixels: Int, mode: FrameStorageMode = .remote) async -> UIImage? {
+        if relPath.hasPrefix("remote:"), let media {
+            return try? await media.coverImage(runtimeID: relPath, mode: mode, pixels: pixels)
+        }
+        let original = originalsRoot.appendingPathComponent(relPath)
+        let root = originalsRoot.deletingLastPathComponent().appendingPathComponent("local-frame-covers", isDirectory: true)
+        return await LocalFrameCoverThumbnails.shared.image(original: original, root: root, pixels: pixels)
+    }
+
     func thumbnail(relPath: String, pointSize: CGFloat, scale: CGFloat, mode: FrameStorageMode = .remote) async -> UIImage? {
         try? await image(relPath: relPath, pointSize: pointSize, scale: scale, mode: mode)
     }
@@ -83,6 +92,52 @@ final class ThumbnailLoader: @unchecked Sendable {
         guard generation == RemoteDecodedImages.shared.generation() else { throw RemoteMediaError.revoked }
         guard let image else { throw RemoteMediaError.invalidFile }
         RemoteDecodedImages.shared.store(image, key: key, generation: generation)
+        return image
+    }
+}
+
+private actor LocalFrameCoverThumbnails {
+    static let shared = LocalFrameCoverThumbnails()
+    private let budget = 24 * 1024 * 1024
+
+    func image(original: URL, root: URL, pixels: Int) -> UIImage? {
+        let fm = FileManager.default
+        guard !Task.isCancelled,
+              let revision = try? original.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey]),
+              let size = revision.fileSize, let date = revision.contentModificationDate else { return nil }
+        let key = SHA256Hex.digest(data: Data("\(original.path):\(size):\(date.timeIntervalSinceReferenceDate):\(pixels)".utf8))
+        let target = root.appendingPathComponent(key + ".jpg")
+        if let stored = UIImage(contentsOfFile: target.path) {
+            try? fm.setAttributes([.modificationDate: Date()], ofItemAtPath: target.path)
+            return stored
+        }
+        guard let decoded = ImageRenderer.thumbnail(fileURL: original, maxPixelWidth: pixels, maxPixelHeight: pixels) else { return nil }
+        let image = UIImage(cgImage: decoded)
+        guard !Task.isCancelled, let data = image.jpegData(compressionQuality: 0.8),
+              data.count <= 2_621_440, fm.fileExists(atPath: original.path) else { return image }
+        do {
+            try fm.createDirectory(at: root, withIntermediateDirectories: true)
+            var directory = root
+            var values = URLResourceValues()
+            values.isExcludedFromBackup = true
+            try directory.setResourceValues(values)
+            let files = try fm.contentsOfDirectory(at: root, includingPropertiesForKeys: [.fileSizeKey, .contentModificationDateKey])
+                .filter { $0.pathExtension == "jpg" }
+                .compactMap { url -> (url: URL, size: Int, date: Date)? in
+                    guard let attributes = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey]),
+                          let size = attributes.fileSize else { return nil }
+                    return (url, size, attributes.contentModificationDate ?? .distantPast)
+                }
+                .sorted { $0.date < $1.date }
+            var used = files.reduce(0) { $0 + $1.size }
+            for file in files where used + data.count > budget {
+                try fm.removeItem(at: file.url)
+                used -= file.size
+            }
+            if used + data.count <= budget { try data.write(to: target, options: .atomic) }
+        } catch {
+            return image
+        }
         return image
     }
 }

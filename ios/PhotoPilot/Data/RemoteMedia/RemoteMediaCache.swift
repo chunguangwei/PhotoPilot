@@ -248,6 +248,13 @@ actor RemoteMediaCache {
         }
         guard freeSpace() >= bytes + freeReserve else { throw RemoteMediaError.lowSpace }
         let filename = SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined() + ".media"
+        if !FileManager.default.fileExists(atPath: root.path) {
+            try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+            var directory = root
+            var values = URLResourceValues()
+            values.isExcludedFromBackup = true
+            try directory.setResourceValues(values)
+        }
         try data.write(to: root.appendingPathComponent(filename), options: .atomic)
         entries[key] = Entry(descriptor: descriptor, filename: filename, bytes: bytes, accessed: Date(), contentHash: contentHash)
         saveIndex()
@@ -267,6 +274,11 @@ actor RemoteMediaCache {
     func usage() -> Int64 {
         if !restored { try? restore() }
         return entries.values.reduce(0) { $0 + $1.bytes } + work.values.reduce(0) { $0 + $1.reserved } + transientReservations.values.reduce(0, +)
+    }
+
+    func hasRoomForPrefetch(bytes: Int64?) -> Bool {
+        guard let bytes, bytes > 0, bytes <= budget else { return false }
+        return usage() <= budget - bytes && freeSpace() >= freeReserve + bytes
     }
 
     func reserveTransient(bytes: Int64) throws -> UUID {

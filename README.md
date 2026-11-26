@@ -36,11 +36,11 @@ NAS setup and edit offer on-demand access or local sync of the selected folders.
 
 ## 远端按需相框 / On-demand remote frames（1.3.0）
 
-在相框页进入在线选片，连接 WebDAV 或 SMB，选择照片或目录后确认保存。新远端相框默认按需播放，目录浏览先索引元数据。播放、封面、预览与 AI 共用 128MiB 原始照片临时缓存，包含未完成下载，自动淘汰，播放只预取下一张。缓存还受系统清理影响，远端照片没有可用副本时需要联网访问来源。
+在相框页进入在线选片，连接 WebDAV 或 SMB，选择照片或目录后确认保存。新远端相框默认按需播放，目录浏览先索引元数据。播放、封面、预览与 AI 共用 128MiB 原始照片临时缓存，包含未完成下载，自动淘汰。首张就绪即可播放，随后按顺序滚动预取最多三张，缓存暂忙时保留当前画面并自动重试。相框封面缩略图独立保存，清理临时缓存后仍可使用；点封面可预览，点「编辑」再修改相框。缓存还受系统清理影响，远端照片没有可用副本时需要联网访问来源。
 
 相框中开启本地同步可保留所选原图供离线播放，切换模式保留选片与 AI 规则。释放本地副本先查看可释放与共享占用，再确认清理。其他本地相框需要的副本受到保护。旧数据缺少存储模式字段时按本地模式解析，来源级导入会产生额外存储占用。模型、元数据、明确同步的原图及其他导入内容另占空间。普通播放无需 AI 模型。
 
-Open online photo selection from Frames, connect WebDAV or SMB, choose photos or a folder scope, and confirm. New remote frames default to on-demand playback. Metadata browsing fetches directory entries first. Playback, covers, previews and AI share a 128MiB temporary raw-photo cache including partial downloads. The cache evicts automatically and playback prefetches only the next photo. The operating system may also purge it. Photos require source access when a usable local or cached copy is unavailable.
+Open online photo selection from Frames, connect WebDAV or SMB, choose photos or a folder scope, and confirm. New remote frames default to on-demand playback. Metadata browsing fetches directory entries first. Playback, covers, previews and AI share a 128MiB temporary raw-photo cache including partial downloads. The cache evicts automatically. Playback starts when the first photo is ready, then prefetches up to three upcoming photos in order. If the cache is temporarily busy, playback keeps the current photo visible and retries automatically. Frame cover thumbnails are stored separately and survive a temporary cache clear. Tap the cover to preview it, then choose Edit to change the frame. The operating system may also purge it. Photos require source access when a usable local or cached copy is unavailable.
 
 Enable local sync per frame for offline access. Storage-mode changes preserve selections and AI rules. Review reclaimable/shared storage before confirming local-copy release. Copies required by other local frames remain protected. Frames without a stored mode use local playback. Source-level imports also occupy device storage. Models, metadata, synced originals and other imports use additional storage. Ordinary playback needs no AI model.
 
